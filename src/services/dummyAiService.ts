@@ -14,7 +14,7 @@ export function getDummyAiResponse(mode: ChatMode, userMessage: string): string 
     daily: `Kundalik hayot bo'yicha maslahat: "${userMessage}"\n\nRetseptlar, sayohat maslahatlari va kundalik hayotingizni osonlashtirish uchun men shu yerdaman!`,
     business: `Biznes va marketing bo'yicha yordam: "${userMessage}"\n\nMarketing strategiyalari, kontent yaratish va biznes g'oyalaringizni rivojlantirish uchun yordam beraman!`,
     tech: `Texnologiya va kod bo'yicha tushuntirish: "${userMessage}"\n\nDasturlash, kod yozish va texnologiya bo'yicha har qanday savolingizga javob beraman!`,
-    religion: `Din va ma'naviyat bo'yicha umumiy ma'lumot: "${userMessage}"\n\nMen sizga ma'naviy maslahatlar va umumiy diniy ma'lumotlarni ulashish uchun tayyorman. Qanday ma'lumot kerak?`,
+    financial: `Moliyaviy savodxonlik bo'yicha umumiy ma'lumot: "${userMessage}"\n\nMen sizga byudjet tuzish, moliyaviy rejalashtirish va moliya bo'yicha umumiy ma'lumotlar bilan yordam beraman. Qanday yordam kerak?`,
     health: `Sog'liq va fitness bo'yicha maslahat: "${userMessage}"\n\nMen sizga mashg'ulot rejalari, ovqatlanish bo'yicha maslahatlar va sog'lom turmush tarzi haqida yordam beraman!`,
   };
 

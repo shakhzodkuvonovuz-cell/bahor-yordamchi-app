@@ -77,13 +77,13 @@ export const LEARNING_MODES: ModeInfo[] = [
     ],
   },
   {
-    id: "religion",
-    title: "Din va Ma'naviyat",
-    subtitle: "Umumiy diniy va ma'naviy ma'lumotlar",
-    icon: "☪️",
+    id: "financial",
+    title: "Moliyaviy savodxonlik",
+    subtitle: "Moliya bo'yicha umumiy ma'lumot va tushuntirishlar",
+    icon: "💰",
     quickSuggestions: [
-      "Bugungi kun uchun qisqa ma'naviy nasihat ber",
-      "Hadis yoki hikmatdan qisqa iqtibos yozib ber",
+      "Oylik byudjet tuzishda yordam ber",
+      "Oddiy qilib foiz stavkasi nima ekanini tushuntirib ber",
     ],
   },
   {
