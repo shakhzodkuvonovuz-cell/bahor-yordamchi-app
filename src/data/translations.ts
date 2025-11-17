@@ -37,9 +37,9 @@ export const translations = {
         title: "Ish va Rezyume",
         subtitle: "Rezyume, suhbat va ish topishda yordam",
       },
-    religion: {
-      title: "Din va Ma'naviyat",
-      subtitle: "Umumiy diniy va ma'naviy ma'lumotlar",
+    financial: {
+      title: "Moliyaviy savodxonlik",
+      subtitle: "Moliya bo'yicha umumiy ma'lumot va tushuntirishlar",
     },
     health: {
       title: "Sog'liq va fitness",
@@ -108,9 +108,9 @@ export const translations = {
         "Rezyumeni yaxshilashga yordam ber",
         "Ish suhbatiga tayyorlanishimga yordam ber",
       ],
-      religion: [
-        "Din haqida umumiy ma'lumot ber",
-        "Odob-axloq haqida maslahat ber",
+      financial: [
+        "Oylik byudjet tuzishda yordam ber",
+        "Oddiy qilib foiz stavkasi nima ekanini tushuntirib ber",
       ],
       health: [
         "Menga mashg'ulot rejasi tuzib ber",
@@ -154,9 +154,9 @@ export const translations = {
         title: "Job & Resume",
         subtitle: "Resume, interview, and job search help",
       },
-    religion: {
-      title: "Religion & Spirituality",
-      subtitle: "General religious and spiritual information",
+    financial: {
+      title: "Financial Literacy",
+      subtitle: "General financial information and guidance",
     },
     health: {
       title: "Health & Fitness",
@@ -225,9 +225,9 @@ export const translations = {
         "Help me improve my CV/resume",
         "Help me prepare for a job interview",
       ],
-      religion: [
-        "Give me general information about religion",
-        "Give me advice about morals and good character",
+      financial: [
+        "Help me plan a simple monthly budget",
+        "Explain interest rate in simple terms",
       ],
       health: [
         "Create a workout plan for me",
@@ -271,9 +271,9 @@ export const translations = {
         title: "Работа и резюме",
         subtitle: "Резюме, собеседование и поиск работы",
       },
-    religion: {
-      title: "Религия и духовность",
-      subtitle: "Общая религиозная и духовная информация",
+    financial: {
+      title: "Финансовая грамотность",
+      subtitle: "Общая финансовая информация и советы",
     },
     health: {
       title: "Здоровье и фитнес",
@@ -342,9 +342,9 @@ export const translations = {
         "Помоги улучшить мое резюме",
         "Помоги подготовиться к собеседованию",
       ],
-      religion: [
-        "Дай общую информацию о религии",
-        "Дай совет о морали и хорошем поведении",
+      financial: [
+        "Помоги составить простой месячный бюджет",
+        "Объясни, что такое процентная ставка простыми словами",
       ],
       health: [
         "Составь мне план тренировок",
@@ -388,9 +388,9 @@ export const translations = {
         title: "İş ve özgeçmiş",
         subtitle: "Özgeçmiş, mülakat ve iş arama yardımı",
       },
-      religion: {
-        title: "Din ve maneviyat",
-        subtitle: "Genel dini ve manevi bilgiler",
+      financial: {
+        title: "Finansal Okuryazarlık",
+        subtitle: "Genel finansal bilgiler ve öneriler",
       },
       health: {
         title: "Sağlık ve fitness",
@@ -459,9 +459,9 @@ export const translations = {
         "CV / özgeçmişimi geliştirmeme yardım et",
         "İş görüşmesine hazırlanmama yardım et",
       ],
-      religion: [
-        "Din hakkında genel bilgi ver",
-        "Ahlak ve güzel davranışlar hakkında tavsiye ver",
+      financial: [
+        "Basit bir aylık bütçe oluşturmama yardım et",
+        "Faiz oranı nedir, sade bir şekilde açıkla",
       ],
       health: [
         "Bana bir egzersiz planı hazırla",
