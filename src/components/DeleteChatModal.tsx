@@ -16,7 +16,7 @@ export function DeleteChatModal({ open, onConfirm, onCancel }: DeleteChatModalPr
       case "en":
         return {
           title: "Delete chat?",
-          description: "This action will completely delete this chat history. Do you want to continue?",
+          description: "This will permanently delete this chat history. Do you want to continue?",
           cancel: "Cancel",
           confirm: "Delete"
         };
@@ -30,7 +30,7 @@ export function DeleteChatModal({ open, onConfirm, onCancel }: DeleteChatModalPr
       case "tr":
         return {
           title: "Sohbet silinsin mi?",
-          description: "Bu işlem bu sohbet geçmişini tamamen silecektir. Devam etmek istiyor musunuz?",
+          description: "Bu işlem bu sohbet geçmişini kalıcı olarak silecek. Devam etmek istiyor musunuz?",
           cancel: "İptal",
           confirm: "Sil"
         };

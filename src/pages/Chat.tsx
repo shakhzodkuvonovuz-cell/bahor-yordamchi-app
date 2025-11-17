@@ -246,7 +246,7 @@ export default function Chat() {
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Savolingizni yozing..."
+                placeholder={t.chatPlaceholder}
                 disabled={isLoading || typing}
                 className="flex-1 bg-transparent border-none outline-none resize-none text-[15px] leading-relaxed text-slate-900 dark:text-slate-50 placeholder:text-slate-400 dark:placeholder:text-slate-500 disabled:opacity-50"
               />
