@@ -1,6 +1,6 @@
 import { ChatsStorage, ChatSession, Message } from "@/types/chat";
 
-const STORAGE_KEY = "bahorai_chats_v1";
+const STORAGE_KEY = "bahorai_chats_v2";
 
 export function loadChatsFromStorage(): ChatsStorage {
   try {

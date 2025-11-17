@@ -1,14 +1,16 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Send, Trash2 } from "lucide-react";
+import { ArrowLeft, Send, Trash2, Menu } from "lucide-react";
 import ChatMessage from "@/components/ChatMessage";
 import QuickSuggestions from "@/components/QuickSuggestions";
 import { DeleteChatModal } from "@/components/DeleteChatModal";
-import { Message, ChatMode } from "@/types/chat";
+import { Message, ChatSession, ChatMode } from "@/types/chat";
 import { getDummyAiResponseAsync } from "@/services/dummyAiService";
 import { getModeInfo } from "@/data/modes";
 import { useLanguage } from "@/hooks/useLanguage";
 import { getTranslation } from "@/data/translations";
+import { loadChatsFromStorage, saveChatsToStorage, createNewSession } from "@/utils/chatStorage";
+import clsx from "clsx";
 
 // Streaming helper - simulates token-by-token streaming for demo purposes
 // Later: replace with real LLM streaming API (e.g. streamLLMResponse)
@@ -38,11 +40,14 @@ export default function Chat() {
   const { language } = useLanguage();
   const t = getTranslation(language);
   
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [typing, setTyping] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -50,36 +55,57 @@ export default function Chat() {
   const modeTranslation = t.modes[mode as keyof typeof t.modes];
   const modeSuggestions = [...(t.suggestions[mode as keyof typeof t.suggestions] || modeInfo?.quickSuggestions || [])];
 
-  const storageKey = `bahorai_chat_${mode}`;
-
-  // Load messages from localStorage on mount
+  // Initialize sessions on mount
   useEffect(() => {
     if (!mode) return;
 
-    try {
-      const stored = localStorage.getItem(storageKey);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        setMessages(parsed);
-      } else {
-        setMessages([]);
-      }
-    } catch (error) {
-      console.error("Error loading messages:", error);
+    const storage = loadChatsFromStorage();
+    
+    // If no data for this mode, create default session
+    if (!storage[mode]) {
+      const defaultSession = createNewSession(mode, t.chat.defaultChatTitle);
+      storage[mode] = {
+        sessions: [defaultSession],
+        messagesById: { [defaultSession.id]: [] },
+      };
+      saveChatsToStorage(storage);
+      setSessions([defaultSession]);
+      setCurrentSessionId(defaultSession.id);
       setMessages([]);
+    } else {
+      const modeData = storage[mode];
+      setSessions(modeData.sessions);
+      
+      // Pick most recent session
+      const mostRecent = [...modeData.sessions].sort(
+        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      )[0];
+      
+      setCurrentSessionId(mostRecent.id);
+      setMessages(modeData.messagesById[mostRecent.id] || []);
     }
-  }, [mode, storageKey]);
+  }, [mode, t.chat.defaultChatTitle]);
 
-  // Save messages to localStorage whenever they change
+  // Save messages whenever they change
   useEffect(() => {
-    if (!mode) return;
+    if (!mode || !currentSessionId) return;
 
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(messages));
-    } catch (error) {
-      console.error("Error saving messages:", error);
+    const storage = loadChatsFromStorage();
+    if (!storage[mode]) return;
+
+    storage[mode].messagesById[currentSessionId] = messages;
+    
+    // Update updatedAt for current session
+    const session = storage[mode].sessions.find(s => s.id === currentSessionId);
+    if (session) {
+      session.updatedAt = new Date().toISOString();
     }
-  }, [messages, mode, storageKey]);
+
+    saveChatsToStorage(storage);
+    
+    // Update sessions state to reflect new updatedAt
+    setSessions([...storage[mode].sessions]);
+  }, [messages, currentSessionId, mode]);
 
   useEffect(() => {
     if (!modeInfo) {
@@ -166,9 +192,87 @@ export default function Chat() {
   };
 
   const handleClearChat = () => {
+    if (!currentSessionId || !mode) return;
+    
+    const storage = loadChatsFromStorage();
+    if (!storage[mode]) return;
+
+    // Clear messages for current session
+    storage[mode].messagesById[currentSessionId] = [];
+    saveChatsToStorage(storage);
     setMessages([]);
-    if (mode) {
-      localStorage.removeItem(storageKey);
+  };
+
+  const handleCreateNewSession = () => {
+    if (!mode) return;
+
+    const newSession = createNewSession(mode, t.chat.defaultChatTitle);
+    const storage = loadChatsFromStorage();
+    
+    if (!storage[mode]) {
+      storage[mode] = {
+        sessions: [newSession],
+        messagesById: { [newSession.id]: [] },
+      };
+    } else {
+      storage[mode].sessions.unshift(newSession);
+      storage[mode].messagesById[newSession.id] = [];
+    }
+    
+    saveChatsToStorage(storage);
+    setSessions([newSession, ...sessions]);
+    setCurrentSessionId(newSession.id);
+    setMessages([]);
+    setIsHistoryOpen(false);
+  };
+
+  const handleSelectSession = (sessionId: string) => {
+    if (!mode) return;
+    
+    const storage = loadChatsFromStorage();
+    if (!storage[mode]) return;
+
+    setCurrentSessionId(sessionId);
+    setMessages(storage[mode].messagesById[sessionId] || []);
+    setIsHistoryOpen(false);
+  };
+
+  const handleDeleteSession = (sessionId: string) => {
+    if (!mode) return;
+
+    const storage = loadChatsFromStorage();
+    if (!storage[mode]) return;
+
+    const modeData = storage[mode];
+    const updatedSessions = modeData.sessions.filter(s => s.id !== sessionId);
+    const { [sessionId]: _removed, ...updatedMessagesById } = modeData.messagesById;
+
+    if (updatedSessions.length === 0) {
+      // No sessions left: create a new default one
+      const newSession = createNewSession(mode, t.chat.defaultChatTitle);
+      storage[mode] = {
+        sessions: [newSession],
+        messagesById: { [newSession.id]: [] },
+      };
+      saveChatsToStorage(storage);
+      setSessions([newSession]);
+      setCurrentSessionId(newSession.id);
+      setMessages([]);
+    } else {
+      // Still have sessions
+      storage[mode] = {
+        sessions: updatedSessions,
+        messagesById: updatedMessagesById,
+      };
+      saveChatsToStorage(storage);
+      setSessions(updatedSessions);
+
+      // If deleted current session, switch to another
+      if (sessionId === currentSessionId) {
+        const newCurrentId = updatedSessions[0].id;
+        setCurrentSessionId(newCurrentId);
+        setMessages(updatedMessagesById[newCurrentId] || []);
+      }
     }
   };
 
@@ -181,6 +285,78 @@ export default function Chat() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-50">
+      {/* History Drawer */}
+      {isHistoryOpen && (
+        <div className="fixed inset-0 z-50 flex">
+          {/* Overlay */}
+          <div
+            className="flex-1 bg-black/40"
+            onClick={() => setIsHistoryOpen(false)}
+          />
+
+          {/* Drawer */}
+          <div className="w-64 max-w-[80vw] bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col">
+            <div className="px-3 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-xs font-semibold tracking-wide text-slate-400 dark:text-slate-500 uppercase">
+                  {t.chat.chatHistory}
+                </span>
+                <span className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                  Bahor AI
+                </span>
+              </div>
+              <button
+                className="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
+                onClick={() => setIsHistoryOpen(false)}
+                aria-label="Close history"
+              >
+                ✕
+              </button>
+            </div>
+
+            <button
+              onClick={handleCreateNewSession}
+              className="m-3 mb-2 w-full rounded-md border border-dashed border-slate-300 dark:border-slate-700 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+            >
+              + {t.chat.defaultChatTitle}
+            </button>
+
+            <div className="flex-1 overflow-y-auto">
+              {sessions.map((session) => (
+                <div
+                  key={session.id}
+                  className={clsx(
+                    "flex items-center justify-between px-3 py-2 text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800",
+                    session.id === currentSessionId &&
+                      "bg-emerald-50 dark:bg-emerald-900/20"
+                  )}
+                  onClick={() => handleSelectSession(session.id)}
+                >
+                  <div className="flex-1 pr-2">
+                    <div className="font-medium text-slate-800 dark:text-slate-100 truncate">
+                      {session.title || t.chat.defaultChatTitle}
+                    </div>
+                    <div className="text-[10px] text-slate-400 dark:text-slate-500">
+                      {new Date(session.updatedAt).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteSession(session.id);
+                    }}
+                    className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-red-500"
+                    aria-label="Delete chat"
+                  >
+                    🗑
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto w-full max-w-3xl flex flex-col h-screen">
         {/* Header */}
         <div className="sticky top-0 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/70 backdrop-blur z-10">
@@ -192,6 +368,13 @@ export default function Chat() {
                 aria-label={t.chat.back}
               >
                 <ArrowLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setIsHistoryOpen(true)}
+                className="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition flex-shrink-0"
+                aria-label="Open chat history"
+              >
+                <Menu className="w-4 h-4" />
               </button>
               <div className="flex-1 min-w-0">
                 <h1 className="text-base md:text-lg font-semibold text-slate-900 dark:text-slate-50">
