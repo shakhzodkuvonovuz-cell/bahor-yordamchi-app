@@ -86,6 +86,16 @@ export const LEARNING_MODES: ModeInfo[] = [
       "Hadis yoki hikmatdan qisqa iqtibos yozib ber",
     ],
   },
+  {
+    id: "health",
+    title: "Sog'liq va fitness",
+    subtitle: "Sog'lom ovqatlanish va mashg'ulotlar bo'yicha yordam",
+    icon: "💪",
+    quickSuggestions: [
+      "Menga mashg'ulot rejasi tuzib ber",
+      "Sog'lom ovqatlanish bo'yicha maslahat ber",
+    ],
+  },
 ];
 
 // All modes combined for backwards compatibility
