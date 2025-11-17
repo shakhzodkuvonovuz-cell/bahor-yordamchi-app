@@ -12,6 +12,27 @@ import { getTranslation } from "@/data/translations";
 
 const STORAGE_KEY_PREFIX = "bahorai_chat_";
 
+// Streaming helper - simulates token-by-token streaming for demo purposes
+// Later: replace with real LLM streaming API (e.g. streamLLMResponse)
+type StreamOptions = {
+  onChunk: (chunk: string) => void;
+  onDone: () => void;
+};
+
+async function simulateStreamingResponse(
+  fullText: string,
+  options: StreamOptions
+) {
+  const words = fullText.split(" ");
+  for (let i = 0; i < words.length; i++) {
+    const chunk = (i === 0 ? "" : " ") + words[i];
+    options.onChunk(chunk);
+    // Small delay per word to simulate streaming
+    await new Promise((resolve) => setTimeout(resolve, 40));
+  }
+  options.onDone();
+}
+
 export default function Chat() {
   const { mode } = useParams<{ mode: string }>();
   const navigate = useNavigate();
@@ -97,25 +118,44 @@ export default function Chat() {
     setTyping(true);
 
     try {
-      const aiResponse = await getDummyAiResponseAsync(
+      // Get full response from demo service (same as before)
+      const fullReply = await getDummyAiResponseAsync(
         mode as ChatMode,
         content.trim()
       );
 
-      // Add a small delay to show typing indicator
+      // Add a small delay to show typing indicator before streaming starts
       await new Promise((resolve) => setTimeout(resolve, 600));
 
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
+      // Create empty assistant message that we'll stream into
+      const assistantId = crypto.randomUUID?.() ?? (Date.now() + 1).toString();
+      const emptyAssistantMessage: Message = {
+        id: assistantId,
         role: "assistant",
-        content: aiResponse,
+        content: "",
         timestamp: new Date(),
       };
 
-      setMessages((prev) => [...prev, aiMessage]);
+      setMessages((prev) => [...prev, emptyAssistantMessage]);
+
+      // Stream the response word by word
+      // Later: replace simulateStreamingResponse with streamLLMResponse for real API
+      await simulateStreamingResponse(fullReply, {
+        onChunk: (chunk) => {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId ? { ...m, content: m.content + chunk } : m
+            )
+          );
+        },
+        onDone: () => {
+          setTyping(false);
+          setIsLoading(false);
+          inputRef.current?.focus();
+        },
+      });
     } catch (error) {
       console.error("Error getting AI response:", error);
-    } finally {
       setTyping(false);
       setIsLoading(false);
       inputRef.current?.focus();
