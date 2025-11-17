@@ -4,19 +4,11 @@ import { ArrowLeft, Send, Trash2 } from "lucide-react";
 import ChatMessage from "@/components/ChatMessage";
 import QuickSuggestions from "@/components/QuickSuggestions";
 import { DeleteChatModal } from "@/components/DeleteChatModal";
-import { Message, ChatMode, ChatSession } from "@/types/chat";
+import { Message, ChatMode } from "@/types/chat";
 import { getDummyAiResponseAsync } from "@/services/dummyAiService";
 import { getModeInfo } from "@/data/modes";
 import { useLanguage } from "@/hooks/useLanguage";
 import { getTranslation } from "@/data/translations";
-import {
-  loadChatsFromStorage,
-  saveChatsToStorage,
-  getOrCreateModeChats,
-  createNewSession,
-  updateSessionMessages,
-} from "@/utils/chatStorage";
-import { clsx } from "clsx";
 
 // Streaming helper - simulates token-by-token streaming for demo purposes
 // Later: replace with real LLM streaming API (e.g. streamLLMResponse)
@@ -46,8 +38,6 @@ export default function Chat() {
   const { language } = useLanguage();
   const t = getTranslation(language);
   
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
-  const [currentSessionId, setCurrentSessionId] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -60,47 +50,36 @@ export default function Chat() {
   const modeTranslation = t.modes[mode as keyof typeof t.modes];
   const modeSuggestions = [...(t.suggestions[mode as keyof typeof t.suggestions] || modeInfo?.quickSuggestions || [])];
 
-  // Helper to get localized session label (fallback for old sessions)
-  const getSessionLabel = (session: ChatSession) => {
-    if (!session.title || session.title === "Yangi suhbat") {
-      return t.chat.defaultChatTitle;
-    }
-    return session.title;
-  };
+  const storageKey = `bahorai_chat_${mode}`;
 
-  // Initialize sessions for the current mode
+  // Load messages from localStorage on mount
   useEffect(() => {
     if (!mode) return;
 
-    const storage = loadChatsFromStorage();
-    const updatedStorage = getOrCreateModeChats(storage, mode, t.chat.defaultChatTitle);
-    
-    if (!storage[mode]) {
-      saveChatsToStorage(updatedStorage);
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setMessages(parsed);
+      } else {
+        setMessages([]);
+      }
+    } catch (error) {
+      console.error("Error loading messages:", error);
+      setMessages([]);
     }
+  }, [mode, storageKey]);
 
-    const modeSessions = updatedStorage[mode].sessions;
-    setSessions(modeSessions);
-    
-    // Set current session to the most recent one
-    const latestSession = modeSessions[modeSessions.length - 1];
-    setCurrentSessionId(latestSession.id);
-    
-    // Load messages for the latest session
-    const sessionMessages = updatedStorage[mode].messagesById[latestSession.id] || [];
-    setMessages(sessionMessages);
-  }, [mode, t.chat.defaultChatTitle]);
-
-  // Save messages whenever they change
+  // Save messages to localStorage whenever they change
   useEffect(() => {
-    if (!mode || !currentSessionId) return;
-    
-    const storage = loadChatsFromStorage();
-    if (!storage[mode]) return;
+    if (!mode) return;
 
-    const updatedStorage = updateSessionMessages(storage, mode, currentSessionId, messages);
-    saveChatsToStorage(updatedStorage);
-  }, [messages, mode, currentSessionId]);
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(messages));
+    } catch (error) {
+      console.error("Error saving messages:", error);
+    }
+  }, [messages, mode, storageKey]);
 
   useEffect(() => {
     if (!modeInfo) {
@@ -186,86 +165,10 @@ export default function Chat() {
     }
   };
 
-  const handleSelectSession = (sessionId: string) => {
-    // Save current messages before switching
-    if (currentSessionId && mode) {
-      const storage = loadChatsFromStorage();
-      const updatedStorage = updateSessionMessages(storage, mode, currentSessionId, messages);
-      saveChatsToStorage(updatedStorage);
-    }
-
-    // Load new session messages
-    setCurrentSessionId(sessionId);
-    const storage = loadChatsFromStorage();
-    const sessionMessages = storage[mode!]?.messagesById[sessionId] || [];
-    setMessages(sessionMessages);
-  };
-
-  const handleCreateNewSession = () => {
-    if (!mode) return;
-
-    const newSession = createNewSession(mode, t.chat.defaultChatTitle);
-    const storage = loadChatsFromStorage();
-    
-    if (!storage[mode]) {
-      const updatedStorage = getOrCreateModeChats(storage, mode, t.chat.defaultChatTitle);
-      saveChatsToStorage(updatedStorage);
-    }
-
-    storage[mode].sessions.push(newSession);
-    storage[mode].messagesById[newSession.id] = [];
-    saveChatsToStorage(storage);
-
-    setSessions([...storage[mode].sessions]);
-    setCurrentSessionId(newSession.id);
+  const handleClearChat = () => {
     setMessages([]);
-  };
-
-  const handleDeleteCurrentSession = () => {
-    if (!mode || !currentSessionId) return;
-
-    const chats = loadChatsFromStorage();
-    const modeData = chats[mode];
-    if (!modeData) return;
-
-    // Remove the current session
-    const updatedSessions = modeData.sessions.filter(s => s.id !== currentSessionId);
-    const { [currentSessionId]: _, ...updatedMessagesById } = modeData.messagesById;
-
-    if (updatedSessions.length === 0) {
-      // No sessions left - create a new default one
-      const newId = crypto.randomUUID?.() ?? String(Date.now());
-      const now = new Date().toISOString();
-
-      const newSession: ChatSession = {
-        id: newId,
-        mode,
-        title: t.chat.defaultChatTitle,
-        createdAt: now,
-        updatedAt: now,
-      };
-
-      chats[mode] = {
-        sessions: [newSession],
-        messagesById: { [newId]: [] },
-      };
-
-      saveChatsToStorage(chats);
-      setSessions([newSession]);
-      setCurrentSessionId(newId);
-      setMessages([]);
-    } else {
-      // Switch to the most recent remaining session
-      const newCurrentId = updatedSessions[updatedSessions.length - 1].id;
-      chats[mode] = {
-        sessions: updatedSessions,
-        messagesById: updatedMessagesById,
-      };
-      saveChatsToStorage(chats);
-
-      setSessions(updatedSessions);
-      setCurrentSessionId(newCurrentId);
-      setMessages(chats[mode].messagesById[newCurrentId] ?? []);
+    if (mode) {
+      localStorage.removeItem(storageKey);
     }
   };
 
@@ -319,32 +222,6 @@ export default function Chat() {
           </div>
         </div>
 
-        {/* Session Selector */}
-        {sessions.length > 0 && (
-          <div className="px-4 pt-2 pb-2 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2 overflow-x-auto">
-            {sessions.map((session) => (
-              <button
-                key={session.id}
-                onClick={() => handleSelectSession(session.id)}
-                className={clsx(
-                  "whitespace-nowrap rounded-full px-3 py-1 text-xs border transition flex-shrink-0",
-                  session.id === currentSessionId
-                    ? "bg-emerald-500 text-white border-emerald-500"
-                    : "bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800"
-                )}
-              >
-                {getSessionLabel(session)}
-              </button>
-            ))}
-
-            <button
-              onClick={handleCreateNewSession}
-              className="whitespace-nowrap rounded-full px-3 py-1 text-xs border border-dashed border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 transition flex-shrink-0"
-            >
-              + {t.chat.defaultChatTitle}
-            </button>
-          </div>
-        )}
 
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto px-4 pb-4 pt-3">
@@ -432,7 +309,7 @@ export default function Chat() {
         open={showDeleteModal}
         onCancel={() => setShowDeleteModal(false)}
         onConfirm={() => {
-          handleDeleteCurrentSession();
+          handleClearChat();
           setShowDeleteModal(false);
         }}
       />
