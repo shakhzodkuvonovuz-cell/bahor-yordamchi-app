@@ -41,7 +41,7 @@ export default function Home() {
         </div>
 
         {/* Hero Section */}
-        <h1 className="mt-4 text-center text-lg font-medium text-slate-900 dark:text-slate-100 leading-relaxed">
+        <h1 className="mt-6 text-center text-2xl font-semibold text-slate-900 dark:text-slate-100 leading-relaxed">
           {t.heroText}
         </h1>
 
