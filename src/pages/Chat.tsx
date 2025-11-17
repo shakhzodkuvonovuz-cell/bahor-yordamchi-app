@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Send, Trash2 } from "lucide-react";
 import ChatMessage from "@/components/ChatMessage";
 import QuickSuggestions from "@/components/QuickSuggestions";
+import { DeleteChatModal } from "@/components/DeleteChatModal";
 import { Message, ChatMode } from "@/types/chat";
 import { getDummyAiResponseAsync } from "@/services/dummyAiService";
 import { getModeInfo } from "@/data/modes";
@@ -21,6 +22,7 @@ export default function Chat() {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [typing, setTyping] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -119,15 +121,7 @@ export default function Chat() {
     }
   };
 
-  const handleClearChat = () => {
-    const ok = window.confirm(
-      language === "uz" ? "Suhbat tarixini o'chirmoqchimisiz?" :
-      language === "en" ? "Are you sure you want to delete this chat history?" :
-      language === "ru" ? "Вы уверены, что хотите удалить историю чата?" :
-      "Bu sohbet geçmişini silmek istediğinizden emin misiniz?"
-    );
-    if (!ok) return;
-    
+  const clearChat = () => {
     setMessages([]);
     try {
       localStorage.removeItem(storageKey);
@@ -171,7 +165,7 @@ export default function Chat() {
             <div className="flex items-center gap-3">
               {messages.length > 0 && (
                 <button
-                  onClick={handleClearChat}
+                  onClick={() => setShowDeleteModal(true)}
                   className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0"
                   aria-label={t.chat.clearChat}
                   title={t.chat.clearChat}
@@ -267,6 +261,15 @@ export default function Chat() {
           </form>
         </div>
       </div>
+
+      <DeleteChatModal
+        open={showDeleteModal}
+        onCancel={() => setShowDeleteModal(false)}
+        onConfirm={() => {
+          clearChat();
+          setShowDeleteModal(false);
+        }}
+      />
     </div>
   );
 }
