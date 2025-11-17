@@ -1,11 +1,17 @@
 import { ModeInfo } from "@/types/chat";
+import { Language } from "@/hooks/useLanguage";
+import { getTranslation } from "@/data/translations";
 
 interface ModeCardProps {
   mode: ModeInfo;
+  language: Language;
   onClick: () => void;
 }
 
-export default function ModeCard({ mode, onClick }: ModeCardProps) {
+export default function ModeCard({ mode, language, onClick }: ModeCardProps) {
+  const t = getTranslation(language);
+  const modeTranslation = t.modes[mode.id as keyof typeof t.modes];
+  
   return (
     <button
       onClick={onClick}
@@ -15,10 +21,10 @@ export default function ModeCard({ mode, onClick }: ModeCardProps) {
         <div className="text-4xl mb-1">{mode.icon}</div>
         <div className="space-y-1">
           <h3 className="text-sm font-semibold text-card-foreground dark:text-card-foreground leading-tight">
-            {mode.title}
+            {modeTranslation.title}
           </h3>
           <p className="text-xs text-muted-foreground dark:text-muted-foreground leading-relaxed line-clamp-2">
-            {mode.subtitle}
+            {modeTranslation.subtitle}
           </p>
         </div>
       </div>

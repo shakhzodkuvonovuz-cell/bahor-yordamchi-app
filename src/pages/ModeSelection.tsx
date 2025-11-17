@@ -2,9 +2,11 @@ import { useNavigate } from "react-router-dom";
 import { Settings } from "lucide-react";
 import ModeCard from "@/components/ModeCard";
 import { PRIMARY_MODES, LEARNING_MODES } from "@/data/modes";
+import { useLanguage } from "@/hooks/useLanguage";
 
 export default function ModeSelection() {
   const navigate = useNavigate();
+  const { language } = useLanguage();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-primary-glow/10">
@@ -47,6 +49,7 @@ export default function ModeSelection() {
                   <div key={mode.id} className="snap-start flex-shrink-0 w-44">
                     <ModeCard
                       mode={mode}
+                      language={language}
                       onClick={() => navigate(`/chat/${mode.id}`)}
                     />
                   </div>
@@ -66,6 +69,7 @@ export default function ModeSelection() {
                   <div key={mode.id} className="snap-start flex-shrink-0 w-44">
                     <ModeCard
                       mode={mode}
+                      language={language}
                       onClick={() => navigate(`/chat/${mode.id}`)}
                     />
                   </div>

@@ -6,6 +6,8 @@ import QuickSuggestions from "@/components/QuickSuggestions";
 import { Message, ChatMode } from "@/types/chat";
 import { getDummyAiResponseAsync } from "@/services/dummyAiService";
 import { getModeInfo } from "@/data/modes";
+import { useLanguage } from "@/hooks/useLanguage";
+import { getTranslation } from "@/data/translations";
 
 const STORAGE_KEY_PREFIX = "bahorai_chat_";
 
@@ -13,6 +15,8 @@ export default function Chat() {
   const { mode } = useParams<{ mode: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const { language } = useLanguage();
+  const t = getTranslation(language);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -21,6 +25,7 @@ export default function Chat() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const modeInfo = getModeInfo(mode || "");
+  const modeTranslation = t.modes[mode as keyof typeof t.modes];
   const storageKey = `${STORAGE_KEY_PREFIX}${mode}`;
 
   // Load messages from localStorage on mount
@@ -138,22 +143,22 @@ export default function Chat() {
           <button
             onClick={() => navigate("/modes")}
             className="p-2 hover:bg-secondary rounded-xl transition-colors flex-shrink-0"
-            aria-label="Orqaga"
+            aria-label={t.chat.back}
           >
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
           <div className="flex-1 min-w-0">
             <h1 className="text-lg font-bold text-foreground">Bahor AI</h1>
             <p className="text-xs text-muted-foreground truncate">
-              {modeInfo.title}
+              {modeTranslation?.title || modeInfo.title}
             </p>
           </div>
           {messages.length > 0 && (
             <button
               onClick={handleClearChat}
               className="p-2 hover:bg-secondary rounded-xl transition-colors flex-shrink-0"
-              aria-label="Suhbatni tozalash"
-              title="Suhbatni tozalash"
+              aria-label={t.chat.clearChat}
+              title={t.chat.clearChat}
             >
               <Trash2 className="w-4 h-4 text-muted-foreground" />
             </button>
@@ -169,13 +174,16 @@ export default function Chat() {
             <div className="text-center max-w-sm space-y-3">
               <div className="text-5xl mb-4">{modeInfo.icon}</div>
               <h2 className="text-xl font-semibold text-foreground">
-                {modeInfo.title}
+                {modeTranslation?.title || modeInfo.title}
               </h2>
               <p className="text-sm text-muted-foreground">
-                {modeInfo.subtitle}
+                {modeTranslation?.subtitle || modeInfo.subtitle}
               </p>
               <p className="text-xs text-muted-foreground pt-2">
-                Savolingizni yozing yoki quyidagi tezkor takliflardan foydalaning
+                {language === "uz" ? "Savolingizni yozing yoki quyidagi tezkor takliflardan foydalaning" :
+                 language === "en" ? "Type your question or use quick suggestions below" :
+                 language === "ru" ? "Введите свой вопрос или используйте быстрые предложения ниже" :
+                 "Sorunuzu yazın veya aşağıdaki hızlı önerileri kullanın"}
               </p>
             </div>
           </div>
@@ -188,7 +196,7 @@ export default function Chat() {
               <div className="flex justify-start mb-4 px-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <div className="bg-ai-message border border-border rounded-2xl rounded-bl-md px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Bahor AI yozmoqda</span>
+                    <span className="text-sm text-muted-foreground">{t.chat.typing}</span>
                     <div className="flex gap-1">
                       <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
                       <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>

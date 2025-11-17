@@ -3,9 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { Send, Settings } from "lucide-react";
 import { CHAT_MODES } from "@/data/modes";
 import ModeCard from "@/components/ModeCard";
+import { useLanguage } from "@/hooks/useLanguage";
+import { getTranslation } from "@/data/translations";
 
 export default function Home() {
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const t = getTranslation(language);
   const [input, setInput] = useState("");
 
   const handleSend = () => {
@@ -39,7 +43,7 @@ export default function Home() {
         <div className="relative pt-12 pb-8">
           <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary-light/10 to-primary/10 dark:from-primary/20 dark:via-primary-light/20 dark:to-primary/20 rounded-3xl blur-3xl opacity-50" />
           <h1 className="relative text-center text-xl sm:text-2xl font-bold text-foreground/90 dark:text-foreground/95 leading-relaxed px-4">
-            Birinchi o'zbek sun'iy intellekti — o'zbeklar uchun.
+            {t.heroText}
           </h1>
         </div>
 
@@ -51,7 +55,7 @@ export default function Home() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Savolingizni yozing..."
+                placeholder={t.chatPlaceholder}
                 rows={1}
                 className="flex-1 bg-background dark:bg-background border border-border dark:border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none max-h-32"
                 style={{ minHeight: "44px" }}
@@ -70,7 +74,7 @@ export default function Home() {
         {/* Section Title */}
         <div className="text-center pt-4">
           <p className="text-sm text-muted-foreground font-medium">
-            Yoki quyidagi maxsus imkoniyatlardan birini tanlang.
+            {t.subtitle}
           </p>
         </div>
 
@@ -80,6 +84,7 @@ export default function Home() {
             <ModeCard
               key={mode.id}
               mode={mode}
+              language={language}
               onClick={() => navigate(`/chat/${mode.id}`)}
             />
           ))}
