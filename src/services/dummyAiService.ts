@@ -10,6 +10,10 @@ export function getDummyAiResponse(mode: ChatMode, userMessage: string): string 
     general: `Bu test versiyasi. Tez orada haqiqiy sun'iy intellekt ulanadi. Siz yozgan matn: "${userMessage}"`,
     ielts: `Keling, IELTS ingliz tilini mashq qilamiz. Savolingiz: "${userMessage}"\n\nMen sizga yordam berish uchun tayyorman. IELTS speaking, writing va boshqa bo'limlar bo'yicha savollaringiz bo'lsa, so'rang!`,
     homework: `Uy vazifangizni bosqichma-bosqich tushuntiraman. Savolingiz: "${userMessage}"\n\nMen matematika, fizika va boshqa fanlar bo'yicha yordam beraman. Qaysi fandan yordam kerak?`,
+    job: `Ish bo'yicha yordam: "${userMessage}"\n\nMen sizga rezyume tayyorlash, ish suhbatlariga tayyorgarlik ko'rish va ish izlashda yordam beraman!`,
+    daily: `Kundalik hayot bo'yicha maslahat: "${userMessage}"\n\nRetseptlar, sayohat maslahatlari va kundalik hayotingizni osonlashtirish uchun men shu yerdaman!`,
+    business: `Biznes va marketing bo'yicha yordam: "${userMessage}"\n\nMarketing strategiyalari, kontent yaratish va biznes g'oyalaringizni rivojlantirish uchun yordam beraman!`,
+    tech: `Texnologiya va kod bo'yicha tushuntirish: "${userMessage}"\n\nDasturlash, kod yozish va texnologiya bo'yicha har qanday savolingizga javob beraman!`,
   };
 
   return responses[mode];
