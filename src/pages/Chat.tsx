@@ -65,7 +65,7 @@ export default function Chat() {
     if (!mode) return;
 
     const storage = loadChatsFromStorage();
-    const updatedStorage = getOrCreateModeChats(storage, mode);
+    const updatedStorage = getOrCreateModeChats(storage, mode, t.chat.defaultChatTitle);
     
     if (!storage[mode]) {
       saveChatsToStorage(updatedStorage);
@@ -81,7 +81,7 @@ export default function Chat() {
     // Load messages for the latest session
     const sessionMessages = updatedStorage[mode].messagesById[latestSession.id] || [];
     setMessages(sessionMessages);
-  }, [mode]);
+  }, [mode, t.chat.defaultChatTitle]);
 
   // Save messages whenever they change
   useEffect(() => {
@@ -196,11 +196,11 @@ export default function Chat() {
   const handleCreateNewSession = () => {
     if (!mode) return;
 
-    const newSession = createNewSession(mode);
+    const newSession = createNewSession(mode, t.chat.defaultChatTitle);
     const storage = loadChatsFromStorage();
     
     if (!storage[mode]) {
-      const updatedStorage = getOrCreateModeChats(storage, mode);
+      const updatedStorage = getOrCreateModeChats(storage, mode, t.chat.defaultChatTitle);
       saveChatsToStorage(updatedStorage);
     }
 
@@ -295,7 +295,7 @@ export default function Chat() {
               onClick={handleCreateNewSession}
               className="whitespace-nowrap rounded-full px-3 py-1 text-xs border border-dashed border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 transition flex-shrink-0"
             >
-              + Yangi suhbat
+              + {t.chat.defaultChatTitle}
             </button>
           </div>
         )}

@@ -74,6 +74,7 @@ export const translations = {
       clearChat: "Suhbatni tozalash",
       typing: "Bahor AI yozmoqda...",
       send: "Yuborish",
+      defaultChatTitle: "Yangi suhbat",
     },
     
     // Quick Suggestions
@@ -189,6 +190,7 @@ export const translations = {
       clearChat: "Clear Chat",
       typing: "Bahor AI is typing...",
       send: "Send",
+      defaultChatTitle: "New chat",
     },
     
     // Quick Suggestions
@@ -304,6 +306,7 @@ export const translations = {
       clearChat: "Очистить чат",
       typing: "Bahor AI печатает...",
       send: "Отправить",
+      defaultChatTitle: "Новый чат",
     },
     
     // Quick Suggestions
@@ -419,6 +422,7 @@ export const translations = {
       clearChat: "Sohbeti temizle",
       typing: "Bahor AI yazıyor...",
       send: "Gönder",
+      defaultChatTitle: "Yeni sohbet",
     },
     
     // Quick Suggestions
