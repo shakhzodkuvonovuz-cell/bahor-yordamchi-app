@@ -34,7 +34,7 @@ export default function Welcome() {
 
         {/* CTA Button */}
         <button
-          onClick={() => navigate("/modes")}
+          onClick={() => navigate("/")}
           className="w-full max-w-xs mx-auto bg-primary hover:bg-primary-light text-primary-foreground font-semibold py-4 px-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 active:scale-95 text-lg"
         >
           Boshlash

@@ -56,7 +56,7 @@ export default function Chat() {
 
   useEffect(() => {
     if (!modeInfo) {
-      navigate("/modes");
+      navigate("/");
     }
   }, [modeInfo, navigate]);
 
@@ -141,7 +141,7 @@ export default function Chat() {
       <div className="sticky top-0 bg-card border-b border-border z-10 shadow-sm">
         <div className="px-4 py-3 flex items-center gap-3">
           <button
-            onClick={() => navigate("/modes")}
+            onClick={() => navigate("/")}
             className="p-2 hover:bg-secondary rounded-xl transition-colors flex-shrink-0"
             aria-label={t.chat.back}
           >
