@@ -28,8 +28,9 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/5 dark:to-primary/10">
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-        {/* Header with Settings Icon */}
-        <div className="flex justify-end pt-2">
+        {/* Header with App Name and Settings Icon */}
+        <div className="flex justify-between items-center px-4 py-3">
+          <h2 className="text-lg font-semibold text-foreground">Bahor AI</h2>
           <button
             onClick={() => navigate("/settings")}
             className="p-2 hover:bg-accent dark:hover:bg-accent rounded-lg transition-colors"
@@ -80,7 +81,7 @@ export default function Home() {
 
         {/* Feature Grid */}
         <div className="grid grid-cols-2 gap-3 pb-8">
-          {CHAT_MODES.map((mode) => (
+          {CHAT_MODES.filter((mode) => mode.id !== "general").map((mode) => (
             <ModeCard
               key={mode.id}
               mode={mode}
