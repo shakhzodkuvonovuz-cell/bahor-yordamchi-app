@@ -29,46 +29,43 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/5 dark:to-primary/10">
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
         {/* Header with App Name and Settings Icon */}
-        <div className="flex justify-between items-center px-4 py-3">
-          <h2 className="text-lg font-semibold text-foreground">Bahor AI</h2>
+        <div className="flex justify-between items-center px-4 pt-4 pb-2">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Bahor AI</h2>
           <button
             onClick={() => navigate("/settings")}
-            className="p-2 hover:bg-accent dark:hover:bg-accent rounded-lg transition-colors"
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
             aria-label="Sozlamalar"
           >
-            <Settings className="w-6 h-6 text-muted-foreground hover:text-foreground" />
+            <Settings className="w-6 h-6 text-slate-600 dark:text-slate-400" />
           </button>
         </div>
 
         {/* Hero Section */}
-        <div className="relative pt-12 pb-8">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary-light/10 to-primary/10 dark:from-primary/20 dark:via-primary-light/20 dark:to-primary/20 rounded-3xl blur-3xl opacity-50" />
-          <h1 className="relative text-center text-xl sm:text-2xl font-bold text-foreground/90 dark:text-foreground/95 leading-relaxed px-4">
+        <div className="mt-4 px-4 py-6 rounded-2xl bg-gradient-to-br from-emerald-50 to-white dark:from-slate-900 dark:to-slate-800 shadow-sm">
+          <h1 className="text-center text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 leading-relaxed">
             {t.heroText}
           </h1>
         </div>
 
         {/* Main Chat Input */}
-        <div className="relative">
-          <div className="bg-card dark:bg-card border border-border dark:border-border rounded-2xl shadow-lg hover:shadow-xl transition-shadow p-4">
-            <div className="flex gap-3 items-end">
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder={t.chatPlaceholder}
-                rows={1}
-                className="flex-1 bg-background dark:bg-background border border-border dark:border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none max-h-32"
-                style={{ minHeight: "44px" }}
-              />
-              <button
-                onClick={handleSend}
-                disabled={!input.trim()}
-                className="bg-primary hover:bg-primary-light text-primary-foreground rounded-xl p-3 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 shadow-sm"
-              >
-                <Send className="w-5 h-5" />
-              </button>
-            </div>
+        <div className="mt-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm px-3 py-2">
+          <div className="flex gap-2 items-center">
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder={t.chatPlaceholder}
+              rows={1}
+              className="flex-1 border-none outline-none bg-transparent text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 resize-none max-h-32"
+              style={{ minHeight: "44px" }}
+            />
+            <button
+              onClick={handleSend}
+              disabled={!input.trim()}
+              className="rounded-full bg-emerald-500 text-white w-9 h-9 flex items-center justify-center hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
+            >
+              <Send className="w-4 h-4" />
+            </button>
           </div>
         </div>
 

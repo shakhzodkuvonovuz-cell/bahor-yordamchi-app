@@ -136,7 +136,7 @@ export default function Chat() {
   if (!modeInfo) return null;
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-screen bg-gray-50 dark:bg-slate-950">
       {/* Header */}
       <div className="sticky top-0 bg-card border-b border-border z-10 shadow-sm">
         <div className="px-4 py-3 flex items-center gap-3">
