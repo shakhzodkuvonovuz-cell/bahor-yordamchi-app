@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, User, Globe, Info } from "lucide-react";
+import { ArrowLeft, User, Globe, Info, Moon, Sun } from "lucide-react";
+import { useTheme } from "@/hooks/useTheme";
 
 export default function Settings() {
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
   const [name, setName] = useState("Bahor");
   const [language, setLanguage] = useState<"uz" | "en">("uz");
 
@@ -44,6 +46,46 @@ export default function Settings() {
               className="w-full px-4 py-3 bg-input border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
               placeholder="Ismingizni kiriting"
             />
+          </div>
+        </div>
+
+        {/* Theme Section */}
+        <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-4">
+            {theme === "dark" ? (
+              <Moon className="w-5 h-5 text-primary" />
+            ) : (
+              <Sun className="w-5 h-5 text-primary" />
+            )}
+            <h2 className="text-lg font-semibold text-foreground">Mavzu</h2>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setTheme("light")}
+              className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
+                theme === "light"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+              }`}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <Sun className="w-4 h-4" />
+                <span>Yorug' rejim</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setTheme("dark")}
+              className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
+                theme === "dark"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+              }`}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <Moon className="w-4 h-4" />
+                <span>Qorong'u rejim</span>
+              </div>
+            </button>
           </div>
         </div>
 
