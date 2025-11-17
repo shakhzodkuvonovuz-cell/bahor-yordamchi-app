@@ -75,6 +75,46 @@ export const translations = {
       typing: "Bahor AI yozmoqda...",
       send: "Yuborish",
     },
+    
+    // Quick Suggestions
+    suggestions: {
+      general: [
+        "Menga bir foydali maslahat ber",
+        "Bugun nimani o'rganishim mumkin?",
+      ],
+      tech: [
+        "Bu kodni tushuntirib ber",
+        "Dasturlashni qayerdan boshlashim kerak?",
+      ],
+      daily: [
+        "Bugun kechki ovqat uchun nima pishirsam bo'ladi?",
+        "Vaqtni samarali boshqarish bo'yicha maslahat ber",
+      ],
+      business: [
+        "Kichik biznes g'oyasini taklif et",
+        "Telegram/Instagram sahifam uchun kontent g'oya ber",
+      ],
+      ielts: [
+        "IELTS speaking savol ber",
+        "Ingliz matnini tekshirib ber",
+      ],
+      homework: [
+        "Matematik misolni tushuntir",
+        "Formulani sodda tilda tushuntir",
+      ],
+      job: [
+        "Rezyumeni yaxshilashga yordam ber",
+        "Ish suhbatiga tayyorlanishimga yordam ber",
+      ],
+      religion: [
+        "Din haqida umumiy ma'lumot ber",
+        "Odob-axloq haqida maslahat ber",
+      ],
+      health: [
+        "Menga mashg'ulot rejasi tuzib ber",
+        "Sog'lom ovqatlanish bo'yicha maslahat ber",
+      ],
+    },
   },
   en: {
     // Homepage
@@ -149,6 +189,46 @@ export const translations = {
       clearChat: "Clear Chat",
       typing: "Bahor AI is typing...",
       send: "Send",
+    },
+    
+    // Quick Suggestions
+    suggestions: {
+      general: [
+        "Give me some useful advice",
+        "What can I learn today?",
+      ],
+      tech: [
+        "Explain this code to me",
+        "Where should I start learning programming?",
+      ],
+      daily: [
+        "What can I cook for dinner today?",
+        "Give me tips for managing my time better",
+      ],
+      business: [
+        "Suggest a small business idea",
+        "Give me content ideas for my Telegram/Instagram page",
+      ],
+      ielts: [
+        "Ask me an IELTS Speaking question",
+        "Check my English text for mistakes",
+      ],
+      homework: [
+        "Explain a math problem",
+        "Explain a formula in simple words",
+      ],
+      job: [
+        "Help me improve my CV/resume",
+        "Help me prepare for a job interview",
+      ],
+      religion: [
+        "Give me general information about religion",
+        "Give me advice about morals and good character",
+      ],
+      health: [
+        "Create a workout plan for me",
+        "Give me advice on healthy eating",
+      ],
     },
   },
   ru: {
@@ -225,6 +305,46 @@ export const translations = {
       typing: "Bahor AI печатает...",
       send: "Отправить",
     },
+    
+    // Quick Suggestions
+    suggestions: {
+      general: [
+        "Дай мне полезный совет",
+        "Что мне сегодня изучить?",
+      ],
+      tech: [
+        "Объясни этот код",
+        "С чего начать изучать программирование?",
+      ],
+      daily: [
+        "Что приготовить сегодня на ужин?",
+        "Дай советы по управлению временем",
+      ],
+      business: [
+        "Предложи идею для малого бизнеса",
+        "Дай идеи для контента в мой Telegram/Instagram",
+      ],
+      ielts: [
+        "Задай мне вопрос для IELTS Speaking",
+        "Проверь мой английский текст на ошибки",
+      ],
+      homework: [
+        "Объясни задачу по математике",
+        "Объясни формулу простыми словами",
+      ],
+      job: [
+        "Помоги улучшить мое резюме",
+        "Помоги подготовиться к собеседованию",
+      ],
+      religion: [
+        "Дай общую информацию о религии",
+        "Дай совет о морали и хорошем поведении",
+      ],
+      health: [
+        "Составь мне план тренировок",
+        "Дай совет по здоровому питанию",
+      ],
+    },
   },
   tr: {
     // Homepage
@@ -299,6 +419,46 @@ export const translations = {
       clearChat: "Sohbeti temizle",
       typing: "Bahor AI yazıyor...",
       send: "Gönder",
+    },
+    
+    // Quick Suggestions
+    suggestions: {
+      general: [
+        "Bana faydalı bir tavsiye ver",
+        "Bugün ne öğrenebilirim?",
+      ],
+      tech: [
+        "Bu kodu bana açıkla",
+        "Programlamaya nereden başlamalıyım?",
+      ],
+      daily: [
+        "Bugün akşam yemeği için ne pişirebilirim?",
+        "Zamanımı daha iyi yönetmem için tavsiyeler ver",
+      ],
+      business: [
+        "Küçük bir iş fikri öner",
+        "Telegram/Instagram sayfam için içerik fikirleri ver",
+      ],
+      ielts: [
+        "Bana IELTS Speaking sorusu sor",
+        "İngilizce metnimi hatalar için kontrol et",
+      ],
+      homework: [
+        "Bir matematik soruyu açıkla",
+        "Bir formülü basitçe açıkla",
+      ],
+      job: [
+        "CV / özgeçmişimi geliştirmeme yardım et",
+        "İş görüşmesine hazırlanmama yardım et",
+      ],
+      religion: [
+        "Din hakkında genel bilgi ver",
+        "Ahlak ve güzel davranışlar hakkında tavsiye ver",
+      ],
+      health: [
+        "Bana bir egzersiz planı hazırla",
+        "Sağlıklı beslenme hakkında tavsiye ver",
+      ],
     },
   },
 } as const;
