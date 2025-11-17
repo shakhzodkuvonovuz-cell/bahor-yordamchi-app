@@ -60,6 +60,14 @@ export default function Chat() {
   const modeTranslation = t.modes[mode as keyof typeof t.modes];
   const modeSuggestions = [...(t.suggestions[mode as keyof typeof t.suggestions] || modeInfo?.quickSuggestions || [])];
 
+  // Helper to get localized session label (fallback for old sessions)
+  const getSessionLabel = (session: ChatSession) => {
+    if (!session.title || session.title === "Yangi suhbat") {
+      return t.chat.defaultChatTitle;
+    }
+    return session.title;
+  };
+
   // Initialize sessions for the current mode
   useEffect(() => {
     if (!mode) return;
@@ -213,14 +221,52 @@ export default function Chat() {
     setMessages([]);
   };
 
-  const clearChat = () => {
-    setMessages([]);
-    
+  const handleDeleteCurrentSession = () => {
     if (!mode || !currentSessionId) return;
-    
-    const storage = loadChatsFromStorage();
-    const updatedStorage = updateSessionMessages(storage, mode, currentSessionId, []);
-    saveChatsToStorage(updatedStorage);
+
+    const chats = loadChatsFromStorage();
+    const modeData = chats[mode];
+    if (!modeData) return;
+
+    // Remove the current session
+    const updatedSessions = modeData.sessions.filter(s => s.id !== currentSessionId);
+    const { [currentSessionId]: _, ...updatedMessagesById } = modeData.messagesById;
+
+    if (updatedSessions.length === 0) {
+      // No sessions left - create a new default one
+      const newId = crypto.randomUUID?.() ?? String(Date.now());
+      const now = new Date().toISOString();
+
+      const newSession: ChatSession = {
+        id: newId,
+        mode,
+        title: t.chat.defaultChatTitle,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      chats[mode] = {
+        sessions: [newSession],
+        messagesById: { [newId]: [] },
+      };
+
+      saveChatsToStorage(chats);
+      setSessions([newSession]);
+      setCurrentSessionId(newId);
+      setMessages([]);
+    } else {
+      // Switch to the most recent remaining session
+      const newCurrentId = updatedSessions[updatedSessions.length - 1].id;
+      chats[mode] = {
+        sessions: updatedSessions,
+        messagesById: updatedMessagesById,
+      };
+      saveChatsToStorage(chats);
+
+      setSessions(updatedSessions);
+      setCurrentSessionId(newCurrentId);
+      setMessages(chats[mode].messagesById[newCurrentId] ?? []);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -287,7 +333,7 @@ export default function Chat() {
                     : "bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800"
                 )}
               >
-                {session.title}
+                {getSessionLabel(session)}
               </button>
             ))}
 
@@ -386,7 +432,7 @@ export default function Chat() {
         open={showDeleteModal}
         onCancel={() => setShowDeleteModal(false)}
         onConfirm={() => {
-          clearChat();
+          handleDeleteCurrentSession();
           setShowDeleteModal(false);
         }}
       />
