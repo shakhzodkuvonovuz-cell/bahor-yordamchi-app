@@ -96,33 +96,50 @@ export default function Settings() {
         <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
           <div className="flex items-center gap-3 mb-4">
             <Globe className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">Til</h2>
+            <h2 className="text-lg font-semibold text-foreground">{t.settings.language}</h2>
           </div>
-          <div className="flex gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => setLanguage("uz")}
-              className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
+              className={`py-3 px-4 rounded-xl font-medium transition-all ${
                 language === "uz"
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
               }`}
             >
-              O'zbek
+              {t.settings.languageUz}
             </button>
             <button
               onClick={() => setLanguage("en")}
-              className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
+              className={`py-3 px-4 rounded-xl font-medium transition-all ${
                 language === "en"
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
               }`}
             >
-              English
+              {t.settings.languageEn}
+            </button>
+            <button
+              onClick={() => setLanguage("ru")}
+              className={`py-3 px-4 rounded-xl font-medium transition-all ${
+                language === "ru"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+              }`}
+            >
+              {t.settings.languageRu}
+            </button>
+            <button
+              onClick={() => setLanguage("tr")}
+              className={`py-3 px-4 rounded-xl font-medium transition-all ${
+                language === "tr"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+              }`}
+            >
+              {t.settings.languageTr}
             </button>
           </div>
-          <p className="text-xs text-muted-foreground mt-3">
-            Hozircha faqat O'zbek tili qo'llab-quvvatlanadi
-          </p>
         </div>
 
         {/* Status Section */}
