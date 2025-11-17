@@ -19,6 +19,12 @@ export default {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        bahor: {
+          primary: "#22c55e",
+          primarySoft: "#dcfce7",
+          accent: "#0ea5e9",
+          bg: "#f9fafb",
+        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
