@@ -136,25 +136,25 @@ export default function Chat() {
   if (!modeInfo) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-slate-900 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-50">
       <div className="mx-auto w-full max-w-3xl flex flex-col h-screen">
         {/* Header */}
-        <div className="sticky top-0 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 z-10">
+        <div className="sticky top-0 border-b border-slate-800/80 bg-slate-950/70 backdrop-blur z-10">
           <div className="px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => navigate("/")}
-                className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition flex-shrink-0"
+                className="w-9 h-9 rounded-full border border-slate-700 flex items-center justify-center text-slate-300 hover:bg-slate-800 active:scale-95 transition flex-shrink-0"
                 aria-label={t.chat.back}
               >
-                <ArrowLeft className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+                <ArrowLeft className="w-4 h-4" />
               </button>
               <div className="flex-1 min-w-0">
-                <h1 className="text-base md:text-lg font-semibold text-slate-900 dark:text-slate-100">
+                <h1 className="text-base md:text-lg font-semibold text-slate-50">
                   {modeTranslation?.title || modeInfo.title}
                 </h1>
                 {modeTranslation?.subtitle && (
-                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                  <p className="text-xs text-slate-400 truncate">
                     {modeTranslation.subtitle}
                   </p>
                 )}
@@ -164,14 +164,14 @@ export default function Chat() {
               {messages.length > 0 && (
                 <button
                   onClick={handleClearChat}
-                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0"
+                  className="p-2 hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0"
                   aria-label={t.chat.clearChat}
                   title={t.chat.clearChat}
                 >
-                  <Trash2 className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+                  <Trash2 className="w-4 h-4 text-slate-400" />
                 </button>
               )}
-              <span className="text-xs font-medium tracking-wide text-slate-400 dark:text-slate-500 uppercase">
+              <span className="text-[11px] uppercase tracking-[0.16em] text-slate-500">
                 Bahor AI
               </span>
             </div>
@@ -179,18 +179,18 @@ export default function Chat() {
         </div>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto px-4 pb-4 pt-2">
+        <div className="flex-1 overflow-y-auto px-4 pb-4 pt-3">
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center max-w-sm space-y-3">
                 <div className="text-5xl mb-4">{modeInfo.icon}</div>
-                <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+                <h2 className="text-xl font-semibold text-slate-50">
                   {modeTranslation?.title || modeInfo.title}
                 </h2>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
+                <p className="text-sm text-slate-300">
                   {modeTranslation?.subtitle || modeInfo.subtitle}
                 </p>
-                <p className="text-xs text-slate-500 dark:text-slate-500 pt-2">
+                <p className="text-xs text-slate-400 pt-2">
                   {language === "uz" ? "Savolingizni yozing yoki quyidagi tezkor takliflardan foydalaning" :
                    language === "en" ? "Type your question or use quick suggestions below" :
                    language === "ru" ? "Введите свой вопрос или используйте быстрые предложения ниже" :
@@ -205,9 +205,9 @@ export default function Chat() {
               ))}
               {typing && (
                 <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 shadow-sm">
+                  <div className="bg-slate-900/80 border border-slate-700 rounded-2xl px-4 py-3 shadow-sm">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-slate-600 dark:text-slate-400">{t.chat.typing}</span>
+                      <span className="text-sm text-slate-300">{t.chat.typing}</span>
                       <div className="flex gap-1">
                         <span className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
                         <span className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
@@ -223,7 +223,7 @@ export default function Chat() {
       </div>
 
         {/* Input Area */}
-        <div className="border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur">
+        <div className="border-t border-slate-800 bg-slate-950/80 backdrop-blur">
           {/* Quick Suggestions */}
           {modeInfo.quickSuggestions && messages.length === 0 && (
             <div className="py-3">
@@ -237,7 +237,7 @@ export default function Chat() {
 
           {/* Input Form */}
           <form onSubmit={handleSubmit} className="px-4 py-3">
-            <div className="flex items-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 shadow-sm">
+            <div className="flex items-center gap-2 rounded-2xl border border-slate-700 bg-slate-900 px-3 py-2 shadow-sm">
               <input
                 ref={inputRef}
                 type="text"
@@ -245,7 +245,7 @@ export default function Chat() {
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder="Savolingizni yozing..."
                 disabled={isLoading || typing}
-                className="flex-1 bg-transparent border-none outline-none text-[15px] leading-relaxed text-slate-900 dark:text-slate-100 placeholder:text-slate-400 disabled:opacity-50"
+                className="flex-1 bg-transparent border-none outline-none resize-none text-[15px] leading-relaxed text-slate-50 placeholder:text-slate-500 disabled:opacity-50"
               />
               <button
                 type="submit"
