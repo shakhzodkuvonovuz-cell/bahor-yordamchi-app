@@ -37,11 +37,15 @@ export const translations = {
         title: "Ish va Rezyume",
         subtitle: "Rezyume, suhbat va ish topishda yordam",
       },
-      religion: {
-        title: "Din va Ma'naviyat",
-        subtitle: "Umumiy diniy va ma'naviy ma'lumotlar",
-      },
+    religion: {
+      title: "Din va Ma'naviyat",
+      subtitle: "Umumiy diniy va ma'naviy ma'lumotlar",
     },
+    health: {
+      title: "Sog'liq va fitness",
+      subtitle: "Sog'lom ovqatlanish va mashg'ulotlar bo'yicha yordam",
+    },
+  },
     
     // Settings
     settings: {
@@ -108,11 +112,15 @@ export const translations = {
         title: "Job & Resume",
         subtitle: "Resume, interview, and job search help",
       },
-      religion: {
-        title: "Religion & Spirituality",
-        subtitle: "General religious and spiritual information",
-      },
+    religion: {
+      title: "Religion & Spirituality",
+      subtitle: "General religious and spiritual information",
     },
+    health: {
+      title: "Health & Fitness",
+      subtitle: "Workout and nutrition guidance",
+    },
+  },
     
     // Settings
     settings: {
@@ -179,11 +187,15 @@ export const translations = {
         title: "Работа и резюме",
         subtitle: "Резюме, собеседование и поиск работы",
       },
-      religion: {
-        title: "Религия и духовность",
-        subtitle: "Общая религиозная и духовная информация",
-      },
+    religion: {
+      title: "Религия и духовность",
+      subtitle: "Общая религиозная и духовная информация",
     },
+    health: {
+      title: "Здоровье и фитнес",
+      subtitle: "Тренировки и питание",
+    },
+  },
     
     // Settings
     settings: {
@@ -253,6 +265,10 @@ export const translations = {
       religion: {
         title: "Din ve maneviyat",
         subtitle: "Genel dini ve manevi bilgiler",
+      },
+      health: {
+        title: "Sağlık ve fitness",
+        subtitle: "Egzersiz ve beslenme desteği",
       },
     },
     
