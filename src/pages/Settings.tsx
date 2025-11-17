@@ -1,0 +1,116 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft, User, Globe, Info } from "lucide-react";
+
+export default function Settings() {
+  const navigate = useNavigate();
+  const [name, setName] = useState("Bahor");
+  const [language, setLanguage] = useState<"uz" | "en">("uz");
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-background to-primary-glow/10">
+      {/* Header */}
+      <div className="sticky top-0 bg-card border-b border-border shadow-sm z-10">
+        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 hover:bg-secondary rounded-xl transition-colors"
+            aria-label="Orqaga"
+          >
+            <ArrowLeft className="w-5 h-5 text-foreground" />
+          </button>
+          <h1 className="text-lg font-bold text-foreground">Sozlamalar</h1>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+        {/* User Info Section */}
+        <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-4">
+            <User className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">
+              Foydalanuvchi ma'lumotlari
+            </h2>
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-foreground">
+              Ism
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-4 py-3 bg-input border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
+              placeholder="Ismingizni kiriting"
+            />
+          </div>
+        </div>
+
+        {/* Language Section */}
+        <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-4">
+            <Globe className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Til</h2>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setLanguage("uz")}
+              className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
+                language === "uz"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+              }`}
+            >
+              O'zbek
+            </button>
+            <button
+              onClick={() => setLanguage("en")}
+              className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
+                language === "en"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+              }`}
+            >
+              English
+            </button>
+          </div>
+          <p className="text-xs text-muted-foreground mt-3">
+            Hozircha faqat O'zbek tili qo'llab-quvvatlanadi
+          </p>
+        </div>
+
+        {/* Status Section */}
+        <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-4">
+            <Info className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Status</h2>
+          </div>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between py-2">
+              <span className="text-sm text-foreground">Reja:</span>
+              <span className="text-sm font-medium text-primary">
+                Tekin sinov versiyasi
+              </span>
+            </div>
+            <div className="flex items-center justify-between py-2 border-t border-border">
+              <span className="text-sm text-foreground">Versiya:</span>
+              <span className="text-sm font-medium text-muted-foreground">
+                v0.1 (MVP)
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Info Section */}
+        <div className="bg-muted/50 border border-border rounded-2xl p-6">
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Bu Bahor AI ning test versiyasi. Hozircha sun'iy intellekt
+            qo'llanilmagan va faqat demo rejimida ishlaydi. Tez orada haqiqiy AI
+            funksiyalari qo'shiladi.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
