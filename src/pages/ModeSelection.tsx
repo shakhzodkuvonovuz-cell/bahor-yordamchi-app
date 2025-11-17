@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Settings } from "lucide-react";
 import ModeCard from "@/components/ModeCard";
-import { CHAT_MODES } from "@/data/modes";
+import { PRIMARY_MODES, LEARNING_MODES } from "@/data/modes";
 
 export default function ModeSelection() {
   const navigate = useNavigate();
@@ -31,18 +31,48 @@ export default function ModeSelection() {
             Bugun nimaga yordam kerak?
           </h2>
           <p className="text-muted-foreground">
-            Quyidagi bo'limlardan birini tanlang
+            Bahor AI sizga turli sohalarda yordam beradi
           </p>
         </div>
 
-        <div className="space-y-4">
-          {CHAT_MODES.map((mode) => (
-            <ModeCard
-              key={mode.id}
-              mode={mode}
-              onClick={() => navigate(`/chat/${mode.id}`)}
-            />
-          ))}
+        <div className="space-y-8">
+          {/* Primary Section */}
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-4 px-2">
+              Asosiy imkoniyatlar
+            </h3>
+            <div className="overflow-x-auto pb-2 -mx-4 px-4">
+              <div className="flex gap-3 snap-x snap-mandatory">
+                {PRIMARY_MODES.map((mode) => (
+                  <div key={mode.id} className="snap-start flex-shrink-0 w-44">
+                    <ModeCard
+                      mode={mode}
+                      onClick={() => navigate(`/chat/${mode.id}`)}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Learning Section */}
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-4 px-2">
+              O'qish va rivojlanish
+            </h3>
+            <div className="overflow-x-auto pb-2 -mx-4 px-4">
+              <div className="flex gap-3 snap-x snap-mandatory">
+                {LEARNING_MODES.map((mode) => (
+                  <div key={mode.id} className="snap-start flex-shrink-0 w-44">
+                    <ModeCard
+                      mode={mode}
+                      onClick={() => navigate(`/chat/${mode.id}`)}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
