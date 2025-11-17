@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Send } from "lucide-react";
+import { Send, Settings } from "lucide-react";
 import { CHAT_MODES } from "@/data/modes";
 import ModeCard from "@/components/ModeCard";
 
@@ -24,6 +24,17 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/5 dark:to-primary/10">
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+        {/* Header with Settings Icon */}
+        <div className="flex justify-end pt-2">
+          <button
+            onClick={() => navigate("/settings")}
+            className="p-2 hover:bg-accent dark:hover:bg-accent rounded-lg transition-colors"
+            aria-label="Sozlamalar"
+          >
+            <Settings className="w-6 h-6 text-muted-foreground hover:text-foreground" />
+          </button>
+        </div>
+
         {/* Hero Section */}
         <div className="relative pt-12 pb-8">
           <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary-light/10 to-primary/10 dark:from-primary/20 dark:via-primary-light/20 dark:to-primary/20 rounded-3xl blur-3xl opacity-50" />
@@ -59,7 +70,7 @@ export default function Home() {
         {/* Section Title */}
         <div className="text-center pt-4">
           <p className="text-sm text-muted-foreground font-medium">
-            Yoki quyidagi imkoniyatlardan foydalaning:
+            Yoki quyidagi maxsus imkoniyatlardan birini tanlang.
           </p>
         </div>
 
