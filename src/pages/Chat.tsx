@@ -18,20 +18,6 @@ import {
 } from "@/utils/chatStorage";
 import { clsx } from "clsx";
 
-// Helper to derive a session title from the first user message
-function deriveTitleFromMessage(content: string): string {
-  const trimmed = content.trim();
-  if (!trimmed) return "";
-
-  // Take the first line, in case the user types multiple lines
-  const firstLine = trimmed.split("\n")[0];
-
-  // Limit to ~40 characters and add ellipsis if longer
-  const maxLen = 40;
-  if (firstLine.length <= maxLen) return firstLine;
-  return firstLine.slice(0, maxLen).trimEnd() + "…";
-}
-
 // Streaming helper - simulates token-by-token streaming for demo purposes
 // Later: replace with real LLM streaming API (e.g. streamLLMResponse)
 type StreamOptions = {
@@ -154,43 +140,6 @@ export default function Chat() {
     setInputValue("");
     setIsLoading(true);
     setTyping(true);
-
-    // Auto-update session title from first user message
-    const currentSession = sessions.find(s => s.id === currentSessionId);
-    const newTitle = deriveTitleFromMessage(content.trim());
-
-    if (currentSession && newTitle) {
-      const isDefaultTitle =
-        !currentSession.title ||
-        currentSession.title === t.chat.defaultChatTitle ||
-        currentSession.title === "Yangi suhbat";
-
-      if (isDefaultTitle) {
-        const updatedSession: ChatSession = {
-          ...currentSession,
-          title: newTitle,
-          updatedAt: new Date().toISOString(),
-        };
-
-        // Update sessions state
-        setSessions((prev) =>
-          prev.map((s) => (s.id === currentSessionId ? updatedSession : s))
-        );
-
-        // Update storage for this mode
-        const storage = loadChatsFromStorage();
-        const modeData = storage[mode];
-        if (modeData) {
-          storage[mode] = {
-            ...modeData,
-            sessions: modeData.sessions.map((s) =>
-              s.id === currentSessionId ? updatedSession : s
-            ),
-          };
-          saveChatsToStorage(storage);
-        }
-      }
-    }
 
     try {
       // Get full response from demo service (same as before)
