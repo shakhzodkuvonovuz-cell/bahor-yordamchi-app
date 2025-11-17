@@ -36,7 +36,7 @@ export function DeleteChatModal({ open, onConfirm, onCancel }: DeleteChatModalPr
         };
       default: // uz
         return {
-          title: "Suhbatni o'chirilsinmi?",
+          title: "Suhbat o'chirilsinmi?",
           description: "Bu amaliyot ushbu suhbat tarixini butunlay o'chiradi. Davom etishni xohlaysizmi?",
           cancel: "Bekor qilish",
           confirm: "O'chirish"
