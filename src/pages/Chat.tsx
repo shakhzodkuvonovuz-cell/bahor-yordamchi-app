@@ -28,6 +28,7 @@ export default function Chat() {
 
   const modeInfo = getModeInfo(mode || "");
   const modeTranslation = t.modes[mode as keyof typeof t.modes];
+  const modeSuggestions = [...(t.suggestions[mode as keyof typeof t.suggestions] || modeInfo?.quickSuggestions || [])];
   const storageKey = `${STORAGE_KEY_PREFIX}${mode}`;
 
   // Load messages from localStorage on mount
@@ -227,10 +228,10 @@ export default function Chat() {
         {/* Input Area */}
         <div className="border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur">
           {/* Quick Suggestions */}
-          {modeInfo.quickSuggestions && messages.length === 0 && (
+          {modeSuggestions && modeSuggestions.length > 0 && messages.length === 0 && (
             <div className="py-3">
               <QuickSuggestions
-                suggestions={modeInfo.quickSuggestions}
+                suggestions={modeSuggestions}
                 onSelect={handleSendMessage}
                 disabled={isLoading || typing}
               />
