@@ -18,11 +18,11 @@ export default function ModeCard({ mode, language, onClick }: ModeCardProps) {
       className="w-full rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow p-3 flex flex-col gap-2 text-left active:scale-95"
     >
       <div className="flex flex-col items-center text-center gap-2">
-        <div className="w-11 h-11 rounded-full bg-emerald-50 dark:bg-slate-800 flex items-center justify-center text-emerald-500 text-2xl">
+        <div className="w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-2xl shadow-sm">
           {mode.icon}
         </div>
         <div className="space-y-1">
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 leading-tight">
+          <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 leading-tight">
             {modeTranslation.title}
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-2">

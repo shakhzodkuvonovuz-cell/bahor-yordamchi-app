@@ -30,7 +30,7 @@ export default function Home() {
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
         {/* Header with App Name and Settings Icon */}
         <div className="flex justify-between items-center px-4 pt-4 pb-2">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Bahor AI</h2>
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Bahor AI</h2>
           <button
             onClick={() => navigate("/settings")}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
@@ -41,11 +41,9 @@ export default function Home() {
         </div>
 
         {/* Hero Section */}
-        <div className="mt-4 px-4 py-6 rounded-2xl bg-gradient-to-br from-emerald-50 to-white dark:from-slate-900 dark:to-slate-800 shadow-sm">
-          <h1 className="text-center text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 leading-relaxed">
-            {t.heroText}
-          </h1>
-        </div>
+        <h1 className="mt-4 text-center text-lg font-medium text-slate-900 dark:text-slate-100 leading-relaxed">
+          {t.heroText}
+        </h1>
 
         {/* Main Chat Input */}
         <div className="mt-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm px-3 py-2">
