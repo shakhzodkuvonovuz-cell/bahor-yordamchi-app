@@ -1,4 +1,4 @@
-export type ChatMode = "general" | "ielts" | "homework";
+export type ChatMode = "general" | "ielts" | "homework" | "job" | "daily" | "business" | "tech";
 
 export interface Message {
   id: string;
