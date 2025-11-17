@@ -10,7 +10,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-3 px-4 chat-message-enter`}>
       <div
-        className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm shadow-sm ${
+        className={`max-w-[80%] rounded-2xl px-3 py-2 text-base shadow-sm ${
           isUser
             ? "ml-auto bg-emerald-500 text-white"
             : "mr-auto bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100"
