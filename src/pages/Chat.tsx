@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Send, Trash2 } from "lucide-react";
 import ChatMessage from "@/components/ChatMessage";
 import QuickSuggestions from "@/components/QuickSuggestions";
@@ -12,6 +12,7 @@ const STORAGE_KEY_PREFIX = "bahorai_chat_";
 export default function Chat() {
   const { mode } = useParams<{ mode: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -57,6 +58,16 @@ export default function Chat() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, typing]);
+
+  // Handle initial message from home page
+  useEffect(() => {
+    const state = location.state as { initialMessage?: string } | null;
+    if (state?.initialMessage) {
+      handleSendMessage(state.initialMessage);
+      // Clear the state to prevent re-sending on re-render
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
