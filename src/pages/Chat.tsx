@@ -4,13 +4,19 @@ import { ArrowLeft, Send, Trash2 } from "lucide-react";
 import ChatMessage from "@/components/ChatMessage";
 import QuickSuggestions from "@/components/QuickSuggestions";
 import { DeleteChatModal } from "@/components/DeleteChatModal";
-import { Message, ChatMode } from "@/types/chat";
+import { Message, ChatMode, ChatSession } from "@/types/chat";
 import { getDummyAiResponseAsync } from "@/services/dummyAiService";
 import { getModeInfo } from "@/data/modes";
 import { useLanguage } from "@/hooks/useLanguage";
 import { getTranslation } from "@/data/translations";
-
-const STORAGE_KEY_PREFIX = "bahorai_chat_";
+import {
+  loadChatsFromStorage,
+  saveChatsToStorage,
+  getOrCreateModeChats,
+  createNewSession,
+  updateSessionMessages,
+} from "@/utils/chatStorage";
+import { clsx } from "clsx";
 
 // Streaming helper - simulates token-by-token streaming for demo purposes
 // Later: replace with real LLM streaming API (e.g. streamLLMResponse)
@@ -39,6 +45,9 @@ export default function Chat() {
   const location = useLocation();
   const { language } = useLanguage();
   const t = getTranslation(language);
+  
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -50,33 +59,40 @@ export default function Chat() {
   const modeInfo = getModeInfo(mode || "");
   const modeTranslation = t.modes[mode as keyof typeof t.modes];
   const modeSuggestions = [...(t.suggestions[mode as keyof typeof t.suggestions] || modeInfo?.quickSuggestions || [])];
-  const storageKey = `${STORAGE_KEY_PREFIX}${mode}`;
 
-  // Load messages from localStorage on mount
+  // Initialize sessions for the current mode
   useEffect(() => {
     if (!mode) return;
-    
-    try {
-      const stored = localStorage.getItem(storageKey);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        setMessages(parsed);
-      }
-    } catch (error) {
-      console.error("Error loading messages from localStorage:", error);
-    }
-  }, [mode, storageKey]);
 
-  // Save messages to localStorage whenever they change
-  useEffect(() => {
-    if (!mode || messages.length === 0) return;
+    const storage = loadChatsFromStorage();
+    const updatedStorage = getOrCreateModeChats(storage, mode);
     
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(messages));
-    } catch (error) {
-      console.error("Error saving messages to localStorage:", error);
+    if (!storage[mode]) {
+      saveChatsToStorage(updatedStorage);
     }
-  }, [messages, mode, storageKey]);
+
+    const modeSessions = updatedStorage[mode].sessions;
+    setSessions(modeSessions);
+    
+    // Set current session to the most recent one
+    const latestSession = modeSessions[modeSessions.length - 1];
+    setCurrentSessionId(latestSession.id);
+    
+    // Load messages for the latest session
+    const sessionMessages = updatedStorage[mode].messagesById[latestSession.id] || [];
+    setMessages(sessionMessages);
+  }, [mode]);
+
+  // Save messages whenever they change
+  useEffect(() => {
+    if (!mode || !currentSessionId) return;
+    
+    const storage = loadChatsFromStorage();
+    if (!storage[mode]) return;
+
+    const updatedStorage = updateSessionMessages(storage, mode, currentSessionId, messages);
+    saveChatsToStorage(updatedStorage);
+  }, [messages, mode, currentSessionId]);
 
   useEffect(() => {
     if (!modeInfo) {
@@ -162,13 +178,49 @@ export default function Chat() {
     }
   };
 
+  const handleSelectSession = (sessionId: string) => {
+    // Save current messages before switching
+    if (currentSessionId && mode) {
+      const storage = loadChatsFromStorage();
+      const updatedStorage = updateSessionMessages(storage, mode, currentSessionId, messages);
+      saveChatsToStorage(updatedStorage);
+    }
+
+    // Load new session messages
+    setCurrentSessionId(sessionId);
+    const storage = loadChatsFromStorage();
+    const sessionMessages = storage[mode!]?.messagesById[sessionId] || [];
+    setMessages(sessionMessages);
+  };
+
+  const handleCreateNewSession = () => {
+    if (!mode) return;
+
+    const newSession = createNewSession(mode);
+    const storage = loadChatsFromStorage();
+    
+    if (!storage[mode]) {
+      const updatedStorage = getOrCreateModeChats(storage, mode);
+      saveChatsToStorage(updatedStorage);
+    }
+
+    storage[mode].sessions.push(newSession);
+    storage[mode].messagesById[newSession.id] = [];
+    saveChatsToStorage(storage);
+
+    setSessions([...storage[mode].sessions]);
+    setCurrentSessionId(newSession.id);
+    setMessages([]);
+  };
+
   const clearChat = () => {
     setMessages([]);
-    try {
-      localStorage.removeItem(storageKey);
-    } catch (error) {
-      console.error("Error clearing chat from localStorage:", error);
-    }
+    
+    if (!mode || !currentSessionId) return;
+    
+    const storage = loadChatsFromStorage();
+    const updatedStorage = updateSessionMessages(storage, mode, currentSessionId, []);
+    saveChatsToStorage(updatedStorage);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -220,6 +272,33 @@ export default function Chat() {
             </div>
           </div>
         </div>
+
+        {/* Session Selector */}
+        {sessions.length > 0 && (
+          <div className="px-4 pt-2 pb-2 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2 overflow-x-auto">
+            {sessions.map((session) => (
+              <button
+                key={session.id}
+                onClick={() => handleSelectSession(session.id)}
+                className={clsx(
+                  "whitespace-nowrap rounded-full px-3 py-1 text-xs border transition flex-shrink-0",
+                  session.id === currentSessionId
+                    ? "bg-emerald-500 text-white border-emerald-500"
+                    : "bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800"
+                )}
+              >
+                {session.title}
+              </button>
+            ))}
+
+            <button
+              onClick={handleCreateNewSession}
+              className="whitespace-nowrap rounded-full px-3 py-1 text-xs border border-dashed border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 transition flex-shrink-0"
+            >
+              + Yangi suhbat
+            </button>
+          </div>
+        )}
 
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto px-4 pb-4 pt-3">
