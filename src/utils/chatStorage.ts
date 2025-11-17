@@ -23,7 +23,8 @@ export function saveChatsToStorage(chats: ChatsStorage): void {
 
 export function getOrCreateModeChats(
   storage: ChatsStorage,
-  mode: string
+  mode: string,
+  title: string = "Yangi suhbat"
 ): ChatsStorage {
   if (!storage[mode]) {
     const newSessionId = crypto.randomUUID?.() ?? String(Date.now());
@@ -32,7 +33,7 @@ export function getOrCreateModeChats(
     const defaultSession: ChatSession = {
       id: newSessionId,
       mode,
-      title: "Yangi suhbat",
+      title,
       createdAt: now,
       updatedAt: now,
     };
@@ -48,14 +49,14 @@ export function getOrCreateModeChats(
   return storage;
 }
 
-export function createNewSession(mode: string): ChatSession {
+export function createNewSession(mode: string, title: string = "Yangi suhbat"): ChatSession {
   const newId = crypto.randomUUID?.() ?? String(Date.now());
   const now = new Date().toISOString();
 
   return {
     id: newId,
     mode,
-    title: "Yangi suhbat",
+    title,
     createdAt: now,
     updatedAt: now,
   };
