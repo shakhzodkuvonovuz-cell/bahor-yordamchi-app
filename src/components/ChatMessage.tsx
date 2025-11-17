@@ -8,7 +8,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === "user";
 
   return (
-    <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4 px-4 animate-in fade-in slide-in-from-bottom-2 duration-300`}>
+    <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4 px-4 chat-message-enter`}>
       <div
         className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-3 ${
           isUser

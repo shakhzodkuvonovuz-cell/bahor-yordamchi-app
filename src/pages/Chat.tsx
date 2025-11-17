@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Send, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, Trash2 } from "lucide-react";
 import ChatMessage from "@/components/ChatMessage";
 import QuickSuggestions from "@/components/QuickSuggestions";
 import { Message, ChatMode } from "@/types/chat";
 import { getDummyAiResponseAsync } from "@/services/dummyAiService";
 import { getModeInfo } from "@/data/modes";
+
+const STORAGE_KEY_PREFIX = "bahorai_chat_";
 
 export default function Chat() {
   const { mode } = useParams<{ mode: string }>();
@@ -13,10 +15,38 @@ export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [typing, setTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const modeInfo = getModeInfo(mode || "");
+  const storageKey = `${STORAGE_KEY_PREFIX}${mode}`;
+
+  // Load messages from localStorage on mount
+  useEffect(() => {
+    if (!mode) return;
+    
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setMessages(parsed);
+      }
+    } catch (error) {
+      console.error("Error loading messages from localStorage:", error);
+    }
+  }, [mode, storageKey]);
+
+  // Save messages to localStorage whenever they change
+  useEffect(() => {
+    if (!mode || messages.length === 0) return;
+    
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(messages));
+    } catch (error) {
+      console.error("Error saving messages to localStorage:", error);
+    }
+  }, [messages, mode, storageKey]);
 
   useEffect(() => {
     if (!modeInfo) {
@@ -26,14 +56,14 @@ export default function Chat() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, typing]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleSendMessage = async (content: string) => {
-    if (!content.trim() || isLoading || !mode) return;
+    if (!content.trim() || isLoading || typing || !mode) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -45,12 +75,16 @@ export default function Chat() {
     setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
     setIsLoading(true);
+    setTyping(true);
 
     try {
       const aiResponse = await getDummyAiResponseAsync(
         mode as ChatMode,
         content.trim()
       );
+
+      // Add a small delay to show typing indicator
+      await new Promise((resolve) => setTimeout(resolve, 600));
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -62,10 +96,19 @@ export default function Chat() {
       setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
       console.error("Error getting AI response:", error);
-      // You could add error handling UI here
     } finally {
+      setTyping(false);
       setIsLoading(false);
       inputRef.current?.focus();
+    }
+  };
+
+  const handleClearChat = () => {
+    setMessages([]);
+    try {
+      localStorage.removeItem(storageKey);
+    } catch (error) {
+      console.error("Error clearing chat from localStorage:", error);
     }
   };
 
@@ -94,6 +137,16 @@ export default function Chat() {
               {modeInfo.title}
             </p>
           </div>
+          {messages.length > 0 && (
+            <button
+              onClick={handleClearChat}
+              className="p-2 hover:bg-secondary rounded-xl transition-colors flex-shrink-0"
+              aria-label="Suhbatni tozalash"
+              title="Suhbatni tozalash"
+            >
+              <Trash2 className="w-4 h-4 text-muted-foreground" />
+            </button>
+          )}
           <div className="text-2xl flex-shrink-0">{modeInfo.icon}</div>
         </div>
       </div>
@@ -120,10 +173,17 @@ export default function Chat() {
             {messages.map((message) => (
               <ChatMessage key={message.id} message={message} />
             ))}
-            {isLoading && (
-              <div className="flex justify-start mb-4 px-4">
+            {typing && (
+              <div className="flex justify-start mb-4 px-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <div className="bg-ai-message border border-border rounded-2xl rounded-bl-md px-4 py-3">
-                  <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Bahor AI yozmoqda</span>
+                    <div className="flex gap-1">
+                      <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
+                      <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
+                      <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -140,7 +200,7 @@ export default function Chat() {
             <QuickSuggestions
               suggestions={modeInfo.quickSuggestions}
               onSelect={handleSendMessage}
-              disabled={isLoading}
+              disabled={isLoading || typing}
             />
           </div>
         )}
@@ -154,12 +214,12 @@ export default function Chat() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder="Savolingizni yozing..."
-              disabled={isLoading}
+              disabled={isLoading || typing}
               className="flex-1 px-4 py-3 bg-input border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary text-foreground placeholder:text-muted-foreground disabled:opacity-50"
             />
             <button
               type="submit"
-              disabled={!inputValue.trim() || isLoading}
+              disabled={!inputValue.trim() || isLoading || typing}
               className="p-3 bg-primary hover:bg-primary-light text-primary-foreground rounded-2xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 flex-shrink-0"
               aria-label="Yuborish"
             >
