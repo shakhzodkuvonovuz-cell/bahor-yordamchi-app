@@ -87,7 +87,7 @@ export default function Chat() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const modeInfo = getModeInfo(mode || "");
   const modeTranslation = t.modes[mode as keyof typeof t.modes];
@@ -355,6 +355,23 @@ export default function Chat() {
     handleSendMessage(inputValue);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage(inputValue);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputValue(e.target.value);
+    
+    // Auto-grow textarea
+    const textarea = e.target;
+    textarea.style.height = "auto";
+    const newHeight = Math.min(textarea.scrollHeight, 140); // Max ~6 lines
+    textarea.style.height = `${newHeight}px`;
+  };
+
   if (!modeInfo) return null;
 
   return (
@@ -539,15 +556,17 @@ export default function Chat() {
 
           {/* Input Form */}
           <form onSubmit={handleSubmit} className="px-4 py-3">
-            <div className="flex items-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 shadow-sm">
-              <input
+            <div className="flex items-end gap-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 shadow-sm">
+              <textarea
                 ref={inputRef}
-                type="text"
                 value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
                 placeholder={t.chatPlaceholder}
                 disabled={isLoading || typing}
-                className="flex-1 bg-transparent border-none outline-none resize-none text-[15px] leading-relaxed text-slate-900 dark:text-slate-50 placeholder:text-slate-400 dark:placeholder:text-slate-500 disabled:opacity-50"
+                rows={1}
+                className="flex-1 bg-transparent border-none outline-none resize-none text-[15px] leading-relaxed text-slate-900 dark:text-slate-50 placeholder:text-slate-400 dark:placeholder:text-slate-500 disabled:opacity-50 max-h-[140px] overflow-y-auto"
+                style={{ minHeight: "24px" }}
               />
               <button
                 type="submit"
