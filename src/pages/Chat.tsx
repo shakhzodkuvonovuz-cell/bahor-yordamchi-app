@@ -4,6 +4,8 @@ import { ArrowLeft, Send, Trash2, Menu, Paperclip, X } from "lucide-react";
 import ChatMessage from "@/components/ChatMessage";
 import QuickSuggestions from "@/components/QuickSuggestions";
 import { DeleteChatModal } from "@/components/DeleteChatModal";
+import GuestLimitModal from "@/components/GuestLimitModal";
+import DailyLimitModal from "@/components/DailyLimitModal";
 import { Message, ChatSession, ChatMode, ChatAttachment } from "@/types/chat";
 import { supabase } from "@/integrations/supabase/client";
 import { getModeInfo } from "@/data/modes";
@@ -11,6 +13,8 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { getTranslation } from "@/data/translations";
 import { loadChatsFromStorage, saveChatsToStorage, createNewSession } from "@/utils/chatStorage";
 import { generateChatTitle } from "@/utils/generateChatTitle";
+import { canGuestSendMessage, canFreeUserSendMessage, incrementGuestTrial, incrementFreeUsage } from "@/utils/usageLimits";
+import { useAuth } from "@/hooks/useAuth";
 import clsx from "clsx";
 import { useToast } from "@/hooks/use-toast";
 import bahorLogo from "@/assets/bahor-logo.png";
@@ -80,6 +84,7 @@ export default function Chat() {
   const location = useLocation();
   const { language } = useLanguage();
   const t = getTranslation(language);
+  const { user } = useAuth();
   
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
@@ -92,6 +97,8 @@ export default function Chat() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [showGuestLimitModal, setShowGuestLimitModal] = useState(false);
+  const [showDailyLimitModal, setShowDailyLimitModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -368,6 +375,13 @@ export default function Chat() {
           setTyping(false);
           setIsLoading(false);
           inputRef.current?.focus();
+          
+          // Increment usage counter after successful response
+          if (!user) {
+            incrementGuestTrial();
+          } else {
+            incrementFreeUsage(user.id);
+          }
         },
         onError: (error) => {
           throw error;
@@ -775,6 +789,16 @@ export default function Chat() {
             setPendingDeleteSessionId(null);
           }
         }}
+      />
+
+      <GuestLimitModal
+        open={showGuestLimitModal}
+        onOpenChange={setShowGuestLimitModal}
+      />
+
+      <DailyLimitModal
+        open={showDailyLimitModal}
+        onOpenChange={setShowDailyLimitModal}
       />
     </div>
   );
