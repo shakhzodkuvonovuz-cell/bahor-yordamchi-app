@@ -256,15 +256,18 @@ serve(async (req) => {
     const modePrompt = MODE_PROMPTS[modeKey] ?? MODE_PROMPTS.general;
     const systemPrompt = `${BASE_PROMPT}\n\n${modePrompt}`;
 
+    // Limit chat history to last 10-12 messages for faster responses
+    const recentMessages = messages.slice(-12);
+    
     // Build messages with system prompt
     const messagesWithSystem = [
       { role: "system", content: systemPrompt },
-      ...messages,
+      ...recentMessages,
     ];
 
     console.log(`Calling DeepSeek API for mode: ${modeKey}`);
 
-    // Call DeepSeek API
+    // Call DeepSeek API with streaming enabled
     const response = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
       headers: {
@@ -276,7 +279,7 @@ serve(async (req) => {
         messages: messagesWithSystem,
         temperature: 0.5,
         max_tokens: 800,
-        stream: false,
+        stream: true,
       }),
     });
 
@@ -294,34 +297,15 @@ serve(async (req) => {
       );
     }
 
-    const data = await response.json();
-    const assistantMessage = data?.choices?.[0]?.message?.content ?? "";
-
-    if (!assistantMessage) {
-      console.error('No assistant message in response');
-      return new Response(
-        JSON.stringify({ 
-          error: "Javob olishda xatolik yuz berdi. Iltimos, qayta urinib ko'ring." 
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    return new Response(
-      JSON.stringify({
-        message: {
-          role: "assistant",
-          content: assistantMessage,
-        },
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    // Return the streaming response directly
+    return new Response(response.body, {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+    });
   } catch (error) {
     console.error('Error in chat function:', error);
     return new Response(
