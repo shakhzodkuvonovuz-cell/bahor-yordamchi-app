@@ -141,7 +141,16 @@ export default function Chat() {
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    // Create empty assistant message placeholder immediately
+    const assistantId = crypto.randomUUID?.() ?? (Date.now() + 1).toString();
+    const emptyAssistantMessage: Message = {
+      id: assistantId,
+      role: "assistant",
+      content: "",
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMessage, emptyAssistantMessage]);
     setInputValue("");
     setIsLoading(true);
     setTyping(true);
@@ -161,17 +170,6 @@ export default function Chat() {
 
       // Add a small delay to show typing indicator
       await new Promise((resolve) => setTimeout(resolve, 600));
-
-      // Create empty assistant message that we'll stream into
-      const assistantId = crypto.randomUUID?.() ?? (Date.now() + 1).toString();
-      const emptyAssistantMessage: Message = {
-        id: assistantId,
-        role: "assistant",
-        content: "",
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, emptyAssistantMessage]);
 
       // Call the backend API
       const { data, error } = await supabase.functions.invoke('chat', {
