@@ -141,19 +141,14 @@ export default function Chat() {
       timestamp: new Date(),
     };
 
-    // Create empty assistant message placeholder immediately
-    const assistantId = crypto.randomUUID?.() ?? (Date.now() + 1).toString();
-    const emptyAssistantMessage: Message = {
-      id: assistantId,
-      role: "assistant",
-      content: "",
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage, emptyAssistantMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
     setIsLoading(true);
     setTyping(true);
+
+    // Prepare assistant message ID but don't add to state yet
+    const assistantId = crypto.randomUUID?.() ?? (Date.now() + 1).toString();
+    let assistantMessageCreated = false;
 
     try {
       // Create conversation history for API
@@ -192,11 +187,24 @@ export default function Chat() {
       // Stream the response word by word for better UX
       await simulateStreamingResponse(fullReply, {
         onChunk: (chunk) => {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantId ? { ...m, content: m.content + chunk } : m
-            )
-          );
+          if (!assistantMessageCreated) {
+            // Create assistant message on first chunk
+            const newAssistantMessage: Message = {
+              id: assistantId,
+              role: "assistant",
+              content: chunk,
+              timestamp: new Date(),
+            };
+            setMessages((prev) => [...prev, newAssistantMessage]);
+            assistantMessageCreated = true;
+          } else {
+            // Update existing assistant message
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId ? { ...m, content: m.content + chunk } : m
+              )
+            );
+          }
         },
         onDone: () => {
           setTyping(false);
@@ -206,9 +214,6 @@ export default function Chat() {
       });
     } catch (error) {
       console.error("Error getting AI response:", error);
-      
-      // Remove the empty assistant message on error
-      setMessages((prev) => prev.filter((m) => m.role !== "assistant" || m.content !== ""));
       
       setTyping(false);
       setIsLoading(false);
