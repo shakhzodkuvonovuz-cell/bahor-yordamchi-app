@@ -66,6 +66,21 @@ export const translations = {
       statusText: "Tekin sinov versiyasi",
       version: "Versiya: v0.1 (MVP)",
       note: "Bahor AI hozircha MVP versiyasida. Haqiqiy AI integratsiyasi tez orada qo'shiladi.",
+      // New section titles
+      account: "Hisob",
+      app: "Ilova",
+      helpLegal: "Yordam va huquqiy",
+      // Account section
+      profile: "Profil",
+      security: "Xavfsizlik",
+      logout: "Hisobdan chiqish",
+      // App section
+      subscription: "Obuna holati",
+      // Help & Legal section
+      helpCenter: "Yordam markazi",
+      reportBug: "Xatolik haqida xabar berish",
+      terms: "Foydalanish shartlari",
+      privacy: "Maxfiylik siyosati",
     },
     
     // Chat
@@ -183,6 +198,21 @@ export const translations = {
       statusText: "Free trial version",
       version: "Version: v0.1 (MVP)",
       note: "Bahor AI is currently in MVP version. Real AI integration coming soon.",
+      // New section titles
+      account: "Account",
+      app: "App",
+      helpLegal: "Help & Legal",
+      // Account section
+      profile: "Profile",
+      security: "Security",
+      logout: "Log out",
+      // App section
+      subscription: "Subscription status",
+      // Help & Legal section
+      helpCenter: "Help center",
+      reportBug: "Report a bug",
+      terms: "Terms of use",
+      privacy: "Privacy policy",
     },
     
     // Chat
@@ -300,6 +330,21 @@ export const translations = {
       statusText: "Бесплатная пробная версия",
       version: "Версия: v0.1 (MVP)",
       note: "Bahor AI в настоящее время находится в MVP версии. Реальная интеграция ИИ скоро появится.",
+      // New section titles
+      account: "Аккаунт",
+      app: "Приложение",
+      helpLegal: "Поддержка и юридическая информация",
+      // Account section
+      profile: "Профиль",
+      security: "Безопасность",
+      logout: "Выйти из аккаунта",
+      // App section
+      subscription: "Статус подписки",
+      // Help & Legal section
+      helpCenter: "Центр помощи",
+      reportBug: "Сообщить об ошибке",
+      terms: "Условия использования",
+      privacy: "Политика конфиденциальности",
     },
     
     // Chat
@@ -417,6 +462,21 @@ export const translations = {
       statusText: "Ücretsiz deneme sürümü",
       version: "Sürüm: v0.1 (MVP)",
       note: "Bahor AI şu anda MVP sürümündedir. Gerçek yapay zeka entegrasyonu yakında gelecek.",
+      // New section titles
+      account: "Hesap",
+      app: "Uygulama",
+      helpLegal: "Destek ve hukuk",
+      // Account section
+      profile: "Profil",
+      security: "Güvenlik",
+      logout: "Hesaptan çıkış",
+      // App section
+      subscription: "Abonelik durumu",
+      // Help & Legal section
+      helpCenter: "Yardım merkezi",
+      reportBug: "Hata bildir",
+      terms: "Kullanım şartları",
+      privacy: "Gizlilik politikası",
     },
     
     // Chat
