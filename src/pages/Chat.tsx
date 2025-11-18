@@ -87,6 +87,7 @@ export default function Chat() {
   const [isLoading, setIsLoading] = useState(false);
   const [typing, setTyping] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [pendingDeleteSessionId, setPendingDeleteSessionId] = useState<string | null>(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -552,7 +553,7 @@ export default function Chat() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDeleteSession(session.id);
+                      setPendingDeleteSessionId(session.id);
                     }}
                     className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-red-500"
                     aria-label="Delete chat"
@@ -763,6 +764,17 @@ export default function Chat() {
         onConfirm={() => {
           handleClearChat();
           setShowDeleteModal(false);
+        }}
+      />
+
+      <DeleteChatModal
+        open={pendingDeleteSessionId !== null}
+        onCancel={() => setPendingDeleteSessionId(null)}
+        onConfirm={() => {
+          if (pendingDeleteSessionId) {
+            handleDeleteSession(pendingDeleteSessionId);
+            setPendingDeleteSessionId(null);
+          }
         }}
       />
     </div>
