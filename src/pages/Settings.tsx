@@ -57,7 +57,7 @@ export default function Settings() {
           {/* Section 1: Hisob (Account) */}
           <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
             <div className="px-6 py-4 border-b border-border">
-              <h2 className="text-lg font-semibold text-foreground">Hisob</h2>
+              <h2 className="text-lg font-semibold text-foreground">{t.settings.account}</h2>
             </div>
             <div className="divide-y divide-border">
               {/* Profil */}
@@ -65,7 +65,7 @@ export default function Settings() {
                 <CollapsibleTrigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-3">
                     <User className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium text-foreground">Profil</span>
+                    <span className="font-medium text-foreground">{t.settings.profile}</span>
                   </div>
                   <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${openSection === "profile" ? "rotate-90" : ""}`} />
                 </CollapsibleTrigger>
@@ -89,7 +89,7 @@ export default function Settings() {
                 <CollapsibleTrigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-3">
                     <Shield className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium text-foreground">Xavfsizlik</span>
+                    <span className="font-medium text-foreground">{t.settings.security}</span>
                   </div>
                   <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${openSection === "security" ? "rotate-90" : ""}`} />
                 </CollapsibleTrigger>
@@ -106,7 +106,7 @@ export default function Settings() {
                 className="w-full px-6 py-4 flex items-center gap-3 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
               >
                 <LogOut className="w-5 h-5 text-red-500" />
-                <span className="font-medium text-red-500">Hisobdan chiqish</span>
+                <span className="font-medium text-red-500">{t.settings.logout}</span>
               </button>
             </div>
           </div>
@@ -114,7 +114,7 @@ export default function Settings() {
           {/* Section 2: Ilova (App) */}
           <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
             <div className="px-6 py-4 border-b border-border">
-              <h2 className="text-lg font-semibold text-foreground">Ilova</h2>
+              <h2 className="text-lg font-semibold text-foreground">{t.settings.app}</h2>
             </div>
             <div className="divide-y divide-border">
               {/* Til (Language) */}
@@ -122,7 +122,7 @@ export default function Settings() {
                 <CollapsibleTrigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-3">
                     <Globe className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium text-foreground">Til</span>
+                    <span className="font-medium text-foreground">{t.settings.language}</span>
                   </div>
                   <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${openSection === "language" ? "rotate-90" : ""}`} />
                 </CollapsibleTrigger>
@@ -181,7 +181,7 @@ export default function Settings() {
                     ) : (
                       <Sun className="w-5 h-5 text-muted-foreground" />
                     )}
-                    <span className="font-medium text-foreground">Mavzu</span>
+                    <span className="font-medium text-foreground">{t.settings.theme}</span>
                   </div>
                   <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${openSection === "theme" ? "rotate-90" : ""}`} />
                 </CollapsibleTrigger>
@@ -222,7 +222,7 @@ export default function Settings() {
                 <CollapsibleTrigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-3">
                     <CreditCard className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium text-foreground">Obuna holati</span>
+                    <span className="font-medium text-foreground">{t.settings.subscription}</span>
                   </div>
                   <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${openSection === "subscription" ? "rotate-90" : ""}`} />
                 </CollapsibleTrigger>
@@ -238,7 +238,7 @@ export default function Settings() {
           {/* Section 3: Yordam va huquqiy (Support & Legal) */}
           <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
             <div className="px-6 py-4 border-b border-border">
-              <h2 className="text-lg font-semibold text-foreground">Yordam va huquqiy</h2>
+              <h2 className="text-lg font-semibold text-foreground">{t.settings.helpLegal}</h2>
             </div>
             <div className="divide-y divide-border">
               {/* Yordam markazi */}
@@ -246,7 +246,7 @@ export default function Settings() {
                 <CollapsibleTrigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-3">
                     <HelpCircle className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium text-foreground">Yordam markazi</span>
+                    <span className="font-medium text-foreground">{t.settings.helpCenter}</span>
                   </div>
                   <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${openSection === "help" ? "rotate-90" : ""}`} />
                 </CollapsibleTrigger>
@@ -262,7 +262,7 @@ export default function Settings() {
                 <CollapsibleTrigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-3">
                     <Mail className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium text-foreground">Xatolik haqida xabar berish</span>
+                    <span className="font-medium text-foreground">{t.settings.reportBug}</span>
                   </div>
                   <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${openSection === "bug" ? "rotate-90" : ""}`} />
                 </CollapsibleTrigger>
@@ -278,7 +278,7 @@ export default function Settings() {
                 <CollapsibleTrigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-3">
                     <FileText className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium text-foreground">Foydalanish shartlari</span>
+                    <span className="font-medium text-foreground">{t.settings.terms}</span>
                   </div>
                   <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${openSection === "terms" ? "rotate-90" : ""}`} />
                 </CollapsibleTrigger>
@@ -294,13 +294,13 @@ export default function Settings() {
                 <CollapsibleTrigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-3">
                     <FileText className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium text-foreground">Maxfiylik siyosati</span>
+                    <span className="font-medium text-foreground">{t.settings.privacy}</span>
                   </div>
                   <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${openSection === "privacy" ? "rotate-90" : ""}`} />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="px-6 py-4 bg-muted/30">
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Maxfiylik siyosati tez kunda to'liq ko'rinishda qo'shiladi. Hozircha: biz foydalanuvchilarning ma'lumotlarini mas'uliyat bilan saqlashga va ularni uchinchi tomonlarga bermaslikga harakat qilamiz.
+                    Maxfiylik siyosati tez kunda to'liq ko'rinishda qo'shiladi. Hozircha: biz foydalanuvchilarning ma'lumotlarini mas'uliyat bilan saqlashga va ularni uchinchi tomonlarga bermaslikka harakat qilamiz.
                   </p>
                 </CollapsibleContent>
               </Collapsible>
