@@ -6,8 +6,8 @@ export default function Signup() {
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background dark:bg-slate-950">
       <div className="w-full max-w-md mx-auto space-y-8">
         {/* Logo and Brand */}
-        <div className="flex items-center justify-center gap-4">
-          <img src={bahorLogo} alt="Bahor AI Logo" className="w-16 h-16" />
+        <div className="flex items-center justify-center gap-3 sm:gap-4">
+          <img src={bahorLogo} alt="Bahor AI Logo" className="w-32 sm:w-40 object-contain" />
           <h1 className="text-4xl font-bold text-foreground">Bahor AI</h1>
         </div>
 
