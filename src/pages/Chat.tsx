@@ -5,7 +5,7 @@ import ChatMessage from "@/components/ChatMessage";
 import QuickSuggestions from "@/components/QuickSuggestions";
 import { DeleteChatModal } from "@/components/DeleteChatModal";
 import { Message, ChatSession, ChatMode } from "@/types/chat";
-import { getDummyAiResponseAsync } from "@/services/dummyAiService";
+import { supabase } from "@/integrations/supabase/client";
 import { getModeInfo } from "@/data/modes";
 import { useLanguage } from "@/hooks/useLanguage";
 import { getTranslation } from "@/data/translations";
@@ -147,13 +147,19 @@ export default function Chat() {
     setTyping(true);
 
     try {
-      // Get full response from demo service (same as before)
-      const fullReply = await getDummyAiResponseAsync(
-        mode as ChatMode,
-        content.trim()
-      );
+      // Create conversation history for API
+      const conversationMessages = messages.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      }));
+      
+      // Add the new user message
+      conversationMessages.push({
+        role: "user" as const,
+        content: content.trim(),
+      });
 
-      // Add a small delay to show typing indicator before streaming starts
+      // Add a small delay to show typing indicator
       await new Promise((resolve) => setTimeout(resolve, 600));
 
       // Create empty assistant message that we'll stream into
@@ -167,8 +173,25 @@ export default function Chat() {
 
       setMessages((prev) => [...prev, emptyAssistantMessage]);
 
-      // Stream the response word by word
-      // Later: replace simulateStreamingResponse with streamLLMResponse for real API
+      // Call the backend API
+      const { data, error } = await supabase.functions.invoke('chat', {
+        body: {
+          messages: conversationMessages,
+          mode: mode || "general",
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data?.message?.content) {
+        throw new Error("No response from AI");
+      }
+
+      const fullReply = data.message.content;
+
+      // Stream the response word by word for better UX
       await simulateStreamingResponse(fullReply, {
         onChunk: (chunk) => {
           setMessages((prev) =>
@@ -185,9 +208,16 @@ export default function Chat() {
       });
     } catch (error) {
       console.error("Error getting AI response:", error);
+      
+      // Remove the empty assistant message on error
+      setMessages((prev) => prev.filter((m) => m.role !== "assistant" || m.content !== ""));
+      
       setTyping(false);
       setIsLoading(false);
       inputRef.current?.focus();
+      
+      // Show error toast (you can add toast notification here if desired)
+      alert("Hozircha serverda xatolik bo'ldi, birozdan so'ng qayta urinib ko'ring.");
     }
   };
 
