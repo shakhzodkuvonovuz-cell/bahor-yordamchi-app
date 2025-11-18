@@ -14,7 +14,7 @@ export default function Signup() {
         {/* Hero Title and Subtitle */}
         <div className="text-center space-y-3">
           <h2 className="text-2xl font-bold text-foreground">
-            Birinchi O'zbek Sun'iy Intellekti — Bahor AI
+            Birinchi o'zbek sun'iy intellekti — o'zbeklar uchun.
           </h2>
           <p className="text-base text-muted-foreground">
             Kuchli, tez va o'zbek tiliga moslashtirilgan AI yordamchi
