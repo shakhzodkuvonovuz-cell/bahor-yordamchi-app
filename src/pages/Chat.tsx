@@ -12,25 +12,63 @@ import { getTranslation } from "@/data/translations";
 import { loadChatsFromStorage, saveChatsToStorage, createNewSession } from "@/utils/chatStorage";
 import clsx from "clsx";
 
-// Streaming helper - simulates token-by-token streaming for demo purposes
-// Later: replace with real LLM streaming API (e.g. streamLLMResponse)
+// Real streaming helper - processes SSE from DeepSeek API
 type StreamOptions = {
   onChunk: (chunk: string) => void;
   onDone: () => void;
+  onError: (error: Error) => void;
 };
 
-async function simulateStreamingResponse(
-  fullText: string,
+async function processStreamingResponse(
+  response: Response,
   options: StreamOptions
 ) {
-  const words = fullText.split(" ");
-  for (let i = 0; i < words.length; i++) {
-    const chunk = (i === 0 ? "" : " ") + words[i];
-    options.onChunk(chunk);
-    // Small delay per word to simulate streaming
-    await new Promise((resolve) => setTimeout(resolve, 40));
+  const reader = response.body?.getReader();
+  const decoder = new TextDecoder();
+
+  if (!reader) {
+    options.onError(new Error("No reader available"));
+    return;
   }
-  options.onDone();
+
+  try {
+    let buffer = "";
+    
+    while (true) {
+      const { done, value } = await reader.read();
+      
+      if (done) break;
+      
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      
+      // Keep the last incomplete line in the buffer
+      buffer = lines.pop() || "";
+      
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (!trimmedLine || trimmedLine === "data: [DONE]") continue;
+        if (!trimmedLine.startsWith("data: ")) continue;
+        
+        try {
+          const jsonStr = trimmedLine.slice(6);
+          const parsed = JSON.parse(jsonStr);
+          const content = parsed.choices?.[0]?.delta?.content;
+          
+          if (content) {
+            options.onChunk(content);
+          }
+        } catch (e) {
+          // Skip malformed JSON chunks
+          console.warn("Failed to parse chunk:", e);
+        }
+      }
+    }
+    
+    options.onDone();
+  } catch (error) {
+    options.onError(error instanceof Error ? error : new Error("Stream error"));
+  }
 }
 
 export default function Chat() {
@@ -151,8 +189,9 @@ export default function Chat() {
     let assistantMessageCreated = false;
 
     try {
-      // Create conversation history for API
-      const conversationMessages = messages.map((msg) => ({
+      // Create conversation history for API (limit to last 12 messages)
+      const recentMessages = messages.slice(-12);
+      const conversationMessages = recentMessages.map((msg) => ({
         role: msg.role,
         content: msg.content,
       }));
@@ -163,29 +202,28 @@ export default function Chat() {
         content: content.trim(),
       });
 
-      // Add a small delay to show typing indicator
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      // Call the backend API for streaming response
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            messages: conversationMessages,
+            mode: mode || "general",
+          }),
+        }
+      );
 
-      // Call the backend API
-      const { data, error } = await supabase.functions.invoke('chat', {
-        body: {
-          messages: conversationMessages,
-          mode: mode || "general",
-        },
-      });
-
-      if (error) {
-        throw error;
+      if (!response.ok) {
+        throw new Error("Failed to get response from server");
       }
 
-      if (!data?.message?.content) {
-        throw new Error("No response from AI");
-      }
-
-      const fullReply = data.message.content;
-
-      // Stream the response word by word for better UX
-      await simulateStreamingResponse(fullReply, {
+      // Process the streaming response
+      await processStreamingResponse(response, {
         onChunk: (chunk) => {
           if (!assistantMessageCreated) {
             // Create assistant message on first chunk
@@ -210,6 +248,9 @@ export default function Chat() {
           setTyping(false);
           setIsLoading(false);
           inputRef.current?.focus();
+        },
+        onError: (error) => {
+          throw error;
         },
       });
     } catch (error) {
