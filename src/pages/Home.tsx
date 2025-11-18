@@ -5,6 +5,7 @@ import { CHAT_MODES } from "@/data/modes";
 import ModeCard from "@/components/ModeCard";
 import { useLanguage } from "@/hooks/useLanguage";
 import { getTranslation } from "@/data/translations";
+import bahorLogo from "@/assets/bahor-logo.png";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -30,7 +31,10 @@ export default function Home() {
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
         {/* Header with App Name and Settings Icon */}
         <div className="flex justify-between items-center px-4 pt-4 pb-2">
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Bahor AI</h2>
+          <div className="flex items-center gap-2">
+            <img src={bahorLogo} alt="Bahor AI Logo" className="w-8 h-8 object-contain" />
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Bahor AI</h2>
+          </div>
           <button
             onClick={() => navigate("/settings")}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"

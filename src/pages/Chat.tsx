@@ -13,6 +13,7 @@ import { loadChatsFromStorage, saveChatsToStorage, createNewSession } from "@/ut
 import { generateChatTitle } from "@/utils/generateChatTitle";
 import clsx from "clsx";
 import { useToast } from "@/hooks/use-toast";
+import bahorLogo from "@/assets/bahor-logo.png";
 
 // Real streaming helper - processes SSE from DeepSeek API
 type StreamOptions = {
@@ -608,9 +609,7 @@ export default function Chat() {
                   <Trash2 className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                 </button>
               )}
-              <span className="text-[11px] uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
-                Bahor AI
-              </span>
+              <img src={bahorLogo} alt="Bahor AI" className="w-6 h-6 object-contain" />
             </div>
           </div>
         </div>
