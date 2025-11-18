@@ -10,6 +10,7 @@ import { getModeInfo } from "@/data/modes";
 import { useLanguage } from "@/hooks/useLanguage";
 import { getTranslation } from "@/data/translations";
 import { loadChatsFromStorage, saveChatsToStorage, createNewSession } from "@/utils/chatStorage";
+import { generateChatTitle } from "@/utils/generateChatTitle";
 import clsx from "clsx";
 import { useToast } from "@/hooks/use-toast";
 
@@ -142,13 +143,25 @@ export default function Chat() {
     const session = storage[mode].sessions.find(s => s.id === currentSessionId);
     if (session) {
       session.updatedAt = new Date().toISOString();
+      
+      // Auto-name chat from first user message
+      const isDefaultTitle = 
+        session.title === t.chat.defaultChatTitle || 
+        session.title === "Yangi suhbat" || 
+        session.title === "New chat";
+      
+      const firstUserMessage = messages.find(m => m.role === "user");
+      
+      if (isDefaultTitle && firstUserMessage && messages.length >= 1) {
+        session.title = generateChatTitle(firstUserMessage.content, mode);
+      }
     }
 
     saveChatsToStorage(storage);
     
     // Update sessions state to reflect new updatedAt
     setSessions([...storage[mode].sessions]);
-  }, [messages, currentSessionId, mode]);
+  }, [messages, currentSessionId, mode, t.chat.defaultChatTitle]);
 
   useEffect(() => {
     if (!modeInfo) {
