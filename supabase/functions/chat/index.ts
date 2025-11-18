@@ -269,47 +269,44 @@ serve(async (req) => {
       const lastMessage = recentMessages[recentMessages.length - 1];
       
       if (lastMessage.role === "user") {
-        // Build content array for multimodal message
-        const contentParts: any[] = [];
+        // Build text content with attachment URLs appended
+        let textContent = lastMessage.content?.trim() || "";
         
-        // Add text content
-        const textContent = lastMessage.content?.trim() || "";
-        if (textContent.length > 0) {
-          contentParts.push({ type: "text", text: textContent });
-        } else {
-          // No text, provide a default prompt based on mode
-          let defaultText = "The user attached an image. Please analyze the image and help according to the current mode.";
-          if (modeKey === "coding") {
-            defaultText = "Rasmda ko'rsatilgan kod yoki xatolikni tahlil qiling va yordam bering.";
-          } else if (modeKey === "homework") {
-            defaultText = "Rasmda ko'rsatilgan masalani tahlil qiling va qadam-baqadam yechimini tushuntiring.";
-          } else if (modeKey === "ielts" || modeKey === "english") {
-            defaultText = "Rasmda agar ingliz tilidagi matn bo'lsa, uni tekshiring va yaxshilang.";
-          }
-          contentParts.push({ type: "text", text: defaultText });
-        }
-        
-        // Add image attachments
+        // Filter image attachments only
         const imageAttachments = attachments.filter((att: any) => 
           att.type?.startsWith("image/")
         );
         
-        for (const img of imageAttachments) {
-          if (img.url) {
-            contentParts.push({
-              type: "image_url",
-              image_url: { url: img.url }
-            });
+        if (imageAttachments.length > 0) {
+          // If no text provided, add a default prompt based on mode
+          if (textContent.length === 0) {
+            if (modeKey === "coding") {
+              textContent = "Rasmda ko'rsatilgan kod yoki xatolikni tahlil qiling va yordam bering.";
+            } else if (modeKey === "homework" || modeKey === "math_science") {
+              textContent = "Rasmda ko'rsatilgan masalani tahlil qiling va qadam-baqadam yechimini tushuntiring.";
+            } else if (modeKey === "ielts" || modeKey === "english") {
+              textContent = "Rasmda agar ingliz tilidagi matn bo'lsa, uni tekshiring va yaxshilang.";
+            } else {
+              textContent = "Iltimos, rasmni tahlil qiling va yordam bering.";
+            }
           }
+          
+          // Append attachment URLs as plain text
+          textContent += "\n\nAttachments:";
+          imageAttachments.forEach((img: any, index: number) => {
+            if (img.url) {
+              textContent += `\n${index + 1}) Screenshot URL: ${img.url}`;
+            }
+          });
+          
+          console.log(`Processing ${imageAttachments.length} image attachment(s) for mode: ${modeKey}`);
         }
         
-        // Replace the last message with multimodal content
+        // Replace the last message with updated text content
         recentMessages = [
           ...recentMessages.slice(0, -1),
-          { role: "user", content: contentParts }
+          { role: "user", content: textContent }
         ];
-        
-        console.log(`Processing ${imageAttachments.length} image attachment(s) for mode: ${modeKey}`);
       }
     }
     
@@ -322,24 +319,48 @@ serve(async (req) => {
     console.log(`Calling DeepSeek API for mode: ${modeKey}`);
 
     // Call DeepSeek API with streaming enabled
-    const response = await fetch("https://api.deepseek.com/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${deepseekApiKey}`,
-      },
-      body: JSON.stringify({
-        model: "deepseek-chat",
-        messages: messagesWithSystem,
-        temperature: 0.5,
-        max_tokens: 800,
-        stream: true,
-      }),
-    });
+    let response;
+    try {
+      response = await fetch("https://api.deepseek.com/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${deepseekApiKey}`,
+        },
+        body: JSON.stringify({
+          model: "deepseek-chat",
+          messages: messagesWithSystem,
+          temperature: 0.5,
+          max_tokens: 800,
+          stream: true,
+        }),
+      });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('DeepSeek API error:', response.status, errorText);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('DeepSeek API error:', response.status, errorText);
+        return new Response(
+          JSON.stringify({ 
+            error: "Bahor AI serveri bilan bog'lanishda xatolik yuz berdi. Iltimos, birozdan so'ng qayta urinib ko'ring." 
+          }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      // Return the streaming response directly
+      return new Response(response.body, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        },
+      });
+    } catch (apiError) {
+      console.error("DeepSeek API call failed:", apiError);
       return new Response(
         JSON.stringify({ 
           error: "Bahor AI serveri bilan bog'lanishda xatolik yuz berdi. Iltimos, birozdan so'ng qayta urinib ko'ring." 
@@ -350,16 +371,6 @@ serve(async (req) => {
         }
       );
     }
-
-    // Return the streaming response directly
-    return new Response(response.body, {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-      },
-    });
   } catch (error) {
     console.error('Error in chat function:', error);
     return new Response(
