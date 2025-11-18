@@ -87,7 +87,7 @@ export default function Chat() {
   const [typing, setTyping] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const [pendingAttachment, setPendingAttachment] = useState<ChatAttachment | null>(null);
+  const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -175,59 +175,84 @@ export default function Chat() {
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file size (10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      toast({
-        title: language === "uz" ? "Fayl juda katta" : "File too large",
-        description: language === "uz" ? "Maksimal 10MB hajmli faylni yuklash mumkin" : "Maximum file size is 10MB",
-        variant: "destructive",
-      });
-      return;
-    }
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     setIsUploading(true);
 
     try {
-      // Create preview URL for images
-      let previewUrl: string | undefined;
-      if (file.type.startsWith("image/")) {
-        previewUrl = URL.createObjectURL(file);
+      const newAttachments: ChatAttachment[] = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Only support images for now
+        if (!file.type.startsWith("image/")) {
+          toast({
+            title: language === "uz" ? "Xatolik" : "Error",
+            description: language === "uz" ? `${file.name}: Faqat rasm fayllari qo'llab-quvvatlanadi` : `${file.name}: Only image files are supported`,
+            variant: "destructive",
+          });
+          continue;
+        }
+
+        // Validate file size (10MB limit)
+        if (file.size > 10 * 1024 * 1024) {
+          toast({
+            title: language === "uz" ? "Xatolik" : "Error",
+            description: language === "uz" ? `${file.name}: Fayl hajmi 10MB dan oshmasligi kerak` : `${file.name}: File size must not exceed 10MB`,
+            variant: "destructive",
+          });
+          continue;
+        }
+
+        // Create preview URL for images
+        const previewUrl = URL.createObjectURL(file);
+
+        // Upload to Supabase storage
+        const fileExt = file.name.split(".").pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}-${i}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { data, error } = await supabase.storage
+          .from("chat-attachments")
+          .upload(filePath, file);
+
+        if (error) {
+          console.error("Upload error:", error);
+          toast({
+            title: language === "uz" ? "Xatolik" : "Error",
+            description: language === "uz" ? `${file.name}: Yuklashda xatolik` : `${file.name}: Upload failed`,
+            variant: "destructive",
+          });
+          continue;
+        }
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from("chat-attachments")
+          .getPublicUrl(filePath);
+
+        const attachment: ChatAttachment = {
+          id: crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}-${i}`,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          url: publicUrl,
+          previewUrl,
+        };
+
+        newAttachments.push(attachment);
       }
 
-      // Upload to Supabase storage
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      const { data, error } = await supabase.storage
-        .from("chat-attachments")
-        .upload(filePath, file);
-
-      if (error) throw error;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from("chat-attachments")
-        .getPublicUrl(filePath);
-
-      const attachment: ChatAttachment = {
-        id: crypto.randomUUID(),
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        url: publicUrl,
-        previewUrl,
-      };
-
-      setPendingAttachment(attachment);
+      if (newAttachments.length > 0) {
+        setPendingAttachments((prev) => [...prev, ...newAttachments]);
+      }
     } catch (error) {
-      console.error("Error uploading file:", error);
+      console.error("Error uploading files:", error);
       toast({
         title: language === "uz" ? "Xatolik" : "Error",
-        description: language === "uz" ? "Faylni yuklashda xatolik yuz berdi" : "Failed to upload file",
+        description: language === "uz" ? "Fayllarni yuklashda xatolik yuz berdi" : "Failed to upload files",
         variant: "destructive",
       });
     } finally {
@@ -238,27 +263,28 @@ export default function Chat() {
     }
   };
 
-  const handleRemoveAttachment = () => {
-    if (pendingAttachment?.previewUrl) {
-      URL.revokeObjectURL(pendingAttachment.previewUrl);
+  const handleRemoveAttachment = (attachmentId: string) => {
+    const attachment = pendingAttachments.find((a) => a.id === attachmentId);
+    if (attachment?.previewUrl) {
+      URL.revokeObjectURL(attachment.previewUrl);
     }
-    setPendingAttachment(null);
+    setPendingAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
   };
 
   const handleSendMessage = async (content: string) => {
-    if ((!content.trim() && !pendingAttachment) || isLoading || typing || !mode) return;
+    if ((!content.trim() && pendingAttachments.length === 0) || isLoading || typing || !mode) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
       content: content.trim(),
       timestamp: new Date(),
-      attachments: pendingAttachment ? [pendingAttachment] : undefined,
+      attachments: pendingAttachments.length > 0 ? [...pendingAttachments] : undefined,
     };
 
     setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
-    setPendingAttachment(null);
+    setPendingAttachments([]);
     setIsLoading(true);
     setTyping(true);
 
@@ -635,36 +661,43 @@ export default function Chat() {
 
           {/* Input Form */}
           <form onSubmit={handleSubmit} className="px-4 py-3">
-            {/* Attachment Preview */}
-            {pendingAttachment && (
-              <div className="mb-2 flex items-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                {pendingAttachment.previewUrl ? (
-                  <img
-                    src={pendingAttachment.previewUrl}
-                    alt={pendingAttachment.name}
-                    className="w-12 h-12 object-cover rounded"
-                  />
-                ) : (
-                  <div className="w-12 h-12 bg-slate-200 dark:bg-slate-700 rounded flex items-center justify-center text-2xl">
-                    📄
+            {/* Attachment Previews */}
+            {pendingAttachments.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-2">
+                {pendingAttachments.map((attachment) => (
+                  <div
+                    key={attachment.id}
+                    className="flex items-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg"
+                  >
+                    {attachment.previewUrl ? (
+                      <img
+                        src={attachment.previewUrl}
+                        alt={attachment.name}
+                        className="w-12 h-12 object-cover rounded"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-slate-200 dark:bg-slate-700 rounded flex items-center justify-center text-2xl">
+                        📄
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-50 truncate">
+                        {attachment.name}
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {(attachment.size / 1024).toFixed(1)} KB
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAttachment(attachment.id)}
+                      className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded"
+                      aria-label="Remove attachment"
+                    >
+                      <X className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                    </button>
                   </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900 dark:text-slate-50 truncate">
-                    {pendingAttachment.name}
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {(pendingAttachment.size / 1024).toFixed(1)} KB
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleRemoveAttachment}
-                  className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded"
-                  aria-label="Remove attachment"
-                >
-                  <X className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                </button>
+                ))}
               </div>
             )}
 
@@ -672,7 +705,8 @@ export default function Chat() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*,.pdf,.doc,.docx,.txt"
+                accept="image/*"
+                multiple
                 onChange={handleFileSelect}
                 className="hidden"
                 capture="environment"
@@ -699,7 +733,7 @@ export default function Chat() {
               />
               <button
                 type="submit"
-                disabled={(!inputValue.trim() && !pendingAttachment) || isLoading || typing}
+                disabled={(!inputValue.trim() && pendingAttachments.length === 0) || isLoading || typing}
                 className="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                 aria-label="Yuborish"
               >
