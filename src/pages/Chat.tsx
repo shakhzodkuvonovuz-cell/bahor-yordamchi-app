@@ -292,6 +292,7 @@ export default function Chat() {
           body: JSON.stringify({
             messages: conversationMessages,
             mode: mode || "general",
+            attachments: userMessage.attachments || [],
           }),
         }
       );

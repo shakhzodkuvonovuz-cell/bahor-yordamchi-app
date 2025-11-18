@@ -28,6 +28,11 @@ GENERAL BEHAVIOR
 - Prefer short, structured answers instead of long walls of text.
 - When explaining concepts, use concrete examples related to Uzbek life where helpful.
 - Never invent facts, data, laws, medical information or religious rulings.
+- If the user attaches an image, analyze it carefully and provide relevant help based on what you see in the image and the current chat mode.
+  * In Coding/Technology mode: treat screenshots as code snippets, error messages, or technical diagrams.
+  * In Homework/Math mode: analyze the problem shown in the image and guide step-by-step.
+  * In IELTS/English mode: if the image contains English text, review and improve it.
+  * In other modes: describe the image and provide context-appropriate assistance.
 
 GLOBAL SAFETY RULES (APPLY IN EVERY MODE)
 You MUST follow these rules strictly:
@@ -222,7 +227,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, mode } = await req.json();
+    const { messages, mode, attachments } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(
@@ -257,7 +262,56 @@ serve(async (req) => {
     const systemPrompt = `${BASE_PROMPT}\n\n${modePrompt}`;
 
     // Limit chat history to last 10-12 messages for faster responses
-    const recentMessages = messages.slice(-12);
+    let recentMessages = messages.slice(-12);
+    
+    // Process attachments for the last user message if present
+    if (attachments && attachments.length > 0 && recentMessages.length > 0) {
+      const lastMessage = recentMessages[recentMessages.length - 1];
+      
+      if (lastMessage.role === "user") {
+        // Build content array for multimodal message
+        const contentParts: any[] = [];
+        
+        // Add text content
+        const textContent = lastMessage.content?.trim() || "";
+        if (textContent.length > 0) {
+          contentParts.push({ type: "text", text: textContent });
+        } else {
+          // No text, provide a default prompt based on mode
+          let defaultText = "The user attached an image. Please analyze the image and help according to the current mode.";
+          if (modeKey === "coding") {
+            defaultText = "Rasmda ko'rsatilgan kod yoki xatolikni tahlil qiling va yordam bering.";
+          } else if (modeKey === "homework") {
+            defaultText = "Rasmda ko'rsatilgan masalani tahlil qiling va qadam-baqadam yechimini tushuntiring.";
+          } else if (modeKey === "ielts" || modeKey === "english") {
+            defaultText = "Rasmda agar ingliz tilidagi matn bo'lsa, uni tekshiring va yaxshilang.";
+          }
+          contentParts.push({ type: "text", text: defaultText });
+        }
+        
+        // Add image attachments
+        const imageAttachments = attachments.filter((att: any) => 
+          att.type?.startsWith("image/")
+        );
+        
+        for (const img of imageAttachments) {
+          if (img.url) {
+            contentParts.push({
+              type: "image_url",
+              image_url: { url: img.url }
+            });
+          }
+        }
+        
+        // Replace the last message with multimodal content
+        recentMessages = [
+          ...recentMessages.slice(0, -1),
+          { role: "user", content: contentParts }
+        ];
+        
+        console.log(`Processing ${imageAttachments.length} image attachment(s) for mode: ${modeKey}`);
+      }
+    }
     
     // Build messages with system prompt
     const messagesWithSystem = [
