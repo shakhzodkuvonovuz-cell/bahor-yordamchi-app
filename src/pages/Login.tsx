@@ -1,8 +1,72 @@
 import bahorLogo from "@/assets/bahor-logo.png";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { signInWithEmail, signInWithGoogle, useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 export default function Login() {
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    const { error } = await signInWithGoogle();
+    
+    if (error) {
+      toast.error("Google orqali kirishda xatolik yuz berdi. Iltimos, qayta urinib ko'ring.");
+      setLoading(false);
+    }
+    // Supabase will handle redirect
+  };
+
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validation
+    if (!email || !email.includes("@")) {
+      toast.error("Email noto'g'ri formatda.");
+      return;
+    }
+    
+    if (password.length < 8) {
+      toast.error("Parol kamida 8 ta belgidan iborat bo'lishi kerak.");
+      return;
+    }
+
+    setLoading(true);
+    const { data, error } = await signInWithEmail(email, password);
+
+    if (error) {
+      toast.error("Email yoki parol noto'g'ri.");
+      setLoading(false);
+      return;
+    }
+
+    if (data.user) {
+      toast.success("Muvaffaqiyatli kirdingiz!");
+      navigate("/");
+    }
+    
+    setLoading(false);
+  };
+
+  const handlePhoneClick = () => {
+    toast.info("Telefon raqami orqali kirish tez orada qo'shiladi.");
+  };
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background dark:bg-slate-950">
       <div className="w-full max-w-md mx-auto space-y-8">
@@ -27,10 +91,8 @@ export default function Login() {
           <Button
             variant="outline"
             className="w-full h-12 text-base"
-            onClick={() => {
-              // TODO: Implement Google OAuth
-              console.log("Google login");
-            }}
+            onClick={handleGoogleLogin}
+            disabled={loading}
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -44,10 +106,8 @@ export default function Login() {
           <Button
             variant="outline"
             className="w-full h-12 text-base"
-            onClick={() => {
-              // TODO: Implement phone login
-              console.log("Phone login");
-            }}
+            onClick={handlePhoneClick}
+            disabled={loading}
           >
             Telefon raqami bilan kirish
           </Button>
@@ -55,14 +115,44 @@ export default function Login() {
           <Button
             variant="outline"
             className="w-full h-12 text-base"
-            onClick={() => {
-              // TODO: Implement email login
-              console.log("Email login");
-            }}
+            onClick={() => setShowEmailForm(!showEmailForm)}
+            disabled={loading}
           >
             Email orqali kirish
           </Button>
         </div>
+
+        {/* Email Login Form */}
+        {showEmailForm && (
+          <form onSubmit={handleEmailLogin} className="space-y-4 p-4 border border-border rounded-lg bg-card">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="email@example.com"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Parol</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Parolingiz"
+                required
+                minLength={8}
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Yuklanmoqda..." : "Kirish"}
+            </Button>
+          </form>
+        )}
 
         {/* Switch to Signup Link */}
         <div className="text-center">
