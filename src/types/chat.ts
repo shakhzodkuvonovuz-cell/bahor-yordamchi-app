@@ -1,10 +1,20 @@
 export type ChatMode = "general" | "ielts" | "homework" | "job" | "daily" | "business" | "tech" | "financial" | "health";
 
+export interface ChatAttachment {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url?: string;
+  previewUrl?: string;
+}
+
 export interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  attachments?: ChatAttachment[];
 }
 
 export interface ModeInfo {

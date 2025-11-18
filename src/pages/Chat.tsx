@@ -1,16 +1,17 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Send, Trash2, Menu } from "lucide-react";
+import { ArrowLeft, Send, Trash2, Menu, Paperclip, X } from "lucide-react";
 import ChatMessage from "@/components/ChatMessage";
 import QuickSuggestions from "@/components/QuickSuggestions";
 import { DeleteChatModal } from "@/components/DeleteChatModal";
-import { Message, ChatSession, ChatMode } from "@/types/chat";
+import { Message, ChatSession, ChatMode, ChatAttachment } from "@/types/chat";
 import { supabase } from "@/integrations/supabase/client";
 import { getModeInfo } from "@/data/modes";
 import { useLanguage } from "@/hooks/useLanguage";
 import { getTranslation } from "@/data/translations";
 import { loadChatsFromStorage, saveChatsToStorage, createNewSession } from "@/utils/chatStorage";
 import clsx from "clsx";
+import { useToast } from "@/hooks/use-toast";
 
 // Real streaming helper - processes SSE from DeepSeek API
 type StreamOptions = {
@@ -86,8 +87,12 @@ export default function Chat() {
   const [typing, setTyping] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [pendingAttachment, setPendingAttachment] = useState<ChatAttachment | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const modeInfo = getModeInfo(mode || "");
   const modeTranslation = t.modes[mode as keyof typeof t.modes];
@@ -169,18 +174,91 @@ export default function Chat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: language === "uz" ? "Fayl juda katta" : "File too large",
+        description: language === "uz" ? "Maksimal 10MB hajmli faylni yuklash mumkin" : "Maximum file size is 10MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      // Create preview URL for images
+      let previewUrl: string | undefined;
+      if (file.type.startsWith("image/")) {
+        previewUrl = URL.createObjectURL(file);
+      }
+
+      // Upload to Supabase storage
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { data, error } = await supabase.storage
+        .from("chat-attachments")
+        .upload(filePath, file);
+
+      if (error) throw error;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from("chat-attachments")
+        .getPublicUrl(filePath);
+
+      const attachment: ChatAttachment = {
+        id: crypto.randomUUID(),
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        url: publicUrl,
+        previewUrl,
+      };
+
+      setPendingAttachment(attachment);
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      toast({
+        title: language === "uz" ? "Xatolik" : "Error",
+        description: language === "uz" ? "Faylni yuklashda xatolik yuz berdi" : "Failed to upload file",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleRemoveAttachment = () => {
+    if (pendingAttachment?.previewUrl) {
+      URL.revokeObjectURL(pendingAttachment.previewUrl);
+    }
+    setPendingAttachment(null);
+  };
+
   const handleSendMessage = async (content: string) => {
-    if (!content.trim() || isLoading || typing || !mode) return;
+    if ((!content.trim() && !pendingAttachment) || isLoading || typing || !mode) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
       content: content.trim(),
       timestamp: new Date(),
+      attachments: pendingAttachment ? [pendingAttachment] : undefined,
     };
 
     setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
+    setPendingAttachment(null);
     setIsLoading(true);
     setTyping(true);
 
@@ -556,7 +634,57 @@ export default function Chat() {
 
           {/* Input Form */}
           <form onSubmit={handleSubmit} className="px-4 py-3">
+            {/* Attachment Preview */}
+            {pendingAttachment && (
+              <div className="mb-2 flex items-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                {pendingAttachment.previewUrl ? (
+                  <img
+                    src={pendingAttachment.previewUrl}
+                    alt={pendingAttachment.name}
+                    className="w-12 h-12 object-cover rounded"
+                  />
+                ) : (
+                  <div className="w-12 h-12 bg-slate-200 dark:bg-slate-700 rounded flex items-center justify-center text-2xl">
+                    📄
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-900 dark:text-slate-50 truncate">
+                    {pendingAttachment.name}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {(pendingAttachment.size / 1024).toFixed(1)} KB
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRemoveAttachment}
+                  className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded"
+                  aria-label="Remove attachment"
+                >
+                  <X className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                </button>
+              </div>
+            )}
+
             <div className="flex items-end gap-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 shadow-sm">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,.pdf,.doc,.docx,.txt"
+                onChange={handleFileSelect}
+                className="hidden"
+                capture="environment"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isLoading || typing || isUploading}
+                className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition disabled:opacity-50 flex-shrink-0"
+                aria-label="Attach file"
+              >
+                <Paperclip className="w-5 h-5" />
+              </button>
               <textarea
                 ref={inputRef}
                 value={inputValue}
@@ -570,7 +698,7 @@ export default function Chat() {
               />
               <button
                 type="submit"
-                disabled={!inputValue.trim() || isLoading || typing}
+                disabled={(!inputValue.trim() && !pendingAttachment) || isLoading || typing}
                 className="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                 aria-label="Yuborish"
               >
