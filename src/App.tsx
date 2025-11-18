@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/hooks/useTheme";
 import Home from "./pages/Home";
 import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
+import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/modes" element={<Navigate to="/" replace />} />
           <Route path="/chat/:mode" element={<Chat />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/signup" element={<Signup />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         </BrowserRouter>
