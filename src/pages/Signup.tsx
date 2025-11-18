@@ -1,7 +1,76 @@
 import bahorLogo from "@/assets/bahor-logo.png";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { signUpWithEmail, signInWithGoogle, useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 export default function Signup() {
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
+
+  const handleGoogleSignup = async () => {
+    setLoading(true);
+    const { error } = await signInWithGoogle();
+    
+    if (error) {
+      toast.error("Google orqali kirishda xatolik yuz berdi. Iltimos, qayta urinib ko'ring.");
+      setLoading(false);
+    }
+    // Supabase will handle redirect, so we don't setLoading(false) here
+  };
+
+  const handleEmailSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validation
+    if (!email || !email.includes("@")) {
+      toast.error("Email noto'g'ri formatda.");
+      return;
+    }
+    
+    if (password.length < 8) {
+      toast.error("Parol kamida 8 ta belgidan iborat bo'lishi kerak.");
+      return;
+    }
+
+    setLoading(true);
+    const { data, error } = await signUpWithEmail(email, password);
+
+    if (error) {
+      if (error.message.includes("already registered")) {
+        toast.error("Bu email allaqachon ro'yxatdan o'tgan.");
+      } else {
+        toast.error("Ro'yxatdan o'tishda xatolik yuz berdi. Iltimos, qayta urinib ko'ring.");
+      }
+      setLoading(false);
+      return;
+    }
+
+    if (data.user) {
+      toast.success("Muvaffaqiyatli ro'yxatdan o'tdingiz!");
+      navigate("/");
+    }
+    
+    setLoading(false);
+  };
+
+  const handlePhoneClick = () => {
+    toast.info("Telefon raqami orqali kirish tez orada qo'shiladi.");
+  };
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background dark:bg-slate-950">
       <div className="w-full max-w-md mx-auto space-y-8">
@@ -26,10 +95,8 @@ export default function Signup() {
           <Button
             variant="outline"
             className="w-full h-12 text-base"
-            onClick={() => {
-              // TODO: Implement Google OAuth
-              console.log("Google signup");
-            }}
+            onClick={handleGoogleSignup}
+            disabled={loading}
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -43,10 +110,8 @@ export default function Signup() {
           <Button
             variant="outline"
             className="w-full h-12 text-base"
-            onClick={() => {
-              // TODO: Implement phone signup
-              console.log("Phone signup");
-            }}
+            onClick={handlePhoneClick}
+            disabled={loading}
           >
             Telefon raqami bilan davom etish
           </Button>
@@ -54,14 +119,44 @@ export default function Signup() {
           <Button
             variant="outline"
             className="w-full h-12 text-base"
-            onClick={() => {
-              // TODO: Implement email signup
-              console.log("Email signup");
-            }}
+            onClick={() => setShowEmailForm(!showEmailForm)}
+            disabled={loading}
           >
             Email orqali ro'yxatdan o'tish
           </Button>
         </div>
+
+        {/* Email Signup Form */}
+        {showEmailForm && (
+          <form onSubmit={handleEmailSignup} className="space-y-4 p-4 border border-border rounded-lg bg-card">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="email@example.com"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Parol</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Kamida 8 ta belgi"
+                required
+                minLength={8}
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Yuklanmoqda..." : "Ro'yxatdan o'tish"}
+            </Button>
+          </form>
+        )}
 
         {/* Legal Footer */}
         <p className="text-xs text-center text-muted-foreground px-4">
