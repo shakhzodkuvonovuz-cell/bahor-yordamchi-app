@@ -609,7 +609,7 @@ export default function Chat() {
                   <Trash2 className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                 </button>
               )}
-              <img src={bahorLogo} alt="Bahor AI" className="w-8 h-8 object-contain" />
+              <img src={bahorLogo} alt="Bahor AI" className="w-9 h-9 object-contain" />
             </div>
           </div>
         </div>
