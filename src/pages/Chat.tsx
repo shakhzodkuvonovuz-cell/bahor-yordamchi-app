@@ -531,22 +531,22 @@ export default function Chat() {
               + {t.chat.defaultChatTitle}
             </button>
 
-            <div className="flex-1 overflow-y-auto overflow-x-hidden">
+            <div className="flex-1 overflow-y-auto">
               {sessions.map((session) => (
                 <div
                   key={session.id}
                   className={clsx(
-                    "flex items-center justify-between gap-2 px-3 py-2 text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800",
+                    "flex items-center justify-between px-3 py-2 text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800",
                     session.id === currentSessionId &&
                       "bg-emerald-50 dark:bg-emerald-900/20"
                   )}
                   onClick={() => handleSelectSession(session.id)}
                 >
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 pr-2">
                     <div className="font-medium text-slate-800 dark:text-slate-100 truncate">
                       {session.title || t.chat.defaultChatTitle}
                     </div>
-                    <div className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
+                    <div className="text-[10px] text-slate-400 dark:text-slate-500">
                       {new Date(session.updatedAt).toLocaleDateString()}
                     </div>
                   </div>
@@ -555,10 +555,10 @@ export default function Chat() {
                       e.stopPropagation();
                       setPendingDeleteSessionId(session.id);
                     }}
-                    className="flex-shrink-0 p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-red-500"
+                    className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-red-500"
                     aria-label="Delete chat"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    🗑
                   </button>
                 </div>
               ))}
