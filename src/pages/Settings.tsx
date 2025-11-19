@@ -8,6 +8,8 @@ import { useAuth, signOut } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
+import SubscriptionStatus from "@/components/SubscriptionStatus";
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -17,6 +19,7 @@ export default function Settings() {
   const t = getTranslation(language);
   
   const [openSection, setOpenSection] = useState<string | null>(null);
+  const [subscriptionDrawerOpen, setSubscriptionDrawerOpen] = useState(false);
 
   const toggleSection = (section: string) => {
     setOpenSection(openSection === section ? null : section);
@@ -218,20 +221,25 @@ export default function Settings() {
               </Collapsible>
 
               {/* Obuna holati (Subscription) */}
-              <Collapsible open={openSection === "subscription"} onOpenChange={() => toggleSection("subscription")}>
-                <CollapsibleTrigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <CreditCard className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium text-foreground">{t.settings.subscription}</span>
-                  </div>
-                  <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${openSection === "subscription" ? "rotate-90" : ""}`} />
-                </CollapsibleTrigger>
-                <CollapsibleContent className="px-6 py-4 bg-muted/30">
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Hozircha – bepul rejim. Tez kunda obuna rejimi qo'shiladi.
-                  </p>
-                </CollapsibleContent>
-              </Collapsible>
+              <Drawer open={subscriptionDrawerOpen} onOpenChange={setSubscriptionDrawerOpen}>
+                <DrawerTrigger asChild>
+                  <button className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <CreditCard className="w-5 h-5 text-muted-foreground" />
+                      <span className="font-medium text-foreground">{t.settings.subscription}</span>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                  </button>
+                </DrawerTrigger>
+                <DrawerContent className="max-h-[90vh]">
+                  <DrawerHeader>
+                    <DrawerTitle>Obuna holati</DrawerTitle>
+                  </DrawerHeader>
+                  <ScrollArea className="px-4 pb-6">
+                    <SubscriptionStatus />
+                  </ScrollArea>
+                </DrawerContent>
+              </Drawer>
             </div>
           </div>
 
