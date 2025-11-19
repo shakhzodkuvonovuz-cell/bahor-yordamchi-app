@@ -5,7 +5,6 @@ import { Label } from "@/components/ui/label";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { signInWithEmail, signInWithGoogle, useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export default function Login() {
@@ -68,12 +67,6 @@ export default function Login() {
   const handlePhoneClick = () => {
     toast.info("Telefon raqami orqali kirish tez orada qo'shiladi.");
   };
-
-  const handleGuestMode = async () => {
-    // Ensure user is signed out before entering guest mode
-    await supabase.auth.signOut();
-    navigate("/");
-  };
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background dark:bg-slate-950">
       <div className="w-full max-w-md mx-auto space-y-8">
@@ -126,16 +119,6 @@ export default function Login() {
             disabled={loading}
           >
             Email orqali kirish
-          </Button>
-
-          {/* Continue as guest option */}
-          <Button
-            variant="ghost"
-            className="w-full h-12 text-base text-muted-foreground"
-            onClick={handleGuestMode}
-            disabled={loading}
-          >
-            Ilovasiz davom etish (mehmon rejimi)
           </Button>
         </div>
 
