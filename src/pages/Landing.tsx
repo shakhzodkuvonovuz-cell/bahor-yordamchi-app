@@ -131,7 +131,7 @@ export default function Landing() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50/30 via-slate-50/40 to-slate-50/30 dark:from-slate-950/30 dark:via-slate-950/40 dark:to-slate-950/30">
+    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950/50">
       {/* Header */}
       <header className="border-b border-border/40 backdrop-blur-sm bg-background/80 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
@@ -139,9 +139,9 @@ export default function Landing() {
             <img 
               src={bahorLogo} 
               alt="Bahor AI" 
-              className="h-9 w-auto sm:h-10 object-contain" 
+              className="h-11 w-auto sm:h-12 object-contain" 
             />
-            <span className="text-[24px] sm:text-[26px] font-semibold tracking-[0.02em] bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+            <span className="text-[26px] sm:text-[28px] font-semibold tracking-[0.02em] bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
               Bahor AI
             </span>
           </div>
@@ -158,12 +158,12 @@ export default function Landing() {
       {/* Hero Section */}
       <section className="relative overflow-hidden py-28 sm:py-40">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-12 animate-fade-in">
             <Sparkles className="w-4 h-4" />
             Currently in Beta
           </div>
-          <h1 className="text-[2.75rem] sm:text-6xl lg:text-7xl font-bold mb-10 bg-gradient-to-r from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent leading-[1.12]">
+          <h1 className="text-[2.6rem] sm:text-6xl lg:text-[4rem] font-bold mb-10 bg-gradient-to-r from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent leading-[1.12]">
             The first Uzbek artificial intelligence — made for Uzbekistan.
           </h1>
           <p className="text-[21px] sm:text-[23px] text-[#3D3D3D] dark:text-muted-foreground/90 mb-14 max-w-2xl mx-auto leading-[1.5]">
@@ -253,11 +253,11 @@ export default function Landing() {
               </Card>
             ))}
           </div>
-          <div className="text-center">
+          <div className="text-center mt-12">
             <Button
               onClick={() => navigate("/modes")}
               size="lg"
-              className="min-w-[280px] h-13 text-base font-medium shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all rounded-[10px] active:scale-[0.98]"
+              className="px-8 h-12 text-base font-medium shadow-md hover:shadow-lg hover:scale-[1.02] transition-all rounded-[10px] active:scale-[0.98]"
             >
               Start using Bahor AI
               <span className="ml-2">→</span>
