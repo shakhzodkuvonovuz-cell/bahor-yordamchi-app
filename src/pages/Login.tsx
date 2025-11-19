@@ -120,6 +120,16 @@ export default function Login() {
           >
             Email orqali kirish
           </Button>
+
+          {/* Continue as guest option */}
+          <Button
+            variant="ghost"
+            className="w-full h-12 text-base text-muted-foreground"
+            onClick={() => navigate("/")}
+            disabled={loading}
+          >
+            Ilovasiz davom etish (mehmon rejimi)
+          </Button>
         </div>
 
         {/* Email Login Form */}
