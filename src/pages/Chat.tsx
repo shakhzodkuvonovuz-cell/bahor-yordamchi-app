@@ -177,6 +177,17 @@ export default function Chat() {
     scrollToBottom();
   }, [messages, typing]);
 
+  // Auto-focus input after AI finishes responding
+  useEffect(() => {
+    if (!isLoading && !typing) {
+      // Small delay to ensure DOM has updated
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, typing]);
+
   // Handle initial message from home page
   useEffect(() => {
     const state = location.state as { initialMessage?: string } | null;
