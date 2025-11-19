@@ -9,6 +9,7 @@ import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
+import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
         <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/landing" element={<Landing />} />
           <Route path="/modes" element={<Navigate to="/" replace />} />
           <Route path="/chat/:mode" element={<Chat />} />
           <Route path="/settings" element={<Settings />} />
