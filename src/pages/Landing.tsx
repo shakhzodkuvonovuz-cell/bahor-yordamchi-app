@@ -23,9 +23,18 @@ import {
   MessageSquare,
 } from "lucide-react";
 import bahorLogo from "@/assets/bahor-logo.png";
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 export default function Landing() {
   const navigate = useNavigate();
+  
+  // Scroll animations
+  const heroRef = useScrollAnimation({ threshold: 0.2 });
+  const featuresRef = useScrollAnimation({ threshold: 0.1 });
+  const modesRef = useScrollAnimation({ threshold: 0.1 });
+  const stepsRef = useScrollAnimation({ threshold: 0.1 });
+  const pricingRef = useScrollAnimation({ threshold: 0.1 });
+  const faqRef = useScrollAnimation({ threshold: 0.1 });
 
   const features = [
     {
@@ -131,7 +140,7 @@ export default function Landing() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950/50">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50/40 via-slate-50/30 to-slate-50/40 dark:from-slate-950/40 dark:via-slate-950/30 dark:to-slate-950/40">
       {/* Header */}
       <header className="border-b border-border/40 backdrop-blur-sm bg-background/80 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
@@ -139,9 +148,9 @@ export default function Landing() {
             <img 
               src={bahorLogo} 
               alt="Bahor AI" 
-              className="h-11 w-auto sm:h-12 object-contain" 
+              className="h-12 w-auto sm:h-[52px] object-contain" 
             />
-            <span className="text-[26px] sm:text-[28px] font-semibold tracking-[0.02em] bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+            <span className="text-[27px] sm:text-[29px] font-semibold tracking-[0.02em] bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
               Bahor AI
             </span>
           </div>
@@ -158,12 +167,19 @@ export default function Landing() {
       {/* Hero Section */}
       <section className="relative overflow-hidden py-28 sm:py-40">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-12 animate-fade-in">
+        <div 
+          ref={heroRef.ref}
+          className={`max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative transition-all duration-500 ease-out ${
+            heroRef.isVisible 
+              ? "opacity-100 translate-y-0" 
+              : "opacity-0 translate-y-4"
+          }`}
+        >
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-12">
             <Sparkles className="w-4 h-4" />
             Currently in Beta
           </div>
-          <h1 className="text-[2.6rem] sm:text-6xl lg:text-[4rem] font-bold mb-10 bg-gradient-to-r from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent leading-[1.12]">
+          <h1 className="text-[2.4rem] sm:text-5xl lg:text-[3.5rem] font-bold mb-10 bg-gradient-to-r from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent leading-[1.15]">
             The first Uzbek artificial intelligence — made for Uzbekistan.
           </h1>
           <p className="text-[21px] sm:text-[23px] text-[#3D3D3D] dark:text-muted-foreground/90 mb-14 max-w-2xl mx-auto leading-[1.5]">
@@ -196,7 +212,14 @@ export default function Landing() {
       {/* Why Bahor AI Section */}
       <section className="py-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-24">
+          <div 
+            ref={featuresRef.ref}
+            className={`text-center mb-24 transition-all duration-500 ease-out ${
+              featuresRef.isVisible 
+                ? "opacity-100 translate-y-0" 
+                : "opacity-0 translate-y-4"
+            }`}
+          >
             <h2 className="text-4xl sm:text-5xl font-bold mb-6 tracking-tight">Why choose Bahor AI?</h2>
             <p className="text-xl text-muted-foreground">
               Built specifically for the needs of Uzbek speakers
@@ -206,7 +229,14 @@ export default function Landing() {
             {features.map((feature, index) => (
               <Card
                 key={index}
-                className="p-10 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 border-[#E8E8E8] dark:border-border/50 bg-background/80 backdrop-blur shadow-[0_4px_14px_rgba(0,0,0,0.04)]"
+                className={`p-10 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-[#E8E8E8] dark:border-border/50 bg-background/80 backdrop-blur shadow-[0_4px_14px_rgba(0,0,0,0.04)] ${
+                  featuresRef.isVisible 
+                    ? "opacity-100 translate-y-0" 
+                    : "opacity-0 translate-y-6"
+                }`}
+                style={{
+                  transitionDelay: `${index * 100}ms`,
+                }}
               >
                 <div className="flex items-start gap-6">
                   <div className="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
@@ -226,7 +256,14 @@ export default function Landing() {
       {/* Modes Preview Section */}
       <section className="py-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-24">
+          <div 
+            ref={modesRef.ref}
+            className={`text-center mb-24 transition-all duration-500 ease-out ${
+              modesRef.isVisible 
+                ? "opacity-100 translate-y-0" 
+                : "opacity-0 translate-y-4"
+            }`}
+          >
             <h2 className="text-4xl sm:text-5xl font-bold mb-6 tracking-tight">Explore Bahor AI Modes</h2>
             <p className="text-xl text-muted-foreground">
               Specialized AI assistants for every need
@@ -236,7 +273,14 @@ export default function Landing() {
             {modes.map((mode, index) => (
               <Card
                 key={index}
-                className="p-6 hover:shadow-lg hover:scale-[1.01] hover:-translate-y-1 transition-all duration-200 cursor-pointer border-[#E8E8E8] dark:border-border/50 bg-background/80 backdrop-blur group shadow-[0_2px_8px_rgba(0,0,0,0.02)]"
+                className={`p-6 hover:shadow-lg hover:scale-[1.01] hover:-translate-y-1 transition-all duration-300 cursor-pointer border-[#E8E8E8] dark:border-border/50 bg-background/80 backdrop-blur group shadow-[0_2px_8px_rgba(0,0,0,0.02)] ${
+                  modesRef.isVisible 
+                    ? "opacity-100 translate-y-0" 
+                    : "opacity-0 translate-y-6"
+                }`}
+                style={{
+                  transitionDelay: `${index * 80}ms`,
+                }}
                 onClick={() => navigate("/modes")}
               >
                 <div className="flex flex-col items-center text-center gap-4">
@@ -269,7 +313,14 @@ export default function Landing() {
       {/* How It Works Section */}
       <section className="py-32">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-24">
+          <div 
+            ref={stepsRef.ref}
+            className={`text-center mb-24 transition-all duration-500 ease-out ${
+              stepsRef.isVisible 
+                ? "opacity-100 translate-y-0" 
+                : "opacity-0 translate-y-4"
+            }`}
+          >
             <h2 className="text-4xl sm:text-5xl font-bold mb-6 tracking-tight">How Bahor AI Works</h2>
             <p className="text-xl text-muted-foreground">
               Get started in three simple steps
@@ -282,7 +333,17 @@ export default function Landing() {
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-16 md:gap-8 relative">
               {steps.map((step, index) => (
-                <div key={index} className="text-center relative">
+                <div 
+                  key={index} 
+                  className={`text-center relative transition-all duration-500 ease-out ${
+                    stepsRef.isVisible 
+                      ? "opacity-100 translate-y-0" 
+                      : "opacity-0 translate-y-6"
+                  }`}
+                  style={{
+                    transitionDelay: `${index * 150}ms`,
+                  }}
+                >
                   <div className="w-24 h-24 rounded-full bg-primary/15 text-primary text-[36px] font-bold flex items-center justify-center mx-auto mb-6 shadow-lg relative z-10 backdrop-blur-sm border-4 border-background">
                     {step.number}
                   </div>
@@ -298,7 +359,14 @@ export default function Landing() {
       {/* Pricing Section */}
       <section className="py-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-24">
+          <div 
+            ref={pricingRef.ref}
+            className={`text-center mb-24 transition-all duration-500 ease-out ${
+              pricingRef.isVisible 
+                ? "opacity-100 translate-y-0" 
+                : "opacity-0 translate-y-4"
+            }`}
+          >
             <h2 className="text-4xl sm:text-5xl font-bold mb-6 tracking-tight">Pricing</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Choose the plan that works best for you
@@ -307,7 +375,16 @@ export default function Landing() {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {/* Free Plan */}
-            <Card className="p-8 border-[#E8E8E8] dark:border-border/50 shadow-[0_4px_14px_rgba(0,0,0,0.04)] bg-background/80 backdrop-blur relative">
+            <Card 
+              className={`p-8 border-[#E8E8E8] dark:border-border/50 shadow-[0_4px_14px_rgba(0,0,0,0.04)] bg-background/80 backdrop-blur relative transition-all duration-500 ease-out ${
+                pricingRef.isVisible 
+                  ? "opacity-100 translate-y-0 scale-100" 
+                  : "opacity-0 translate-y-6 scale-98"
+              }`}
+              style={{
+                transitionDelay: "0ms",
+              }}
+            >
               <div className="mb-6">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Boshlash uchun</p>
                 <h3 className="text-2xl font-bold mb-2">Free (beta)</h3>
@@ -339,7 +416,16 @@ export default function Landing() {
             </Card>
 
             {/* Monthly Plan - Most Popular */}
-            <Card className="p-8 border-primary/40 dark:border-primary/30 shadow-[0_8px_24px_rgba(0,0,0,0.08)] bg-background relative scale-105 md:scale-110">
+            <Card 
+              className={`p-8 border-primary/40 dark:border-primary/30 shadow-[0_8px_24px_rgba(0,0,0,0.08)] bg-background relative scale-105 md:scale-110 transition-all duration-500 ease-out ${
+                pricingRef.isVisible 
+                  ? "opacity-100 translate-y-0" 
+                  : "opacity-0 translate-y-6 scale-98"
+              }`}
+              style={{
+                transitionDelay: "100ms",
+              }}
+            >
               <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-full shadow-lg">
                 Eng mashhur reja
               </div>
@@ -384,7 +470,16 @@ export default function Landing() {
             </Card>
 
             {/* Yearly Plan - Best Value */}
-            <Card className="p-8 border-[#E8E8E8] dark:border-border/50 shadow-[0_4px_14px_rgba(0,0,0,0.04)] bg-background/80 backdrop-blur relative">
+            <Card 
+              className={`p-8 border-[#E8E8E8] dark:border-border/50 shadow-[0_4px_14px_rgba(0,0,0,0.04)] bg-background/80 backdrop-blur relative transition-all duration-500 ease-out ${
+                pricingRef.isVisible 
+                  ? "opacity-100 translate-y-0 scale-100" 
+                  : "opacity-0 translate-y-6 scale-98"
+              }`}
+              style={{
+                transitionDelay: "200ms",
+              }}
+            >
               <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-accent text-accent-foreground text-xs font-semibold rounded-full shadow-lg">
                 Eng tejamkor
               </div>
@@ -438,7 +533,14 @@ export default function Landing() {
       {/* FAQ Section */}
       <section className="py-28">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-20">
+          <div 
+            ref={faqRef.ref}
+            className={`text-center mb-20 transition-all duration-500 ease-out ${
+              faqRef.isVisible 
+                ? "opacity-100 translate-y-0" 
+                : "opacity-0 translate-y-4"
+            }`}
+          >
             <h2 className="text-4xl sm:text-5xl font-bold mb-4 tracking-tight">Frequently Asked Questions</h2>
           </div>
           <Accordion type="single" collapsible className="space-y-4">
@@ -446,7 +548,14 @@ export default function Landing() {
               <AccordionItem
                 key={index}
                 value={`item-${index}`}
-                className="bg-background/80 backdrop-blur border border-border/50 rounded-lg px-8 py-1 transition-all duration-200 hover:shadow-md"
+                className={`bg-background/80 backdrop-blur border border-border/50 rounded-lg px-8 py-1 transition-all duration-300 hover:shadow-md ${
+                  faqRef.isVisible 
+                    ? "opacity-100 translate-y-0" 
+                    : "opacity-0 translate-y-4"
+                }`}
+                style={{
+                  transitionDelay: `${index * 100}ms`,
+                }}
               >
                 <AccordionTrigger className="text-left hover:no-underline py-6 [&[data-state=open]>svg]:rotate-180">
                   <span className="font-semibold text-[15px] pr-4">{faq.question}</span>
