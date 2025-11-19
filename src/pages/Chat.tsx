@@ -296,6 +296,21 @@ export default function Chat() {
   const handleSendMessage = async (content: string) => {
     if ((!content.trim() && pendingAttachments.length === 0) || isLoading || typing || !mode) return;
 
+    // Check usage limits before sending
+    if (!user) {
+      // Guest user - check lifetime limit
+      if (!canGuestSendMessage()) {
+        setShowGuestLimitModal(true);
+        return;
+      }
+    } else {
+      // Logged-in user - check daily limit
+      if (!canFreeUserSendMessage(user.id)) {
+        setShowDailyLimitModal(true);
+        return;
+      }
+    }
+
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
@@ -740,7 +755,18 @@ export default function Chat() {
               />
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => {
+                  // Check if user is guest before allowing file upload
+                  if (!user) {
+                    toast({
+                      title: language === "uz" ? "Ro'yxatdan o'ting" : "Sign up required",
+                      description: language === "uz" ? "Fayl va rasm yuklash uchun ro'yxatdan o'ting." : "Sign up to upload files and images.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  fileInputRef.current?.click();
+                }}
                 disabled={isLoading || typing || isUploading}
                 className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition disabled:opacity-50 flex-shrink-0"
                 aria-label="Attach file"
