@@ -39,9 +39,8 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-primary-glow/10">
-      {/* Header */}
-      <div className="sticky top-0 bg-card border-b border-border shadow-sm z-10">
+    <div className="min-h-screen bg-background dark:bg-slate-950">{/* Header */}
+      <div className="sticky top-0 bg-card/95 backdrop-blur-lg border-b border-border/50 shadow-sm z-10">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
@@ -56,9 +55,9 @@ export default function Settings() {
 
       {/* Content */}
       <ScrollArea className="h-[calc(100vh-60px)]">
-        <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+        <div className="max-w-2xl mx-auto px-4 py-6 space-y-8">
           {/* Section 1: Hisob (Account) */}
-          <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+          <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
             <div className="px-6 py-4 border-b border-border">
               <h2 className="text-lg font-semibold text-foreground">{t.settings.account}</h2>
             </div>
@@ -106,16 +105,19 @@ export default function Settings() {
               {/* Logout */}
               <button
                 onClick={handleLogout}
-                className="w-full px-6 py-4 flex items-center gap-3 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+                className="w-full px-6 py-3.5 flex items-center gap-3 hover:underline transition-all group"
               >
-                <LogOut className="w-5 h-5 text-red-500" />
-                <span className="font-medium text-red-500">{t.settings.logout}</span>
+                <LogOut className="w-5 h-5 text-red-500 group-hover:text-red-600 transition-colors" />
+                <span className="font-medium text-red-500 group-hover:text-red-600 transition-colors">{t.settings.logout}</span>
               </button>
             </div>
           </div>
 
+          {/* Separator */}
+          <div className="h-px bg-border/30" />
+
           {/* Section 2: Ilova (App) */}
-          <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+          <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
             <div className="px-6 py-4 border-b border-border">
               <h2 className="text-lg font-semibold text-foreground">{t.settings.app}</h2>
             </div>
@@ -231,11 +233,11 @@ export default function Settings() {
                     <ChevronRight className="w-5 h-5 text-muted-foreground" />
                   </button>
                 </DrawerTrigger>
-                <DrawerContent className="max-h-[90vh]">
-                  <DrawerHeader>
-                    <DrawerTitle>Obuna holati</DrawerTitle>
+                <DrawerContent className="max-h-[90vh] bg-background dark:bg-slate-950">
+                  <DrawerHeader className="text-center border-b border-border/30">
+                    <DrawerTitle className="text-xl font-bold">Obuna holati</DrawerTitle>
                   </DrawerHeader>
-                  <ScrollArea className="px-4 pb-6">
+                  <ScrollArea className="px-4 pb-6 pt-4">
                     <SubscriptionStatus />
                   </ScrollArea>
                 </DrawerContent>
@@ -243,8 +245,11 @@ export default function Settings() {
             </div>
           </div>
 
+          {/* Separator */}
+          <div className="h-px bg-border/30" />
+
           {/* Section 3: Yordam va huquqiy (Support & Legal) */}
-          <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+          <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
             <div className="px-6 py-4 border-b border-border">
               <h2 className="text-lg font-semibold text-foreground">{t.settings.helpLegal}</h2>
             </div>
