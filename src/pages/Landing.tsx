@@ -143,7 +143,7 @@ export default function Landing() {
     <div className="min-h-screen bg-gradient-to-b from-slate-50/40 via-slate-50/30 to-slate-50/40 dark:from-slate-950/40 dark:via-slate-950/30 dark:to-slate-950/40">
       {/* Header */}
       <header className="border-b border-border/40 backdrop-blur-sm bg-background/80 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img 
               src={bahorLogo} 
@@ -165,7 +165,7 @@ export default function Landing() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-28 sm:py-40">
+      <section className="relative overflow-hidden py-16 sm:py-28 md:py-40">
         <div
           ref={heroRef.ref}
           className={`max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative transition-all duration-500 ease-out ${
@@ -174,17 +174,17 @@ export default function Landing() {
               : "opacity-0 translate-y-4"
           }`}
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-12">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6 sm:mb-12">
             <Sparkles className="w-4 h-4" />
             Currently in Beta
           </div>
-          <h1 className="text-[2.4rem] sm:text-5xl lg:text-[3.5rem] font-bold mb-10 bg-gradient-to-r from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent leading-[1.15]">
+          <h1 className="text-[2rem] sm:text-[2.4rem] md:text-5xl lg:text-[3.5rem] font-bold mb-5 sm:mb-10 bg-gradient-to-r from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent leading-[1.15]">
             The first Uzbek artificial intelligence — made for Uzbekistan.
           </h1>
-          <p className="text-[21px] sm:text-[23px] text-[#3D3D3D] dark:text-muted-foreground/90 mb-14 max-w-2xl mx-auto leading-[1.5]">
+          <p className="text-[17px] sm:text-[21px] md:text-[23px] text-[#3D3D3D] dark:text-muted-foreground/90 mb-6 sm:mb-14 max-w-2xl mx-auto leading-[1.4] sm:leading-[1.5]">
             A lightning-fast AI assistant designed specifically for the Uzbek language.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-7">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center mb-4 sm:mb-7">
             <Button
               onClick={() => navigate("/modes")}
               size="lg"
@@ -209,26 +209,26 @@ export default function Landing() {
       </section>
 
       {/* Why Bahor AI Section */}
-      <section className="py-28">
+      <section className="py-14 sm:py-20 md:py-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div 
             ref={featuresRef.ref}
-            className={`text-center mb-24 transition-all duration-500 ease-out ${
+            className={`text-center mb-10 sm:mb-16 md:mb-24 transition-all duration-500 ease-out ${
               featuresRef.isVisible 
                 ? "opacity-100 translate-y-0" 
                 : "opacity-0 translate-y-4"
             }`}
           >
-            <h2 className="text-4xl sm:text-5xl font-bold mb-6 tracking-tight">Why choose Bahor AI?</h2>
-            <p className="text-xl text-muted-foreground">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-6 tracking-tight">Why choose Bahor AI?</h2>
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground">
               Built specifically for the needs of Uzbek speakers
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-7">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-7">
             {features.map((feature, index) => (
               <Card
                 key={index}
-                className={`p-10 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-[#E8E8E8] dark:border-border/50 bg-background/80 backdrop-blur shadow-[0_4px_14px_rgba(0,0,0,0.04)] ${
+                className={`p-5 sm:p-8 md:p-10 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-[#E8E8E8] dark:border-border/50 bg-background/80 backdrop-blur shadow-[0_4px_14px_rgba(0,0,0,0.04)] ${
                   featuresRef.isVisible 
                     ? "opacity-100 translate-y-0" 
                     : "opacity-0 translate-y-6"
@@ -237,13 +237,13 @@ export default function Landing() {
                   transitionDelay: `${index * 100}ms`,
                 }}
               >
-                <div className="flex items-start gap-6">
-                  <div className="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
-                    {React.cloneElement(feature.icon as React.ReactElement, { className: "w-8 h-8" })}
+                <div className="flex items-start gap-4 sm:gap-6">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                    {React.cloneElement(feature.icon as React.ReactElement, { className: "w-6 h-6 sm:w-8 sm:h-8" })}
                   </div>
                   <div>
-                    <h3 className="text-[19px] font-semibold mb-3">{feature.title}</h3>
-                    <p className="text-muted-foreground text-[15px] leading-relaxed">{feature.description}</p>
+                    <h3 className="text-base sm:text-[17px] md:text-[19px] font-semibold mb-1.5 sm:mb-3">{feature.title}</h3>
+                    <p className="text-muted-foreground text-sm sm:text-[15px] leading-relaxed">{feature.description}</p>
                   </div>
                 </div>
               </Card>
@@ -253,26 +253,26 @@ export default function Landing() {
       </section>
 
       {/* Modes Preview Section */}
-      <section className="py-28">
+      <section className="py-14 sm:py-20 md:py-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div 
             ref={modesRef.ref}
-            className={`text-center mb-24 transition-all duration-500 ease-out ${
+            className={`text-center mb-10 sm:mb-16 md:mb-24 transition-all duration-500 ease-out ${
               modesRef.isVisible 
                 ? "opacity-100 translate-y-0" 
                 : "opacity-0 translate-y-4"
             }`}
           >
-            <h2 className="text-4xl sm:text-5xl font-bold mb-6 tracking-tight">Explore Bahor AI Modes</h2>
-            <p className="text-xl text-muted-foreground">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-6 tracking-tight">Explore Bahor AI Modes</h2>
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground">
               Specialized AI assistants for every need
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-14">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-14">
             {modes.map((mode, index) => (
               <Card
                 key={index}
-                className={`p-6 hover:shadow-lg hover:scale-[1.01] hover:-translate-y-1 transition-all duration-300 cursor-pointer border-[#E8E8E8] dark:border-border/50 bg-background/80 backdrop-blur group shadow-[0_2px_8px_rgba(0,0,0,0.02)] ${
+                className={`p-4 sm:p-6 hover:shadow-lg hover:scale-[1.01] hover:-translate-y-1 transition-all duration-300 cursor-pointer border-[#E8E8E8] dark:border-border/50 bg-background/80 backdrop-blur group shadow-[0_2px_8px_rgba(0,0,0,0.02)] ${
                   modesRef.isVisible 
                     ? "opacity-100 translate-y-0" 
                     : "opacity-0 translate-y-6"
@@ -282,13 +282,13 @@ export default function Landing() {
                 }}
                 onClick={() => navigate("/modes")}
               >
-                <div className="flex flex-col items-center text-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-primary group-hover:scale-110 group-hover:brightness-110 transition-all duration-200">
-                    {React.cloneElement(mode.icon as React.ReactElement, { className: "w-7 h-7" })}
+                <div className="flex flex-col items-center text-center gap-3 sm:gap-4">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-primary group-hover:scale-110 group-hover:brightness-110 transition-all duration-200">
+                    {React.cloneElement(mode.icon as React.ReactElement, { className: "w-6 h-6 sm:w-7 sm:h-7" })}
                   </div>
                   <div>
-                    <h3 className="font-semibold mb-1.5 text-[15px]">{mode.title}</h3>
-                    <p className="text-[13px] text-muted-foreground line-clamp-2 leading-relaxed">
+                    <h3 className="font-semibold mb-1 sm:mb-1.5 text-sm sm:text-[15px]">{mode.title}</h3>
+                    <p className="text-xs sm:text-[13px] text-muted-foreground line-clamp-2 leading-relaxed">
                       {mode.description}
                     </p>
                   </div>
@@ -296,7 +296,7 @@ export default function Landing() {
               </Card>
             ))}
           </div>
-          <div className="text-center mt-12">
+          <div className="text-center mt-6 sm:mt-12">
             <Button
               onClick={() => navigate("/modes")}
               size="lg"
@@ -310,18 +310,18 @@ export default function Landing() {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-32">
+      <section className="py-14 sm:py-24 md:py-32">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div 
             ref={stepsRef.ref}
-            className={`text-center mb-24 transition-all duration-500 ease-out ${
+            className={`text-center mb-10 sm:mb-16 md:mb-24 transition-all duration-500 ease-out ${
               stepsRef.isVisible 
                 ? "opacity-100 translate-y-0" 
                 : "opacity-0 translate-y-4"
             }`}
           >
-            <h2 className="text-4xl sm:text-5xl font-bold mb-6 tracking-tight">How Bahor AI Works</h2>
-            <p className="text-xl text-muted-foreground">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-6 tracking-tight">How Bahor AI Works</h2>
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground">
               Get started in three simple steps
             </p>
           </div>
@@ -330,7 +330,7 @@ export default function Landing() {
             <div className="hidden md:block absolute top-10 left-[20%] right-[20%] h-[2px] bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20" />
             <div className="md:hidden absolute top-0 bottom-0 left-1/2 w-[2px] bg-gradient-to-b from-primary/20 via-primary/40 to-primary/20 -translate-x-1/2" />
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-16 md:gap-8 relative">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-10 sm:gap-16 md:gap-8 relative">
               {steps.map((step, index) => (
                 <div 
                   key={index} 
@@ -343,11 +343,11 @@ export default function Landing() {
                     transitionDelay: `${index * 150}ms`,
                   }}
                 >
-                  <div className="w-24 h-24 rounded-full bg-primary/15 text-primary text-[36px] font-bold flex items-center justify-center mx-auto mb-6 shadow-lg relative z-10 backdrop-blur-sm border-4 border-background">
+                  <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-full bg-primary/15 text-primary text-2xl sm:text-[36px] font-bold flex items-center justify-center mx-auto mb-3 sm:mb-6 shadow-lg relative z-10 backdrop-blur-sm border-4 border-background">
                     {step.number}
                   </div>
-                  <h3 className="text-[19px] font-semibold mb-4">{step.title}</h3>
-                  <p className="text-muted-foreground text-[15px] leading-relaxed max-w-xs mx-auto">{step.description}</p>
+                  <h3 className="text-base sm:text-[17px] md:text-[19px] font-semibold mb-2 sm:mb-4">{step.title}</h3>
+                  <p className="text-muted-foreground text-sm sm:text-[15px] leading-relaxed max-w-xs mx-auto">{step.description}</p>
                 </div>
               ))}
             </div>
@@ -356,26 +356,26 @@ export default function Landing() {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-28">
+      <section className="py-14 sm:py-20 md:py-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div 
             ref={pricingRef.ref}
-            className={`text-center mb-24 transition-all duration-500 ease-out ${
+            className={`text-center mb-10 sm:mb-16 md:mb-24 transition-all duration-500 ease-out ${
               pricingRef.isVisible 
                 ? "opacity-100 translate-y-0" 
                 : "opacity-0 translate-y-4"
             }`}
           >
-            <h2 className="text-4xl sm:text-5xl font-bold mb-6 tracking-tight">Pricing</h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-6 tracking-tight">Pricing</h2>
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
               Choose the plan that works best for you
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-8 max-w-6xl mx-auto">
             {/* Free Plan */}
             <Card 
-              className={`p-8 border-[#E8E8E8] dark:border-border/50 shadow-[0_4px_14px_rgba(0,0,0,0.04)] bg-background/80 backdrop-blur relative transition-all duration-500 ease-out ${
+              className={`p-5 sm:p-8 border-[#E8E8E8] dark:border-border/50 shadow-[0_4px_14px_rgba(0,0,0,0.04)] bg-background/80 backdrop-blur relative transition-all duration-500 ease-out ${
                 pricingRef.isVisible 
                   ? "opacity-100 translate-y-0 scale-100" 
                   : "opacity-0 translate-y-6 scale-98"
@@ -394,7 +394,7 @@ export default function Landing() {
                 <p className="text-sm text-muted-foreground">Boshlang'ich foydalanish uchun cheklangan rejim.</p>
               </div>
               
-              <ul className="space-y-3 mb-6">
+              <ul className="space-y-2 sm:space-y-3 mb-6">
                 <li className="flex items-start gap-2 text-sm">
                   <span className="text-muted-foreground">•</span>
                   <span>Cheklangan — kuniga 5 ta xabar gacha</span>
@@ -416,7 +416,7 @@ export default function Landing() {
 
             {/* Monthly Plan - Most Popular */}
             <Card 
-              className={`p-8 border-primary/40 dark:border-primary/30 shadow-[0_8px_24px_rgba(0,0,0,0.08)] bg-background relative scale-105 md:scale-110 transition-all duration-500 ease-out ${
+              className={`p-5 sm:p-8 border-primary/40 dark:border-primary/30 shadow-[0_8px_24px_rgba(0,0,0,0.08)] bg-background relative scale-100 md:scale-105 lg:scale-110 transition-all duration-500 ease-out ${
                 pricingRef.isVisible 
                   ? "opacity-100 translate-y-0" 
                   : "opacity-0 translate-y-6 scale-98"
@@ -441,7 +441,7 @@ export default function Landing() {
                 </p>
               </div>
               
-              <ul className="space-y-3 mb-8">
+              <ul className="space-y-2 sm:space-y-3 mb-6 sm:mb-8">
                 <li className="flex items-start gap-2 text-sm">
                   <span className="text-primary">✓</span>
                   <span>Barcha maxsus rejimlar ochiq (IELTS, kod, biznes, moliya va boshqalar)</span>
@@ -470,7 +470,7 @@ export default function Landing() {
 
             {/* Yearly Plan - Best Value */}
             <Card 
-              className={`p-8 border-[#E8E8E8] dark:border-border/50 shadow-[0_4px_14px_rgba(0,0,0,0.04)] bg-background/80 backdrop-blur relative transition-all duration-500 ease-out ${
+              className={`p-5 sm:p-8 border-[#E8E8E8] dark:border-border/50 shadow-[0_4px_14px_rgba(0,0,0,0.04)] bg-background/80 backdrop-blur relative transition-all duration-500 ease-out ${
                 pricingRef.isVisible 
                   ? "opacity-100 translate-y-0 scale-100" 
                   : "opacity-0 translate-y-6 scale-98"
@@ -498,7 +498,7 @@ export default function Landing() {
                 </p>
               </div>
               
-              <ul className="space-y-3 mb-8">
+              <ul className="space-y-2 sm:space-y-3 mb-6 sm:mb-8">
                 <li className="flex items-start gap-2 text-sm">
                   <span className="text-primary">✓</span>
                   <span>Barcha oylik reja imkoniyatlari</span>
@@ -530,24 +530,24 @@ export default function Landing() {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-28">
+      <section className="py-14 sm:py-20 md:py-28">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div 
             ref={faqRef.ref}
-            className={`text-center mb-20 transition-all duration-500 ease-out ${
+            className={`text-center mb-8 sm:mb-12 md:mb-20 transition-all duration-500 ease-out ${
               faqRef.isVisible 
                 ? "opacity-100 translate-y-0" 
                 : "opacity-0 translate-y-4"
             }`}
           >
-            <h2 className="text-4xl sm:text-5xl font-bold mb-4 tracking-tight">Frequently Asked Questions</h2>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-2 sm:mb-4 tracking-tight">Frequently Asked Questions</h2>
           </div>
-          <Accordion type="single" collapsible className="space-y-4">
+          <Accordion type="single" collapsible className="space-y-3 sm:space-y-4">
             {faqs.map((faq, index) => (
               <AccordionItem
                 key={index}
                 value={`item-${index}`}
-                className={`bg-background/80 backdrop-blur border border-border/50 rounded-lg px-8 py-1 transition-all duration-300 hover:shadow-md ${
+                className={`bg-background/80 backdrop-blur border border-border/50 rounded-lg px-4 sm:px-6 md:px-8 py-1 transition-all duration-300 hover:shadow-md ${
                   faqRef.isVisible 
                     ? "opacity-100 translate-y-0" 
                     : "opacity-0 translate-y-4"
@@ -556,10 +556,10 @@ export default function Landing() {
                   transitionDelay: `${index * 100}ms`,
                 }}
               >
-                <AccordionTrigger className="text-left hover:no-underline py-6 [&[data-state=open]>svg]:rotate-180">
-                  <span className="font-semibold text-[15px] pr-4">{faq.question}</span>
+                <AccordionTrigger className="text-left hover:no-underline py-4 sm:py-6 [&[data-state=open]>svg]:rotate-180">
+                  <span className="font-semibold text-sm sm:text-[15px] pr-4">{faq.question}</span>
                 </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground text-[15px] leading-relaxed pb-6 animate-accordion-down">
+                <AccordionContent className="text-muted-foreground text-sm sm:text-[15px] leading-relaxed pb-4 sm:pb-6 animate-accordion-down">
                   {faq.answer}
                 </AccordionContent>
               </AccordionItem>
@@ -569,7 +569,7 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/30 py-14 bg-background/80 backdrop-blur">
+      <footer className="border-t border-border/30 py-8 sm:py-12 md:py-14 bg-background/80 backdrop-blur">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
             <p className="text-sm text-muted-foreground/80 font-medium">© 2025 Bahor AI</p>
