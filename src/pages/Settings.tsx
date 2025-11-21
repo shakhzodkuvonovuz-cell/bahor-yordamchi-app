@@ -17,6 +17,7 @@ import SubscriptionStatus from "@/components/SubscriptionStatus";
 import ProfileEditModal from "@/components/ProfileEditModal";
 import ProfilePhotoUpload from "@/components/ProfilePhotoUpload";
 import PremiumUpgradeCard from "@/components/PremiumUpgradeCard";
+import PricingPlansSection from "@/components/PricingPlansSection";
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -595,6 +596,15 @@ export default function Settings() {
               </Collapsible>
             </div>
           </div>
+
+          {/* Separator */}
+          <div className="h-px bg-border/30" />
+
+          {/* Pricing Plans Section */}
+          <PricingPlansSection />
+
+          {/* Bottom Padding */}
+          <div className="h-6" />
         </div>
       </ScrollArea>
 
