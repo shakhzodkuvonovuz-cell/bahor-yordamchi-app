@@ -31,14 +31,33 @@ export default function Settings() {
   const [profile, setProfile] = useState<any>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   
-  // Notification settings
-  const [pushNotifications, setPushNotifications] = useState(true);
-  const [newsUpdates, setNewsUpdates] = useState(true);
-  const [suggestions, setSuggestions] = useState(true);
+  // Load preferences from localStorage
+  const loadPreferences = () => {
+    const saved = localStorage.getItem("bahorai_preferences");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Failed to load preferences:", e);
+      }
+    }
+    return {
+      pushNotifications: true,
+      newsUpdates: true,
+      suggestions: true,
+      animations: true,
+      smartSuggestions: true,
+    };
+  };
   
-  // Experience settings
-  const [animations, setAnimations] = useState(true);
-  const [smartSuggestions, setSmartSuggestions] = useState(true);
+  const [preferences, setPreferences] = useState(loadPreferences);
+  
+  // Save preferences to localStorage whenever they change
+  const updatePreference = (key: string, value: boolean) => {
+    const updated = { ...preferences, [key]: value };
+    setPreferences(updated);
+    localStorage.setItem("bahorai_preferences", JSON.stringify(updated));
+  };
 
   useEffect(() => {
     loadProfile();
@@ -118,10 +137,16 @@ export default function Settings() {
             <div className="px-6 py-6">
               <div className="flex items-start gap-4">
                 {/* Profile Photo */}
-                <div className="relative">
-                  <Avatar className="w-20 h-20">
+                <div 
+                  className="relative cursor-pointer group" 
+                  onClick={() => {
+                    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+                    input?.click();
+                  }}
+                >
+                  <Avatar className="w-20 h-20 transition-opacity group-hover:opacity-80">
                     <AvatarImage src={profile?.avatar_url || ""} />
-                    <AvatarFallback className="bg-gradient-to-br from-primary to-primary/60 text-primary-foreground text-xl font-bold">
+                    <AvatarFallback className="bg-gradient-to-br from-primary via-primary/60 to-primary/30 text-primary-foreground text-xl font-bold">
                       {getInitials()}
                     </AvatarFallback>
                   </Avatar>
@@ -167,17 +192,19 @@ export default function Settings() {
                   <h3 className="text-lg font-bold text-foreground">Hisob holati</h3>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-foreground">Reja: Free (Beta)</p>
-                  <p className="text-xs text-muted-foreground">Kunlik limit: 5 ta xabar</p>
+                  <p className="text-sm font-medium text-foreground">Reja: Bepul reja</p>
+                  <p className="text-xs text-muted-foreground">
+                    Hozir siz bepul rejadasiz. Kuniga 5 ta so'rov limiti mavjud.
+                  </p>
                 </div>
               </div>
               <Button 
                 size="sm"
                 onClick={() => setSubscriptionDrawerOpen(true)}
-                className="bg-gradient-to-r from-primary to-primary/80"
+                className="bg-gradient-to-r from-primary to-primary/80 shrink-0"
               >
                 <Crown className="w-4 h-4 mr-1" />
-                Yangilash
+                Premiumga o'tish
               </Button>
             </div>
           </div>
@@ -198,31 +225,40 @@ export default function Settings() {
                 <div className="flex items-center gap-3 flex-1">
                   <Bell className="w-5 h-5 text-muted-foreground" />
                   <div>
-                    <p className="font-medium text-foreground">Push xabarnomalar</p>
-                    <p className="text-xs text-muted-foreground">Muhim xabarlar uchun</p>
-                  </div>
-                </div>
-                <Switch checked={pushNotifications} onCheckedChange={setPushNotifications} />
-              </div>
-              <div className="px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-3 flex-1">
-                  <FileText className="w-5 h-5 text-muted-foreground" />
-                  <div>
                     <p className="font-medium text-foreground">Bahor AI yangiliklari</p>
                     <p className="text-xs text-muted-foreground">Yangi funksiyalar haqida</p>
                   </div>
                 </div>
-                <Switch checked={newsUpdates} onCheckedChange={setNewsUpdates} />
+                <Switch 
+                  checked={preferences.newsUpdates} 
+                  onCheckedChange={(checked) => updatePreference('newsUpdates', checked)} 
+                />
               </div>
               <div className="px-6 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-3 flex-1">
                   <Zap className="w-5 h-5 text-muted-foreground" />
                   <div>
-                    <p className="font-medium text-foreground">Tavsiyalar</p>
-                    <p className="text-xs text-muted-foreground">Foydali maslahatlar</p>
+                    <p className="font-medium text-foreground">Foydali maslahatlar va g'oyalar</p>
+                    <p className="text-xs text-muted-foreground">Bahor AI tajribasi</p>
                   </div>
                 </div>
-                <Switch checked={suggestions} onCheckedChange={setSuggestions} />
+                <Switch 
+                  checked={preferences.suggestions} 
+                  onCheckedChange={(checked) => updatePreference('suggestions', checked)} 
+                />
+              </div>
+              <div className="px-6 py-4 flex items-center justify-between">
+                <div className="flex items-center gap-3 flex-1">
+                  <CreditCard className="w-5 h-5 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium text-foreground">Chegirmalar va aksiyalar</p>
+                    <p className="text-xs text-muted-foreground">Maxsus takliflar</p>
+                  </div>
+                </div>
+                <Switch 
+                  checked={preferences.pushNotifications} 
+                  onCheckedChange={(checked) => updatePreference('pushNotifications', checked)} 
+                />
               </div>
             </div>
           </div>
@@ -267,11 +303,14 @@ export default function Settings() {
                 <div className="flex items-center gap-3 flex-1">
                   <Zap className="w-5 h-5 text-muted-foreground" />
                   <div>
-                    <p className="font-medium text-foreground">Animatsiyalar</p>
+                    <p className="font-medium text-foreground">Chat animatsiyalari</p>
                     <p className="text-xs text-muted-foreground">Interfeys effektlari</p>
                   </div>
                 </div>
-                <Switch checked={animations} onCheckedChange={setAnimations} />
+                <Switch 
+                  checked={preferences.animations} 
+                  onCheckedChange={(checked) => updatePreference('animations', checked)} 
+                />
               </div>
 
               {/* Smart Suggestions */}
@@ -283,7 +322,10 @@ export default function Settings() {
                     <p className="text-xs text-muted-foreground">Tavsiya etilgan savollar</p>
                   </div>
                 </div>
-                <Switch checked={smartSuggestions} onCheckedChange={setSmartSuggestions} />
+                <Switch 
+                  checked={preferences.smartSuggestions} 
+                  onCheckedChange={(checked) => updatePreference('smartSuggestions', checked)} 
+                />
               </div>
             </div>
           </div>
@@ -298,65 +340,53 @@ export default function Settings() {
             </div>
             <div className="divide-y divide-border">
               {/* Change Password */}
-              <Collapsible open={openSection === "password"} onOpenChange={() => toggleSection("password")}>
-                <CollapsibleTrigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <Lock className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium text-foreground">Parolni o'zgartirish</span>
-                  </div>
-                  <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${openSection === "password" ? "rotate-90" : ""}`} />
-                </CollapsibleTrigger>
-                <CollapsibleContent className="px-6 py-4 bg-muted/30">
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Parolni o'zgartirish funksiyasi tez orada qo'shiladi.
-                  </p>
-                </CollapsibleContent>
-              </Collapsible>
-
-              {/* Sessions */}
-              <Collapsible open={openSection === "sessions"} onOpenChange={() => toggleSection("sessions")}>
-                <CollapsibleTrigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <Shield className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium text-foreground">Sessiyalarni ko'rish</span>
-                  </div>
-                  <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${openSection === "sessions" ? "rotate-90" : ""}`} />
-                </CollapsibleTrigger>
-                <CollapsibleContent className="px-6 py-4 bg-muted/30">
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Faol sessiyalarni ko'rish va boshqarish tez orada qo'shiladi.
-                  </p>
-                </CollapsibleContent>
-              </Collapsible>
-
-              {/* 2FA Placeholder */}
-              <Collapsible open={openSection === "2fa"} onOpenChange={() => toggleSection("2fa")}>
-                <CollapsibleTrigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <Shield className="w-5 h-5 text-muted-foreground" />
-                    <div className="text-left">
-                      <p className="font-medium text-foreground">2-qadamli himoya</p>
-                      <p className="text-xs text-muted-foreground">Tez orada</p>
-                    </div>
-                  </div>
-                  <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${openSection === "2fa" ? "rotate-90" : ""}`} />
-                </CollapsibleTrigger>
-                <CollapsibleContent className="px-6 py-4 bg-muted/30">
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    2-qadamli autentifikatsiya tez orada qo'shiladi.
-                  </p>
-                </CollapsibleContent>
-              </Collapsible>
-
-              {/* Logout */}
               <button
-                onClick={handleLogout}
-                className="w-full px-6 py-3.5 flex items-center gap-3 hover:underline transition-all group"
+                onClick={() => toast({ description: "Bu funksiya tez orada qo'shiladi" })}
+                className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors"
               >
-                <LogOut className="w-5 h-5 text-red-500 group-hover:text-red-600 transition-colors" />
-                <span className="font-medium text-red-500 group-hover:text-red-600 transition-colors">{t.settings.logout}</span>
+                <div className="flex items-center gap-3">
+                  <Lock className="w-5 h-5 text-muted-foreground" />
+                  <span className="font-medium text-foreground">Parolni o'zgartirish</span>
+                </div>
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              </button>
+
+              {/* Logout All Devices */}
+              <button
+                onClick={async () => {
+                  try {
+                    await supabase.auth.signOut();
+                    toast({ description: "Barcha qurilmalardan chiqdingiz" });
+                    navigate("/login");
+                  } catch (error) {
+                    toast({ description: "Xatolik yuz berdi", variant: "destructive" });
+                  }
+                }}
+                className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <Shield className="w-5 h-5 text-muted-foreground" />
+                  <span className="font-medium text-foreground">Barcha qurilmalardan chiqish</span>
+                </div>
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
+          </div>
+
+          {/* Separator */}
+          <div className="h-px bg-border/30" />
+
+          {/* Logout Button */}
+          <div className="flex justify-center">
+            <button
+              onClick={handleLogout}
+              className="text-red-500 hover:text-red-600 font-medium text-sm hover:underline transition-all"
+            >
+              <div className="flex items-center gap-2">
+                <LogOut className="w-4 h-4" />
+                <span>{t.settings.logout}</span>
+              </div>
+            </button>
           </div>
 
           {/* Separator */}
