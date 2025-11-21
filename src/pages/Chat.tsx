@@ -4,6 +4,8 @@ import { ArrowLeft, Send, Trash2, Menu, Paperclip, X } from "lucide-react";
 import ChatMessage from "@/components/ChatMessage";
 import QuickSuggestions from "@/components/QuickSuggestions";
 import { DeleteChatModal } from "@/components/DeleteChatModal";
+import DailyUsageIndicator from "@/components/DailyUsageIndicator";
+import LimitReachedCard from "@/components/LimitReachedCard";
 import { Message, ChatSession, ChatMode, ChatAttachment } from "@/types/chat";
 import { supabase } from "@/integrations/supabase/client";
 import { getModeInfo } from "@/data/modes";
@@ -12,6 +14,7 @@ import { getTranslation } from "@/data/translations";
 import { loadChatsFromStorage, saveChatsToStorage, createNewSession } from "@/utils/chatStorage";
 import { generateChatTitle } from "@/utils/generateChatTitle";
 import { useAuth } from "@/hooks/useAuth";
+import { useDailyUsage } from "@/hooks/useDailyUsage";
 import clsx from "clsx";
 import { useToast } from "@/hooks/use-toast";
 import bahorLogo from "@/assets/bahor-logo.png";
@@ -98,6 +101,10 @@ export default function Chat() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  
+  // TODO: Backend integration - Replace with real usage tracking from backend
+  const { usedToday, dailyLimit, hasReachedLimit, isNearLimit, incrementUsage } = useDailyUsage();
+  const [showLimitCard, setShowLimitCard] = useState(false);
 
   const modeInfo = getModeInfo(mode || "");
   const modeTranslation = t.modes[mode as keyof typeof t.modes];
@@ -301,6 +308,13 @@ export default function Chat() {
 
   const handleSendMessage = async (content: string) => {
     if ((!content.trim() && pendingAttachments.length === 0) || isLoading || typing || !mode) return;
+    
+    // TODO: Backend integration - Check limit via backend API instead of local storage
+    if (hasReachedLimit) {
+      setShowLimitCard(true);
+      scrollToBottom();
+      return;
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -381,6 +395,10 @@ export default function Chat() {
           setTyping(false);
           setIsLoading(false);
           inputRef.current?.focus();
+          
+          // TODO: Backend integration - Backend should track and enforce limits
+          // Increment usage count after successful AI response
+          incrementUsage();
         },
         onError: (error) => {
           throw error;
@@ -630,6 +648,16 @@ export default function Chat() {
 
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto px-4 pb-4 pt-3">
+          {/* Daily Usage Indicator */}
+          {messages.length > 0 && (
+            <DailyUsageIndicator 
+              used={usedToday}
+              limit={dailyLimit}
+              isNearLimit={isNearLimit}
+              hasReachedLimit={hasReachedLimit}
+            />
+          )}
+          
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center max-w-sm space-y-3">
@@ -653,6 +681,12 @@ export default function Chat() {
               {messages.map((message) => (
                 <ChatMessage key={message.id} message={message} />
               ))}
+              
+              {/* Show limit reached card */}
+              {showLimitCard && hasReachedLimit && (
+                <LimitReachedCard onDismiss={() => setShowLimitCard(false)} />
+              )}
+              
               {typing && (
                 <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 shadow-sm">
