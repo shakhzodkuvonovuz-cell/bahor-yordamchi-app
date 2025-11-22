@@ -11,41 +11,54 @@ interface ProfileEditModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   profile: {
-    first_name: string | null;
-    last_name: string | null;
-    phone: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+    first_name?: string | null;
+    last_name?: string | null;
+    phone?: string | null;
   };
   onProfileUpdated: () => void;
 }
 
 export default function ProfileEditModal({ open, onOpenChange, profile, onProfileUpdated }: ProfileEditModalProps) {
-  const [firstName, setFirstName] = useState(profile.first_name || "");
-  const [lastName, setLastName] = useState(profile.last_name || "");
+  const [firstName, setFirstName] = useState(profile.firstName || profile.first_name || "");
+  const [lastName, setLastName] = useState(profile.lastName || profile.last_name || "");
   const [phone, setPhone] = useState(profile.phone || "");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setFirstName(profile.first_name || "");
-    setLastName(profile.last_name || "");
+    setFirstName(profile.firstName || profile.first_name || "");
+    setLastName(profile.lastName || profile.last_name || "");
     setPhone(profile.phone || "");
   }, [profile]);
 
   const handleSave = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No user found");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No session found");
 
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          first_name: firstName.trim() || null,
-          last_name: lastName.trim() || null,
-          phone: phone.trim() || null,
-        })
-        .eq("user_id", user.id);
+      // Call edge function to update profile
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/profile`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            firstName: firstName.trim() || null,
+            lastName: lastName.trim() || null,
+            phone: phone.trim() || null,
+          }),
+        }
+      );
 
-      if (error) throw error;
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Update failed");
+      }
 
       toast({
         title: "✅ Muvaffaqiyatli!",
