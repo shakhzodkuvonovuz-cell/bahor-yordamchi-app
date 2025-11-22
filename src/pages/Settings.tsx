@@ -69,17 +69,32 @@ export default function Settings() {
     
     setLoadingProfile(true);
     try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", user.id)
-        .single();
-
-      if (error && error.code !== "PGRST116") {
-        console.error("Error loading profile:", error);
-      } else if (data) {
-        setProfile(data);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.error("No session found");
+        return;
       }
+
+      // Call edge function to get profile
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/profile`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error("Error loading profile:", error);
+        return;
+      }
+
+      const profileData = await response.json();
+      setProfile(profileData);
     } catch (error) {
       console.error("Error loading profile:", error);
     } finally {
@@ -92,11 +107,11 @@ export default function Settings() {
   };
 
   const getInitials = () => {
-    if (profile?.first_name && profile?.last_name) {
-      return `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase();
+    if (profile?.firstName && profile?.lastName) {
+      return `${profile.firstName[0]}${profile.lastName[0]}`.toUpperCase();
     }
-    if (user?.email) {
-      return user.email[0].toUpperCase();
+    if (profile?.email || user?.email) {
+      return (profile?.email || user?.email)[0].toUpperCase();
     }
     return "BA";
   };
@@ -146,13 +161,13 @@ export default function Settings() {
                   }}
                 >
                   <Avatar className="w-20 h-20 transition-opacity group-hover:opacity-80">
-                    <AvatarImage src={profile?.avatar_url || ""} />
+                    <AvatarImage src={profile?.avatarUrl || ""} />
                     <AvatarFallback className="bg-gradient-to-br from-primary via-primary/60 to-primary/30 text-primary-foreground text-xl font-bold">
                       {getInitials()}
                     </AvatarFallback>
                   </Avatar>
                   <ProfilePhotoUpload 
-                    currentAvatarUrl={profile?.avatar_url}
+                    currentAvatarUrl={profile?.avatarUrl}
                     onPhotoUpdated={loadProfile}
                   />
                 </div>
@@ -162,13 +177,26 @@ export default function Settings() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <h3 className="text-xl font-bold text-foreground truncate">
-                        {profile?.first_name && profile?.last_name
-                          ? `${profile.first_name} ${profile.last_name}`
+                        {profile?.firstName && profile?.lastName
+                          ? `${profile.firstName} ${profile.lastName}`
                           : "Foydalanuvchi"}
                       </h3>
                       <p className="text-sm text-muted-foreground truncate mt-1">
-                        {user?.email}
+                        {profile?.email || user?.email}
                       </p>
+                      {profile?.plan && (
+                        <div className="mt-2">
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                            profile.plan === 'free' 
+                              ? 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                              : 'bg-gradient-to-r from-primary/20 to-primary/10 text-primary border border-primary/30'
+                          }`}>
+                            {profile.plan === 'free' && 'Bepul reja'}
+                            {profile.plan === 'monthly' && <><Crown className="w-3 h-3" /> Oylik Premium</>}
+                            {profile.plan === 'yearly' && <><Crown className="w-3 h-3" /> Yillik Premium</>}
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <Button
                       variant="outline"
@@ -192,20 +220,40 @@ export default function Settings() {
                 <div className="flex items-center gap-2">
                   <h3 className="text-lg font-bold text-foreground">Hisob holati</h3>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-foreground">Reja: Bepul reja</p>
-                  <p className="text-xs text-muted-foreground">
-                    Hozir siz bepul rejadasiz. Kuniga 5 ta so'rov limiti mavjud.
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-foreground">
+                    Reja: {profile?.plan === 'free' && 'Bepul reja'}
+                    {profile?.plan === 'monthly' && 'Premium (oylik)'}
+                    {profile?.plan === 'yearly' && 'Premium (yillik)'}
                   </p>
+                  {profile?.plan === 'free' && profile?.messagesToday !== undefined && (
+                    <>
+                      <p className="text-xs text-muted-foreground">
+                        Bugungi limit: {profile.messagesToday} / {profile.dailyLimit} so'rov
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Hozir siz bepul rejadasiz. Kuniga {profile.dailyLimit} ta so'rov limiti mavjud.
+                      </p>
+                    </>
+                  )}
+                  {profile?.plan !== 'free' && (
+                    <p className="text-xs text-muted-foreground">
+                      Cheksiz so'rovlar va barcha premium funksiyalar.
+                    </p>
+                  )}
                 </div>
               </div>
               <Button 
                 size="sm"
                 onClick={() => setSubscriptionDrawerOpen(true)}
-                className="bg-gradient-to-r from-primary to-primary/80 shrink-0"
+                className={profile?.plan === 'free' 
+                  ? "bg-gradient-to-r from-primary to-primary/80 shrink-0"
+                  : "shrink-0"
+                }
+                variant={profile?.plan === 'free' ? 'default' : 'outline'}
               >
                 <Crown className="w-4 h-4 mr-1" />
-                Premiumga o'tish
+                {profile?.plan === 'free' ? 'Premiumga o\'tish' : 'Rejani boshqarish'}
               </Button>
             </div>
           </div>

@@ -47,43 +47,33 @@ export default function ProfilePhotoUpload({ currentAvatarUrl, onPhotoUpdated }:
   };
 
   const uploadPhoto = async (file: File) => {
-
     setUploading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No user found");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No session found");
 
-      // Delete old avatar if exists
-      if (currentAvatarUrl) {
-        const oldPath = currentAvatarUrl.split("/").pop();
-        if (oldPath) {
-          await supabase.storage.from("avatars").remove([`${user.id}/${oldPath}`]);
+      // Create form data
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      // Call edge function
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/profile-avatar`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: formData,
         }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Upload failed");
       }
 
-      // Upload new avatar
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(filePath, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from("avatars")
-        .getPublicUrl(filePath);
-
-      // Update profile
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({ avatar_url: publicUrl })
-        .eq("user_id", user.id);
-
-      if (updateError) throw updateError;
+      const { avatarUrl } = await response.json();
 
       toast({
         title: "✅ Muvaffaqiyatli!",
