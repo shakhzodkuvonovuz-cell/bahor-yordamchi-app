@@ -28,24 +28,24 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/5 dark:to-primary/10">
-      <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+      <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-8 space-y-8">
         {/* Header with App Name and Settings Icon */}
         <div className="flex justify-between items-center px-4 pt-4 pb-2">
-          <div className="flex items-center gap-2 sm:gap-2">
-            <img src={bahorLogo} alt="Bahor AI Logo" className="h-7 w-auto sm:h-8 object-contain" />
-            <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-slate-100">Bahor AI</h2>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <img src={bahorLogo} alt="Bahor AI Logo" className="h-7 w-auto sm:h-8 md:h-10 lg:h-12 object-contain" />
+            <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-slate-900 dark:text-slate-100">Bahor AI</h2>
           </div>
           <button
             onClick={() => navigate("/settings")}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
             aria-label="Sozlamalar"
           >
-            <Settings className="w-6 h-6 text-slate-600 dark:text-slate-400" />
+            <Settings className="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 text-slate-600 dark:text-slate-400" />
           </button>
         </div>
 
         {/* Hero Section */}
-        <h1 className="mt-6 text-center text-2xl font-semibold text-slate-900 dark:text-slate-100 leading-relaxed">
+        <h1 className="mt-6 text-center text-2xl md:text-3xl lg:text-4xl font-semibold text-slate-900 dark:text-slate-100 leading-relaxed">
           {t.heroText}
         </h1>
 
@@ -73,13 +73,13 @@ export default function Home() {
 
         {/* Section Title */}
         <div className="text-center pt-4">
-          <p className="text-sm text-muted-foreground font-medium">
+          <p className="text-sm md:text-base lg:text-lg text-muted-foreground font-medium">
             {t.subtitle}
           </p>
         </div>
 
         {/* Feature Grid */}
-        <div className="grid grid-cols-2 gap-3 pb-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-5 pb-8">
           {CHAT_MODES.filter((mode) => mode.id !== "general").map((mode) => (
             <ModeCard
               key={mode.id}
