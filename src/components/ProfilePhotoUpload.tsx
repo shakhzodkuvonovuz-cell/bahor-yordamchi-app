@@ -1,14 +1,7 @@
 import { useState, useRef } from "react";
-import { Camera, Upload, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { Camera, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 interface ProfilePhotoUploadProps {
   currentAvatarUrl: string | null;
@@ -43,57 +36,56 @@ export default function ProfilePhotoUpload({ currentAvatarUrl, onPhotoUpdated }:
       return;
     }
 
-    await uploadPhoto(file);
+    uploadPhoto(file);
   };
 
-  const uploadPhoto = async (file: File) => {
+  const uploadPhoto = (file: File) => {
     setUploading(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("No session found");
-
-      // Create form data
-      const formData = new FormData();
-      formData.append("avatar", file);
-
-      // Call edge function
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/profile-avatar`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: formData,
+    
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      try {
+        const dataUrl = e.target?.result as string;
+        
+        // Save to localStorage
+        localStorage.setItem("bahorai_user_avatar", dataUrl);
+        
+        toast({
+          title: "✅ Muvaffaqiyatli!",
+          description: "Profil rasmi yangilandi",
+        });
+        
+        // Trigger parent refresh
+        onPhotoUpdated();
+      } catch (error: any) {
+        console.error("Error saving avatar:", error);
+        toast({
+          title: "Xatolik",
+          description: "Rasm saqlanmadi",
+          variant: "destructive",
+        });
+      } finally {
+        setUploading(false);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
         }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Upload failed");
       }
-
-      const { avatarUrl } = await response.json();
-
-      toast({
-        title: "✅ Muvaffaqiyatli!",
-        description: "Profil rasmi yangilandi",
-      });
-
-      onPhotoUpdated();
-    } catch (error: any) {
-      console.error("Error uploading avatar:", error);
+    };
+    
+    reader.onerror = () => {
       toast({
         title: "Xatolik",
-        description: error.message || "Rasm yuklanmadi",
+        description: "Rasm o'qilmadi",
         variant: "destructive",
       });
-    } finally {
       setUploading(false);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
-    }
+    };
+    
+    reader.readAsDataURL(file);
   };
 
   return (
