@@ -599,7 +599,7 @@ export default function Chat() {
         </div>
       )}
 
-      <div className="mx-auto w-full max-w-3xl flex flex-col h-screen">
+      <div className="mx-auto w-full max-w-3xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl flex flex-col h-screen">
         {/* Header */}
         <div className="sticky top-0 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/70 backdrop-blur z-10">
           <div className="px-4 py-3 flex items-center justify-between">
