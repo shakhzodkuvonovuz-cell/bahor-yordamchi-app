@@ -94,6 +94,13 @@ export default function Settings() {
       }
 
       const profileData = await response.json();
+      
+      // Load avatar from localStorage (overrides backend avatarUrl if present)
+      const localAvatar = localStorage.getItem("bahorai_user_avatar");
+      if (localAvatar) {
+        profileData.avatarUrl = localAvatar;
+      }
+      
       setProfile(profileData);
     } catch (error) {
       console.error("Error loading profile:", error);
