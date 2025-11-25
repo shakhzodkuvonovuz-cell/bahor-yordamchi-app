@@ -1,42 +1,20 @@
 import { Message } from "@/types/chat";
-import { ExternalLink, Volume2, VolumeX } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useVoiceOutput } from "@/hooks/useVoiceOutput";
-import { useLanguage } from "@/hooks/useLanguage";
-import { useState } from "react";
+import { ExternalLink } from "lucide-react";
 
 interface ChatMessageProps {
   message: Message;
 }
 
 export default function ChatMessage({ message }: ChatMessageProps) {
-  const { language } = useLanguage();
-  const { speak, stop, isSpeaking, isSupported: voiceOutputSupported } = useVoiceOutput({ language });
-  const [isPlayingThis, setIsPlayingThis] = useState(false);
-
-  const handleToggleSpeech = () => {
-    if (isPlayingThis && isSpeaking) {
-      stop();
-      setIsPlayingThis(false);
-    } else {
-      setIsPlayingThis(true);
-      speak(message.content);
-      // Reset state when speech ends
-      setTimeout(() => {
-        if (!isSpeaking) setIsPlayingThis(false);
-      }, 100);
-    }
-  };
   const isUser = message.role === "user";
 
   return (
-    <div className={`flex group ${isUser ? "justify-end" : "justify-start"} chat-message-enter`}>
-      <div className="flex items-start gap-2 max-w-[80%]">
+    <div className={`flex ${isUser ? "justify-end" : "justify-start"} chat-message-enter`}>
       <div
-        className={`flex-1 rounded-2xl px-3 py-2 shadow-sm ${
+        className={`max-w-[80%] rounded-2xl px-3 py-2 shadow-sm ${
           isUser
-            ? "bg-emerald-500 text-white"
-            : "bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-50"
+            ? "ml-auto bg-emerald-500 text-white"
+            : "mr-auto bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-50"
         }`}
       >
         {!isUser && (
@@ -112,29 +90,6 @@ export default function ChatMessage({ message }: ChatMessageProps) {
             minute: "2-digit",
           })}
         </div>
-      </div>
-      
-      {/* Voice output button for AI messages only */}
-      {!isUser && voiceOutputSupported && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="shrink-0 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={handleToggleSpeech}
-          title={
-            language === 'uz' ? (isPlayingThis ? 'To\'xtatish' : 'O\'qib berish') :
-            language === 'ru' ? (isPlayingThis ? 'Остановить' : 'Прочитать') :
-            language === 'tr' ? (isPlayingThis ? 'Durdur' : 'Oku') :
-            (isPlayingThis ? 'Stop' : 'Read aloud')
-          }
-        >
-          {isPlayingThis && isSpeaking ? (
-            <VolumeX className="h-4 w-4" />
-          ) : (
-            <Volume2 className="h-4 w-4" />
-          )}
-        </Button>
-      )}
       </div>
     </div>
   );

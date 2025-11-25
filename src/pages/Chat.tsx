@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Send, Trash2, Menu, Paperclip, X, Mic } from "lucide-react";
+import { ArrowLeft, Send, Trash2, Menu, Paperclip, X } from "lucide-react";
 import ChatMessage from "@/components/ChatMessage";
 import QuickSuggestions from "@/components/QuickSuggestions";
 import { DeleteChatModal } from "@/components/DeleteChatModal";
@@ -15,7 +15,6 @@ import { loadChatsFromStorage, saveChatsToStorage, createNewSession } from "@/ut
 import { generateChatTitle } from "@/utils/generateChatTitle";
 import { useAuth } from "@/hooks/useAuth";
 import { useDailyUsage } from "@/hooks/useDailyUsage";
-import { useVoiceInput } from "@/hooks/useVoiceInput";
 import clsx from "clsx";
 import { useToast } from "@/hooks/use-toast";
 import bahorLogo from "@/assets/bahor-logo.png";
@@ -106,14 +105,6 @@ export default function Chat() {
   // TODO: Backend integration - Replace with real usage tracking from backend
   const { usedToday, dailyLimit, hasReachedLimit, isNearLimit, incrementUsage } = useDailyUsage();
   const [showLimitCard, setShowLimitCard] = useState(false);
-  
-  // Voice input hook
-  const { isListening, transcript, startListening, stopListening, isSupported: voiceInputSupported } = useVoiceInput({
-    language,
-    onResult: (text) => {
-      setInputValue(prev => prev ? `${prev} ${text}` : text);
-    }
-  });
 
   const modeInfo = getModeInfo(mode || "");
   const modeTranslation = t.modes[mode as keyof typeof t.modes];
@@ -730,27 +721,6 @@ export default function Chat() {
 
           {/* Input Form */}
           <form onSubmit={handleSubmit} className="px-4 py-3">
-            {/* Voice listening indicator */}
-            {isListening && (
-              <div className="mb-2 flex items-center justify-center gap-2 py-2 px-3 bg-primary/10 dark:bg-primary/20 rounded-xl border border-primary/20">
-                <div className="flex gap-1">
-                  <div className="w-1 h-3 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0ms' }} />
-                  <div className="w-1 h-5 bg-primary rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
-                  <div className="w-1 h-3 bg-primary rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
-                </div>
-                <span className="text-sm font-medium text-primary">
-                  {language === 'uz' ? 'Tinglayapman...' : 
-                   language === 'ru' ? 'Слушаю...' :
-                   language === 'tr' ? 'Dinliyorum...' : 'Listening...'}
-                </span>
-                {transcript && (
-                  <span className="text-xs text-muted-foreground ml-2">
-                    {transcript}
-                  </span>
-                )}
-              </div>
-            )}
-            
             {/* Attachment Previews */}
             {pendingAttachments.length > 0 && (
               <div className="mb-2 flex flex-wrap gap-2">
@@ -810,24 +780,6 @@ export default function Chat() {
               >
                 <Paperclip className="w-5 h-5" />
               </button>
-              
-              {/* Voice input button */}
-              {voiceInputSupported && (
-                <button
-                  type="button"
-                  onClick={isListening ? stopListening : startListening}
-                  disabled={isLoading || typing}
-                  className={`p-2 transition flex-shrink-0 ${
-                    isListening 
-                      ? 'text-primary animate-pulse' 
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                  } disabled:opacity-50`}
-                  aria-label={isListening ? "Stop listening" : "Start voice input"}
-                >
-                  <Mic className="w-5 h-5" />
-                </button>
-              )}
-              
               <textarea
                 ref={inputRef}
                 value={inputValue}
