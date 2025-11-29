@@ -12,20 +12,20 @@ interface VoiceModeProps {
   onTranscriptionComplete?: (text: string) => void;
 }
 
-// Floating particles component
-const FloatingParticles = ({ count = 10 }: { count?: number }) => {
+// Subtle floating particles - very small and minimal
+const FloatingParticles = ({ count = 6 }: { count?: number }) => {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="absolute w-1 h-1 rounded-full bg-primary/30"
+          className="absolute w-0.5 h-0.5 rounded-full bg-primary/20"
           style={{
-            left: `${20 + Math.random() * 60}%`,
-            top: `${20 + Math.random() * 60}%`,
-            animation: `voice-particle-drift ${6 + Math.random() * 4}s ease-in-out infinite`,
-            animationDelay: `${Math.random() * 3}s`,
-            opacity: 0.2 + Math.random() * 0.3,
+            left: `${30 + Math.random() * 40}%`,
+            top: `${30 + Math.random() * 40}%`,
+            animation: `voice-particle-drift ${8 + Math.random() * 4}s ease-in-out infinite`,
+            animationDelay: `${Math.random() * 4}s`,
+            opacity: 0.15 + Math.random() * 0.15,
           }}
         />
       ))}
@@ -362,23 +362,23 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
 
         {/* Main interaction zone */}
         <div className="flex-1 flex flex-col items-center justify-center px-6">
-          {/* Floating particles */}
-          <FloatingParticles count={10} />
+          {/* Subtle floating particles - fewer, smaller */}
+          <FloatingParticles count={6} />
 
-          {/* Radial gradient depth */}
+          {/* Very subtle radial gradient */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
-              background: "radial-gradient(ellipse 50% 40% at center 45%, hsl(var(--primary) / 0.06) 0%, transparent 70%)",
+              background: "radial-gradient(ellipse 40% 30% at center 45%, hsl(var(--primary) / 0.03) 0%, transparent 60%)",
             }}
           />
 
-          {/* Main orb container */}
-          <div className="relative mb-8">
-            {/* Breathing glow background */}
+          {/* Main orb container - SMALL, 110-140px max */}
+          <div className="relative mb-6">
+            {/* Subtle breathing glow - small */}
             <div
               className={cn(
-                "absolute inset-[-30px] rounded-full transition-all duration-700",
+                "absolute inset-[-12px] rounded-full transition-all duration-700",
                 state === "idle" && "animate-voice-orb-breathe-idle",
                 state === "listening" && "animate-voice-orb-breathe-listening",
                 state === "thinking" && "animate-voice-orb-breathe-thinking",
@@ -387,65 +387,65 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
               style={{
                 background:
                   state === "listening"
-                    ? "radial-gradient(circle, hsl(var(--primary) / 0.3) 0%, transparent 70%)"
-                    : state === "thinking"
                     ? "radial-gradient(circle, hsl(var(--primary) / 0.2) 0%, transparent 70%)"
+                    : state === "thinking"
+                    ? "radial-gradient(circle, hsl(var(--primary) / 0.15) 0%, transparent 70%)"
                     : state === "speaking"
-                    ? "radial-gradient(circle, hsl(var(--primary) / 0.35) 0%, transparent 70%)"
-                    : "radial-gradient(circle, hsl(var(--primary) / 0.15) 0%, transparent 70%)",
+                    ? "radial-gradient(circle, hsl(var(--primary) / 0.25) 0%, transparent 70%)"
+                    : "radial-gradient(circle, hsl(var(--primary) / 0.1) 0%, transparent 70%)",
               }}
             />
 
-            {/* Rotating thin ring (thinking state) */}
+            {/* Rotating thin ring (thinking state only) */}
             {state === "thinking" && (
               <div
-                className="absolute inset-[-8px] rounded-full border border-primary/40 animate-voice-ring-rotate"
+                className="absolute inset-[-6px] rounded-full border border-primary/30 animate-voice-ring-rotate"
                 style={{ borderStyle: "dashed" }}
               />
             )}
 
-            {/* Orbiting particles (speaking state) */}
+            {/* Small orbiting particles (speaking state only) */}
             {state === "speaking" && (
               <>
-                {[0, 1, 2, 3].map((i) => (
+                {[0, 1, 2].map((i) => (
                   <div
                     key={i}
-                    className="absolute w-1.5 h-1.5 rounded-full bg-primary/60 animate-voice-orbit"
+                    className="absolute w-1 h-1 rounded-full bg-primary/50 animate-voice-orbit"
                     style={{
-                      animationDelay: `${i * 0.75}s`,
-                      animationDuration: "3s",
+                      animationDelay: `${i * 1}s`,
+                      animationDuration: "4s",
                     }}
                   />
                 ))}
               </>
             )}
 
-            {/* Main circle */}
+            {/* Main circle - SMALL: 110px mobile, 130px desktop */}
             <div
               className={cn(
-                "relative w-[110px] h-[110px] md:w-[150px] md:h-[150px] rounded-full",
+                "relative w-[110px] h-[110px] md:w-[130px] md:h-[130px] rounded-full",
                 "flex items-center justify-center",
                 "transition-all duration-500",
-                state === "listening" && "scale-[1.03]"
+                state === "listening" && "scale-[1.02]"
               )}
               style={{
                 background: "linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%)",
                 boxShadow:
                   state === "listening"
-                    ? "0 0 60px hsl(var(--primary) / 0.35), 0 0 30px hsl(var(--primary) / 0.2), inset 0 0 30px hsl(var(--primary) / 0.05)"
+                    ? "0 0 30px hsl(var(--primary) / 0.25), inset 0 0 15px hsl(var(--primary) / 0.05)"
                     : state === "thinking"
-                    ? "0 0 40px hsl(var(--primary) / 0.2), inset 0 0 20px hsl(var(--primary) / 0.03)"
+                    ? "0 0 20px hsl(var(--primary) / 0.15), inset 0 0 10px hsl(var(--primary) / 0.03)"
                     : state === "speaking"
-                    ? "0 0 50px hsl(var(--primary) / 0.3), 0 0 25px hsl(var(--primary) / 0.15), inset 0 0 25px hsl(var(--primary) / 0.05)"
-                    : "0 0 30px hsl(var(--primary) / 0.15), inset 0 0 15px hsl(var(--primary) / 0.02)",
+                    ? "0 0 25px hsl(var(--primary) / 0.2), inset 0 0 12px hsl(var(--primary) / 0.04)"
+                    : "0 0 15px hsl(var(--primary) / 0.1), inset 0 0 8px hsl(var(--primary) / 0.02)",
               }}
             >
-              {/* Bahor AI Logo */}
+              {/* Bahor AI Logo - SMALL: 48px mobile, 56px desktop */}
               <img
                 src={bahorLogo}
                 alt="Bahor AI"
                 className={cn(
-                  "w-14 h-14 md:w-20 md:h-20 object-contain transition-all duration-500",
+                  "w-12 h-12 md:w-14 md:h-14 object-contain transition-all duration-500",
                   state === "listening" && "animate-voice-logo-glow"
                 )}
               />
@@ -468,9 +468,9 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
             </div>
           )}
 
-          {/* Waveform (listening only) */}
+          {/* Thin waveform (listening only) - subtle */}
           {state === "listening" && (
-            <div className="w-full max-w-sm h-[18px] mb-6 animate-voice-fade-in">
+            <div className="w-full max-w-xs h-[14px] mb-5 animate-voice-fade-in">
               <VoiceWaveform amplitude={amplitude} isActive={true} />
             </div>
           )}
