@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { X, Mic, MicOff, Volume2, VolumeX, RotateCcw, Type, Square } from "lucide-react";
+import { X, Mic, Volume2, VolumeX, Type, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n/LanguageProvider";
-import VoiceWaveform from "./VoiceWaveform";
+import VoiceOrb from "./VoiceOrb";
+import FluidWaveform from "./FluidWaveform";
 import bahorLogo from "@/assets/bahor-logo.png";
 
-export type VoiceState = "listening" | "processing" | "answering" | "idle";
+export type VoiceState = "listening" | "thinking" | "speaking" | "idle";
 
 interface VoiceModeProps {
   isOpen: boolean;
@@ -13,7 +14,7 @@ interface VoiceModeProps {
   onTranscriptionComplete?: (text: string) => void;
 }
 
-// Processing steps for the mini reasoning bar
+// Processing steps for mini reasoning bar
 const PROCESSING_STEPS = [
   { key: "transcribing", icon: "🎙️" },
   { key: "analyzing", icon: "🧠" },
@@ -28,26 +29,23 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
   const [processingStep, setProcessingStep] = useState(0);
   const [showCaptions, setShowCaptions] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
-  const [tapToToggle, setTapToToggle] = useState(true);
   const [answerPreview, setAnswerPreview] = useState("");
   
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number>();
 
-  // Simulate voice amplitude based on actual audio input
+  // Update amplitude from audio input
   const updateAmplitude = useCallback(() => {
     if (analyserRef.current && state === "listening") {
       const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
       analyserRef.current.getByteFrequencyData(dataArray);
       
-      // Calculate average amplitude
       const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
       const normalizedAmplitude = Math.min(1, average / 128);
       
-      setAmplitude(normalizedAmplitude * 0.7 + 0.3); // Keep minimum amplitude
+      setAmplitude(normalizedAmplitude * 0.7 + 0.3);
     }
     animationFrameRef.current = requestAnimationFrame(updateAmplitude);
   }, [state]);
@@ -58,7 +56,6 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
       
-      // Set up audio analysis for waveform
       audioContextRef.current = new AudioContext();
       analyserRef.current = audioContextRef.current.createAnalyser();
       analyserRef.current.fftSize = 256;
@@ -70,7 +67,6 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
       setTranscription("");
       updateAmplitude();
       
-      // Simulate speech recognition (replace with real API later)
       simulateSpeechRecognition();
     } catch (error) {
       console.error("Error accessing microphone:", error);
@@ -92,14 +88,14 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
     }
     
     if (state === "listening" && transcription.trim()) {
-      setState("processing");
+      setState("thinking");
       simulateProcessing();
     } else {
       setState("idle");
     }
   };
 
-  // Simulate speech recognition (demo purposes)
+  // Simulate speech recognition
   const simulateSpeechRecognition = () => {
     const demoTexts = [
       t('voice.demo.greeting'),
@@ -123,7 +119,7 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
     setTimeout(addWord, 500);
   };
 
-  // Simulate processing steps
+  // Simulate processing
   const simulateProcessing = () => {
     setProcessingStep(0);
     
@@ -134,7 +130,7 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
         
         if (index === PROCESSING_STEPS.length - 1) {
           setTimeout(() => {
-            setState("answering");
+            setState("speaking");
             simulateAnswer();
           }, stepDuration);
         }
@@ -142,12 +138,11 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
     });
   };
 
-  // Simulate AI answer
+  // Simulate answer
   const simulateAnswer = () => {
     const answer = t('voice.demo.answer');
     setAnswerPreview(answer);
     
-    // After showing answer, return to idle
     setTimeout(() => {
       if (onTranscriptionComplete && transcription.trim()) {
         onTranscriptionComplete(transcription);
@@ -156,7 +151,7 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
     }, 3000);
   };
 
-  // Handle panel close
+  // Handle close
   const handleClose = () => {
     stopListening();
     setState("idle");
@@ -166,55 +161,89 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
     onClose();
   };
 
-  // Toggle listening on tap
+  // Toggle listening
   const handleToggle = () => {
-    if (tapToToggle) {
-      if (state === "listening") {
-        stopListening();
-      } else if (state === "idle") {
-        startListening();
-      }
+    if (state === "listening") {
+      stopListening();
+    } else if (state === "idle") {
+      startListening();
     }
   };
 
-  // Cleanup on unmount
+  // Cleanup
   useEffect(() => {
     return () => {
       stopListening();
     };
   }, []);
 
-  // Auto-start listening when panel opens
+  // Auto-start
   useEffect(() => {
     if (isOpen && state === "idle") {
-      const timer = setTimeout(startListening, 300);
+      const timer = setTimeout(startListening, 400);
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
+  const getStateTitle = () => {
+    switch (state) {
+      case "listening": return t('voice.state.listening');
+      case "thinking": return t('voice.state.thinking');
+      case "speaking": return t('voice.state.speaking');
+      default: return t('voice.tapToSpeak');
+    }
+  };
+
+  const getStateSubtitle = () => {
+    switch (state) {
+      case "listening": return t('voice.state.listening.sub');
+      case "thinking": return t('voice.state.thinking.sub');
+      case "speaking": return t('voice.state.speaking.sub');
+      default: return t('voice.readyToListen');
+    }
+  };
+
   return (
-    <div 
-      className={cn(
-        "fixed inset-0 z-50 flex flex-col",
-        "animate-voice-panel-in"
-      )}
-    >
-      {/* Overlay background */}
+    <div className={cn(
+      "fixed inset-0 z-50 flex flex-col",
+      "animate-voice-panel-in"
+    )}>
+      {/* Premium gradient background */}
       <div 
-        className="absolute inset-0 bg-background/95 backdrop-blur-xl"
-        onClick={handleClose}
+        className="absolute inset-0"
+        style={{
+          background: `
+            radial-gradient(ellipse 80% 50% at 50% 0%, rgba(0, 80, 80, 0.4) 0%, transparent 50%),
+            radial-gradient(ellipse 60% 40% at 50% 100%, rgba(0, 60, 70, 0.3) 0%, transparent 40%),
+            radial-gradient(circle at 50% 50%, rgba(0, 100, 90, 0.15) 0%, transparent 60%),
+            linear-gradient(180deg, hsl(200, 30%, 6%) 0%, hsl(195, 25%, 8%) 50%, hsl(200, 30%, 6%) 100%)
+          `
+        }}
       />
-      
-      {/* Gradient overlay */}
+
+      {/* Subtle animated particles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(12)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-1 h-1 rounded-full bg-primary/20 animate-voice-particle"
+            style={{
+              left: `${10 + Math.random() * 80}%`,
+              top: `${10 + Math.random() * 80}%`,
+              animationDelay: `${i * 0.3}s`,
+              animationDuration: `${4 + Math.random() * 2}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Vignette overlay */}
       <div 
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: `
-            radial-gradient(ellipse at 50% 30%, hsla(175, 60%, 50%, 0.08) 0%, transparent 50%),
-            radial-gradient(ellipse at 50% 70%, hsla(175, 50%, 40%, 0.05) 0%, transparent 40%)
-          `
+          background: "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.4) 100%)"
         }}
       />
 
@@ -225,9 +254,10 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
           <button
             onClick={() => setShowCaptions(!showCaptions)}
             className={cn(
-              "p-2.5 rounded-xl transition-all duration-200",
-              "bg-card/50 border border-border/30 backdrop-blur-sm",
-              showCaptions ? "text-primary" : "text-muted-foreground"
+              "p-3 rounded-2xl transition-all duration-300",
+              "bg-white/5 backdrop-blur-xl border border-white/10",
+              "hover:bg-white/10 hover:border-white/20",
+              showCaptions ? "text-primary shadow-[0_0_20px_rgba(0,212,180,0.2)]" : "text-white/50"
             )}
             aria-label={t('voice.toggleCaptions')}
           >
@@ -238,9 +268,10 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
           <button
             onClick={() => setIsMuted(!isMuted)}
             className={cn(
-              "p-2.5 rounded-xl transition-all duration-200",
-              "bg-card/50 border border-border/30 backdrop-blur-sm",
-              isMuted ? "text-destructive" : "text-muted-foreground"
+              "p-3 rounded-2xl transition-all duration-300",
+              "bg-white/5 backdrop-blur-xl border border-white/10",
+              "hover:bg-white/10 hover:border-white/20",
+              isMuted ? "text-red-400 shadow-[0_0_20px_rgba(255,100,100,0.2)]" : "text-white/50"
             )}
             aria-label={t('voice.toggleMute')}
           >
@@ -248,116 +279,100 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
           </button>
         </div>
         
+        {/* Exit button - frosted glass */}
         <button
           onClick={handleClose}
           className={cn(
-            "p-2.5 rounded-xl transition-all duration-200",
-            "bg-card/50 border border-border/30 backdrop-blur-sm",
-            "hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive"
+            "p-3 rounded-2xl transition-all duration-300",
+            "bg-white/5 backdrop-blur-xl border border-white/10",
+            "hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400"
           )}
           aria-label={t('voice.cancel')}
         >
-          <X className="w-5 h-5" />
+          <X className="w-5 h-5 text-white/70" />
         </button>
       </div>
 
-      {/* Main content area */}
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 pb-32">
-        {/* Logo with pulse animation */}
-        <div className={cn(
-          "relative mb-6 transition-all duration-500",
-          state === "processing" && "animate-voice-logo-pulse"
-        )}>
-          <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center">
-            <img 
-              src={bahorLogo} 
-              alt="Bahor AI"
-              className={cn(
-                "w-10 h-10 md:w-12 md:h-12 object-contain",
-                state === "processing" && "animate-voice-logo-rotate"
-              )}
-            />
-          </div>
-          
-          {/* Breathing glow */}
-          <div className={cn(
-            "absolute inset-0 rounded-full blur-xl transition-opacity duration-1000",
-            state === "listening" ? "opacity-60 animate-voice-breathe" : "opacity-30"
-          )}
-            style={{
-              background: "radial-gradient(circle, hsla(175, 60%, 50%, 0.4) 0%, transparent 70%)"
-            }}
+      {/* Main content */}
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 pb-40">
+        {/* Voice Orb */}
+        <div className="mb-8">
+          <VoiceOrb 
+            state={state} 
+            amplitude={amplitude}
           />
         </div>
 
         {/* State title */}
         <h2 className={cn(
-          "text-xl md:text-2xl font-medium text-foreground mb-2 transition-all duration-300",
-          "animate-fade-in"
+          "text-2xl md:text-3xl font-medium text-white mb-2",
+          "transition-all duration-500 animate-fade-in"
         )}>
-          {state === "listening" && t('voice.listening')}
-          {state === "processing" && t('voice.understanding')}
-          {state === "answering" && t('voice.preparing')}
-          {state === "idle" && t('voice.tapToSpeak')}
+          {getStateTitle()}
         </h2>
         
         {/* Subtitle */}
-        <p className="text-sm md:text-base text-muted-foreground mb-8 text-center max-w-xs">
-          {state === "listening" && t('voice.speakNaturally')}
-          {state === "processing" && t('voice.processingVoice')}
-          {state === "answering" && t('voice.almostReady')}
-          {state === "idle" && t('voice.readyToListen')}
+        <p className="text-sm md:text-base text-white/50 mb-8 text-center max-w-xs">
+          {getStateSubtitle()}
         </p>
 
-        {/* Waveform */}
-        <div 
-          className="w-full max-w-md h-32 md:h-40 mb-8 cursor-pointer"
-          onClick={handleToggle}
-        >
-          <VoiceWaveform 
-            isActive={state === "listening"} 
-            amplitude={amplitude}
-          />
-        </div>
+        {/* Fluid waveform - visible in listening/speaking states */}
+        {(state === "listening" || state === "speaking") && (
+          <div className="w-full max-w-lg h-24 md:h-32 mb-8 animate-fade-in">
+            <FluidWaveform 
+              isActive={state === "listening" || state === "speaking"} 
+              amplitude={amplitude}
+              state={state}
+            />
+          </div>
+        )}
 
-        {/* Processing steps - Mini reasoning bar */}
-        {state === "processing" && (
-          <div className="w-full max-w-sm mb-8 animate-fade-in">
-            <div className="bg-card/50 backdrop-blur-sm rounded-2xl border border-border/30 p-4">
-              <div className="space-y-3">
+        {/* Thinking state mini reasoning bar */}
+        {state === "thinking" && (
+          <div className="w-full max-w-sm mb-8 animate-voice-slide-up">
+            <div className={cn(
+              "rounded-2xl p-5",
+              "bg-white/5 backdrop-blur-xl border border-white/10",
+              "shadow-[0_0_40px_rgba(0,212,180,0.1)]"
+            )}>
+              <div className="space-y-4">
                 {PROCESSING_STEPS.map((step, index) => (
                   <div 
                     key={step.key}
                     className={cn(
-                      "flex items-center gap-3 transition-all duration-300",
-                      index < processingStep ? "opacity-100" : "opacity-40"
+                      "flex items-center gap-4 transition-all duration-500",
+                      index < processingStep ? "opacity-100" : "opacity-30"
                     )}
                   >
-                    {/* Step indicator */}
+                    {/* Glowing badge */}
                     <div className={cn(
-                      "w-8 h-8 rounded-full flex items-center justify-center text-sm",
-                      "transition-all duration-300",
+                      "w-10 h-10 rounded-full flex items-center justify-center text-sm",
+                      "transition-all duration-500",
                       index < processingStep 
-                        ? "bg-primary/20 text-primary shadow-[0_0_12px_hsla(175,60%,50%,0.3)]" 
-                        : "bg-muted/50 text-muted-foreground"
+                        ? "bg-primary/20 text-primary shadow-[0_0_20px_rgba(0,212,180,0.4)] scale-110" 
+                        : "bg-white/5 text-white/40"
                     )}>
-                      {index < processingStep ? "✓" : step.icon}
+                      {index < processingStep ? (
+                        <span className="animate-voice-checkmark">✓</span>
+                      ) : (
+                        step.icon
+                      )}
                     </div>
                     
                     {/* Step text */}
                     <span className={cn(
-                      "text-sm transition-colors duration-300",
-                      index < processingStep ? "text-foreground" : "text-muted-foreground"
+                      "text-sm md:text-base transition-colors duration-500",
+                      index < processingStep ? "text-white" : "text-white/40"
                     )}>
                       {t(`voice.step.${step.key}`)}
                     </span>
                     
-                    {/* Progress dots */}
+                    {/* Bouncing dots for active step */}
                     {index === processingStep - 1 && processingStep < PROCESSING_STEPS.length && (
-                      <div className="flex gap-1 ml-auto">
-                        <div className="w-1.5 h-1.5 rounded-full bg-primary animate-voice-dot" />
-                        <div className="w-1.5 h-1.5 rounded-full bg-primary animate-voice-dot animation-delay-150" />
-                        <div className="w-1.5 h-1.5 rounded-full bg-primary animate-voice-dot animation-delay-300" />
+                      <div className="flex gap-1.5 ml-auto">
+                        <div className="w-2 h-2 rounded-full bg-primary animate-voice-dot" />
+                        <div className="w-2 h-2 rounded-full bg-primary animate-voice-dot animation-delay-150" />
+                        <div className="w-2 h-2 rounded-full bg-primary animate-voice-dot animation-delay-300" />
                       </div>
                     )}
                   </div>
@@ -367,34 +382,40 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
           </div>
         )}
 
-        {/* Answer preview skeleton */}
-        {state === "answering" && (
-          <div className="w-full max-w-sm mb-8 animate-fade-in">
-            <div className="bg-card/50 backdrop-blur-sm rounded-2xl border border-border/30 p-4">
-              {answerPreview ? (
-                <p className="text-foreground text-sm leading-relaxed">{answerPreview}</p>
-              ) : (
-                <div className="space-y-2">
-                  <div className="h-3 bg-muted/50 rounded-full w-full animate-pulse" />
-                  <div className="h-3 bg-muted/50 rounded-full w-4/5 animate-pulse animation-delay-150" />
-                  <div className="h-3 bg-muted/50 rounded-full w-3/5 animate-pulse animation-delay-300" />
+        {/* Speaking state - answer preview */}
+        {state === "speaking" && answerPreview && (
+          <div className="w-full max-w-md animate-voice-slide-up">
+            <div className={cn(
+              "rounded-2xl p-5",
+              "bg-white/5 backdrop-blur-xl border border-white/10",
+              "shadow-[0_0_40px_rgba(100,255,150,0.1)]"
+            )}>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center flex-shrink-0">
+                  <img src={bahorLogo} alt="" className="w-5 h-5 object-contain" />
                 </div>
-              )}
+                <p className="text-white/90 text-sm md:text-base leading-relaxed">
+                  {answerPreview}
+                </p>
+              </div>
             </div>
           </div>
         )}
 
         {/* Live transcription */}
         {showCaptions && transcription && (
-          <div className="w-full max-w-md animate-fade-in">
-            <div className="bg-card/30 backdrop-blur-sm rounded-2xl border border-border/20 p-4">
+          <div className="w-full max-w-md mt-6 animate-fade-in">
+            <div className={cn(
+              "rounded-2xl p-4",
+              "bg-black/30 backdrop-blur-sm border border-white/5"
+            )}>
               <p className={cn(
-                "text-center text-foreground transition-all duration-200",
-                state === "listening" ? "text-muted-foreground" : "font-medium"
+                "text-center transition-all duration-300",
+                state === "listening" ? "text-white/60" : "text-white font-medium"
               )}>
                 {transcription}
                 {state === "listening" && (
-                  <span className="inline-block w-0.5 h-4 bg-primary ml-0.5 animate-pulse" />
+                  <span className="inline-block w-0.5 h-4 bg-primary ml-1 animate-pulse" />
                 )}
               </p>
             </div>
@@ -403,68 +424,46 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
       </div>
 
       {/* Bottom controls */}
-      <div className="relative z-10 pb-8 px-6">
+      <div className="relative z-10 pb-10 px-6">
         <div className="flex items-center justify-center gap-6">
-          {/* Replay button */}
-          {(state === "answering" || answerPreview) && (
-            <button
-              onClick={() => {/* Replay logic */}}
-              className={cn(
-                "p-4 rounded-full transition-all duration-200",
-                "bg-card/50 border border-border/30 backdrop-blur-sm",
-                "hover:bg-card/70 hover:border-border/50"
-              )}
-              aria-label={t('voice.replay')}
-            >
-              <RotateCcw className="w-5 h-5 text-muted-foreground" />
-            </button>
-          )}
-          
-          {/* Main mic button */}
+          {/* Main control button */}
           <button
             onClick={handleToggle}
             className={cn(
-              "relative p-6 rounded-full transition-all duration-300",
-              "bg-gradient-to-br",
+              "relative p-7 rounded-full transition-all duration-500",
               state === "listening" 
-                ? "from-destructive/80 to-destructive/60 shadow-[0_0_40px_hsla(0,70%,50%,0.3)]" 
-                : "from-primary/80 to-primary/60 shadow-[0_0_40px_hsla(175,60%,50%,0.3)]",
-              "hover:scale-105 active:scale-95"
+                ? "bg-gradient-to-br from-red-500/80 to-red-600/60" 
+                : "bg-gradient-to-br from-primary/80 to-primary/60",
+              "hover:scale-105 active:scale-95",
+              "shadow-[0_0_60px_rgba(0,212,180,0.4)]",
+              state === "listening" && "shadow-[0_0_60px_rgba(255,100,100,0.4)]"
             )}
           >
-            {/* Pulse rings */}
+            {/* Animated glow rings */}
             {state === "listening" && (
               <>
-                <div className="absolute inset-0 rounded-full bg-destructive/30 animate-voice-pulse" />
-                <div className="absolute inset-[-8px] rounded-full bg-destructive/20 animate-voice-pulse animation-delay-300" />
+                <div className="absolute inset-0 rounded-full bg-red-500/30 animate-voice-pulse" />
+                <div className="absolute inset-[-12px] rounded-full bg-red-500/20 animate-voice-pulse animation-delay-300" />
+              </>
+            )}
+            
+            {state !== "listening" && state === "idle" && (
+              <>
+                <div className="absolute inset-0 rounded-full bg-primary/30 animate-voice-glow-ring" />
+                <div className="absolute inset-[-8px] rounded-full bg-primary/20 animate-voice-glow-ring-delayed" />
               </>
             )}
             
             {state === "listening" ? (
-              <Square className="w-6 h-6 text-white relative z-10" fill="currentColor" />
+              <Square className="w-7 h-7 text-white relative z-10" fill="currentColor" />
             ) : (
-              <Mic className="w-6 h-6 text-white relative z-10" />
+              <Mic className="w-7 h-7 text-white relative z-10" />
             )}
           </button>
-          
-          {/* Cancel/Close button */}
-          {state === "listening" && (
-            <button
-              onClick={handleClose}
-              className={cn(
-                "p-4 rounded-full transition-all duration-200",
-                "bg-card/50 border border-border/30 backdrop-blur-sm",
-                "hover:bg-destructive/10 hover:border-destructive/30"
-              )}
-              aria-label={t('voice.cancel')}
-            >
-              <X className="w-5 h-5 text-muted-foreground" />
-            </button>
-          )}
         </div>
         
-        {/* Tap to stop hint */}
-        <p className="text-center text-xs text-muted-foreground mt-4">
+        {/* Hint text */}
+        <p className="text-center text-sm text-white/40 mt-5">
           {state === "listening" ? t('voice.tapToStop') : t('voice.tapToStart')}
         </p>
       </div>
