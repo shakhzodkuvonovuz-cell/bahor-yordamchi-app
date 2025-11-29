@@ -81,6 +81,7 @@ export default {
       },
       fontSize: {
         "2xs": ["0.625rem", { lineHeight: "0.875rem" }],
+        "display-2xl": ["4rem", { lineHeight: "1.05", letterSpacing: "-0.025em" }],
         "display-xl": ["3.5rem", { lineHeight: "1.1", letterSpacing: "-0.02em" }],
         "display-lg": ["2.75rem", { lineHeight: "1.15", letterSpacing: "-0.02em" }],
         "display-md": ["2rem", { lineHeight: "1.2", letterSpacing: "-0.01em" }],
@@ -92,12 +93,15 @@ export default {
         sm: "calc(var(--radius) - 4px)",
         "2xl": "1rem",
         "3xl": "1.5rem",
+        "4xl": "2rem",
       },
       boxShadow: {
         "premium-sm": "var(--shadow-sm)",
         "premium-md": "var(--shadow-md)",
         "premium-lg": "var(--shadow-lg)",
         "glow": "var(--shadow-glow)",
+        "glow-lg": "0 0 50px hsl(var(--primary) / 0.25)",
+        "inner-glow": "inset 0 0 20px hsl(var(--primary) / 0.1)",
       },
       keyframes: {
         "accordion-down": {
@@ -124,6 +128,10 @@ export default {
           from: { transform: "translateX(100%)" },
           to: { transform: "translateX(0)" },
         },
+        "shimmer": {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -132,11 +140,16 @@ export default {
         "fade-up": "fade-up 0.5s ease-out forwards",
         "scale-in": "scale-in 0.3s ease-out forwards",
         "slide-in-right": "slide-in-right 0.3s ease-out",
+        "shimmer": "shimmer 2s linear infinite",
       },
       spacing: {
         "18": "4.5rem",
         "88": "22rem",
         "128": "32rem",
+      },
+      backgroundImage: {
+        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
+        "gradient-conic": "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
       },
     },
   },

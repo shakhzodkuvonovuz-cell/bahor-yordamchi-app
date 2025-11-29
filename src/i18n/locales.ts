@@ -27,12 +27,23 @@ export const translations: Record<Lang, Record<string, string>> = {
     'section.whyChoose.subtitle': "O'zbek tilida so'zlashuvchilar ehtiyojlari uchun maxsus yaratilgan",
     'feature.uzbekOptimized.title': "O'zbek tiliga moslashtirilgan",
     'feature.uzbekOptimized.desc': "O'zbek shevasi, tabiiy iboralar va haqiqiy kontekstni tushunadi.",
+    'feature.affordable.title': 'Arzon narxlar',
+    'feature.affordable.desc': "Xorijiy AI xizmatlaridan 80% arzonroq. O'zbekiston uchun moslashtirilgan narxlar.",
     'feature.specializedModes.title': 'Maxsus rejimlar',
     'feature.specializedModes.desc': 'Kod yozish, IELTS, biznes, marketing, uy vazifasi va boshqalar.',
     'feature.fastSimple.title': 'Tez, oddiy, qulay',
     'feature.fastSimple.desc': "Murakkab menyular yo'q. Shunchaki so'rang va tezkor yordam oling.",
     'feature.futurePlans.title': 'Kelajakda premium rejalar',
     'feature.futurePlans.desc': "Hozircha beta davrida bepul. Pullik rejalar tez orada qo'shimcha imkoniyatlar bilan ishga tushadi.",
+    
+    // Built For Section
+    'builtFor.badge': "O'zbekiston uchun",
+    'builtFor.title': "O'zbekiston uchun maxsus yaratilgan",
+    'builtFor.description': "Bahor AI o'zbek tili, madaniyati va mahalliy ehtiyojlarni tushunadi. Biz o'zbek tilida so'zlashuvchilar uchun eng yaxshi AI tajribasini yaratmoqdamiz.",
+    
+    // Mockup
+    'mockup.userMessage': "Ingliz tilida essay yozishga yordam bering",
+    'mockup.aiMessage': "Albatta! Essay mavzusi nima bo'ladi?",
     
     // Modes Section
     'section.exploreModes': 'Bahor AI rejimlarini kashf qiling',
@@ -162,12 +173,23 @@ export const translations: Record<Lang, Record<string, string>> = {
     'section.whyChoose.subtitle': 'Built specifically for the needs of Uzbek speakers',
     'feature.uzbekOptimized.title': 'Optimized for Uzbek language',
     'feature.uzbekOptimized.desc': 'Understands Uzbek slang, natural phrasing, and real-life context.',
+    'feature.affordable.title': 'Affordable pricing',
+    'feature.affordable.desc': '80% cheaper than foreign AI services. Pricing optimized for Uzbekistan.',
     'feature.specializedModes.title': 'Specialized modes',
     'feature.specializedModes.desc': 'Coding, IELTS, business, marketing, homework help, and more.',
     'feature.fastSimple.title': 'Fast, simple, intuitive',
     'feature.fastSimple.desc': 'No complicated menus. Just ask and get instant help.',
     'feature.futurePlans.title': 'Future premium plans',
     'feature.futurePlans.desc': 'Currently free in beta. Paid plans will launch soon with additional features.',
+    
+    // Built For Section
+    'builtFor.badge': 'For Uzbekistan',
+    'builtFor.title': 'Built specifically for Uzbekistan',
+    'builtFor.description': 'Bahor AI understands Uzbek language, culture, and local needs. We are creating the best AI experience for Uzbek speakers.',
+    
+    // Mockup
+    'mockup.userMessage': 'Help me write an essay in English',
+    'mockup.aiMessage': 'Of course! What topic would you like?',
     
     // Modes Section
     'section.exploreModes': 'Explore Bahor AI Modes',
@@ -297,12 +319,23 @@ export const translations: Record<Lang, Record<string, string>> = {
     'section.whyChoose.subtitle': 'Создан специально для потребностей узбекоязычных пользователей',
     'feature.uzbekOptimized.title': 'Оптимизирован для узбекского языка',
     'feature.uzbekOptimized.desc': 'Понимает узбекский сленг, естественные фразы и реальный контекст.',
+    'feature.affordable.title': 'Доступные цены',
+    'feature.affordable.desc': 'На 80% дешевле зарубежных AI-сервисов. Цены адаптированы для Узбекистана.',
     'feature.specializedModes.title': 'Специализированные режимы',
     'feature.specializedModes.desc': 'Программирование, IELTS, бизнес, маркетинг, помощь с домашними заданиями и многое другое.',
     'feature.fastSimple.title': 'Быстро, просто, интуитивно',
     'feature.fastSimple.desc': 'Без сложных меню. Просто спросите и получите мгновенную помощь.',
     'feature.futurePlans.title': 'Будущие премиум-планы',
     'feature.futurePlans.desc': 'Сейчас бесплатно в бете. Платные планы скоро появятся с дополнительными функциями.',
+    
+    // Built For Section
+    'builtFor.badge': 'Для Узбекистана',
+    'builtFor.title': 'Создан специально для Узбекистана',
+    'builtFor.description': 'Bahor AI понимает узбекский язык, культуру и местные потребности. Мы создаём лучший AI-опыт для узбекоязычных пользователей.',
+    
+    // Mockup
+    'mockup.userMessage': 'Помогите написать эссе на английском',
+    'mockup.aiMessage': 'Конечно! Какая тема эссе?',
     
     // Modes Section
     'section.exploreModes': 'Изучите режимы Bahor AI',
@@ -432,12 +465,23 @@ export const translations: Record<Lang, Record<string, string>> = {
     'section.whyChoose.subtitle': 'Özbekçe konuşanların ihtiyaçları için özel olarak tasarlandı',
     'feature.uzbekOptimized.title': 'Özbekçe için optimize edildi',
     'feature.uzbekOptimized.desc': 'Özbek argosunu, doğal ifadeleri ve gerçek hayat bağlamını anlar.',
+    'feature.affordable.title': 'Uygun fiyatlar',
+    'feature.affordable.desc': "Yabancı AI hizmetlerinden %80 daha ucuz. Özbekistan için optimize edilmiş fiyatlar.",
     'feature.specializedModes.title': 'Özel modlar',
     'feature.specializedModes.desc': 'Kodlama, IELTS, iş, pazarlama, ödev yardımı ve daha fazlası.',
     'feature.fastSimple.title': 'Hızlı, basit, sezgisel',
     'feature.fastSimple.desc': 'Karmaşık menüler yok. Sadece sorun ve anında yardım alın.',
     'feature.futurePlans.title': 'Gelecekteki premium planlar',
     'feature.futurePlans.desc': 'Beta sürecinde şu an ücretsiz. Ek özelliklerle ücretli planlar yakında.',
+    
+    // Built For Section
+    'builtFor.badge': 'Özbekistan için',
+    'builtFor.title': 'Özbekistan için özel olarak tasarlandı',
+    'builtFor.description': 'Bahor AI, Özbekçe dili, kültürü ve yerel ihtiyaçları anlar. Özbekçe konuşanlar için en iyi AI deneyimini oluşturuyoruz.',
+    
+    // Mockup
+    'mockup.userMessage': "İngilizce bir kompozisyon yazmama yardım et",
+    'mockup.aiMessage': 'Tabii! Hangi konuda olsun?',
     
     // Modes Section
     'section.exploreModes': 'Bahor AI Modlarını Keşfedin',
