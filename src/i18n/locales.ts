@@ -148,6 +148,18 @@ export const translations: Record<Lang, Record<string, string>> = {
     'delete.description': "Bu suhbatni o'chirishni xohlaysizmi? Bu amalni qaytarib bo'lmaydi.",
     'delete.cancel': "Bekor qilish",
     'delete.confirm': "O'chirish",
+    
+    // Thinking Bar
+    'thinking.reasoning': "Bahor AI fikr yuritmoqda...",
+    'thinking.searching': "Vebdan ma'lumot qidirmoqda...",
+    'thinking.vision': "Yuklangan hujjat va rasmni tahlil qilmoqda...",
+    'thinking.finalising': "Javob tayyorlanmoqda...",
+    'thinking.step.understanding': "Savolingizni aniqlashtirmoqda",
+    'thinking.step.selecting': "Kerakli bilimlarni va manbalarni tanlamoqda",
+    'thinking.step.drafting': "Javobni oson tilda yozmoqda",
+    'thinking.step.checking': "Javobni tekshirmoqda",
+    'thinking.processing': "Fikr yuritilmoqda...",
+    'thinking.explanation': "Ba'zan chuqur fikrlash yoki vebdan ma'lumot izlash biroz ko'proq vaqt olishi mumkin. Bu sizga aniqroq va ishonchli javob berish uchun qilinadi.",
   },
 
   en: {
@@ -297,6 +309,18 @@ export const translations: Record<Lang, Record<string, string>> = {
     'delete.description': 'Are you sure you want to delete this chat? This action cannot be undone.',
     'delete.cancel': 'Cancel',
     'delete.confirm': 'Delete',
+    
+    // Thinking Bar
+    'thinking.reasoning': "Bahor AI is thinking...",
+    'thinking.searching': "Searching the web for fresh info...",
+    'thinking.vision': "Analyzing your file and image...",
+    'thinking.finalising': "Preparing your answer...",
+    'thinking.step.understanding': "Understanding your question",
+    'thinking.step.selecting': "Selecting relevant knowledge and sources",
+    'thinking.step.drafting': "Drafting a clear answer",
+    'thinking.step.checking': "Double-checking the response",
+    'thinking.processing': "Thinking...",
+    'thinking.explanation': "Sometimes Bahor AI takes a few more seconds to reason deeply or check fresh web sources so that your answer is more accurate.",
   },
 
   ru: {
@@ -446,6 +470,18 @@ export const translations: Record<Lang, Record<string, string>> = {
     'delete.description': 'Вы уверены, что хотите удалить этот чат? Это действие нельзя отменить.',
     'delete.cancel': 'Отмена',
     'delete.confirm': 'Удалить',
+    
+    // Thinking Bar
+    'thinking.reasoning': "Bahor AI думает...",
+    'thinking.searching': "Ищет актуальную информацию в интернете...",
+    'thinking.vision': "Анализирует ваш файл и изображение...",
+    'thinking.finalising': "Подготавливает ответ...",
+    'thinking.step.understanding': "Анализирует ваш вопрос",
+    'thinking.step.selecting': "Выбирает нужные знания и источники",
+    'thinking.step.drafting': "Составляет понятный ответ",
+    'thinking.step.checking': "Перепроверяет ответ",
+    'thinking.processing': "Думаю...",
+    'thinking.explanation': "Иногда Bahor AI требуется немного больше времени для глубокого анализа или проверки актуальных источников, чтобы дать вам более точный ответ.",
   },
 
   tr: {
@@ -595,6 +631,18 @@ export const translations: Record<Lang, Record<string, string>> = {
     'delete.description': 'Bu sohbeti silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
     'delete.cancel': 'İptal',
     'delete.confirm': 'Sil',
+    
+    // Thinking Bar
+    'thinking.reasoning': "Bahor AI düşünüyor...",
+    'thinking.searching': "Güncel bilgiler için web'de aranıyor...",
+    'thinking.vision': "Dosya ve görseliniz analiz ediliyor...",
+    'thinking.finalising': "Cevabınız hazırlanıyor...",
+    'thinking.step.understanding': "Sorunuzu anlıyor",
+    'thinking.step.selecting': "İlgili bilgi ve kaynakları seçiyor",
+    'thinking.step.drafting': "Net bir cevap hazırlıyor",
+    'thinking.step.checking': "Cevabı kontrol ediyor",
+    'thinking.processing': "Düşünülüyor...",
+    'thinking.explanation': "Bazen Bahor AI, size daha doğru bir cevap vermek için derin düşünmek veya güncel web kaynaklarını kontrol etmek için birkaç saniye daha alabilir.",
   },
 };
 
