@@ -20,7 +20,7 @@ export default function VoiceOrb({ state, amplitude = 0.5, className }: VoiceOrb
     if (!ctx) return;
 
     const dpr = window.devicePixelRatio || 1;
-    const size = 320;
+    const size = 300;
     canvas.width = size * dpr;
     canvas.height = size * dpr;
     ctx.scale(dpr, dpr);
@@ -29,19 +29,60 @@ export default function VoiceOrb({ state, amplitude = 0.5, className }: VoiceOrb
     const centerX = size / 2;
     const centerY = size / 2;
 
-    // Bahor AI brand colors
-    const teal = { r: 0, g: 224, b: 200 };
-    const deepTeal = { r: 0, g: 180, b: 160 };
-    const cyan = { r: 0, g: 200, b: 220 };
+    // Bahor AI brand color
+    const teal = { r: 0, g: 199, b: 177 }; // #00c7b1
 
     const getIntensity = () => {
       switch (state) {
-        case "listening": return { base: 0.9, pulse: 0.4, ring: 1.2 };
-        case "thinking": return { base: 0.6, pulse: 0.6, ring: 0.8 };
-        case "speaking": return { base: 1.0, pulse: 0.3, ring: 1.0 };
-        default: return { base: 0.4, pulse: 0.2, ring: 0.5 };
+        case "listening": return { particles: 1.3, ring: 1.0, glow: 0.8 };
+        case "thinking": return { particles: 0.6, ring: 0.7, glow: 0.5 };
+        case "speaking": return { particles: 1.1, ring: 0.9, glow: 0.9 };
+        default: return { particles: 0.3, ring: 0.4, glow: 0.3 };
       }
     };
+
+    // Particle class for intelligent orbiting
+    class Particle {
+      angle: number;
+      radius: number;
+      baseRadius: number;
+      speed: number;
+      size: number;
+      alpha: number;
+      
+      constructor(index: number, total: number) {
+        this.angle = (index / total) * Math.PI * 2;
+        this.baseRadius = 85 + Math.random() * 20;
+        this.radius = this.baseRadius;
+        this.speed = 0.008 + Math.random() * 0.006;
+        this.size = 1.5 + Math.random() * 1.5;
+        this.alpha = 0.4 + Math.random() * 0.4;
+      }
+      
+      update(time: number, voiceAmplitude: number, intensity: number) {
+        this.angle += this.speed * intensity;
+        // Voice-reactive radius
+        const voiceEffect = state === "listening" ? Math.sin(time * 0.1 + this.angle * 3) * 15 * voiceAmplitude : 0;
+        this.radius = this.baseRadius + voiceEffect + Math.sin(time * 0.02 + this.angle) * 8;
+      }
+      
+      draw(ctx: CanvasRenderingContext2D, cx: number, cy: number, intensity: number) {
+        const x = cx + Math.cos(this.angle) * this.radius;
+        const y = cy + Math.sin(this.angle) * this.radius;
+        
+        ctx.beginPath();
+        ctx.arc(x, y, this.size * intensity, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${teal.r}, ${teal.g}, ${teal.b}, ${this.alpha * intensity})`;
+        ctx.fill();
+      }
+    }
+
+    // Create particles
+    const particles: Particle[] = [];
+    const particleCount = 24;
+    for (let i = 0; i < particleCount; i++) {
+      particles.push(new Particle(i, particleCount));
+    }
 
     const animate = () => {
       if (!ctx || !canvas) return;
@@ -49,78 +90,64 @@ export default function VoiceOrb({ state, amplitude = 0.5, className }: VoiceOrb
       ctx.clearRect(0, 0, size, size);
       const intensity = getIntensity();
 
-      // Ambient particles (elegant, slow moving)
-      if (state !== "idle") {
-        const particleCount = 12;
-        for (let i = 0; i < particleCount; i++) {
-          const angle = (time * 0.003 + i * Math.PI * 2 / particleCount);
-          const radius = 100 + Math.sin(time * 0.01 + i * 0.5) * 30;
-          const x = centerX + Math.cos(angle) * radius;
-          const y = centerY + Math.sin(angle) * radius;
-          const particleAlpha = 0.15 + Math.sin(time * 0.02 + i) * 0.1;
-          
-          ctx.beginPath();
-          ctx.arc(x, y, 1.5, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(${teal.r}, ${teal.g}, ${teal.b}, ${particleAlpha * intensity.base})`;
-          ctx.fill();
-        }
-      }
-
-      // Ring 3 (outermost) - organic distorted ring reacting to voice
-      const ring3Radius = 115 + Math.sin(time * 0.02) * 5 * intensity.pulse;
-      const ring3Points = 80;
-      
-      ctx.beginPath();
-      for (let i = 0; i <= ring3Points; i++) {
-        const angle = (i / ring3Points) * Math.PI * 2;
-        const voiceDistort = state === "listening" 
-          ? Math.sin(angle * 6 + time * 0.08) * 8 * amplitude 
-          : Math.sin(angle * 4 + time * 0.03) * 3;
-        const r = ring3Radius + voiceDistort;
-        const x = centerX + Math.cos(angle) * r;
-        const y = centerY + Math.sin(angle) * r;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.closePath();
-      ctx.strokeStyle = `rgba(${teal.r}, ${teal.g}, ${teal.b}, ${0.15 * intensity.ring})`;
-      ctx.lineWidth = 1;
-      ctx.stroke();
-
-      // Ring 2 (middle) - smooth pulsing ring
-      const ring2Radius = 90 + Math.sin(time * 0.025) * 4 * intensity.pulse;
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, ring2Radius, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(${cyan.r}, ${cyan.g}, ${cyan.b}, ${0.2 * intensity.ring})`;
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-
-      // Ring 1 (inner) - breathing glow ring
-      const ring1Radius = 70 + Math.sin(time * 0.03) * 3 * intensity.pulse;
-      const ring1Gradient = ctx.createRadialGradient(
-        centerX, centerY, ring1Radius - 10,
-        centerX, centerY, ring1Radius + 5
-      );
-      ring1Gradient.addColorStop(0, `rgba(${teal.r}, ${teal.g}, ${teal.b}, 0)`);
-      ring1Gradient.addColorStop(0.5, `rgba(${teal.r}, ${teal.g}, ${teal.b}, ${0.25 * intensity.base})`);
-      ring1Gradient.addColorStop(1, `rgba(${teal.r}, ${teal.g}, ${teal.b}, 0)`);
-      
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, ring1Radius, 0, Math.PI * 2);
-      ctx.strokeStyle = ring1Gradient;
-      ctx.lineWidth = 8;
-      ctx.stroke();
-
-      // Fog-like glow behind core
-      const fogGradient = ctx.createRadialGradient(
-        centerX, centerY, 0,
-        centerX, centerY, 130
-      );
-      fogGradient.addColorStop(0, `rgba(${teal.r}, ${teal.g}, ${teal.b}, ${0.08 * intensity.base})`);
-      fogGradient.addColorStop(0.5, `rgba(${deepTeal.r}, ${deepTeal.g}, ${deepTeal.b}, ${0.04 * intensity.base})`);
+      // Fog/glow behind everything
+      const fogGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 120);
+      fogGradient.addColorStop(0, `rgba(${teal.r}, ${teal.g}, ${teal.b}, ${0.12 * intensity.glow})`);
+      fogGradient.addColorStop(0.5, `rgba(${teal.r}, ${teal.g}, ${teal.b}, ${0.04 * intensity.glow})`);
       fogGradient.addColorStop(1, "rgba(0, 0, 0, 0)");
-      
       ctx.fillStyle = fogGradient;
+      ctx.fillRect(0, 0, size, size);
+
+      // Main glowing ring
+      const ringRadius = 80 + Math.sin(time * 0.025) * 3 * intensity.ring;
+      const ringGradient = ctx.createRadialGradient(
+        centerX, centerY, ringRadius - 15,
+        centerX, centerY, ringRadius + 5
+      );
+      ringGradient.addColorStop(0, `rgba(${teal.r}, ${teal.g}, ${teal.b}, 0)`);
+      ringGradient.addColorStop(0.4, `rgba(${teal.r}, ${teal.g}, ${teal.b}, ${0.35 * intensity.ring})`);
+      ringGradient.addColorStop(0.6, `rgba(${teal.r}, ${teal.g}, ${teal.b}, ${0.5 * intensity.ring})`);
+      ringGradient.addColorStop(1, `rgba(${teal.r}, ${teal.g}, ${teal.b}, 0)`);
+      
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
+      ctx.strokeStyle = ringGradient;
+      ctx.lineWidth = 12;
+      ctx.stroke();
+
+      // Voice-reactive ring distortion (listening flare)
+      if (state === "listening" || state === "speaking") {
+        const flarePoints = 60;
+        ctx.beginPath();
+        for (let i = 0; i <= flarePoints; i++) {
+          const angle = (i / flarePoints) * Math.PI * 2;
+          const distort = Math.sin(angle * 4 + time * 0.08) * 6 * amplitude;
+          const breathe = Math.sin(time * 0.03) * 3;
+          const r = ringRadius + distort + breathe;
+          const x = centerX + Math.cos(angle) * r;
+          const y = centerY + Math.sin(angle) * r;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.strokeStyle = `rgba(${teal.r}, ${teal.g}, ${teal.b}, ${0.2 * intensity.ring})`;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+
+      // Update and draw particles
+      particles.forEach(p => {
+        p.update(time, amplitude, intensity.particles);
+        p.draw(ctx, centerX, centerY, intensity.particles);
+      });
+
+      // Inner glow pulse
+      const pulseRadius = 70 + Math.sin(time * 0.04) * 4;
+      const pulseGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, pulseRadius);
+      pulseGradient.addColorStop(0, `rgba(${teal.r}, ${teal.g}, ${teal.b}, ${0.08 * intensity.glow})`);
+      pulseGradient.addColorStop(0.7, `rgba(${teal.r}, ${teal.g}, ${teal.b}, ${0.02 * intensity.glow})`);
+      pulseGradient.addColorStop(1, "rgba(0, 0, 0, 0)");
+      ctx.fillStyle = pulseGradient;
       ctx.fillRect(0, 0, size, size);
 
       time++;
@@ -139,64 +166,58 @@ export default function VoiceOrb({ state, amplitude = 0.5, className }: VoiceOrb
   const getOrbGlow = () => {
     switch (state) {
       case "listening":
-        return "shadow-[0_0_80px_rgba(0,224,200,0.35),0_0_40px_rgba(0,224,200,0.2)]";
+        return "shadow-[0_0_60px_rgba(0,199,177,0.4),0_0_30px_rgba(0,199,177,0.25)]";
       case "thinking":
-        return "shadow-[0_0_60px_rgba(0,200,220,0.3),0_0_30px_rgba(0,200,220,0.15)]";
+        return "shadow-[0_0_40px_rgba(0,199,177,0.25),0_0_20px_rgba(0,199,177,0.15)]";
       case "speaking":
-        return "shadow-[0_0_90px_rgba(0,224,200,0.4),0_0_45px_rgba(0,224,200,0.25)]";
+        return "shadow-[0_0_70px_rgba(0,199,177,0.45),0_0_35px_rgba(0,199,177,0.3)]";
       default:
-        return "shadow-[0_0_30px_rgba(0,200,180,0.15)]";
+        return "shadow-[0_0_25px_rgba(0,199,177,0.15)]";
     }
   };
 
   return (
     <div className={cn("relative flex items-center justify-center", className)}>
-      {/* Canvas for rings and particles */}
+      {/* Canvas for ring and particles */}
       <canvas
         ref={canvasRef}
-        className="absolute w-[320px] h-[320px]"
-        style={{ width: 320, height: 320 }}
+        className="absolute w-[300px] h-[300px]"
+        style={{ width: 300, height: 300 }}
       />
 
       {/* Core orb with logo */}
       <div
         className={cn(
-          "relative w-[140px] h-[140px] rounded-full",
+          "relative w-[120px] h-[120px] rounded-full",
           "flex items-center justify-center",
-          "bg-gradient-to-br from-[hsl(172,45%,10%)] via-[hsl(175,40%,12%)] to-[hsl(170,35%,8%)]",
-          "border border-[rgba(0,224,200,0.12)]",
+          "bg-[#020b0a]",
+          "border border-[rgba(0,199,177,0.15)]",
           getOrbGlow(),
-          "transition-all duration-700 ease-out",
-          state === "listening" && "animate-voice-core-breathe",
-          state === "thinking" && "animate-voice-core-think",
-          state === "speaking" && "animate-voice-core-speak"
+          "transition-all duration-500 ease-out"
         )}
       >
-        {/* Inner glow overlay */}
+        {/* Inner gradient overlay */}
         <div 
           className="absolute inset-0 rounded-full"
           style={{
-            background: "radial-gradient(circle at 40% 35%, rgba(255,255,255,0.06) 0%, transparent 50%)"
+            background: "radial-gradient(circle at 35% 30%, rgba(0,199,177,0.08) 0%, transparent 60%)"
           }}
         />
 
         {/* Bahor AI Logo */}
         <div className={cn(
-          "relative z-10 w-16 h-16",
+          "relative z-10 w-14 h-14",
           "transition-all duration-500",
-          state !== "idle" && "animate-voice-logo-pulse"
+          state === "thinking" && "animate-voice-logo-rotate"
         )}>
           <img
             src={bahorLogo}
             alt="Bahor AI"
-            className={cn(
-              "w-full h-full object-contain",
-              "transition-all duration-500"
-            )}
+            className="w-full h-full object-contain transition-all duration-500"
             style={{
               filter: state !== "idle" 
-                ? "drop-shadow(0 0 15px rgba(0,224,200,0.5)) brightness(1.1)" 
-                : "drop-shadow(0 0 8px rgba(0,224,200,0.25))"
+                ? "drop-shadow(0 0 12px rgba(0,199,177,0.6)) brightness(1.15)" 
+                : "drop-shadow(0 0 6px rgba(0,199,177,0.3))"
             }}
           />
         </div>

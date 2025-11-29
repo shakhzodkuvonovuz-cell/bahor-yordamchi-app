@@ -495,72 +495,102 @@ select:focus-visible {
   animation: voice-exit 0.45s cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
-/* Voice core breathing animation */
-@keyframes voice-core-breathe {
+/* Text wiggle animation - "Tinglayapman..." */
+@keyframes voice-text-wiggle {
   0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 80px rgba(0,224,200,0.35), 0 0 40px rgba(0,224,200,0.2);
-  }
-  50% {
-    transform: scale(1.03);
-    box-shadow: 0 0 100px rgba(0,224,200,0.45), 0 0 50px rgba(0,224,200,0.3);
-  }
-}
-
-.animate-voice-core-breathe {
-  animation: voice-core-breathe 2.5s ease-in-out infinite;
-}
-
-/* Core thinking animation */
-@keyframes voice-core-think {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 60px rgba(0,200,220,0.3), 0 0 30px rgba(0,200,220,0.15);
-  }
-  50% {
-    transform: scale(0.98);
-    box-shadow: 0 0 70px rgba(0,200,220,0.4), 0 0 35px rgba(0,200,220,0.2);
-  }
-}
-
-.animate-voice-core-think {
-  animation: voice-core-think 1.5s ease-in-out infinite;
-}
-
-/* Core speaking animation */
-@keyframes voice-core-speak {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 90px rgba(0,224,200,0.4), 0 0 45px rgba(0,224,200,0.25);
-  }
-  50% {
-    transform: scale(1.02);
-    box-shadow: 0 0 110px rgba(0,224,200,0.5), 0 0 55px rgba(0,224,200,0.35);
-  }
-}
-
-.animate-voice-core-speak {
-  animation: voice-core-speak 2s ease-in-out infinite;
-}
-
-/* Logo pulse animation */
-@keyframes voice-logo-pulse {
-  0%, 100% {
-    transform: scale(1) rotate(0deg);
-    filter: drop-shadow(0 0 15px rgba(0,224,200,0.5)) brightness(1.1);
+    transform: translateX(0);
   }
   25% {
-    transform: scale(1.02) rotate(1deg);
-  }
-  50% {
-    transform: scale(1.04) rotate(0deg);
-    filter: drop-shadow(0 0 20px rgba(0,224,200,0.6)) brightness(1.15);
+    transform: translateX(-2px);
   }
   75% {
-    transform: scale(1.02) rotate(-1deg);
+    transform: translateX(2px);
   }
 }
 
-.animate-voice-logo-pulse {
-  animation: voice-logo-pulse 3s ease-in-out infinite;
+.animate-voice-text-wiggle {
+  animation: voice-text-wiggle 2s ease-in-out infinite;
+}
+
+/* Subtitle float animation */
+@keyframes voice-subtitle-float {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(-2px);
+    opacity: 0.4;
+  }
+}
+
+.animate-voice-subtitle-float {
+  animation: voice-subtitle-float 3s ease-in-out infinite;
+}
+
+/* Logo slow rotate (thinking state) */
+@keyframes voice-logo-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-voice-logo-rotate {
+  animation: voice-logo-rotate 8s linear infinite;
+}
+
+/* Ring expand animation (listening) */
+@keyframes voice-ring-expand {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+.animate-voice-ring-expand {
+  animation: voice-ring-expand 1.8s ease-out infinite;
+}
+
+.animate-voice-ring-expand-delay {
+  animation: voice-ring-expand 1.8s ease-out infinite;
+  animation-delay: 0.4s;
+}
+
+/* Ring breathe animation (idle) */
+@keyframes voice-ring-breathe {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.5;
+  }
+}
+
+.animate-voice-ring-breathe {
+  animation: voice-ring-breathe 2.5s ease-in-out infinite;
+}
+
+/* Answer slide up animation */
+@keyframes voice-answer-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-voice-answer-up {
+  animation: voice-answer-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
