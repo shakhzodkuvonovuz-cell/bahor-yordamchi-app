@@ -1,4 +1,5 @@
 import { MessageSquare, AlertCircle } from "lucide-react";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 interface DailyUsageIndicatorProps {
   used: number;
@@ -13,6 +14,8 @@ export default function DailyUsageIndicator({
   isNearLimit, 
   hasReachedLimit 
 }: DailyUsageIndicatorProps) {
+  const { t } = useTranslation();
+  
   return (
     <div className="flex justify-center py-2">
       <div 
@@ -32,7 +35,7 @@ export default function DailyUsageIndicator({
           <MessageSquare className="w-3.5 h-3.5" />
         )}
         <span>
-          Bugungi limit: <span className="font-bold">{used} / {limit}</span> so'rov
+          {t('usage.today')}: <span className="font-bold">{used} / {limit}</span> {t('usage.requests')}
         </span>
       </div>
     </div>
