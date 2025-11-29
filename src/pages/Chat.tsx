@@ -7,6 +7,7 @@ import { DeleteChatModal } from "@/components/DeleteChatModal";
 import DailyUsageIndicator from "@/components/DailyUsageIndicator";
 import LimitReachedCard from "@/components/LimitReachedCard";
 import ThinkingBar, { ThinkingStatus, ThinkingPhase } from "@/components/ThinkingBar";
+import { VoiceModeButton, VoiceModePanel } from "@/components/voice";
 import { Message, ChatSession, ChatAttachment } from "@/types/chat";
 import { supabase } from "@/integrations/supabase/client";
 import { getModeInfo } from "@/data/modes";
@@ -102,6 +103,7 @@ export default function Chat() {
   const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<string | null>(null);
+  const [isVoiceModeOpen, setIsVoiceModeOpen] = useState(false);
   const [thinkingStatus, setThinkingStatus] = useState<ThinkingStatus>({
     phase: 'idle',
     shortLabel: '',
@@ -966,6 +968,13 @@ export default function Chat() {
                 className="flex-1 bg-transparent border-none outline-none resize-none text-[15px] leading-relaxed text-foreground placeholder:text-muted-foreground/60 disabled:opacity-50 max-h-[140px] overflow-y-auto py-3 px-1"
               />
               
+              {/* Voice Mode Button */}
+              <VoiceModeButton
+                onClick={() => setIsVoiceModeOpen(true)}
+                disabled={isLoading || typing}
+                className="flex-shrink-0"
+              />
+              
               <button
                 type="submit"
                 disabled={(!inputValue.trim() && pendingAttachments.length === 0) || isLoading || typing}
@@ -999,6 +1008,18 @@ export default function Chat() {
           }
         }}
         onCancel={() => setPendingDeleteSessionId(null)}
+      />
+
+      {/* Voice Mode Panel */}
+      <VoiceModePanel
+        isOpen={isVoiceModeOpen}
+        onClose={() => setIsVoiceModeOpen(false)}
+        onTranscriptionComplete={(text) => {
+          setInputValue(text);
+          setIsVoiceModeOpen(false);
+          // Auto-focus the input so user can edit or send
+          setTimeout(() => inputRef.current?.focus(), 100);
+        }}
       />
     </div>
   );

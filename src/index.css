@@ -453,3 +453,190 @@ select:focus-visible {
   pointer-events: none;
   opacity: 0.4;
 }
+
+/* ========================================
+   Voice Mode Premium Animations
+   ======================================== */
+
+/* Voice Mode Panel entry animation */
+@keyframes voice-panel-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-voice-panel-in {
+  animation: voice-panel-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Voice button glow ring */
+@keyframes voice-glow-ring {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.4;
+    box-shadow: 0 0 0 0 hsla(175, 60%, 50%, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.6;
+    box-shadow: 0 0 20px 4px hsla(175, 60%, 50%, 0.3);
+  }
+}
+
+.animate-voice-glow-ring {
+  animation: voice-glow-ring 2.5s ease-in-out infinite;
+}
+
+.animate-voice-glow-ring-delayed {
+  animation: voice-glow-ring 2.5s ease-in-out infinite;
+  animation-delay: 0.5s;
+}
+
+/* Voice pulse for listening state */
+@keyframes voice-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+.animate-voice-pulse {
+  animation: voice-pulse 1.5s ease-out infinite;
+}
+
+/* Voice logo breathing glow */
+@keyframes voice-breathe {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+.animate-voice-breathe {
+  animation: voice-breathe 2s ease-in-out infinite;
+}
+
+/* Voice logo subtle rotation */
+@keyframes voice-logo-rotate {
+  0%, 100% {
+    transform: rotate(-2deg);
+  }
+  50% {
+    transform: rotate(2deg);
+  }
+}
+
+.animate-voice-logo-rotate {
+  animation: voice-logo-rotate 3s ease-in-out infinite;
+}
+
+/* Voice logo pulse during processing */
+@keyframes voice-logo-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.animate-voice-logo-pulse {
+  animation: voice-logo-pulse 1s ease-in-out infinite;
+}
+
+/* Bouncing dots animation */
+@keyframes voice-dot {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+.animate-voice-dot {
+  animation: voice-dot 1.2s ease-in-out infinite;
+}
+
+/* Animation delays */
+.animation-delay-150 {
+  animation-delay: 0.15s;
+}
+
+.animation-delay-300 {
+  animation-delay: 0.3s;
+}
+
+.animation-delay-450 {
+  animation-delay: 0.45s;
+}
+
+/* Waveform bar animation */
+@keyframes voice-bar {
+  0%, 100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.animate-voice-bar {
+  animation: voice-bar 1s ease-in-out infinite;
+  transform-origin: center;
+}
+
+/* Particle morphing animation for processing */
+@keyframes voice-particle {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.6;
+  }
+  25% {
+    transform: translate(10px, -10px) scale(1.2);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translate(-5px, 10px) scale(0.8);
+    opacity: 0.5;
+  }
+  75% {
+    transform: translate(-10px, -5px) scale(1.1);
+    opacity: 0.7;
+  }
+}
+
+.animate-voice-particle {
+  animation: voice-particle 3s ease-in-out infinite;
+}
+
+/* Smooth slide up for answer */
+@keyframes voice-slide-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-voice-slide-up {
+  animation: voice-slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
