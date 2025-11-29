@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Send, Trash2, Menu, Paperclip, X } from "lucide-react";
+import { ArrowLeft, Send, Trash2, Menu, Paperclip, X, ImageIcon, FileText } from "lucide-react";
 import ChatMessage from "@/components/ChatMessage";
 import QuickSuggestions from "@/components/QuickSuggestions";
 import { DeleteChatModal } from "@/components/DeleteChatModal";
@@ -18,7 +18,8 @@ import { useDailyUsage } from "@/hooks/useDailyUsage";
 import clsx from "clsx";
 import { useToast } from "@/hooks/use-toast";
 import bahorLogo from "@/assets/bahor-logo.png";
-import { processAttachmentsForOCR } from "@/services/ocrService";
+import { processAttachments } from "@/services/documentService";
+import { isVisionSupportedImage } from "@/services/visionService";
 
 // Real streaming helper - processes SSE from DeepSeek API
 type StreamOptions = {
@@ -98,7 +99,7 @@ export default function Chat() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [ocrStatus, setOcrStatus] = useState<string | null>(null);
+  const [processingStatus, setProcessingStatus] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -342,32 +343,47 @@ export default function Chat() {
     let assistantMessageCreated = false;
 
     try {
-      // Process OCR for attachments if any
-      let extractedText: string | null = null;
-      let hasOCR = false;
+      // Process attachments with Vision AI (images) or OCR (text PDFs)
+      let analysisContent: string | null = null;
+      let analysisType: 'vision' | 'ocr' | 'mixed' | null = null;
       
       if (attachmentsToProcess.length > 0) {
-        setOcrStatus(language === "uz" ? "Hujjat o'qilmoqda..." : 
-                     language === "en" ? "Reading document..." :
-                     language === "ru" ? "Чтение документа..." : 
-                     "Belge okunuyor...");
+        // Check if any images need vision analysis
+        const hasImages = attachmentsToProcess.some(att => isVisionSupportedImage(att));
         
-        const ocrResult = await processAttachmentsForOCR(
-          attachmentsToProcess,
-          (status) => setOcrStatus(status)
+        setProcessingStatus(
+          hasImages
+            ? (language === "uz" ? "Tasvir tahlil qilinmoqda..." : 
+               language === "en" ? "Analyzing image..." :
+               language === "ru" ? "Анализ изображения..." : 
+               "Görsel analiz ediliyor...")
+            : (language === "uz" ? "Hujjat o'qilmoqda..." : 
+               language === "en" ? "Reading document..." :
+               language === "ru" ? "Чтение документа..." : 
+               "Belge okunuyor...")
         );
         
-        extractedText = ocrResult.extractedText;
-        hasOCR = ocrResult.hasOCR;
-        setOcrStatus(null);
+        const analysisResult = await processAttachments(
+          attachmentsToProcess,
+          {
+            mode: mode || 'general',
+            language,
+            userPrompt: content.trim(),
+            onProgress: (status) => setProcessingStatus(status),
+          }
+        );
         
-        // If OCR was attempted but failed
-        if (hasOCR && !extractedText) {
+        analysisContent = analysisResult.content;
+        analysisType = analysisResult.type;
+        setProcessingStatus(null);
+        
+        // If processing was attempted but failed
+        if (!analysisContent && attachmentsToProcess.length > 0) {
           toast({
             title: language === "uz" ? "Ogohlantirish" : "Warning",
             description: language === "uz" 
-              ? "Hujjatni o'qib bo'lmadi. Iltimos, aniqroq rasm yuklang." 
-              : "Could not read document. Please upload a clearer image.",
+              ? "Faylni tahlil qilib bo'lmadi. Iltimos, aniqroq rasm yuklang." 
+              : "Could not analyze file. Please upload a clearer image.",
             variant: "destructive",
           });
         }
@@ -380,21 +396,29 @@ export default function Chat() {
         content: msg.content,
       }));
       
-      // Build the message content with OCR text if available
+      // Build the message content with analysis if available
       let messageContent = content.trim();
-      if (extractedText) {
-        const ocrPrefix = language === "uz" 
-          ? "Yuklangan hujjatdan o'qilgan matn:" 
-          : language === "en" 
-          ? "Text extracted from uploaded document:"
-          : language === "ru"
-          ? "Текст, извлеченный из загруженного документа:"
-          : "Yuklenen belgeden cikarilan metin:";
+      if (analysisContent) {
+        const analysisPrefix = analysisType === 'vision'
+          ? (language === "uz" 
+              ? "Rasm tahlili:" 
+              : language === "en" 
+              ? "Image analysis:"
+              : language === "ru"
+              ? "Анализ изображения:"
+              : "Görsel analizi:")
+          : (language === "uz" 
+              ? "Hujjat tahlili:" 
+              : language === "en" 
+              ? "Document analysis:"
+              : language === "ru"
+              ? "Анализ документа:"
+              : "Belge analizi:");
         
-        messageContent = `${messageContent}\n\n${ocrPrefix}\n\`\`\`\n${extractedText}\n\`\`\``;
+        messageContent = `${messageContent}\n\n${analysisPrefix}\n\`\`\`\n${analysisContent}\n\`\`\``;
       }
       
-      // Add the new user message with OCR content
+      // Add the new user message with analysis content
       conversationMessages.push({
         role: "user" as const,
         content: messageContent,
@@ -413,7 +437,8 @@ export default function Chat() {
             messages: conversationMessages,
             mode: mode || "general",
             attachments: attachmentsToProcess,
-            hasOcrText: !!extractedText, // Flag to indicate OCR was used
+            hasAnalysis: !!analysisContent,
+            analysisType,
           }),
         }
       );
@@ -427,21 +452,29 @@ export default function Chat() {
         onChunk: (chunk) => {
           if (!assistantMessageCreated) {
             // Create assistant message on first chunk
-            // Add OCR analysis prefix if OCR was used
-            const ocrAnalysisPrefix = extractedText 
-              ? (language === "uz" 
-                ? "📄 Yuklangan hujjatdan o'qilgan matn asosida tahlil:\n\n" 
-                : language === "en"
-                ? "📄 Analysis based on text read from uploaded document:\n\n"
-                : language === "ru"
-                ? "📄 Анализ на основе текста из загруженного документа:\n\n"
-                : "📄 Yuklenen belgeden okunan metne dayali analiz:\n\n")
+            // Add analysis prefix based on type (vision or OCR)
+            const analysisPrefix = analysisContent 
+              ? (analysisType === 'vision'
+                ? (language === "uz" 
+                  ? "📷 Rasm tahlili:\n\n" 
+                  : language === "en"
+                  ? "📷 Image analysis:\n\n"
+                  : language === "ru"
+                  ? "📷 Анализ изображения:\n\n"
+                  : "📷 Görsel analizi:\n\n")
+                : (language === "uz" 
+                  ? "📄 Hujjat tahlili:\n\n" 
+                  : language === "en"
+                  ? "📄 Document analysis:\n\n"
+                  : language === "ru"
+                  ? "📄 Анализ документа:\n\n"
+                  : "📄 Belge analizi:\n\n"))
               : "";
             
             const newAssistantMessage: Message = {
               id: assistantId,
               role: "assistant",
-              content: ocrAnalysisPrefix + chunk,
+              content: analysisPrefix + chunk,
               timestamp: new Date(),
             };
             setMessages((prev) => [...prev, newAssistantMessage]);
@@ -458,7 +491,7 @@ export default function Chat() {
         onDone: () => {
           setTyping(false);
           setIsLoading(false);
-          setOcrStatus(null);
+          setProcessingStatus(null);
           inputRef.current?.focus();
           
           // TODO: Backend integration - Backend should track and enforce limits
@@ -474,7 +507,7 @@ export default function Chat() {
       
       setTyping(false);
       setIsLoading(false);
-      setOcrStatus(null);
+      setProcessingStatus(null);
       inputRef.current?.focus();
       
       // Show error toast
@@ -759,12 +792,12 @@ export default function Chat() {
                 <LimitReachedCard onDismiss={() => setShowLimitCard(false)} />
               )}
               
-              {(typing || ocrStatus) && (
+              {(typing || processingStatus) && (
                 <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 shadow-sm">
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-slate-600 dark:text-slate-300">
-                        {ocrStatus || t.chat.typing}
+                        {processingStatus || t.chat.typing}
                       </span>
                       <div className="flex gap-1">
                         <span className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
