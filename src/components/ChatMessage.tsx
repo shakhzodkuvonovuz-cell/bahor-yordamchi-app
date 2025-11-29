@@ -1,5 +1,6 @@
 import { Message } from "@/types/chat";
 import { ExternalLink, FileText, User } from "lucide-react";
+import bahorLogo from "@/assets/bahor-logo.png";
 
 interface ChatMessageProps {
   message: Message;
@@ -14,19 +15,20 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         isUser ? "chat-message-user" : "chat-message-ai"
       }`}
     >
+      {/* AI Avatar */}
+      {!isUser && (
+        <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-card border border-border/40 flex items-center justify-center mt-0.5 shadow-sm">
+          <img src={bahorLogo} alt="Bahor AI" className="w-6 h-6 object-contain" />
+        </div>
+      )}
+
       <div
-        className={`max-w-[90%] sm:max-w-[80%] rounded-2xl ${
+        className={`max-w-[85%] sm:max-w-[75%] rounded-2xl ${
           isUser
             ? "bg-primary text-primary-foreground rounded-tr-sm shadow-lg glow-primary-subtle"
             : "bg-card border border-border/40 rounded-tl-sm shadow-md"
         }`}
       >
-        {/* AI message header */}
-        {!isUser && (
-          <div className="px-5 pt-3 pb-1 border-b border-border/20">
-            <span className="text-xs font-medium text-primary">Bahor AI</span>
-          </div>
-        )}
 
         <div className={isUser ? "px-5 py-4" : "px-5 py-4"}>
           {/* Attachments */}
@@ -89,7 +91,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         </div>
         
         {/* Timestamp */}
-        <div className={`px-5 pb-3 ${isUser ? "" : "border-t border-border/10 pt-2"}`}>
+        <div className="px-4 pb-2.5 -mt-1">
           <span className={`text-[11px] ${isUser ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
             {new Date(message.timestamp).toLocaleTimeString("uz-UZ", {
               hour: "2-digit",
@@ -101,8 +103,8 @@ export default function ChatMessage({ message }: ChatMessageProps) {
 
       {/* User Avatar */}
       {isUser && (
-        <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg glow-primary-subtle">
-          <User className="w-5 h-5 text-primary-foreground" />
+        <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center mt-0.5 shadow-lg glow-primary-subtle">
+          <User className="w-4 h-4 text-primary-foreground" />
         </div>
       )}
     </div>
