@@ -1,5 +1,6 @@
 import { Message } from "@/types/chat";
 import { ExternalLink, FileText, User } from "lucide-react";
+import bahorLogo from "@/assets/bahor-logo.png";
 
 interface ChatMessageProps {
   message: Message;
@@ -14,7 +15,12 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         isUser ? "chat-message-user" : "chat-message-ai"
       }`}
     >
-      {/* AI messages - no avatar, just aligned left */}
+      {/* AI Avatar - Bahor AI logo */}
+      {!isUser && (
+        <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-card border border-border/30 flex items-center justify-center mt-1">
+          <img src={bahorLogo} alt="Bahor AI" className="w-4 h-4 object-contain" />
+        </div>
+      )}
 
       <div
         className={`max-w-[85%] sm:max-w-[75%] rounded-2xl ${
