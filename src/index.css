@@ -542,6 +542,46 @@ select:focus-visible {
   animation: voice-logo-rotate 8s linear infinite;
 }
 
+/* Logo breathe animation (listening state) */
+@keyframes voice-logo-breathe {
+  0%, 100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.08);
+    filter: brightness(1.2);
+  }
+}
+
+.animate-voice-logo-breathe {
+  animation: voice-logo-breathe 2s ease-in-out infinite;
+}
+
+/* Logo pulse animation (speaking state) */
+@keyframes voice-logo-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  25% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  75% {
+    transform: scale(1.03);
+    opacity: 0.95;
+  }
+}
+
+.animate-voice-logo-pulse {
+  animation: voice-logo-pulse 1.5s ease-in-out infinite;
+}
+
 /* Ring expand animation (listening) */
 @keyframes voice-ring-expand {
   0% {
