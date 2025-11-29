@@ -11,17 +11,25 @@ import {
   VoiceConceptC, 
   VoiceConceptD, 
   VoiceConceptE,
-  VoiceModeFinal
+  VoiceModeFinal,
+  VoiceConceptPrism
 } from "@/components/voice/concepts";
 
 const concepts = [
+  {
+    id: "PRISM",
+    name: "Prism",
+    subtitle: "Angular cinematic — NO circles/waves",
+    colors: ["#0a0f14", "#c8dce8", "#1a2530"],
+    description: "Crystalline geometry, cinematic light beams, Uzbek patterns, HER/Vision Pro aesthetic",
+    featured: true
+  },
   {
     id: "FINAL",
     name: "Final Design",
     subtitle: "Premium Bahor AI Voice Mode",
     colors: ["#021a17", "#00c7b1", "#042520"],
-    description: "The polished production version — breathing orb, liquid silk wave, Uzbek patterns",
-    featured: true
+    description: "The polished production version — breathing orb, liquid silk wave, Uzbek patterns"
   },
   {
     id: "A",
@@ -66,6 +74,7 @@ export default function VoiceConceptsDemo() {
 
   const renderDemo = () => {
     switch (activeDemo) {
+      case "PRISM": return <VoiceConceptPrism isOpen={true} onClose={() => setActiveDemo(null)} />;
       case "FINAL": return <VoiceModeFinal isOpen={true} onClose={() => setActiveDemo(null)} />;
       case "A": return <VoiceConceptA isOpen={true} onClose={() => setActiveDemo(null)} />;
       case "B": return <VoiceConceptB isOpen={true} onClose={() => setActiveDemo(null)} />;
@@ -150,7 +159,7 @@ export default function VoiceConceptsDemo() {
                     ? "bg-[#00c7b1]/20 text-[#00c7b1] hover:bg-[#00c7b1]/30" 
                     : "bg-white/5 text-white/70 hover:bg-white/10 group-hover:bg-[#00C7B1]/20 group-hover:text-[#00C7B1]"
                 }`}>
-                  {concept.featured ? "Preview Final Design" : `Preview Concept ${concept.id}`}
+                  {concept.featured ? "Preview Prism" : `Preview Concept ${concept.id}`}
                 </button>
               </div>
             </div>
@@ -171,11 +180,17 @@ export default function VoiceConceptsDemo() {
                 </tr>
               </thead>
               <tbody className="text-white/60">
-                <tr className="border-b border-[#00c7b1]/20 bg-[#00c7b1]/5">
-                  <td className="py-3 px-4 font-medium text-[#00c7b1]">★ Final</td>
-                  <td className="py-3 px-4 text-white/80">Premium, elegant</td>
-                  <td className="py-3 px-4 text-white/80">Breathing orb, silk wave</td>
-                  <td className="py-3 px-4 text-white/80">Production use ✓</td>
+                <tr className="border-b border-[#c8dce8]/20 bg-[#c8dce8]/5">
+                  <td className="py-3 px-4 font-medium text-[#c8dce8]">★ Prism</td>
+                  <td className="py-3 px-4 text-white/80">Angular, cinematic</td>
+                  <td className="py-3 px-4 text-white/80">Crystal facets, light beams</td>
+                  <td className="py-3 px-4 text-white/80">NEW — No circles ✓</td>
+                </tr>
+                <tr className="border-b border-white/5">
+                  <td className="py-3 px-4 font-medium text-white">Final</td>
+                  <td className="py-3 px-4">Premium, elegant</td>
+                  <td className="py-3 px-4">Breathing orb, silk wave</td>
+                  <td className="py-3 px-4">Production ready</td>
                 </tr>
                 <tr className="border-b border-white/5">
                   <td className="py-3 px-4 font-medium text-white">A: Whisper</td>
