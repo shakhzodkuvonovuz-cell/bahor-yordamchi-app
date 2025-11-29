@@ -234,6 +234,13 @@ export const translations: Record<Lang, Record<string, string>> = {
     'voice.demo.greeting': "Salom, bugun menga qanday yordam bera olasiz?",
     'voice.demo.question': "Ingliz tilida essay yozishga yordam bering",
     'voice.demo.answer': "Albatta! Essay mavzusi nima bo'ladi? Men sizga tuzilma, kirish, asosiy qism va xulosa yozishda yordam beraman.",
+    // Voice Mode States
+    'voice.state.listening': "Tinglayapman...",
+    'voice.state.listening.sub': "Tabiiy gapiring. Bahor AI tinglayapti.",
+    'voice.state.thinking': "O'ylamoqda...",
+    'voice.state.thinking.sub': "Savolingizni tahlil qilyapman.",
+    'voice.state.speaking': "Javob beryapman...",
+    'voice.state.speaking.sub': "Iltimos kuting.",
   },
 
   en: {
@@ -469,6 +476,13 @@ export const translations: Record<Lang, Record<string, string>> = {
     'voice.demo.greeting': "Hello, how can you help me today?",
     'voice.demo.question': "Help me write an essay in English",
     'voice.demo.answer': "Of course! What topic would you like? I can help you with structure, introduction, body paragraphs, and conclusion.",
+    // Voice Mode States
+    'voice.state.listening': "Listening...",
+    'voice.state.listening.sub': "Speak naturally. Bahor AI is listening.",
+    'voice.state.thinking': "Thinking...",
+    'voice.state.thinking.sub': "Analyzing your question.",
+    'voice.state.speaking': "Answering...",
+    'voice.state.speaking.sub': "Please wait.",
   },
 
   ru: {
@@ -704,6 +718,13 @@ export const translations: Record<Lang, Record<string, string>> = {
     'voice.demo.greeting': "Привет, чем вы можете мне помочь сегодня?",
     'voice.demo.question': "Помогите написать эссе на английском",
     'voice.demo.answer': "Конечно! Какая тема? Я помогу со структурой, введением, основной частью и заключением.",
+    // Voice Mode States
+    'voice.state.listening': "Слушаю...",
+    'voice.state.listening.sub': "Говорите естественно. Bahor AI слушает.",
+    'voice.state.thinking': "Думаю...",
+    'voice.state.thinking.sub': "Анализирую ваш вопрос.",
+    'voice.state.speaking': "Отвечаю...",
+    'voice.state.speaking.sub': "Пожалуйста, подождите.",
   },
 
   tr: {
@@ -939,6 +960,13 @@ export const translations: Record<Lang, Record<string, string>> = {
     'voice.demo.greeting': "Merhaba, bugün size nasıl yardımcı olabilirim?",
     'voice.demo.question': "İngilizce bir deneme yazmama yardım et",
     'voice.demo.answer': "Elbette! Konu ne olsun? Yapı, giriş, ana paragraflar ve sonuç konusunda yardımcı olabilirim.",
+    // Voice Mode States
+    'voice.state.listening': "Dinliyorum...",
+    'voice.state.listening.sub': "Doğal konuşun. Bahor AI dinliyor.",
+    'voice.state.thinking': "Düşünüyorum...",
+    'voice.state.thinking.sub': "Sorunuzu analiz ediyorum.",
+    'voice.state.speaking': "Cevaplıyorum...",
+    'voice.state.speaking.sub': "Lütfen bekleyin.",
   },
 };
 
