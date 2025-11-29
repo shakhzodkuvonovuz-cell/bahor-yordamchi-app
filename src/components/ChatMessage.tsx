@@ -17,8 +17,8 @@ export default function ChatMessage({ message }: ChatMessageProps) {
     >
       {/* AI Avatar - Bahor AI logo */}
       {!isUser && (
-        <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-card border border-border/30 flex items-center justify-center mt-1">
-          <img src={bahorLogo} alt="Bahor AI" className="w-4 h-4 object-contain" />
+        <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-card border border-border/40 flex items-center justify-center mt-0.5 shadow-sm">
+          <img src={bahorLogo} alt="Bahor AI" className="w-6 h-6 object-contain" />
         </div>
       )}
 
