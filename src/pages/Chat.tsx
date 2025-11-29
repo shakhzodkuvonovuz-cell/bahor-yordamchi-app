@@ -768,10 +768,8 @@ export default function Chat() {
                 
                 <LanguageSwitcher variant="compact" />
                 
-                {/* Logo with subtle glow */}
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center glow-primary-subtle">
-                  <img src={bahorLogo} alt="Bahor AI" className="w-6 h-6 object-contain" />
-                </div>
+                {/* Logo - clean without background */}
+                <img src={bahorLogo} alt="Bahor AI" className="w-9 h-9 object-contain" />
               </div>
             </div>
             
