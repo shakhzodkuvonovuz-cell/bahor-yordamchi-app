@@ -1,5 +1,5 @@
 import { Message } from "@/types/chat";
-import { ExternalLink, FileText, Bot, User } from "lucide-react";
+import { ExternalLink, FileText, User } from "lucide-react";
 
 interface ChatMessageProps {
   message: Message;
@@ -14,12 +14,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         isUser ? "chat-message-user" : "chat-message-ai"
       }`}
     >
-      {/* AI Avatar */}
-      {!isUser && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mt-1">
-          <Bot className="w-4 h-4 text-primary" />
-        </div>
-      )}
+      {/* AI messages - no avatar, just aligned left */}
 
       <div
         className={`max-w-[85%] sm:max-w-[75%] rounded-2xl ${

@@ -747,9 +747,7 @@ export default function Chat() {
                     <Trash2 className="w-4 h-4 text-muted-foreground" />
                   </button>
                 )}
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                  <img src={bahorLogo} alt="Bahor AI" className="w-6 h-6 object-contain" />
-                </div>
+                <img src={bahorLogo} alt="Bahor AI" className="w-8 h-8 object-contain" />
               </div>
             </div>
           </div>
@@ -882,7 +880,7 @@ export default function Chat() {
             )}
 
             {/* Input Container */}
-            <div className="flex items-end gap-2 rounded-2xl border border-border/60 bg-card px-2 py-1.5 shadow-premium-sm hover:border-primary/30 focus-within:border-primary/40 focus-within:shadow-glow transition-all duration-200">
+            <div className="flex items-end gap-2 rounded-2xl border border-border/50 bg-card/80 px-2 py-1.5 hover:border-border focus-within:border-primary/30 transition-all duration-200">
               <input
                 ref={fileInputRef}
                 type="file"
