@@ -10,10 +10,19 @@ import {
   VoiceConceptB, 
   VoiceConceptC, 
   VoiceConceptD, 
-  VoiceConceptE 
+  VoiceConceptE,
+  VoiceModeFinal
 } from "@/components/voice/concepts";
 
 const concepts = [
+  {
+    id: "FINAL",
+    name: "Final Design",
+    subtitle: "Premium Bahor AI Voice Mode",
+    colors: ["#021a17", "#00c7b1", "#042520"],
+    description: "The polished production version — breathing orb, liquid silk wave, Uzbek patterns",
+    featured: true
+  },
   {
     id: "A",
     name: "Whisper",
@@ -57,6 +66,7 @@ export default function VoiceConceptsDemo() {
 
   const renderDemo = () => {
     switch (activeDemo) {
+      case "FINAL": return <VoiceModeFinal isOpen={true} onClose={() => setActiveDemo(null)} />;
       case "A": return <VoiceConceptA isOpen={true} onClose={() => setActiveDemo(null)} />;
       case "B": return <VoiceConceptB isOpen={true} onClose={() => setActiveDemo(null)} />;
       case "C": return <VoiceConceptC isOpen={true} onClose={() => setActiveDemo(null)} />;
@@ -90,9 +100,20 @@ export default function VoiceConceptsDemo() {
           {concepts.map((concept) => (
             <div
               key={concept.id}
-              className="group relative bg-white/[0.02] backdrop-blur-xl rounded-2xl border border-white/[0.05] overflow-hidden hover:border-white/[0.1] transition-all duration-300 cursor-pointer"
+              className={`group relative backdrop-blur-xl rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer ${
+                concept.featured 
+                  ? "bg-gradient-to-br from-[#00c7b1]/10 to-[#00c7b1]/5 border-2 border-[#00c7b1]/30 hover:border-[#00c7b1]/50 md:col-span-2 lg:col-span-1" 
+                  : "bg-white/[0.02] border border-white/[0.05] hover:border-white/[0.1]"
+              }`}
               onClick={() => setActiveDemo(concept.id)}
             >
+              {/* Featured badge */}
+              {concept.featured && (
+                <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-[#00c7b1]/20 border border-[#00c7b1]/30 text-[#00c7b1] text-xs font-semibold">
+                  ✨ Recommended
+                </div>
+              )}
+
               {/* Color preview bar */}
               <div className="h-2 flex">
                 {concept.colors.map((color, i) => (
@@ -103,11 +124,17 @@ export default function VoiceConceptsDemo() {
               <div className="p-6">
                 {/* Concept label */}
                 <div className="flex items-center gap-3 mb-4">
-                  <span className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-lg font-bold text-white/80">
-                    {concept.id}
+                  <span className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold ${
+                    concept.featured 
+                      ? "bg-[#00c7b1]/20 text-[#00c7b1]" 
+                      : "bg-white/5 text-white/80"
+                  }`}>
+                    {concept.id === "FINAL" ? "★" : concept.id}
                   </span>
                   <div>
-                    <h2 className="text-lg font-semibold text-white">{concept.name}</h2>
+                    <h2 className={`text-lg font-semibold ${concept.featured ? "text-[#00c7b1]" : "text-white"}`}>
+                      {concept.name}
+                    </h2>
                     <p className="text-xs text-white/40">{concept.subtitle}</p>
                   </div>
                 </div>
@@ -118,8 +145,12 @@ export default function VoiceConceptsDemo() {
                 </p>
 
                 {/* Preview button */}
-                <button className="w-full py-3 rounded-xl bg-white/5 text-white/70 text-sm font-medium hover:bg-white/10 transition-colors group-hover:bg-[#00C7B1]/20 group-hover:text-[#00C7B1]">
-                  Preview Concept {concept.id}
+                <button className={`w-full py-3 rounded-xl text-sm font-medium transition-colors ${
+                  concept.featured 
+                    ? "bg-[#00c7b1]/20 text-[#00c7b1] hover:bg-[#00c7b1]/30" 
+                    : "bg-white/5 text-white/70 hover:bg-white/10 group-hover:bg-[#00C7B1]/20 group-hover:text-[#00C7B1]"
+                }`}>
+                  {concept.featured ? "Preview Final Design" : `Preview Concept ${concept.id}`}
                 </button>
               </div>
             </div>
@@ -140,6 +171,12 @@ export default function VoiceConceptsDemo() {
                 </tr>
               </thead>
               <tbody className="text-white/60">
+                <tr className="border-b border-[#00c7b1]/20 bg-[#00c7b1]/5">
+                  <td className="py-3 px-4 font-medium text-[#00c7b1]">★ Final</td>
+                  <td className="py-3 px-4 text-white/80">Premium, elegant</td>
+                  <td className="py-3 px-4 text-white/80">Breathing orb, silk wave</td>
+                  <td className="py-3 px-4 text-white/80">Production use ✓</td>
+                </tr>
                 <tr className="border-b border-white/5">
                   <td className="py-3 px-4 font-medium text-white">A: Whisper</td>
                   <td className="py-3 px-4">Minimal, clean</td>

@@ -823,3 +823,163 @@ select:focus-visible {
 .animate-concept-e-text-glitch {
   animation: concept-e-text-glitch 0.2s ease-in-out;
 }
+
+/* ============================================
+   FINAL BAHOR AI VOICE MODE - Premium Animations
+   ============================================ */
+
+/* Panel entrance */
+@keyframes voice-panel-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-voice-panel-in {
+  animation: voice-panel-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Orb breathing - listening state */
+@keyframes voice-orb-breathe {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+}
+
+.animate-voice-orb-breathe {
+  animation: voice-orb-breathe 3s ease-in-out infinite;
+}
+
+/* Orb thinking - subtle pulse */
+@keyframes voice-orb-think {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(0.98);
+    opacity: 1;
+  }
+}
+
+.animate-voice-orb-think {
+  animation: voice-orb-think 1.5s ease-in-out infinite;
+}
+
+/* Orb speaking - responsive pulse */
+@keyframes voice-orb-speak {
+  0%, 100% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.02);
+  }
+  75% {
+    transform: scale(0.99);
+  }
+}
+
+.animate-voice-orb-speak {
+  animation: voice-orb-speak 0.8s ease-in-out infinite;
+}
+
+/* Logo spin for thinking */
+@keyframes voice-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-voice-logo-spin {
+  animation: voice-logo-spin 8s linear infinite;
+}
+
+/* Ring pulse effects */
+@keyframes voice-ring-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.9;
+  }
+}
+
+.animate-voice-ring-pulse {
+  animation: voice-ring-pulse 3s ease-in-out infinite;
+}
+
+@keyframes voice-ring-pulse-delayed {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 0.7;
+  }
+}
+
+.animate-voice-ring-pulse-delayed {
+  animation: voice-ring-pulse-delayed 3.5s ease-in-out infinite 0.5s;
+}
+
+/* Particle shimmer */
+@keyframes voice-particle {
+  0%, 100% {
+    opacity: 0.3;
+    transform: rotate(var(--rotation, 0deg)) translateX(72px) scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: rotate(var(--rotation, 0deg)) translateX(78px) scale(1.3);
+  }
+}
+
+.animate-voice-particle {
+  animation: voice-particle 2.5s ease-in-out infinite;
+}
+
+/* Text fade in */
+@keyframes voice-text-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-voice-text-fade {
+  animation: voice-text-fade 0.5s ease-out forwards;
+}
+
+/* Button ripple */
+@keyframes voice-ripple {
+  0% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+.animate-voice-ripple {
+  animation: voice-ripple 1.5s ease-out infinite;
+}
