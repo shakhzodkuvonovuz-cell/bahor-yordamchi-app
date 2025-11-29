@@ -12,24 +12,32 @@ import {
   VoiceConceptD, 
   VoiceConceptE,
   VoiceModeFinal,
-  VoiceConceptPrism
+  VoiceConceptPrism,
+  VoiceConceptGlass
 } from "@/components/voice/concepts";
 
 const concepts = [
   {
+    id: "GLASS",
+    name: "Glass",
+    subtitle: "Premium floating glass panel",
+    colors: ["#0f0f12", "#ffffff", "#13131a"],
+    description: "Apple VisionOS aesthetic — soft glowing glass, gentle voice line, ultra-premium calm",
+    featured: true
+  },
+  {
     id: "PRISM",
     name: "Prism",
-    subtitle: "Angular cinematic — NO circles/waves",
+    subtitle: "Angular cinematic geometry",
     colors: ["#0a0f14", "#c8dce8", "#1a2530"],
-    description: "Crystalline geometry, cinematic light beams, Uzbek patterns, HER/Vision Pro aesthetic",
-    featured: true
+    description: "Crystalline facets, cinematic light beams, Uzbek patterns"
   },
   {
     id: "FINAL",
     name: "Final Design",
-    subtitle: "Premium Bahor AI Voice Mode",
+    subtitle: "Teal orb + wave mode",
     colors: ["#021a17", "#00c7b1", "#042520"],
-    description: "The polished production version — breathing orb, liquid silk wave, Uzbek patterns"
+    description: "Breathing orb, liquid silk wave, Uzbek patterns"
   },
   {
     id: "A",
@@ -48,7 +56,7 @@ const concepts = [
   {
     id: "C",
     name: "Bloom",
-    subtitle: "Organic nature-inspired (Bahor = Spring)",
+    subtitle: "Organic nature-inspired",
     colors: ["#F0FDF4", "#2DD4A8", "#FCD34D"],
     description: "Floating petals, pollen particles, living aura"
   },
@@ -57,14 +65,14 @@ const concepts = [
     name: "Tessellate", 
     subtitle: "Abstract geometric patterns",
     colors: ["#0F0F0F", "#00C7B1", "#FFFFFF"],
-    description: "Morphing polygons, sacred geometry, pulsing grids"
+    description: "Morphing polygons, sacred geometry"
   },
   {
     id: "E",
     name: "Pulse",
     subtitle: "Bold neon cyberpunk",
     colors: ["#0D0015", "#FF00AA", "#00FFFF"],
-    description: "Aggressive waveforms, glitch effects, techno vibes"
+    description: "Aggressive waveforms, glitch effects"
   }
 ];
 
@@ -74,6 +82,7 @@ export default function VoiceConceptsDemo() {
 
   const renderDemo = () => {
     switch (activeDemo) {
+      case "GLASS": return <VoiceConceptGlass isOpen={true} onClose={() => setActiveDemo(null)} />;
       case "PRISM": return <VoiceConceptPrism isOpen={true} onClose={() => setActiveDemo(null)} />;
       case "FINAL": return <VoiceModeFinal isOpen={true} onClose={() => setActiveDemo(null)} />;
       case "A": return <VoiceConceptA isOpen={true} onClose={() => setActiveDemo(null)} />;
@@ -156,10 +165,10 @@ export default function VoiceConceptsDemo() {
                 {/* Preview button */}
                 <button className={`w-full py-3 rounded-xl text-sm font-medium transition-colors ${
                   concept.featured 
-                    ? "bg-[#00c7b1]/20 text-[#00c7b1] hover:bg-[#00c7b1]/30" 
+                    ? "bg-white/10 text-white hover:bg-white/15" 
                     : "bg-white/5 text-white/70 hover:bg-white/10 group-hover:bg-[#00C7B1]/20 group-hover:text-[#00C7B1]"
                 }`}>
-                  {concept.featured ? "Preview Prism" : `Preview Concept ${concept.id}`}
+                  {concept.featured ? `Preview ${concept.name}` : `Preview Concept ${concept.id}`}
                 </button>
               </div>
             </div>
@@ -180,23 +189,29 @@ export default function VoiceConceptsDemo() {
                 </tr>
               </thead>
               <tbody className="text-white/60">
-                <tr className="border-b border-[#c8dce8]/20 bg-[#c8dce8]/5">
-                  <td className="py-3 px-4 font-medium text-[#c8dce8]">★ Prism</td>
-                  <td className="py-3 px-4 text-white/80">Angular, cinematic</td>
-                  <td className="py-3 px-4 text-white/80">Crystal facets, light beams</td>
-                  <td className="py-3 px-4 text-white/80">NEW — No circles ✓</td>
+                <tr className="border-b border-white/20 bg-white/5">
+                  <td className="py-3 px-4 font-medium text-white">★ Glass</td>
+                  <td className="py-3 px-4 text-white/80">VisionOS, premium</td>
+                  <td className="py-3 px-4 text-white/80">Floating panel, soft glow</td>
+                  <td className="py-3 px-4 text-white/80">NEW — Ultra-calm ✓</td>
+                </tr>
+                <tr className="border-b border-white/5">
+                  <td className="py-3 px-4 font-medium text-white">Prism</td>
+                  <td className="py-3 px-4">Angular, cinematic</td>
+                  <td className="py-3 px-4">Crystal facets, beams</td>
+                  <td className="py-3 px-4">No circles option</td>
                 </tr>
                 <tr className="border-b border-white/5">
                   <td className="py-3 px-4 font-medium text-white">Final</td>
-                  <td className="py-3 px-4">Premium, elegant</td>
+                  <td className="py-3 px-4">Teal orb + wave</td>
                   <td className="py-3 px-4">Breathing orb, silk wave</td>
-                  <td className="py-3 px-4">Production ready</td>
+                  <td className="py-3 px-4">Brand identity</td>
                 </tr>
                 <tr className="border-b border-white/5">
                   <td className="py-3 px-4 font-medium text-white">A: Whisper</td>
                   <td className="py-3 px-4">Minimal, clean</td>
                   <td className="py-3 px-4">Breathing, ripples</td>
-                  <td className="py-3 px-4">Professional, calm users</td>
+                  <td className="py-3 px-4">Professional</td>
                 </tr>
                 <tr className="border-b border-white/5">
                   <td className="py-3 px-4 font-medium text-white">B: Nebula</td>
@@ -208,19 +223,19 @@ export default function VoiceConceptsDemo() {
                   <td className="py-3 px-4 font-medium text-white">C: Bloom</td>
                   <td className="py-3 px-4">Organic, natural</td>
                   <td className="py-3 px-4">Petals, pollen</td>
-                  <td className="py-3 px-4">Brand identity (Bahor=Spring)</td>
+                  <td className="py-3 px-4">Spring theme</td>
                 </tr>
                 <tr className="border-b border-white/5">
                   <td className="py-3 px-4 font-medium text-white">D: Tessellate</td>
                   <td className="py-3 px-4">Geometric, sacred</td>
                   <td className="py-3 px-4">Morphing patterns</td>
-                  <td className="py-3 px-4">Cultural sophistication</td>
+                  <td className="py-3 px-4">Cultural</td>
                 </tr>
                 <tr>
                   <td className="py-3 px-4 font-medium text-white">E: Pulse</td>
                   <td className="py-3 px-4">Cyberpunk, bold</td>
                   <td className="py-3 px-4">Waves, glitch</td>
-                  <td className="py-3 px-4">Young, tech-savvy</td>
+                  <td className="py-3 px-4">Young users</td>
                 </tr>
               </tbody>
             </table>
