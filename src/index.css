@@ -1030,3 +1030,52 @@ select:focus-visible {
 .animate-prism-text-in {
   animation: prism-text-in 0.5s ease-out forwards;
 }
+
+/* ============================================
+   GLASS VOICE CONCEPT - Premium Floating Panel
+   ============================================ */
+
+@keyframes glass-panel-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-glass-panel-in {
+  animation: glass-panel-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes glass-glow {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+.animate-glass-glow {
+  animation: glass-glow 3s ease-in-out infinite;
+}
+
+@keyframes glass-logo-breathe {
+  0%, 100% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+}
+
+.animate-glass-logo-breathe {
+  animation: glass-logo-breathe 2s ease-in-out infinite;
+}

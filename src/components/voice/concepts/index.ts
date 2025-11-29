@@ -5,3 +5,4 @@ export { default as VoiceConceptD } from './VoiceConceptD';
 export { default as VoiceConceptE } from './VoiceConceptE';
 export { default as VoiceModeFinal } from '../VoiceModeFinal';
 export { default as VoiceConceptPrism } from '../VoiceConceptPrism';
+export { default as VoiceConceptGlass } from '../VoiceConceptGlass';
