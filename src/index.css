@@ -2,127 +2,132 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Premium Design System - Dark-first, Multi-million dollar AI aesthetic */
 
 @layer base {
   :root {
-    /* Bahor AI - Spring-inspired color palette */
-    --background: 210 20% 98%;
-    --foreground: 215 25% 15%;
+    /* Light mode - Clean, minimal */
+    --background: 220 20% 97%;
+    --foreground: 220 25% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 220 25% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 220 25% 10%;
 
-    /* Soft teal/turquoise - representing spring */
-    --primary: 175 60% 45%;
+    /* Bahor AI Turquoise - Premium accent */
+    --primary: 175 55% 45%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 175 60% 55%;
-    --primary-glow: 175 60% 85%;
+    --primary-light: 175 50% 55%;
+    --primary-glow: 175 60% 70%;
 
-    --secondary: 210 30% 96%;
-    --secondary-foreground: 215 25% 15%;
+    --secondary: 220 15% 94%;
+    --secondary-foreground: 220 25% 15%;
 
-    --muted: 210 30% 94%;
-    --muted-foreground: 215 15% 45%;
+    --muted: 220 15% 92%;
+    --muted-foreground: 220 10% 45%;
 
     /* Warm accent for highlights */
-    --accent: 35 95% 60%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 175 50% 92%;
+    --accent-foreground: 175 55% 30%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 75% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 25% 88%;
-    --input: 214.3 25% 92%;
-    --ring: 175 60% 45%;
+    --border: 220 15% 88%;
+    --input: 220 15% 92%;
+    --ring: 175 55% 45%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
-    /* User message bubble */
-    --user-message: 175 60% 45%;
+    /* Chat bubbles */
+    --user-message: 175 55% 45%;
     --user-message-foreground: 0 0% 100%;
+    --ai-message: 220 15% 97%;
+    --ai-message-foreground: 220 25% 10%;
 
-    /* AI message bubble */
-    --ai-message: 0 0% 100%;
-    --ai-message-foreground: 215 25% 15%;
+    /* Premium gradients */
+    --gradient-hero: linear-gradient(180deg, hsl(220 20% 97%), hsl(220 20% 95%));
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(220 15% 98%));
+    --gradient-accent: linear-gradient(135deg, hsl(175 55% 45%), hsl(175 60% 50%));
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(175 60% 50%), hsl(190 60% 55%));
-    --gradient-hero: linear-gradient(180deg, hsl(210 20% 98%), hsl(175 40% 96%));
+    /* Premium shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(220 25% 10% / 0.03);
+    --shadow-md: 0 4px 6px -1px hsl(220 25% 10% / 0.05), 0 2px 4px -2px hsl(220 25% 10% / 0.03);
+    --shadow-lg: 0 10px 15px -3px hsl(220 25% 10% / 0.06), 0 4px 6px -4px hsl(220 25% 10% / 0.04);
+    --shadow-glow: 0 0 20px hsl(175 55% 45% / 0.15);
 
-    /* Shadows */
-    --shadow-card: 0 2px 8px -2px hsl(175 30% 40% / 0.1);
-    --shadow-button: 0 2px 4px -1px hsl(175 60% 45% / 0.2);
-
-    /* Animations */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar */
+    --sidebar-background: 220 15% 98%;
+    --sidebar-foreground: 220 25% 15%;
+    --sidebar-primary: 175 55% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 15% 94%;
+    --sidebar-accent-foreground: 220 25% 15%;
+    --sidebar-border: 220 15% 90%;
+    --sidebar-ring: 175 55% 45%;
   }
 
   .dark {
-    --background: 215 30% 10%;
-    --foreground: 210 20% 95%;
+    /* Dark mode - Premium deep charcoal */
+    --background: 220 20% 8%;
+    --foreground: 220 10% 95%;
 
-    --card: 215 28% 14%;
-    --card-foreground: 210 20% 95%;
+    --card: 220 18% 12%;
+    --card-foreground: 220 10% 95%;
 
-    --popover: 215 28% 14%;
-    --popover-foreground: 210 20% 95%;
+    --popover: 220 18% 12%;
+    --popover-foreground: 220 10% 95%;
 
-    --primary: 175 60% 50%;
-    --primary-foreground: 0 0% 100%;
-    --primary-light: 175 60% 60%;
-    --primary-glow: 175 40% 30%;
+    /* Bahor AI Turquoise - Glowing in dark */
+    --primary: 175 60% 48%;
+    --primary-foreground: 220 20% 8%;
+    --primary-light: 175 55% 55%;
+    --primary-glow: 175 50% 35%;
 
-    --secondary: 215 25% 18%;
-    --secondary-foreground: 210 20% 95%;
+    --secondary: 220 15% 16%;
+    --secondary-foreground: 220 10% 90%;
 
-    --muted: 215 25% 20%;
-    --muted-foreground: 215 15% 60%;
+    --muted: 220 15% 18%;
+    --muted-foreground: 220 10% 55%;
 
-    --accent: 35 95% 55%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 220 15% 18%;
+    --accent-foreground: 175 55% 55%;
 
-    --destructive: 0 62.8% 50%;
+    --destructive: 0 65% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 215 25% 22%;
-    --input: 215 25% 22%;
-    --ring: 175 60% 50%;
+    --border: 220 15% 18%;
+    --input: 220 15% 16%;
+    --ring: 175 60% 48%;
 
-    --user-message: 175 60% 45%;
+    /* Chat bubbles - Dark */
+    --user-message: 175 55% 42%;
     --user-message-foreground: 0 0% 100%;
+    --ai-message: 220 15% 15%;
+    --ai-message-foreground: 220 10% 92%;
 
-    --ai-message: 215 25% 18%;
-    --ai-message-foreground: 210 20% 95%;
+    /* Premium gradients - Dark */
+    --gradient-hero: linear-gradient(180deg, hsl(220 20% 8%), hsl(220 18% 10%));
+    --gradient-card: linear-gradient(135deg, hsl(220 18% 12%), hsl(220 15% 14%));
+    --gradient-accent: linear-gradient(135deg, hsl(175 55% 42%), hsl(175 60% 48%));
 
-    --gradient-primary: linear-gradient(135deg, hsl(175 60% 45%), hsl(190 60% 50%));
-    --gradient-hero: linear-gradient(180deg, hsl(215 30% 10%), hsl(175 40% 12%));
+    /* Premium shadows - Dark */
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.2);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.3), 0 2px 4px -2px hsl(0 0% 0% / 0.2);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.4), 0 4px 6px -4px hsl(0 0% 0% / 0.3);
+    --shadow-glow: 0 0 30px hsl(175 60% 48% / 0.2);
 
-    --shadow-card: 0 4px 12px -2px hsl(0 0% 0% / 0.3);
-    --shadow-button: 0 2px 4px -1px hsl(175 60% 45% / 0.3);
-
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar - Dark */
+    --sidebar-background: 220 18% 10%;
+    --sidebar-foreground: 220 10% 92%;
+    --sidebar-primary: 175 60% 48%;
+    --sidebar-primary-foreground: 220 20% 8%;
+    --sidebar-accent: 220 15% 16%;
+    --sidebar-accent-foreground: 220 10% 92%;
+    --sidebar-border: 220 15% 16%;
+    --sidebar-ring: 175 60% 48%;
   }
 }
 
@@ -132,7 +137,50 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Premium glassmorphism utilities */
+@layer utilities {
+  .glass {
+    @apply bg-background/80 backdrop-blur-xl border border-border/50;
+  }
+
+  .glass-strong {
+    @apply bg-background/90 backdrop-blur-2xl border border-border/60;
+  }
+
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-xl border border-border/40 shadow-lg;
+  }
+
+  .glow-primary {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+  }
+
+  .glow-primary-strong {
+    box-shadow: 0 0 40px hsl(var(--primary) / 0.4);
+  }
+
+  /* Premium text gradients */
+  .text-gradient-primary {
+    @apply bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent;
+  }
+
+  /* Subtle hover effects */
+  .hover-lift {
+    @apply transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg;
+  }
+
+  .hover-glow {
+    @apply transition-all duration-300 hover:shadow-[0_0_20px_hsl(var(--primary)/0.2)];
   }
 }
 
@@ -150,4 +198,57 @@ All colors MUST be HSL.
 
 .chat-message-enter {
   animation: chat-message-enter 0.25s ease-out;
+}
+
+/* Fade in animation */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out forwards;
+}
+
+/* Subtle pulse for loading states */
+@keyframes subtle-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-subtle-pulse {
+  animation: subtle-pulse 2s ease-in-out infinite;
+}
+
+/* Premium scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-border rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-muted-foreground/30;
+}
+
+/* Focus visible states */
+:focus-visible {
+  @apply outline-none ring-2 ring-primary/50 ring-offset-2 ring-offset-background;
 }
