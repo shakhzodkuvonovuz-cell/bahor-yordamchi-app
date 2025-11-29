@@ -11,6 +11,7 @@ import Settings from "./pages/Settings";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import Landing from "./pages/Landing";
+import VoiceConceptsDemo from "./pages/VoiceConceptsDemo";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
               <Route path="/settings" element={<Settings />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/voice-concepts" element={<VoiceConceptsDemo />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
