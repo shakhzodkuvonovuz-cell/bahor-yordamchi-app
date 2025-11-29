@@ -20,7 +20,7 @@ export default function VoiceOrb({ state, amplitude = 0.5, className }: VoiceOrb
     if (!ctx) return;
 
     const dpr = window.devicePixelRatio || 1;
-    const size = 360;
+    const size = 320;
     canvas.width = size * dpr;
     canvas.height = size * dpr;
     ctx.scale(dpr, dpr);
@@ -28,22 +28,18 @@ export default function VoiceOrb({ state, amplitude = 0.5, className }: VoiceOrb
     let time = 0;
     const centerX = size / 2;
     const centerY = size / 2;
-    const coreRadius = 85;
 
-    // Bahor AI colors
-    const colors = {
-      primary: [0, 224, 200],      // #00E0C8
-      secondary: [0, 200, 180],    // Teal
-      glow: [0, 230, 210],         // Bright glow
-      accent: [80, 255, 220],      // Accent
-    };
+    // Bahor AI brand colors
+    const teal = { r: 0, g: 224, b: 200 };
+    const deepTeal = { r: 0, g: 180, b: 160 };
+    const cyan = { r: 0, g: 200, b: 220 };
 
     const getIntensity = () => {
       switch (state) {
-        case "listening": return { mult: 1 + amplitude * 0.5, glow: 0.7 };
-        case "thinking": return { mult: 0.8, glow: 0.5 };
-        case "speaking": return { mult: 1.2 + amplitude * 0.3, glow: 0.8 };
-        default: return { mult: 0.4, glow: 0.25 };
+        case "listening": return { base: 0.9, pulse: 0.4, ring: 1.2 };
+        case "thinking": return { base: 0.6, pulse: 0.6, ring: 0.8 };
+        case "speaking": return { base: 1.0, pulse: 0.3, ring: 1.0 };
+        default: return { base: 0.4, pulse: 0.2, ring: 0.5 };
       }
     };
 
@@ -53,98 +49,78 @@ export default function VoiceOrb({ state, amplitude = 0.5, className }: VoiceOrb
       ctx.clearRect(0, 0, size, size);
       const intensity = getIntensity();
 
-      // Layer 3: Outer organic field (magnetic field effect)
+      // Ambient particles (elegant, slow moving)
       if (state !== "idle") {
-        const fieldPoints = 120;
-        const baseFieldRadius = coreRadius + 45;
-        
-        ctx.beginPath();
-        for (let i = 0; i <= fieldPoints; i++) {
-          const angle = (i / fieldPoints) * Math.PI * 2;
-          
-          // Organic irregular waveform
-          const wave1 = Math.sin(angle * 3 + time * 0.025) * 18 * intensity.mult;
-          const wave2 = Math.cos(angle * 5 - time * 0.03) * 12 * intensity.mult;
-          const wave3 = Math.sin(angle * 7 + time * 0.04) * 8 * amplitude;
-          const wave4 = Math.cos(angle * 2 - time * 0.015) * 6;
-          
-          // Voice reactivity
-          const voiceWave = state === "listening" || state === "speaking" 
-            ? Math.sin(angle * 9 + time * 0.08) * 15 * amplitude 
-            : 0;
-          
-          const r = baseFieldRadius + wave1 + wave2 + wave3 + wave4 + voiceWave;
-          const x = centerX + Math.cos(angle) * r;
-          const y = centerY + Math.sin(angle) * r;
-          
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-        ctx.closePath();
-        
-        // Gradient stroke for outer field
-        const fieldGradient = ctx.createLinearGradient(0, 0, size, size);
-        fieldGradient.addColorStop(0, `rgba(${colors.primary.join(",")}, ${0.5 * intensity.glow})`);
-        fieldGradient.addColorStop(0.5, `rgba(${colors.accent.join(",")}, ${0.7 * intensity.glow})`);
-        fieldGradient.addColorStop(1, `rgba(${colors.secondary.join(",")}, ${0.5 * intensity.glow})`);
-        
-        ctx.strokeStyle = fieldGradient;
-        ctx.lineWidth = 2;
-        ctx.shadowColor = `rgba(${colors.glow.join(",")}, ${0.5 * intensity.glow})`;
-        ctx.shadowBlur = 25;
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-      }
-
-      // Layer 2: Mid pulse ring (breathing effect)
-      const pulseRadius = coreRadius + 20 + Math.sin(time * 0.03) * 8 * intensity.mult;
-      const pulseOpacity = 0.15 + Math.sin(time * 0.025) * 0.1;
-      
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, pulseRadius, 0, Math.PI * 2);
-      
-      const pulseGradient = ctx.createRadialGradient(
-        centerX, centerY, pulseRadius * 0.7,
-        centerX, centerY, pulseRadius
-      );
-      pulseGradient.addColorStop(0, `rgba(${colors.primary.join(",")}, 0)`);
-      pulseGradient.addColorStop(0.7, `rgba(${colors.primary.join(",")}, ${pulseOpacity * intensity.glow})`);
-      pulseGradient.addColorStop(1, `rgba(${colors.glow.join(",")}, ${pulseOpacity * 0.5 * intensity.glow})`);
-      
-      ctx.fillStyle = pulseGradient;
-      ctx.fill();
-
-      // Particle shimmer around the orb
-      if (state !== "idle") {
-        const particleCount = 20;
+        const particleCount = 12;
         for (let i = 0; i < particleCount; i++) {
-          const particleAngle = (time * 0.008 + i * Math.PI * 2 / particleCount);
-          const particleRadius = coreRadius + 50 + Math.sin(time * 0.02 + i) * 20;
-          const particleX = centerX + Math.cos(particleAngle) * particleRadius;
-          const particleY = centerY + Math.sin(particleAngle) * particleRadius;
-          const particleSize = 1.5 + Math.sin(time * 0.03 + i * 0.5) * 0.8;
-          const particleAlpha = 0.3 + Math.sin(time * 0.04 + i) * 0.2;
+          const angle = (time * 0.003 + i * Math.PI * 2 / particleCount);
+          const radius = 100 + Math.sin(time * 0.01 + i * 0.5) * 30;
+          const x = centerX + Math.cos(angle) * radius;
+          const y = centerY + Math.sin(angle) * radius;
+          const particleAlpha = 0.15 + Math.sin(time * 0.02 + i) * 0.1;
           
           ctx.beginPath();
-          ctx.arc(particleX, particleY, particleSize, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(${colors.accent.join(",")}, ${particleAlpha * intensity.glow})`;
-          ctx.shadowColor = `rgba(${colors.glow.join(",")}, 0.5)`;
-          ctx.shadowBlur = 8;
+          ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${teal.r}, ${teal.g}, ${teal.b}, ${particleAlpha * intensity.base})`;
           ctx.fill();
-          ctx.shadowBlur = 0;
         }
       }
 
-      // Inner glow halo
-      const innerGlow = ctx.createRadialGradient(
-        centerX, centerY, coreRadius * 0.5,
-        centerX, centerY, coreRadius + 30
-      );
-      innerGlow.addColorStop(0, `rgba(${colors.glow.join(",")}, ${0.1 * intensity.glow})`);
-      innerGlow.addColorStop(0.6, `rgba(${colors.primary.join(",")}, ${0.05 * intensity.glow})`);
-      innerGlow.addColorStop(1, "rgba(0, 0, 0, 0)");
+      // Ring 3 (outermost) - organic distorted ring reacting to voice
+      const ring3Radius = 115 + Math.sin(time * 0.02) * 5 * intensity.pulse;
+      const ring3Points = 80;
       
-      ctx.fillStyle = innerGlow;
+      ctx.beginPath();
+      for (let i = 0; i <= ring3Points; i++) {
+        const angle = (i / ring3Points) * Math.PI * 2;
+        const voiceDistort = state === "listening" 
+          ? Math.sin(angle * 6 + time * 0.08) * 8 * amplitude 
+          : Math.sin(angle * 4 + time * 0.03) * 3;
+        const r = ring3Radius + voiceDistort;
+        const x = centerX + Math.cos(angle) * r;
+        const y = centerY + Math.sin(angle) * r;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.strokeStyle = `rgba(${teal.r}, ${teal.g}, ${teal.b}, ${0.15 * intensity.ring})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Ring 2 (middle) - smooth pulsing ring
+      const ring2Radius = 90 + Math.sin(time * 0.025) * 4 * intensity.pulse;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, ring2Radius, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(${cyan.r}, ${cyan.g}, ${cyan.b}, ${0.2 * intensity.ring})`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Ring 1 (inner) - breathing glow ring
+      const ring1Radius = 70 + Math.sin(time * 0.03) * 3 * intensity.pulse;
+      const ring1Gradient = ctx.createRadialGradient(
+        centerX, centerY, ring1Radius - 10,
+        centerX, centerY, ring1Radius + 5
+      );
+      ring1Gradient.addColorStop(0, `rgba(${teal.r}, ${teal.g}, ${teal.b}, 0)`);
+      ring1Gradient.addColorStop(0.5, `rgba(${teal.r}, ${teal.g}, ${teal.b}, ${0.25 * intensity.base})`);
+      ring1Gradient.addColorStop(1, `rgba(${teal.r}, ${teal.g}, ${teal.b}, 0)`);
+      
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, ring1Radius, 0, Math.PI * 2);
+      ctx.strokeStyle = ring1Gradient;
+      ctx.lineWidth = 8;
+      ctx.stroke();
+
+      // Fog-like glow behind core
+      const fogGradient = ctx.createRadialGradient(
+        centerX, centerY, 0,
+        centerX, centerY, 130
+      );
+      fogGradient.addColorStop(0, `rgba(${teal.r}, ${teal.g}, ${teal.b}, ${0.08 * intensity.base})`);
+      fogGradient.addColorStop(0.5, `rgba(${deepTeal.r}, ${deepTeal.g}, ${deepTeal.b}, ${0.04 * intensity.base})`);
+      fogGradient.addColorStop(1, "rgba(0, 0, 0, 0)");
+      
+      ctx.fillStyle = fogGradient;
       ctx.fillRect(0, 0, size, size);
 
       time++;
@@ -163,64 +139,52 @@ export default function VoiceOrb({ state, amplitude = 0.5, className }: VoiceOrb
   const getOrbGlow = () => {
     switch (state) {
       case "listening":
-        return "shadow-[0_0_100px_rgba(0,224,200,0.5),0_0_50px_rgba(0,224,200,0.3)]";
+        return "shadow-[0_0_80px_rgba(0,224,200,0.35),0_0_40px_rgba(0,224,200,0.2)]";
       case "thinking":
-        return "shadow-[0_0_80px_rgba(0,200,220,0.4),0_0_40px_rgba(0,200,220,0.25)]";
+        return "shadow-[0_0_60px_rgba(0,200,220,0.3),0_0_30px_rgba(0,200,220,0.15)]";
       case "speaking":
-        return "shadow-[0_0_120px_rgba(80,255,220,0.5),0_0_60px_rgba(80,255,220,0.3)]";
+        return "shadow-[0_0_90px_rgba(0,224,200,0.4),0_0_45px_rgba(0,224,200,0.25)]";
       default:
-        return "shadow-[0_0_40px_rgba(0,200,180,0.2)]";
+        return "shadow-[0_0_30px_rgba(0,200,180,0.15)]";
     }
   };
 
   return (
     <div className={cn("relative flex items-center justify-center", className)}>
-      {/* Canvas for outer effects */}
+      {/* Canvas for rings and particles */}
       <canvas
         ref={canvasRef}
-        className="absolute w-[360px] h-[360px]"
-        style={{ width: 360, height: 360 }}
+        className="absolute w-[320px] h-[320px]"
+        style={{ width: 320, height: 320 }}
       />
 
-      {/* Layer 1: Inner core with Bahor AI logo */}
+      {/* Core orb with logo */}
       <div
         className={cn(
-          "relative w-[170px] h-[170px] rounded-full",
+          "relative w-[140px] h-[140px] rounded-full",
           "flex items-center justify-center",
-          "bg-gradient-to-br from-[hsl(172,50%,12%)] via-[hsl(175,45%,15%)] to-[hsl(170,40%,10%)]",
-          "border border-[rgba(0,224,200,0.15)]",
+          "bg-gradient-to-br from-[hsl(172,45%,10%)] via-[hsl(175,40%,12%)] to-[hsl(170,35%,8%)]",
+          "border border-[rgba(0,224,200,0.12)]",
           getOrbGlow(),
           "transition-all duration-700 ease-out",
-          state !== "idle" && "scale-[1.02]"
+          state === "listening" && "animate-voice-core-breathe",
+          state === "thinking" && "animate-voice-core-think",
+          state === "speaking" && "animate-voice-core-speak"
         )}
       >
-        {/* Inner shine gradient */}
+        {/* Inner glow overlay */}
         <div 
           className="absolute inset-0 rounded-full"
           style={{
-            background: "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 40%, rgba(0,0,0,0.15) 100%)"
+            background: "radial-gradient(circle at 40% 35%, rgba(255,255,255,0.06) 0%, transparent 50%)"
           }}
         />
 
-        {/* Inner glow ring */}
-        <div 
-          className={cn(
-            "absolute inset-3 rounded-full",
-            "border border-[rgba(0,224,200,0.1)]",
-            "transition-all duration-500"
-          )}
-          style={{
-            boxShadow: state !== "idle" 
-              ? "inset 0 0 40px rgba(0,224,200,0.08)" 
-              : "inset 0 0 20px rgba(0,224,200,0.03)"
-          }}
-        />
-
-        {/* Bahor AI Logo - Layer 1 inner core */}
+        {/* Bahor AI Logo */}
         <div className={cn(
-          "relative z-10 w-20 h-20",
-          "transition-all duration-1000",
-          state !== "idle" && "animate-voice-logo-glow"
+          "relative z-10 w-16 h-16",
+          "transition-all duration-500",
+          state !== "idle" && "animate-voice-logo-pulse"
         )}>
           <img
             src={bahorLogo}
@@ -231,23 +195,11 @@ export default function VoiceOrb({ state, amplitude = 0.5, className }: VoiceOrb
             )}
             style={{
               filter: state !== "idle" 
-                ? "drop-shadow(0 0 20px rgba(0,224,200,0.6)) brightness(1.15)" 
-                : "drop-shadow(0 0 10px rgba(0,224,200,0.3))"
+                ? "drop-shadow(0 0 15px rgba(0,224,200,0.5)) brightness(1.1)" 
+                : "drop-shadow(0 0 8px rgba(0,224,200,0.25))"
             }}
           />
         </div>
-
-        {/* Soft breathing overlay */}
-        <div 
-          className={cn(
-            "absolute inset-0 rounded-full",
-            "transition-opacity duration-700",
-            state !== "idle" ? "animate-voice-core-breathe" : "opacity-0"
-          )}
-          style={{
-            background: "radial-gradient(circle at 50% 35%, rgba(0,224,200,0.1) 0%, transparent 60%)"
-          }}
-        />
       </div>
     </div>
   );
