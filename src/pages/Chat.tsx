@@ -6,6 +6,7 @@ import QuickSuggestions from "@/components/QuickSuggestions";
 import { DeleteChatModal } from "@/components/DeleteChatModal";
 import DailyUsageIndicator from "@/components/DailyUsageIndicator";
 import LimitReachedCard from "@/components/LimitReachedCard";
+import ThinkingBar, { ThinkingStatus, ThinkingPhase } from "@/components/ThinkingBar";
 import { Message, ChatSession, ChatAttachment } from "@/types/chat";
 import { supabase } from "@/integrations/supabase/client";
 import { getModeInfo } from "@/data/modes";
@@ -101,6 +102,11 @@ export default function Chat() {
   const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<string | null>(null);
+  const [thinkingStatus, setThinkingStatus] = useState<ThinkingStatus>({
+    phase: 'idle',
+    shortLabel: '',
+    details: [],
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -338,6 +344,28 @@ export default function Chat() {
     setPendingAttachments([]);
     setIsLoading(true);
     setTyping(true);
+    
+    // Determine initial thinking phase based on attachments
+    const hasImages = attachmentsToProcess.some(att => isVisionSupportedImage(att));
+    const hasPdf = attachmentsToProcess.some(att => att.type === 'application/pdf' || att.name.toLowerCase().endsWith('.pdf'));
+    
+    let initialPhase: ThinkingPhase = 'reasoning';
+    let initialLabel = translate('thinking.reasoning');
+    
+    if (hasImages || hasPdf) {
+      initialPhase = 'vision';
+      initialLabel = translate('thinking.vision');
+    }
+    
+    setThinkingStatus({
+      phase: initialPhase,
+      shortLabel: initialLabel,
+      details: [
+        translate('thinking.step.understanding'),
+        translate('thinking.step.selecting'),
+        translate('thinking.step.drafting'),
+      ],
+    });
 
     // Prepare assistant message ID but don't add to state yet
     const assistantId = crypto.randomUUID?.() ?? (Date.now() + 1).toString();
@@ -425,6 +453,15 @@ export default function Chat() {
         content: messageContent,
       });
 
+      // Update thinking status to reasoning phase after attachment processing
+      if (attachmentsToProcess.length > 0) {
+        setThinkingStatus(prev => ({
+          ...prev,
+          phase: 'reasoning',
+          shortLabel: translate('thinking.reasoning'),
+        }));
+      }
+
       // Call the backend API for streaming response
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`,
@@ -451,7 +488,13 @@ export default function Chat() {
       // Process the streaming response
       await processStreamingResponse(response, {
         onChunk: (chunk) => {
+          // Update to finalising phase when streaming starts
           if (!assistantMessageCreated) {
+            setThinkingStatus(prev => ({
+              ...prev,
+              phase: 'finalising',
+              shortLabel: translate('thinking.finalising'),
+            }));
             // Create assistant message on first chunk
             // Add analysis prefix based on type (vision or OCR)
             const analysisPrefix = analysisContent 
@@ -493,6 +536,7 @@ export default function Chat() {
           setTyping(false);
           setIsLoading(false);
           setProcessingStatus(null);
+          setThinkingStatus({ phase: 'idle', shortLabel: '', details: [] });
           inputRef.current?.focus();
           
           // TODO: Backend integration - Backend should track and enforce limits
@@ -509,6 +553,7 @@ export default function Chat() {
       setTyping(false);
       setIsLoading(false);
       setProcessingStatus(null);
+      setThinkingStatus({ phase: 'idle', shortLabel: '', details: [] });
       inputRef.current?.focus();
       
       // Show error toast
@@ -817,21 +862,18 @@ export default function Chat() {
                 <LimitReachedCard onDismiss={() => setShowLimitCard(false)} />
               )}
               
-              {/* Typing Indicator - Premium animation */}
-              {(typing || processingStatus) && (
-                <div className="flex gap-3 justify-start chat-message-ai">
-                  <div className="rounded-2xl rounded-tl-sm bg-card border border-border/40 px-5 py-4 shadow-md">
-                    <div className="flex items-center gap-3">
-                      <div className="flex gap-1.5">
-                        <span className="typing-dot w-2 h-2 bg-primary rounded-full" />
-                        <span className="typing-dot w-2 h-2 bg-primary rounded-full" />
-                        <span className="typing-dot w-2 h-2 bg-primary rounded-full" />
-                      </div>
-                      <span className="text-sm text-muted-foreground">
-                        {processingStatus || translate('chat.typing')}
-                      </span>
-                    </div>
-                  </div>
+              {/* ThinkingBar - Premium thinking experience */}
+              {thinkingStatus.phase !== 'idle' && (
+                <div className="flex justify-start">
+                  <ThinkingBar 
+                    status={thinkingStatus}
+                    onToggleExpand={() => {
+                      setThinkingStatus(prev => ({
+                        ...prev,
+                        expanded: !prev.expanded,
+                      }));
+                    }}
+                  />
                 </div>
               )}
               <div ref={messagesEndRef} className="h-4" />
