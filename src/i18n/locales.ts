@@ -160,6 +160,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'thinking.fewMoreSeconds': "Yana bir oz...",
     'thinking.showReasoning': "To'liq fikrlashni ko'rsatish",
     'thinking.hideReasoning': "Fikrlashni yashirish",
+    'thinking.deepReasoning': "🧠 Chuqur fikrlash faol",
     
     // General steps
     'thinking.step.understanding': "Savolingizni tahlil qilmoqda",
@@ -371,6 +372,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'thinking.fewMoreSeconds': "A few more seconds...",
     'thinking.showReasoning': "Show full reasoning",
     'thinking.hideReasoning': "Hide reasoning",
+    'thinking.deepReasoning': "🧠 Deep reasoning active",
     
     // General steps
     'thinking.step.understanding': "Analyzing your question",
@@ -582,6 +584,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'thinking.fewMoreSeconds': "Ещё немного...",
     'thinking.showReasoning': "Показать полный ход мысли",
     'thinking.hideReasoning': "Скрыть ход мысли",
+    'thinking.deepReasoning': "🧠 Глубокое рассуждение активно",
     
     // General steps
     'thinking.step.understanding': "Анализирую ваш вопрос",
@@ -793,6 +796,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'thinking.fewMoreSeconds': "Birkaç saniye daha...",
     'thinking.showReasoning': "Tam düşünce sürecini göster",
     'thinking.hideReasoning': "Düşünce sürecini gizle",
+    'thinking.deepReasoning': "🧠 Derin düşünme aktif",
     
     // General steps
     'thinking.step.understanding': "Sorunuz analiz ediliyor",
