@@ -302,7 +302,21 @@
   @apply bg-muted-foreground/30;
 }
 
-/* Focus visible states */
+/* Focus visible states - subtle, premium */
 :focus-visible {
-  @apply outline-none ring-2 ring-primary/50 ring-offset-2 ring-offset-background;
+  @apply outline-none;
+}
+
+/* Only apply ring to interactive elements that need it (buttons, links) */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible {
+  @apply ring-1 ring-primary/30 ring-offset-1 ring-offset-background;
+}
+
+/* Disable ring for inputs - they have custom focus styles */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  @apply ring-0 ring-offset-0;
 }

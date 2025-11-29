@@ -880,7 +880,7 @@ export default function Chat() {
             )}
 
             {/* Input Container */}
-            <div className="flex items-end gap-2 rounded-2xl border border-border/50 bg-card/80 px-2 py-1.5 hover:border-border focus-within:border-primary/30 transition-all duration-200">
+            <div className="flex items-end gap-2 rounded-xl border border-border/40 bg-secondary/50 px-2 py-1.5 hover:border-border/60 focus-within:border-primary/25 transition-colors duration-150">
               <input
                 ref={fileInputRef}
                 type="file"
