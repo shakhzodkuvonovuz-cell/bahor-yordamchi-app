@@ -29,7 +29,7 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
   const [isMuted, setIsMuted] = useState(false);
   const [answerPreview, setAnswerPreview] = useState("");
   const [isExiting, setIsExiting] = useState(false);
-  const [micExpanded, setMicExpanded] = useState(false);
+  const [buttonPressed, setButtonPressed] = useState(false);
   
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -51,7 +51,6 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
 
   const startListening = async () => {
     try {
-      setMicExpanded(true);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
       
@@ -69,12 +68,10 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
       simulateSpeechRecognition();
     } catch (error) {
       console.error("Error accessing microphone:", error);
-      setMicExpanded(false);
     }
   };
 
   const stopListening = () => {
-    setMicExpanded(false);
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
@@ -162,6 +159,9 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
   };
 
   const handleToggle = () => {
+    setButtonPressed(true);
+    setTimeout(() => setButtonPressed(false), 200);
+    
     if (state === "listening") {
       stopListening();
     } else if (state === "idle") {
@@ -207,13 +207,13 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
       "fixed inset-0 z-50 flex flex-col overflow-hidden",
       isExiting ? "animate-voice-exit" : "animate-voice-enter"
     )}>
-      {/* Deep dark background - #020b0a */}
+      {/* Deep dark background */}
       <div 
         className="absolute inset-0"
         style={{
           background: `
-            radial-gradient(ellipse 100% 70% at 50% 45%, rgba(0,100,90,0.12) 0%, transparent 55%),
-            linear-gradient(180deg, #020b0a 0%, #061614 50%, #020b0a 100%)
+            radial-gradient(ellipse 90% 60% at 50% 48%, rgba(0,80,70,0.1) 0%, transparent 50%),
+            linear-gradient(180deg, #020a09 0%, #051412 50%, #020a09 100%)
           `
         }}
       />
@@ -222,19 +222,19 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
       <div 
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: "radial-gradient(ellipse 65% 55% at center, transparent 25%, rgba(0,0,0,0.65) 100%)"
+          background: "radial-gradient(ellipse 60% 50% at center 45%, transparent 20%, rgba(0,0,0,0.6) 100%)"
         }}
       />
 
-      {/* Header - small integrated icons */}
-      <div className="relative z-10 flex items-center justify-between p-3 md:p-4">
+      {/* Header - minimal integrated icons */}
+      <div className="relative z-10 flex items-center justify-between p-3">
         <button
           onClick={handleClose}
           className={cn(
             "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all duration-300",
-            "bg-white/[0.03] backdrop-blur-2xl border border-white/[0.04]",
-            "hover:bg-white/[0.06] hover:border-[rgba(0,199,177,0.12)]",
-            "text-white/40 hover:text-white/70 text-xs"
+            "bg-white/[0.03] backdrop-blur-2xl border border-white/[0.05]",
+            "hover:bg-white/[0.06] hover:border-[rgba(0,199,177,0.1)]",
+            "text-white/35 hover:text-white/60 text-xs"
           )}
         >
           <MessageSquare className="w-3.5 h-3.5" />
@@ -246,9 +246,9 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
             onClick={() => setIsMuted(!isMuted)}
             className={cn(
               "p-2 rounded-lg transition-all duration-300",
-              "bg-white/[0.03] backdrop-blur-2xl border border-white/[0.04]",
+              "bg-white/[0.03] backdrop-blur-2xl border border-white/[0.05]",
               "hover:bg-white/[0.06]",
-              isMuted ? "text-white/25" : "text-white/40 hover:text-[#00c7b1]"
+              isMuted ? "text-white/20" : "text-white/35 hover:text-[#00c7b1]/80"
             )}
           >
             {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
@@ -258,9 +258,9 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
             onClick={handleClose}
             className={cn(
               "p-2 rounded-lg transition-all duration-300",
-              "bg-white/[0.03] backdrop-blur-2xl border border-white/[0.04]",
-              "hover:bg-white/[0.06] hover:text-white/70",
-              "text-white/40"
+              "bg-white/[0.03] backdrop-blur-2xl border border-white/[0.05]",
+              "hover:bg-white/[0.06] hover:text-white/60",
+              "text-white/35"
             )}
           >
             <X className="w-3.5 h-3.5" />
@@ -268,45 +268,53 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
         </div>
       </div>
 
-      {/* Main content - centered */}
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-5">
-        {/* Voice Orb with intelligent particle ring */}
-        <div className="mb-6 md:mb-8">
+      {/* Main content - perfectly centered with adjusted spacing */}
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-5 pt-4">
+        {/* Voice Orb - moved down slightly */}
+        <div className="mb-5">
           <VoiceOrb 
             state={state} 
             amplitude={amplitude}
           />
         </div>
 
-        {/* Floating text - no box, glass blur behind, wiggle animation */}
-        <div className="text-center mb-4 md:mb-6">
+        {/* Glassmorphic text pill - closer to orb */}
+        <div className={cn(
+          "rounded-full px-6 py-3 mb-5",
+          "bg-white/[0.03] backdrop-blur-2xl",
+          "border border-white/[0.06]",
+          "transition-all duration-500",
+          state !== "idle" && "shadow-[0_0_30px_rgba(0,199,177,0.12)]",
+          "animate-voice-text-scale-in"
+        )}>
           <h2 className={cn(
-            "text-2xl md:text-3xl font-light tracking-wide mb-2",
+            "text-xl md:text-2xl font-light tracking-wide text-center",
             "transition-all duration-400",
             state === "listening" && "text-[#00c7b1] animate-voice-text-wiggle",
-            state === "thinking" && "text-[#00c7b1]/80",
+            state === "thinking" && "text-[#00c7b1]/75",
             state === "speaking" && "text-[#00c7b1]",
-            state === "idle" && "text-white/70"
+            state === "idle" && "text-white/60"
           )}
           style={{
             textShadow: state !== "idle" 
-              ? "0 0 40px rgba(0,199,177,0.4), 0 0 80px rgba(0,199,177,0.2)" 
+              ? "0 0 25px rgba(0,199,177,0.35)" 
               : "none"
           }}>
             {getStateTitle()}
           </h2>
-          
-          <p className={cn(
-            "text-sm text-white/30 font-light transition-all duration-400",
-            state === "listening" && "animate-voice-subtitle-float"
-          )}>
-            {getStateSubtitle()}
-          </p>
         </div>
+        
+        {/* Subtitle - soft and minimal */}
+        <p className={cn(
+          "text-xs text-white/25 font-light mb-6 transition-all duration-400",
+          state === "listening" && "animate-voice-subtitle-float"
+        )}>
+          {getStateSubtitle()}
+        </p>
 
-        {/* Liquid waveform - smooth neon wave */}
+        {/* Liquid waveform - moved up, thinner */}
         {(state === "listening" || state === "speaking") && (
-          <div className="w-full max-w-md h-16 md:h-20 mb-4 animate-fade-in">
+          <div className="w-full max-w-xs h-12 mb-4 animate-fade-in">
             <LiquidWaveform 
               isActive={state === "listening" || state === "speaking"} 
               amplitude={amplitude}
@@ -314,35 +322,35 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
           </div>
         )}
 
-        {/* Thinking state - processing steps */}
+        {/* Thinking state - compact processing */}
         {state === "thinking" && (
-          <div className="w-full max-w-xs animate-fade-in">
+          <div className="w-full max-w-[260px] animate-fade-in">
             <div className={cn(
-              "rounded-xl p-4",
+              "rounded-xl p-3.5",
               "bg-white/[0.02] backdrop-blur-2xl border border-white/[0.04]"
             )}>
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {PROCESSING_STEPS.map((step, index) => (
                   <div 
                     key={step.key}
                     className={cn(
-                      "flex items-center gap-2.5 transition-all duration-300",
-                      index < processingStep ? "opacity-100" : "opacity-25"
+                      "flex items-center gap-2 transition-all duration-300",
+                      index < processingStep ? "opacity-100" : "opacity-20"
                     )}
                   >
                     <div className={cn(
-                      "w-7 h-7 rounded-md flex items-center justify-center text-xs",
+                      "w-6 h-6 rounded flex items-center justify-center text-[10px]",
                       "transition-all duration-300",
                       index < processingStep 
-                        ? "bg-[rgba(0,199,177,0.12)] text-[#00c7b1]" 
-                        : "bg-white/[0.03] text-white/35"
+                        ? "bg-[rgba(0,199,177,0.1)] text-[#00c7b1]" 
+                        : "bg-white/[0.03] text-white/30"
                     )}>
                       {index < processingStep ? "✓" : step.icon}
                     </div>
                     
                     <span className={cn(
-                      "text-xs transition-colors duration-300",
-                      index < processingStep ? "text-white/70" : "text-white/30"
+                      "text-[11px] transition-colors duration-300",
+                      index < processingStep ? "text-white/60" : "text-white/25"
                     )}>
                       {t(`voice.step.${step.key}`)}
                     </span>
@@ -353,18 +361,18 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
           </div>
         )}
 
-        {/* Speaking state - answer preview */}
+        {/* Speaking state - answer */}
         {state === "speaking" && answerPreview && (
           <div className="w-full max-w-sm animate-voice-answer-up">
             <div className={cn(
-              "rounded-xl p-4",
+              "rounded-xl p-3.5",
               "bg-white/[0.02] backdrop-blur-2xl border border-white/[0.04]"
             )}>
-              <div className="flex items-start gap-2.5">
-                <div className="w-7 h-7 rounded-md bg-[rgba(0,199,177,0.1)] flex items-center justify-center flex-shrink-0">
+              <div className="flex items-start gap-2">
+                <div className="w-6 h-6 rounded bg-[rgba(0,199,177,0.08)] flex items-center justify-center flex-shrink-0">
                   <img src={bahorLogo} alt="" className="w-4 h-4 object-contain" />
                 </div>
-                <p className="text-white/70 text-xs leading-relaxed">
+                <p className="text-white/60 text-[11px] leading-relaxed">
                   {answerPreview}
                 </p>
               </div>
@@ -374,15 +382,15 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
 
         {/* Live transcription */}
         {transcription && (
-          <div className="w-full max-w-sm mt-3 animate-fade-in">
+          <div className="w-full max-w-xs mt-3 animate-fade-in">
             <div className={cn(
               "rounded-lg px-3 py-2",
-              "bg-black/20 backdrop-blur-xl border border-white/[0.02]"
+              "bg-black/15 backdrop-blur-xl border border-white/[0.02]"
             )}>
-              <p className="text-center text-xs text-white/45">
+              <p className="text-center text-[11px] text-white/40">
                 {transcription}
                 {state === "listening" && (
-                  <span className="inline-block w-0.5 h-3 bg-[#00c7b1] ml-1 animate-pulse" />
+                  <span className="inline-block w-0.5 h-2.5 bg-[#00c7b1] ml-1 animate-pulse" />
                 )}
               </p>
             </div>
@@ -390,45 +398,49 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
         )}
       </div>
 
-      {/* Bottom - premium mic button */}
-      <div className="relative z-10 pb-8 md:pb-10 px-5">
+      {/* Bottom - premium floating mic button */}
+      <div className="relative z-10 pb-10 px-5">
         <div className="flex items-center justify-center">
-          {/* Mic button with expansion animation and turquoise glow */}
+          {/* Floating glowing circle button with ripple */}
           <button
             onClick={handleToggle}
             className={cn(
-              "relative rounded-full transition-all duration-500",
-              "hover:scale-105 active:scale-95",
-              "bg-[#020b0a]",
-              "border-2 border-[#00c7b1]/30",
-              micExpanded ? "p-6" : "p-5",
+              "relative p-4 rounded-full transition-all duration-400",
+              "bg-[#030d0c]",
+              "border border-[rgba(0,199,177,0.25)]",
+              buttonPressed ? "scale-90" : "hover:scale-105 active:scale-95",
               state === "listening" 
-                ? "shadow-[0_0_50px_rgba(0,199,177,0.4),0_0_25px_rgba(0,199,177,0.3)]" 
-                : "shadow-[0_0_30px_rgba(0,199,177,0.2)] hover:shadow-[0_0_40px_rgba(0,199,177,0.3)]"
+                ? "shadow-[0_0_40px_rgba(0,199,177,0.35),0_0_20px_rgba(0,199,177,0.2)]" 
+                : "shadow-[0_0_25px_rgba(0,199,177,0.15)] hover:shadow-[0_0_35px_rgba(0,199,177,0.25)]"
             )}
           >
-            {/* Animated ring halo */}
+            {/* Ripple animation on press */}
+            {buttonPressed && (
+              <div className="absolute inset-0 rounded-full bg-[#00c7b1]/20 animate-voice-ripple" />
+            )}
+            
+            {/* Animated ring halos */}
             {state === "listening" && (
               <>
-                <div className="absolute inset-[-6px] rounded-full border border-[#00c7b1]/40 animate-voice-ring-expand" />
-                <div className="absolute inset-[-14px] rounded-full border border-[#00c7b1]/20 animate-voice-ring-expand-delay" />
+                <div className="absolute inset-[-5px] rounded-full border border-[#00c7b1]/35 animate-voice-ring-expand" />
+                <div className="absolute inset-[-12px] rounded-full border border-[#00c7b1]/15 animate-voice-ring-expand-delay" />
               </>
             )}
             
             {state === "idle" && (
-              <div className="absolute inset-[-4px] rounded-full border border-[#00c7b1]/15 animate-voice-ring-breathe" />
+              <div className="absolute inset-[-3px] rounded-full border border-[#00c7b1]/12 animate-voice-ring-breathe" />
             )}
             
             {state === "listening" ? (
               <Square className="w-5 h-5 text-[#00c7b1] relative z-10" />
             ) : (
-              <Mic className="w-5 h-5 text-[#00c7b1]/80 relative z-10" />
+              <Mic className="w-5 h-5 text-[#00c7b1]/70 relative z-10" />
             )}
           </button>
         </div>
         
-        {/* Bottom hint */}
-        <p className="text-center text-[10px] text-white/25 mt-4 font-light">
+        {/* Bottom hint - very subtle */}
+        <p className="text-center text-[9px] text-white/20 mt-4 font-light">
           {state === "listening" ? t('voice.tapToStop') : t('voice.tapToStart')}
         </p>
       </div>

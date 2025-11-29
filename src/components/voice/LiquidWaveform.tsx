@@ -38,105 +38,68 @@ export default function LiquidWaveform({ isActive, amplitude = 0.5, className }:
       
       ctx.clearRect(0, 0, width, height);
       
-      const activeAmplitude = isActive ? Math.max(0.3, amplitude) : 0.1;
-      const waveHeight = height * 0.35 * activeAmplitude;
+      const activeAmplitude = isActive ? Math.max(0.25, amplitude) : 0.08;
+      const waveHeight = height * 0.3 * activeAmplitude;
 
-      // Draw multiple liquid wave layers
-      for (let layer = 2; layer >= 0; layer--) {
-        const layerAlpha = 0.15 + (1 - layer / 3) * 0.5;
-        const layerOffset = layer * 0.5;
-        const layerHeight = waveHeight * (1 - layer * 0.2);
-
-        // Create gradient for this layer
-        const gradient = ctx.createLinearGradient(0, centerY - layerHeight, width, centerY + layerHeight);
-        gradient.addColorStop(0, `rgba(${teal.r}, ${teal.g}, ${teal.b}, 0)`);
-        gradient.addColorStop(0.2, `rgba(${teal.r}, ${teal.g}, ${teal.b}, ${layerAlpha * 0.5})`);
-        gradient.addColorStop(0.5, `rgba(${teal.r}, ${teal.g}, ${teal.b}, ${layerAlpha})`);
-        gradient.addColorStop(0.8, `rgba(${teal.r}, ${teal.g}, ${teal.b}, ${layerAlpha * 0.5})`);
-        gradient.addColorStop(1, `rgba(${teal.r}, ${teal.g}, ${teal.b}, 0)`);
-
-        // Calculate smooth bezier wave points
-        const points: { x: number; y: number }[] = [];
-        const segments = 60;
+      // Single thin liquid wave line
+      const points: { x: number; y: number }[] = [];
+      const segments = 80;
+      
+      for (let i = 0; i <= segments; i++) {
+        const x = (i / segments) * width;
+        const normalizedX = i / segments;
         
-        for (let i = 0; i <= segments; i++) {
-          const x = (i / segments) * width;
-          const normalizedX = i / segments;
-          
-          // Smooth organic wave using multiple sine functions
-          const wave1 = Math.sin(normalizedX * Math.PI * 2 + time * 0.04 + layerOffset) * layerHeight * 0.6;
-          const wave2 = Math.sin(normalizedX * Math.PI * 3.5 - time * 0.05 + layerOffset) * layerHeight * 0.3;
-          const wave3 = Math.cos(normalizedX * Math.PI * 1.5 + time * 0.03) * layerHeight * 0.15;
-          
-          // Smooth envelope that fades edges
-          const envelope = Math.pow(Math.sin(normalizedX * Math.PI), 0.6);
-          const y = centerY + (wave1 + wave2 + wave3) * envelope;
-          
-          points.push({ x, y });
-        }
-
-        // Draw smooth bezier curve through points
-        ctx.beginPath();
-        ctx.moveTo(points[0].x, centerY);
-        ctx.lineTo(points[0].x, points[0].y);
+        // Smooth organic wave
+        const wave1 = Math.sin(normalizedX * Math.PI * 2.5 + time * 0.035) * waveHeight * 0.7;
+        const wave2 = Math.sin(normalizedX * Math.PI * 4 - time * 0.045) * waveHeight * 0.25;
+        const wave3 = Math.cos(normalizedX * Math.PI * 1.2 + time * 0.025) * waveHeight * 0.15;
         
-        for (let i = 0; i < points.length - 1; i++) {
-          const p0 = points[Math.max(0, i - 1)];
-          const p1 = points[i];
-          const p2 = points[i + 1];
-          const p3 = points[Math.min(points.length - 1, i + 2)];
-          
-          const cp1x = p1.x + (p2.x - p0.x) / 6;
-          const cp1y = p1.y + (p2.y - p0.y) / 6;
-          const cp2x = p2.x - (p3.x - p1.x) / 6;
-          const cp2y = p2.y - (p3.y - p1.y) / 6;
-          
-          ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
-        }
+        // Soft fade envelope at edges
+        const envelope = Math.pow(Math.sin(normalizedX * Math.PI), 0.5);
+        const y = centerY + (wave1 + wave2 + wave3) * envelope;
         
-        ctx.lineTo(width, centerY);
-        ctx.lineTo(width, height);
-        ctx.lineTo(0, height);
-        ctx.closePath();
-        
-        // Fill with gradient
-        ctx.fillStyle = gradient;
-        ctx.fill();
-        
-        // Glowing stroke on top layer
-        if (layer === 0) {
-          ctx.beginPath();
-          ctx.moveTo(points[0].x, points[0].y);
-          
-          for (let i = 0; i < points.length - 1; i++) {
-            const p0 = points[Math.max(0, i - 1)];
-            const p1 = points[i];
-            const p2 = points[i + 1];
-            const p3 = points[Math.min(points.length - 1, i + 2)];
-            
-            const cp1x = p1.x + (p2.x - p0.x) / 6;
-            const cp1y = p1.y + (p2.y - p0.y) / 6;
-            const cp2x = p2.x - (p3.x - p1.x) / 6;
-            const cp2y = p2.y - (p3.y - p1.y) / 6;
-            
-            ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
-          }
-          
-          const strokeGradient = ctx.createLinearGradient(0, 0, width, 0);
-          strokeGradient.addColorStop(0, `rgba(${teal.r}, ${teal.g}, ${teal.b}, 0)`);
-          strokeGradient.addColorStop(0.3, `rgba(${teal.r}, ${teal.g}, ${teal.b}, 0.8)`);
-          strokeGradient.addColorStop(0.5, `rgba(${teal.r}, ${teal.g}, ${teal.b}, 1)`);
-          strokeGradient.addColorStop(0.7, `rgba(${teal.r}, ${teal.g}, ${teal.b}, 0.8)`);
-          strokeGradient.addColorStop(1, `rgba(${teal.r}, ${teal.g}, ${teal.b}, 0)`);
-          
-          ctx.strokeStyle = strokeGradient;
-          ctx.lineWidth = 2;
-          ctx.shadowColor = `rgba(${teal.r}, ${teal.g}, ${teal.b}, 0.6)`;
-          ctx.shadowBlur = 10;
-          ctx.stroke();
-          ctx.shadowBlur = 0;
-        }
+        points.push({ x, y });
       }
+
+      // Draw smooth bezier curve
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      
+      for (let i = 0; i < points.length - 1; i++) {
+        const p0 = points[Math.max(0, i - 1)];
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        const p3 = points[Math.min(points.length - 1, i + 2)];
+        
+        const cp1x = p1.x + (p2.x - p0.x) / 6;
+        const cp1y = p1.y + (p2.y - p0.y) / 6;
+        const cp2x = p2.x - (p3.x - p1.x) / 6;
+        const cp2y = p2.y - (p3.y - p1.y) / 6;
+        
+        ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
+      }
+      
+      // Gradient stroke with soft fade at edges
+      const strokeGradient = ctx.createLinearGradient(0, 0, width, 0);
+      strokeGradient.addColorStop(0, `rgba(${teal.r}, ${teal.g}, ${teal.b}, 0)`);
+      strokeGradient.addColorStop(0.15, `rgba(${teal.r}, ${teal.g}, ${teal.b}, 0.5)`);
+      strokeGradient.addColorStop(0.5, `rgba(${teal.r}, ${teal.g}, ${teal.b}, 0.9)`);
+      strokeGradient.addColorStop(0.85, `rgba(${teal.r}, ${teal.g}, ${teal.b}, 0.5)`);
+      strokeGradient.addColorStop(1, `rgba(${teal.r}, ${teal.g}, ${teal.b}, 0)`);
+      
+      // Glow effect
+      ctx.shadowColor = `rgba(${teal.r}, ${teal.g}, ${teal.b}, 0.5)`;
+      ctx.shadowBlur = 8;
+      ctx.strokeStyle = strokeGradient;
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      ctx.stroke();
+      
+      // Second pass for bright core
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = strokeGradient;
+      ctx.lineWidth = 1;
+      ctx.stroke();
 
       time++;
       animationRef.current = requestAnimationFrame(animate);
