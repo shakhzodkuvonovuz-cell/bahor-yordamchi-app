@@ -150,16 +150,66 @@ export const translations: Record<Lang, Record<string, string>> = {
     'delete.confirm': "O'chirish",
     
     // Thinking Bar
-    'thinking.reasoning': "Bahor AI fikr yuritmoqda...",
-    'thinking.searching': "Vebdan ma'lumot qidirmoqda...",
-    'thinking.vision': "Yuklangan hujjat va rasmni tahlil qilmoqda...",
+    'thinking.reasoning': "Chuqur o'ylanmoqda...",
+    'thinking.searching': "Internetdan ma'lumot qidirmoqda...",
+    'thinking.vision': "Tahlil qilinmoqda...",
     'thinking.finalising': "Javob tayyorlanmoqda...",
-    'thinking.step.understanding': "Savolingizni aniqlashtirmoqda",
-    'thinking.step.selecting': "Kerakli bilimlarni va manbalarni tanlamoqda",
-    'thinking.step.drafting': "Javobni oson tilda yozmoqda",
+    'thinking.slow': "Chuqurroq tahlil qilinmoqda...",
+    'thinking.almostDone': "Deyarli tayyor",
+    'thinking.seconds': "soniya",
+    'thinking.fewMoreSeconds': "Yana bir oz...",
+    'thinking.showReasoning': "To'liq fikrlashni ko'rsatish",
+    'thinking.hideReasoning': "Fikrlashni yashirish",
+    
+    // General steps
+    'thinking.step.understanding': "Savolingizni tahlil qilmoqda",
+    'thinking.step.selecting': "Kerakli manbalarni tanlamoqda",
+    'thinking.step.drafting': "Javobni tuzmoqda",
     'thinking.step.checking': "Javobni tekshirmoqda",
     'thinking.processing': "Fikr yuritilmoqda...",
     'thinking.explanation': "Ba'zan chuqur fikrlash yoki vebdan ma'lumot izlash biroz ko'proq vaqt olishi mumkin. Bu sizga aniqroq va ishonchli javob berish uchun qilinadi.",
+    
+    // Coding steps
+    'thinking.step.coding.analyzing': "Kod strukturasini tahlil qilmoqda",
+    'thinking.step.coding.patterns': "Eng yaxshi pattern'larni tanlamoqda",
+    'thinking.step.coding.solution': "Yechimni ishlab chiqmoqda",
+    'thinking.step.coding.optimizing': "Kodni optimizatsiya qilmoqda",
+    
+    // Translation steps
+    'thinking.step.translation.understanding': "Asl matnni o'qimoqda",
+    'thinking.step.translation.context': "Kontekstni tahlil qilmoqda",
+    'thinking.step.translation.adapting': "Tilga moslashmoqda",
+    'thinking.step.translation.polishing': "Tarjimani silliqlashmoqda",
+    
+    // Essay steps
+    'thinking.step.essay.analyzing': "Mavzuni tahlil qilmoqda",
+    'thinking.step.essay.structuring': "Tuzilmani rejalashtirmoqda",
+    'thinking.step.essay.writing': "Matnni yozmoqda",
+    'thinking.step.essay.reviewing': "Matnni ko'rib chiqmoqda",
+    
+    // Math steps
+    'thinking.step.math.parsing': "Masalani tahlil qilmoqda",
+    'thinking.step.math.method': "Yechish usulini tanlamoqda",
+    'thinking.step.math.calculating': "Hisoblamoqda",
+    'thinking.step.math.verifying': "Javobni tekshirmoqda",
+    
+    // Search steps
+    'thinking.step.searching.query': "Qidiruv so'rovini tuzmoqda",
+    'thinking.step.searching.sources': "Ishonchli manbalarni qidirmoqda",
+    'thinking.step.searching.analyzing': "Topilgan ma'lumotlarni tahlil qilmoqda",
+    'thinking.step.searching.compiling': "Javobni jamlashmoqda",
+    
+    // Vision steps
+    'thinking.step.vision.scanning': "Rasmni skanerlashmoqda",
+    'thinking.step.vision.recognizing': "Ob'ektlarni aniqlashmoqda",
+    'thinking.step.vision.understanding': "Mazmunini tushunmoqda",
+    'thinking.step.vision.formulating': "Javobni tayyorlashmoqda",
+    
+    // Reasoning explanations
+    'thinking.reason.step1': "Bu qadam savolingizni to'liq tushunish uchun kerak.",
+    'thinking.reason.step2': "Eng ishonchli va dolzarb ma'lumotlarni tanlaymiz.",
+    'thinking.reason.step3': "Sizga tushunarli va aniq javob tayyorlaymiz.",
+    'thinking.reason.step4': "Javobni xatolardan tekshirib, tasdiqlaymiz.",
   },
 
   en: {
@@ -311,16 +361,66 @@ export const translations: Record<Lang, Record<string, string>> = {
     'delete.confirm': 'Delete',
     
     // Thinking Bar
-    'thinking.reasoning': "Bahor AI is thinking...",
-    'thinking.searching': "Searching the web for fresh info...",
-    'thinking.vision': "Analyzing your file and image...",
+    'thinking.reasoning': "Thinking deeply...",
+    'thinking.searching': "Searching the web...",
+    'thinking.vision': "Analyzing...",
     'thinking.finalising': "Preparing your answer...",
-    'thinking.step.understanding': "Understanding your question",
-    'thinking.step.selecting': "Selecting relevant knowledge and sources",
-    'thinking.step.drafting': "Drafting a clear answer",
-    'thinking.step.checking': "Double-checking the response",
+    'thinking.slow': "Running deeper analysis...",
+    'thinking.almostDone': "Almost done",
+    'thinking.seconds': "seconds",
+    'thinking.fewMoreSeconds': "A few more seconds...",
+    'thinking.showReasoning': "Show full reasoning",
+    'thinking.hideReasoning': "Hide reasoning",
+    
+    // General steps
+    'thinking.step.understanding': "Analyzing your question",
+    'thinking.step.selecting': "Selecting relevant sources",
+    'thinking.step.drafting': "Composing the answer",
+    'thinking.step.checking': "Verifying the response",
     'thinking.processing': "Thinking...",
     'thinking.explanation': "Sometimes Bahor AI takes a few more seconds to reason deeply or check fresh web sources so that your answer is more accurate.",
+    
+    // Coding steps
+    'thinking.step.coding.analyzing': "Analyzing code structure",
+    'thinking.step.coding.patterns': "Selecting best patterns",
+    'thinking.step.coding.solution': "Developing solution",
+    'thinking.step.coding.optimizing': "Optimizing code",
+    
+    // Translation steps
+    'thinking.step.translation.understanding': "Reading source text",
+    'thinking.step.translation.context': "Analyzing context",
+    'thinking.step.translation.adapting': "Adapting to target language",
+    'thinking.step.translation.polishing': "Polishing translation",
+    
+    // Essay steps
+    'thinking.step.essay.analyzing': "Analyzing the topic",
+    'thinking.step.essay.structuring': "Planning structure",
+    'thinking.step.essay.writing': "Writing content",
+    'thinking.step.essay.reviewing': "Reviewing text",
+    
+    // Math steps
+    'thinking.step.math.parsing': "Parsing the problem",
+    'thinking.step.math.method': "Selecting approach",
+    'thinking.step.math.calculating': "Calculating",
+    'thinking.step.math.verifying': "Verifying answer",
+    
+    // Search steps
+    'thinking.step.searching.query': "Building search query",
+    'thinking.step.searching.sources': "Finding reliable sources",
+    'thinking.step.searching.analyzing': "Analyzing results",
+    'thinking.step.searching.compiling': "Compiling answer",
+    
+    // Vision steps
+    'thinking.step.vision.scanning': "Scanning image",
+    'thinking.step.vision.recognizing': "Recognizing objects",
+    'thinking.step.vision.understanding': "Understanding content",
+    'thinking.step.vision.formulating': "Formulating response",
+    
+    // Reasoning explanations
+    'thinking.reason.step1': "This step ensures we fully understand your question.",
+    'thinking.reason.step2': "We select the most reliable and relevant information.",
+    'thinking.reason.step3': "We prepare a clear and accurate answer for you.",
+    'thinking.reason.step4': "We verify the answer for accuracy and completeness.",
   },
 
   ru: {
@@ -472,16 +572,66 @@ export const translations: Record<Lang, Record<string, string>> = {
     'delete.confirm': 'Удалить',
     
     // Thinking Bar
-    'thinking.reasoning': "Bahor AI думает...",
-    'thinking.searching': "Ищет актуальную информацию в интернете...",
-    'thinking.vision': "Анализирует ваш файл и изображение...",
-    'thinking.finalising': "Подготавливает ответ...",
-    'thinking.step.understanding': "Анализирует ваш вопрос",
-    'thinking.step.selecting': "Выбирает нужные знания и источники",
-    'thinking.step.drafting': "Составляет понятный ответ",
-    'thinking.step.checking': "Перепроверяет ответ",
+    'thinking.reasoning': "Глубоко размышляю...",
+    'thinking.searching': "Ищу в интернете...",
+    'thinking.vision': "Анализирую...",
+    'thinking.finalising': "Готовлю ответ...",
+    'thinking.slow': "Проводится глубокий анализ...",
+    'thinking.almostDone': "Почти готово",
+    'thinking.seconds': "секунд",
+    'thinking.fewMoreSeconds': "Ещё немного...",
+    'thinking.showReasoning': "Показать полный ход мысли",
+    'thinking.hideReasoning': "Скрыть ход мысли",
+    
+    // General steps
+    'thinking.step.understanding': "Анализирую ваш вопрос",
+    'thinking.step.selecting': "Выбираю источники",
+    'thinking.step.drafting': "Составляю ответ",
+    'thinking.step.checking': "Проверяю ответ",
     'thinking.processing': "Думаю...",
     'thinking.explanation': "Иногда Bahor AI требуется немного больше времени для глубокого анализа или проверки актуальных источников, чтобы дать вам более точный ответ.",
+    
+    // Coding steps
+    'thinking.step.coding.analyzing': "Анализирую структуру кода",
+    'thinking.step.coding.patterns': "Выбираю лучшие паттерны",
+    'thinking.step.coding.solution': "Разрабатываю решение",
+    'thinking.step.coding.optimizing': "Оптимизирую код",
+    
+    // Translation steps
+    'thinking.step.translation.understanding': "Читаю исходный текст",
+    'thinking.step.translation.context': "Анализирую контекст",
+    'thinking.step.translation.adapting': "Адаптирую к языку",
+    'thinking.step.translation.polishing': "Шлифую перевод",
+    
+    // Essay steps
+    'thinking.step.essay.analyzing': "Анализирую тему",
+    'thinking.step.essay.structuring': "Планирую структуру",
+    'thinking.step.essay.writing': "Пишу текст",
+    'thinking.step.essay.reviewing': "Проверяю текст",
+    
+    // Math steps
+    'thinking.step.math.parsing': "Разбираю задачу",
+    'thinking.step.math.method': "Выбираю метод",
+    'thinking.step.math.calculating': "Вычисляю",
+    'thinking.step.math.verifying': "Проверяю ответ",
+    
+    // Search steps
+    'thinking.step.searching.query': "Формирую запрос",
+    'thinking.step.searching.sources': "Ищу надёжные источники",
+    'thinking.step.searching.analyzing': "Анализирую результаты",
+    'thinking.step.searching.compiling': "Собираю ответ",
+    
+    // Vision steps
+    'thinking.step.vision.scanning': "Сканирую изображение",
+    'thinking.step.vision.recognizing': "Распознаю объекты",
+    'thinking.step.vision.understanding': "Понимаю содержание",
+    'thinking.step.vision.formulating': "Формулирую ответ",
+    
+    // Reasoning explanations
+    'thinking.reason.step1': "Этот шаг нужен для полного понимания вашего вопроса.",
+    'thinking.reason.step2': "Выбираем самую надёжную и актуальную информацию.",
+    'thinking.reason.step3': "Готовим понятный и точный ответ для вас.",
+    'thinking.reason.step4': "Проверяем ответ на точность и полноту.",
   },
 
   tr: {
@@ -633,16 +783,66 @@ export const translations: Record<Lang, Record<string, string>> = {
     'delete.confirm': 'Sil',
     
     // Thinking Bar
-    'thinking.reasoning': "Bahor AI düşünüyor...",
-    'thinking.searching': "Güncel bilgiler için web'de aranıyor...",
-    'thinking.vision': "Dosya ve görseliniz analiz ediliyor...",
-    'thinking.finalising': "Cevabınız hazırlanıyor...",
-    'thinking.step.understanding': "Sorunuzu anlıyor",
-    'thinking.step.selecting': "İlgili bilgi ve kaynakları seçiyor",
-    'thinking.step.drafting': "Net bir cevap hazırlıyor",
-    'thinking.step.checking': "Cevabı kontrol ediyor",
+    'thinking.reasoning': "Derin düşünüyor...",
+    'thinking.searching': "Web'de aranıyor...",
+    'thinking.vision': "Analiz ediliyor...",
+    'thinking.finalising': "Cevap hazırlanıyor...",
+    'thinking.slow': "Daha derin analiz yapılıyor...",
+    'thinking.almostDone': "Neredeyse hazır",
+    'thinking.seconds': "saniye",
+    'thinking.fewMoreSeconds': "Birkaç saniye daha...",
+    'thinking.showReasoning': "Tam düşünce sürecini göster",
+    'thinking.hideReasoning': "Düşünce sürecini gizle",
+    
+    // General steps
+    'thinking.step.understanding': "Sorunuz analiz ediliyor",
+    'thinking.step.selecting': "Kaynaklar seçiliyor",
+    'thinking.step.drafting': "Cevap hazırlanıyor",
+    'thinking.step.checking': "Cevap kontrol ediliyor",
     'thinking.processing': "Düşünülüyor...",
     'thinking.explanation': "Bazen Bahor AI, size daha doğru bir cevap vermek için derin düşünmek veya güncel web kaynaklarını kontrol etmek için birkaç saniye daha alabilir.",
+    
+    // Coding steps
+    'thinking.step.coding.analyzing': "Kod yapısı analiz ediliyor",
+    'thinking.step.coding.patterns': "En iyi kalıplar seçiliyor",
+    'thinking.step.coding.solution': "Çözüm geliştiriliyor",
+    'thinking.step.coding.optimizing': "Kod optimize ediliyor",
+    
+    // Translation steps
+    'thinking.step.translation.understanding': "Kaynak metin okunuyor",
+    'thinking.step.translation.context': "Bağlam analiz ediliyor",
+    'thinking.step.translation.adapting': "Hedef dile uyarlanıyor",
+    'thinking.step.translation.polishing': "Çeviri cilâlanıyor",
+    
+    // Essay steps
+    'thinking.step.essay.analyzing': "Konu analiz ediliyor",
+    'thinking.step.essay.structuring': "Yapı planlanıyor",
+    'thinking.step.essay.writing': "İçerik yazılıyor",
+    'thinking.step.essay.reviewing': "Metin gözden geçiriliyor",
+    
+    // Math steps
+    'thinking.step.math.parsing': "Problem çözümleniyor",
+    'thinking.step.math.method': "Yaklaşım seçiliyor",
+    'thinking.step.math.calculating': "Hesaplanıyor",
+    'thinking.step.math.verifying': "Cevap doğrulanıyor",
+    
+    // Search steps
+    'thinking.step.searching.query': "Arama sorgusu oluşturuluyor",
+    'thinking.step.searching.sources': "Güvenilir kaynaklar aranıyor",
+    'thinking.step.searching.analyzing': "Sonuçlar analiz ediliyor",
+    'thinking.step.searching.compiling': "Cevap derleniyor",
+    
+    // Vision steps
+    'thinking.step.vision.scanning': "Görsel taranıyor",
+    'thinking.step.vision.recognizing': "Nesneler tanınıyor",
+    'thinking.step.vision.understanding': "İçerik anlaşılıyor",
+    'thinking.step.vision.formulating': "Yanıt formüle ediliyor",
+    
+    // Reasoning explanations
+    'thinking.reason.step1': "Bu adım sorunuzu tam anlamak için gereklidir.",
+    'thinking.reason.step2': "En güvenilir ve ilgili bilgileri seçiyoruz.",
+    'thinking.reason.step3': "Size net ve doğru bir cevap hazırlıyoruz.",
+    'thinking.reason.step4': "Cevabı doğruluk ve bütünlük açısından kontrol ediyoruz.",
   },
 };
 
