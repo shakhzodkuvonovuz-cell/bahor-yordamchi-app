@@ -15,9 +15,9 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         isUser ? "chat-message-user" : "chat-message-ai"
       }`}
     >
-      {/* AI Avatar - Bahor AI logo */}
+      {/* AI Avatar */}
       {!isUser && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-card border border-border/40 flex items-center justify-center mt-0.5 shadow-sm">
+        <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-card border border-border/40 flex items-center justify-center mt-0.5 shadow-sm">
           <img src={bahorLogo} alt="Bahor AI" className="w-6 h-6 object-contain" />
         </div>
       )}
@@ -25,9 +25,9 @@ export default function ChatMessage({ message }: ChatMessageProps) {
       <div
         className={`max-w-[85%] sm:max-w-[75%] rounded-2xl ${
           isUser
-            ? "bg-primary text-primary-foreground rounded-tr-md"
-            : "bg-card border border-border/50 text-card-foreground rounded-tl-md"
-        } shadow-premium-sm`}
+            ? "bg-primary text-primary-foreground rounded-tr-md shadow-lg shadow-primary/20"
+            : "glass-premium rounded-tl-md"
+        }`}
       >
         <div className="px-4 py-3">
           {/* Attachments */}
@@ -81,14 +81,16 @@ export default function ChatMessage({ message }: ChatMessageProps) {
           )}
           
           {message.content && (
-            <div className="text-[15px] leading-[1.6] whitespace-pre-wrap break-words [&_pre]:mt-3 [&_pre]:rounded-xl [&_pre]:bg-muted [&_pre]:text-foreground [&_pre]:text-[13px] [&_pre]:p-4 [&_pre]:overflow-x-auto [&_code]:font-mono [&_code]:text-[13px]">
+            <div className={`text-[15px] leading-[1.6] whitespace-pre-wrap break-words [&_pre]:mt-3 [&_pre]:rounded-xl [&_pre]:bg-muted [&_pre]:text-foreground [&_pre]:text-[13px] [&_pre]:p-4 [&_pre]:overflow-x-auto [&_code]:font-mono [&_code]:text-[13px] ${
+              isUser ? "" : "text-card-foreground"
+            }`}>
               {message.content}
             </div>
           )}
         </div>
         
         {/* Timestamp */}
-        <div className={`px-4 pb-2.5 -mt-1`}>
+        <div className="px-4 pb-2.5 -mt-1">
           <span className={`text-[11px] ${isUser ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
             {new Date(message.timestamp).toLocaleTimeString("uz-UZ", {
               hour: "2-digit",
@@ -100,7 +102,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
 
       {/* User Avatar */}
       {isUser && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center mt-1">
+        <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center mt-0.5 shadow-lg shadow-primary/20">
           <User className="w-4 h-4 text-primary-foreground" />
         </div>
       )}
