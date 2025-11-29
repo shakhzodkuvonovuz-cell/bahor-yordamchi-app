@@ -1,7 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import {
   Accordion,
   AccordionContent,
@@ -21,6 +20,8 @@ import {
   Target,
   Sparkles,
   MessageSquare,
+  ArrowRight,
+  Check,
 } from "lucide-react";
 import bahorLogo from "@/assets/bahor-logo.png";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
@@ -28,7 +29,6 @@ import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 export default function Landing() {
   const navigate = useNavigate();
   
-  // Scroll animations
   const heroRef = useScrollAnimation({ threshold: 0.2 });
   const featuresRef = useScrollAnimation({ threshold: 0.1 });
   const modesRef = useScrollAnimation({ threshold: 0.1 });
@@ -38,126 +38,99 @@ export default function Landing() {
 
   const features = [
     {
-      icon: <Globe className="w-6 h-6" />,
+      icon: <Globe className="w-5 h-5" />,
       title: "Optimized for Uzbek language",
       description: "Understands Uzbek slang, natural phrasing, and real-life context.",
     },
     {
-      icon: <Target className="w-6 h-6" />,
+      icon: <Target className="w-5 h-5" />,
       title: "Specialized modes",
       description: "Coding, IELTS, business, marketing, homework help, and more.",
     },
     {
-      icon: <Zap className="w-6 h-6" />,
+      icon: <Zap className="w-5 h-5" />,
       title: "Fast, simple, intuitive",
       description: "No complicated menus. Just ask and get instant help.",
     },
     {
-      icon: <Sparkles className="w-6 h-6" />,
+      icon: <Sparkles className="w-5 h-5" />,
       title: "Future premium plans",
       description: "Currently free in beta. Paid plans will launch soon with additional features.",
     },
   ];
 
   const modes = [
-    {
-      icon: <Code2 className="w-6 h-6" />,
-      title: "Technology & Coding",
-      description: "Get help with programming, debugging, and technical questions.",
-    },
-    {
-      icon: <Home className="w-6 h-6" />,
-      title: "Life Assistance",
-      description: "Practical advice for everyday life, recipes, and daily tasks.",
-    },
-    {
-      icon: <Briefcase className="w-6 h-6" />,
-      title: "Business & Marketing",
-      description: "Strategic guidance for business growth and marketing campaigns.",
-    },
-    {
-      icon: <BookOpen className="w-6 h-6" />,
-      title: "English & IELTS",
-      description: "Improve your English skills and prepare for IELTS exams.",
-    },
-    {
-      icon: <GraduationCap className="w-6 h-6" />,
-      title: "Homework & Subjects",
-      description: "Get help with school assignments and academic subjects.",
-    },
-    {
-      icon: <Briefcase className="w-6 h-6" />,
-      title: "Job & Resume",
-      description: "Build professional resumes and prepare for job interviews.",
-    },
-    {
-      icon: <DollarSign className="w-6 h-6" />,
-      title: "Financial Literacy",
-      description: "Learn about budgeting, saving, and financial planning.",
-    },
-    {
-      icon: <Heart className="w-6 h-6" />,
-      title: "Health & Fitness",
-      description: "Get advice on wellness, nutrition, and healthy living.",
-    },
+    { icon: <Code2 className="w-5 h-5" />, title: "Technology & Coding", description: "Get help with programming, debugging, and technical questions." },
+    { icon: <Home className="w-5 h-5" />, title: "Life Assistance", description: "Practical advice for everyday life, recipes, and daily tasks." },
+    { icon: <Briefcase className="w-5 h-5" />, title: "Business & Marketing", description: "Strategic guidance for business growth and marketing campaigns." },
+    { icon: <BookOpen className="w-5 h-5" />, title: "English & IELTS", description: "Improve your English skills and prepare for IELTS exams." },
+    { icon: <GraduationCap className="w-5 h-5" />, title: "Homework & Subjects", description: "Get help with school assignments and academic subjects." },
+    { icon: <Briefcase className="w-5 h-5" />, title: "Job & Resume", description: "Build professional resumes and prepare for job interviews." },
+    { icon: <DollarSign className="w-5 h-5" />, title: "Financial Literacy", description: "Learn about budgeting, saving, and financial planning." },
+    { icon: <Heart className="w-5 h-5" />, title: "Health & Fitness", description: "Get advice on wellness, nutrition, and healthy living." },
   ];
 
   const steps = [
-    {
-      number: "1",
-      title: "Ask anything",
-      description: "From school assignments to recipes to coding help.",
-    },
-    {
-      number: "2",
-      title: "Choose a mode (optional)",
-      description: "Get more precise answers by selecting a specialized mode.",
-    },
-    {
-      number: "3",
-      title: "Continue the conversation",
-      description: "Refine, adjust, or ask follow-up questions instantly.",
-    },
+    { number: "1", title: "Ask anything", description: "From school assignments to recipes to coding help." },
+    { number: "2", title: "Choose a mode (optional)", description: "Get more precise answers by selecting a specialized mode." },
+    { number: "3", title: "Continue the conversation", description: "Refine, adjust, or ask follow-up questions instantly." },
   ];
 
   const faqs = [
+    { question: "Is Bahor AI the same as ChatGPT?", answer: "No. Bahor AI is customized for Uzbek users, local culture, and local use cases." },
+    { question: "Why is Bahor AI free right now?", answer: "We are in beta, collecting feedback and improving the service." },
+    { question: "What languages does Bahor AI support?", answer: "Primary language is Uzbek. English and Russian are also understood." },
+    { question: "Is my data safe?", answer: "Yes. No personal data is shared with third parties. See our privacy policy." },
+  ];
+
+  const pricingPlans = [
     {
-      question: "Is Bahor AI the same as ChatGPT?",
-      answer: "No. Bahor AI is customized for Uzbek users, local culture, and local use cases.",
+      name: "Free (beta)",
+      price: "0",
+      description: "Boshlang'ich foydalanish uchun",
+      features: ["Kuniga 5 ta xabar", "Asosiy suhbat rejimi", "Cheklangan funksiyalar"],
+      cta: "Boshlash",
+      highlighted: false,
     },
     {
-      question: "Why is Bahor AI free right now?",
-      answer: "We are in beta, collecting feedback and improving the service.",
+      name: "Oylik reja",
+      price: "49,000",
+      description: "Professional foydalanuvchilar uchun",
+      features: ["Cheksiz xabarlar", "Barcha maxsus rejimlar", "Fayl va rasm tahlili", "Tezkor javoblar"],
+      cta: "Tez orada",
+      highlighted: true,
+      badge: "Eng mashhur",
     },
     {
-      question: "What languages does Bahor AI support?",
-      answer: "Primary language is Uzbek. English and Russian are also understood.",
-    },
-    {
-      question: "Is my data safe?",
-      answer: "Yes. No personal data is shared with third parties. See our privacy policy.",
+      name: "Yillik reja",
+      price: "340,000",
+      description: "Maksimal tejash",
+      features: ["Barcha oylik reja imkoniyatlari", "42% tejash", "Birinchi bo'lib yangi funksiyalar"],
+      cta: "Tez orada",
+      highlighted: false,
+      badge: "Eng tejamkor",
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50/40 via-slate-50/30 to-slate-50/40 dark:from-slate-950/40 dark:via-slate-950/30 dark:to-slate-950/40">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border/40 backdrop-blur-sm bg-background/80 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <header className="glass-strong sticky top-0 z-50 border-b border-border/50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
             <img 
               src={bahorLogo} 
               alt="Bahor AI" 
-              className="h-12 w-auto sm:h-[52px] object-contain" 
+              className="h-9 w-auto sm:h-10 object-contain" 
             />
-            <span className="text-[27px] sm:text-[29px] font-semibold tracking-[0.02em] bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+            <span className="text-xl sm:text-2xl font-semibold text-foreground">
               Bahor AI
             </span>
           </div>
           <Button 
             onClick={() => navigate("/modes")} 
             size="sm"
-            className="h-9 px-6 rounded-[10px] font-medium border-[1.5px] shadow-sm hover:shadow-md hover:brightness-105 transition-all active:scale-[0.97]"
+            className="h-9 px-5 rounded-xl font-medium shadow-sm hover:shadow-md hover:glow-primary transition-all"
           >
             Open App
           </Button>
@@ -165,189 +138,179 @@ export default function Landing() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-16 sm:py-28 md:py-40">
+      <section className="relative py-16 sm:py-24 md:py-32 overflow-hidden">
+        {/* Subtle gradient orb */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+        
         <div
           ref={heroRef.ref}
-          className={`max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative transition-all duration-500 ease-out ${
-            heroRef.isVisible 
-              ? "opacity-100 translate-y-0" 
-              : "opacity-0 translate-y-4"
+          className={`max-w-4xl mx-auto px-4 sm:px-6 text-center relative transition-all duration-700 ease-out ${
+            heroRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
           }`}
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6 sm:mb-12">
-            <Sparkles className="w-4 h-4" />
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6 sm:mb-8">
+            <Sparkles className="w-3.5 h-3.5" />
             Currently in Beta
           </div>
-          <h1 className="text-[2rem] sm:text-[2.4rem] md:text-5xl lg:text-[3.5rem] font-bold mb-5 sm:mb-10 bg-gradient-to-r from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent leading-[1.15]">
-            The first Uzbek artificial intelligence — made for Uzbekistan.
+          
+          <h1 className="text-display-md sm:text-display-lg md:text-display-xl font-bold mb-4 sm:mb-6 text-foreground leading-tight">
+            Birinchi o'zbek sun'iy intellekti — <br className="hidden sm:block" />
+            <span className="text-gradient-primary">o'zbeklar uchun.</span>
           </h1>
-          <p className="text-[17px] sm:text-[21px] md:text-[23px] text-[#3D3D3D] dark:text-muted-foreground/90 mb-6 sm:mb-14 max-w-2xl mx-auto leading-[1.4] sm:leading-[1.5]">
-            A lightning-fast AI assistant designed specifically for the Uzbek language.
+          
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground mb-8 sm:mb-10 max-w-2xl mx-auto leading-relaxed">
+            A lightning-fast AI assistant designed specifically for the Uzbek language and culture.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center mb-4 sm:mb-7">
+          
+          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
             <Button
               onClick={() => navigate("/modes")}
               size="lg"
-              className="w-full sm:w-auto min-w-[220px] h-14 px-8 text-base font-medium shadow-lg hover:shadow-xl hover:brightness-105 transition-all rounded-[10px] border-[1.5px] active:scale-[0.97]"
+              className="w-full sm:w-auto min-w-[200px] h-12 px-6 text-base font-medium shadow-lg hover:shadow-xl glow-primary hover:glow-primary-strong transition-all rounded-xl"
             >
-              <MessageSquare className="w-5 h-5 mr-2" />
-              Open Bahor AI App
+              <MessageSquare className="w-4 h-4 mr-2" />
+              Open Bahor AI
             </Button>
             <Button
               variant="outline"
               size="lg"
-              className="w-full sm:w-auto min-w-[220px] h-14 px-8 text-base font-medium rounded-[10px] border-[1.5px] hover:brightness-105 transition-all active:scale-[0.97]"
-              disabled
+              className="w-full sm:w-auto min-w-[200px] h-12 px-6 text-base font-medium rounded-xl border-border/60 hover:bg-secondary/50 transition-all"
+              onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
             >
-              Mobile apps coming soon
+              Learn more
+              <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
-          <p className="text-sm text-muted-foreground/80">
+          
+          <p className="text-sm text-muted-foreground mt-6">
             Currently available for free during beta.
           </p>
         </div>
       </section>
 
-      {/* Why Bahor AI Section */}
-      <section className="py-14 sm:py-20 md:py-28">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Features Section */}
+      <section id="features" className="py-16 sm:py-20 border-t border-border/30">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div 
             ref={featuresRef.ref}
-            className={`text-center mb-10 sm:mb-16 md:mb-24 transition-all duration-500 ease-out ${
-              featuresRef.isVisible 
-                ? "opacity-100 translate-y-0" 
-                : "opacity-0 translate-y-4"
+            className={`text-center mb-10 sm:mb-14 transition-all duration-600 ease-out ${
+              featuresRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-6 tracking-tight">Why choose Bahor AI?</h2>
-            <p className="text-base sm:text-lg md:text-xl text-muted-foreground">
+            <h2 className="text-display-sm sm:text-display-md font-bold mb-3 text-foreground">Why choose Bahor AI?</h2>
+            <p className="text-muted-foreground text-base sm:text-lg">
               Built specifically for the needs of Uzbek speakers
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-7">
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
             {features.map((feature, index) => (
-              <Card
+              <div
                 key={index}
-                className={`p-5 sm:p-8 md:p-10 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-[#E8E8E8] dark:border-border/50 bg-background/80 backdrop-blur shadow-[0_4px_14px_rgba(0,0,0,0.04)] ${
-                  featuresRef.isVisible 
-                    ? "opacity-100 translate-y-0" 
-                    : "opacity-0 translate-y-6"
+                className={`group p-5 sm:p-6 rounded-2xl bg-card border border-border/50 hover:border-primary/30 hover:shadow-premium-lg hover-lift transition-all duration-300 ${
+                  featuresRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
                 }`}
-                style={{
-                  transitionDelay: `${index * 100}ms`,
-                }}
+                style={{ transitionDelay: `${index * 80}ms` }}
               >
-                <div className="flex items-start gap-4 sm:gap-6">
-                  <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
-                    {React.cloneElement(feature.icon as React.ReactElement, { className: "w-6 h-6 sm:w-8 sm:h-8" })}
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary flex-shrink-0 group-hover:bg-primary/15 transition-colors">
+                    {feature.icon}
                   </div>
                   <div>
-                    <h3 className="text-base sm:text-[17px] md:text-[19px] font-semibold mb-1.5 sm:mb-3">{feature.title}</h3>
-                    <p className="text-muted-foreground text-sm sm:text-[15px] leading-relaxed">{feature.description}</p>
+                    <h3 className="text-base font-semibold mb-1.5 text-foreground">{feature.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
                   </div>
                 </div>
-              </Card>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Modes Preview Section */}
-      <section className="py-14 sm:py-20 md:py-28">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Modes Section */}
+      <section className="py-16 sm:py-20 border-t border-border/30">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div 
             ref={modesRef.ref}
-            className={`text-center mb-10 sm:mb-16 md:mb-24 transition-all duration-500 ease-out ${
-              modesRef.isVisible 
-                ? "opacity-100 translate-y-0" 
-                : "opacity-0 translate-y-4"
+            className={`text-center mb-10 sm:mb-14 transition-all duration-600 ease-out ${
+              modesRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-6 tracking-tight">Explore Bahor AI Modes</h2>
-            <p className="text-base sm:text-lg md:text-xl text-muted-foreground">
+            <h2 className="text-display-sm sm:text-display-md font-bold mb-3 text-foreground">Explore Bahor AI Modes</h2>
+            <p className="text-muted-foreground text-base sm:text-lg">
               Specialized AI assistants for every need
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-14">
+          
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8 sm:mb-10">
             {modes.map((mode, index) => (
-              <Card
+              <div
                 key={index}
-                className={`p-4 sm:p-6 hover:shadow-lg hover:scale-[1.01] hover:-translate-y-1 transition-all duration-300 cursor-pointer border-[#E8E8E8] dark:border-border/50 bg-background/80 backdrop-blur group shadow-[0_2px_8px_rgba(0,0,0,0.02)] ${
-                  modesRef.isVisible 
-                    ? "opacity-100 translate-y-0" 
-                    : "opacity-0 translate-y-6"
+                className={`group p-4 sm:p-5 rounded-2xl bg-card border border-border/50 hover:border-primary/30 hover:shadow-premium-md cursor-pointer transition-all duration-300 ${
+                  modesRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
                 }`}
-                style={{
-                  transitionDelay: `${index * 80}ms`,
-                }}
+                style={{ transitionDelay: `${index * 50}ms` }}
                 onClick={() => navigate("/modes")}
               >
-                <div className="flex flex-col items-center text-center gap-3 sm:gap-4">
-                  <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-primary group-hover:scale-110 group-hover:brightness-110 transition-all duration-200">
-                    {React.cloneElement(mode.icon as React.ReactElement, { className: "w-6 h-6 sm:w-7 sm:h-7" })}
+                <div className="flex flex-col items-center text-center gap-3">
+                  <div className="w-11 h-11 rounded-full bg-secondary flex items-center justify-center text-primary group-hover:bg-primary/10 transition-colors">
+                    {mode.icon}
                   </div>
                   <div>
-                    <h3 className="font-semibold mb-1 sm:mb-1.5 text-sm sm:text-[15px]">{mode.title}</h3>
-                    <p className="text-xs sm:text-[13px] text-muted-foreground line-clamp-2 leading-relaxed">
-                      {mode.description}
-                    </p>
+                    <h3 className="font-semibold text-sm mb-1 text-foreground">{mode.title}</h3>
+                    <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{mode.description}</p>
                   </div>
                 </div>
-              </Card>
+              </div>
             ))}
           </div>
-          <div className="text-center mt-6 sm:mt-12">
+          
+          <div className="text-center">
             <Button
               onClick={() => navigate("/modes")}
               size="lg"
-              className="px-8 h-12 text-base font-medium shadow-md hover:shadow-lg hover:scale-[1.02] transition-all rounded-[10px] active:scale-[0.98]"
+              className="h-11 px-6 text-base font-medium shadow-md hover:shadow-lg rounded-xl transition-all"
             >
               Start using Bahor AI
-              <span className="ml-2">→</span>
+              <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
         </div>
       </section>
 
       {/* How It Works Section */}
-      <section className="py-14 sm:py-24 md:py-32">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-16 sm:py-20 border-t border-border/30">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div 
             ref={stepsRef.ref}
-            className={`text-center mb-10 sm:mb-16 md:mb-24 transition-all duration-500 ease-out ${
-              stepsRef.isVisible 
-                ? "opacity-100 translate-y-0" 
-                : "opacity-0 translate-y-4"
+            className={`text-center mb-10 sm:mb-14 transition-all duration-600 ease-out ${
+              stepsRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-6 tracking-tight">How Bahor AI Works</h2>
-            <p className="text-base sm:text-lg md:text-xl text-muted-foreground">
+            <h2 className="text-display-sm sm:text-display-md font-bold mb-3 text-foreground">How Bahor AI Works</h2>
+            <p className="text-muted-foreground text-base sm:text-lg">
               Get started in three simple steps
             </p>
           </div>
+          
           <div className="relative">
-            {/* Connecting line - horizontal on desktop, vertical on mobile */}
-            <div className="hidden md:block absolute top-10 left-[20%] right-[20%] h-[2px] bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20" />
-            <div className="md:hidden absolute top-0 bottom-0 left-1/2 w-[2px] bg-gradient-to-b from-primary/20 via-primary/40 to-primary/20 -translate-x-1/2" />
+            {/* Connection line */}
+            <div className="hidden md:block absolute top-8 left-[20%] right-[20%] h-px bg-gradient-to-r from-transparent via-border to-transparent" />
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-10 sm:gap-16 md:gap-8 relative">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-10">
               {steps.map((step, index) => (
                 <div 
-                  key={index} 
+                  key={index}
                   className={`text-center relative transition-all duration-500 ease-out ${
-                    stepsRef.isVisible 
-                      ? "opacity-100 translate-y-0" 
-                      : "opacity-0 translate-y-6"
+                    stepsRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
                   }`}
-                  style={{
-                    transitionDelay: `${index * 150}ms`,
-                  }}
+                  style={{ transitionDelay: `${index * 120}ms` }}
                 >
-                  <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-full bg-primary/15 text-primary text-2xl sm:text-[36px] font-bold flex items-center justify-center mx-auto mb-3 sm:mb-6 shadow-lg relative z-10 backdrop-blur-sm border-4 border-background">
+                  <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary text-xl font-bold flex items-center justify-center mx-auto mb-4 border-2 border-background shadow-premium-md relative z-10">
                     {step.number}
                   </div>
-                  <h3 className="text-base sm:text-[17px] md:text-[19px] font-semibold mb-2 sm:mb-4">{step.title}</h3>
-                  <p className="text-muted-foreground text-sm sm:text-[15px] leading-relaxed max-w-xs mx-auto">{step.description}</p>
+                  <h3 className="text-base font-semibold mb-2 text-foreground">{step.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed max-w-[250px] mx-auto">{step.description}</p>
                 </div>
               ))}
             </div>
@@ -356,210 +319,105 @@ export default function Landing() {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-14 sm:py-20 md:py-28">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-16 sm:py-20 border-t border-border/30">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div 
             ref={pricingRef.ref}
-            className={`text-center mb-10 sm:mb-16 md:mb-24 transition-all duration-500 ease-out ${
-              pricingRef.isVisible 
-                ? "opacity-100 translate-y-0" 
-                : "opacity-0 translate-y-4"
+            className={`text-center mb-10 sm:mb-14 transition-all duration-600 ease-out ${
+              pricingRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-6 tracking-tight">Pricing</h2>
-            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
+            <h2 className="text-display-sm sm:text-display-md font-bold mb-3 text-foreground">Pricing</h2>
+            <p className="text-muted-foreground text-base sm:text-lg max-w-xl mx-auto">
               Choose the plan that works best for you
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-8 max-w-6xl mx-auto">
-            {/* Free Plan */}
-            <Card 
-              className={`p-5 sm:p-8 border-[#E8E8E8] dark:border-border/50 shadow-[0_4px_14px_rgba(0,0,0,0.04)] bg-background/80 backdrop-blur relative transition-all duration-500 ease-out ${
-                pricingRef.isVisible 
-                  ? "opacity-100 translate-y-0 scale-100" 
-                  : "opacity-0 translate-y-6 scale-98"
-              }`}
-              style={{
-                transitionDelay: "0ms",
-              }}
-            >
-              <div className="mb-6">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Boshlash uchun</p>
-                <h3 className="text-2xl font-bold mb-2">Free (beta)</h3>
-                <div className="flex items-baseline gap-1 mb-3">
-                  <span className="text-4xl font-bold">0</span>
-                  <span className="text-lg text-muted-foreground">UZS</span>
-                </div>
-                <p className="text-sm text-muted-foreground">Boshlang'ich foydalanish uchun cheklangan rejim.</p>
-              </div>
-              
-              <ul className="space-y-2 sm:space-y-3 mb-6">
-                <li className="flex items-start gap-2 text-sm">
-                  <span className="text-muted-foreground">•</span>
-                  <span>Cheklangan — kuniga 5 ta xabar gacha</span>
-                </li>
-                <li className="flex items-start gap-2 text-sm">
-                  <span className="text-muted-foreground">•</span>
-                  <span>Fayl va rasm yuklash imkoniyati yo'q</span>
-                </li>
-                <li className="flex items-start gap-2 text-sm">
-                  <span className="text-muted-foreground">•</span>
-                  <span>Faqat umumiy suhbat (maxsus rejimlar yo'q)</span>
-                </li>
-              </ul>
-              
-              <p className="text-xs text-muted-foreground/70 mt-6">
-                Cheklovlar beta davrida o'zgarishi mumkin.
-              </p>
-            </Card>
-
-            {/* Monthly Plan - Most Popular */}
-            <Card 
-              className={`p-5 sm:p-8 border-primary/40 dark:border-primary/30 shadow-[0_8px_24px_rgba(0,0,0,0.08)] bg-background relative scale-100 md:scale-105 lg:scale-110 transition-all duration-500 ease-out ${
-                pricingRef.isVisible 
-                  ? "opacity-100 translate-y-0" 
-                  : "opacity-0 translate-y-6 scale-98"
-              }`}
-              style={{
-                transitionDelay: "100ms",
-              }}
-            >
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-full shadow-lg">
-                Eng mashhur reja
-              </div>
-              
-              <div className="mb-6 mt-2">
-                <h3 className="text-2xl font-bold mb-2">Oylik reja</h3>
-                <div className="flex items-baseline gap-1 mb-1">
-                  <span className="text-4xl font-bold">49,000</span>
-                  <span className="text-lg text-muted-foreground">UZS</span>
-                </div>
-                <p className="text-sm text-muted-foreground mb-3">/ oy</p>
-                <p className="text-xs text-primary font-medium">
-                  Taxminan 80% arzonroq chet el AI chatbotlaridan
-                </p>
-              </div>
-              
-              <ul className="space-y-2 sm:space-y-3 mb-6 sm:mb-8">
-                <li className="flex items-start gap-2 text-sm">
-                  <span className="text-primary">✓</span>
-                  <span>Barcha maxsus rejimlar ochiq (IELTS, kod, biznes, moliya va boshqalar)</span>
-                </li>
-                <li className="flex items-start gap-2 text-sm">
-                  <span className="text-primary">✓</span>
-                  <span>Fayl va rasm yuklash hamda tahlil qilish</span>
-                </li>
-                <li className="flex items-start gap-2 text-sm">
-                  <span className="text-primary">✓</span>
-                  <span>Ko'proq kunlik xabar limiti</span>
-                </li>
-                <li className="flex items-start gap-2 text-sm">
-                  <span className="text-primary">✓</span>
-                  <span>Kelajakda ustuvor qo'llab-quvvatlash va yangiliklar</span>
-                </li>
-              </ul>
-              
-              <Button 
-                className="w-full h-11 rounded-[10px] font-medium shadow-md hover:shadow-lg transition-all"
-                onClick={() => navigate("/modes")}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 max-w-5xl mx-auto">
+            {pricingPlans.map((plan, index) => (
+              <div 
+                key={index}
+                className={`relative p-5 sm:p-6 rounded-2xl border transition-all duration-500 ${
+                  plan.highlighted 
+                    ? "bg-card border-primary/50 shadow-lg shadow-primary/10" 
+                    : "bg-card border-border/50"
+                } ${
+                  pricingRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+                }`}
+                style={{ transitionDelay: `${index * 100}ms` }}
               >
-                Tez orada
-              </Button>
-            </Card>
-
-            {/* Yearly Plan - Best Value */}
-            <Card 
-              className={`p-5 sm:p-8 border-[#E8E8E8] dark:border-border/50 shadow-[0_4px_14px_rgba(0,0,0,0.04)] bg-background/80 backdrop-blur relative transition-all duration-500 ease-out ${
-                pricingRef.isVisible 
-                  ? "opacity-100 translate-y-0 scale-100" 
-                  : "opacity-0 translate-y-6 scale-98"
-              }`}
-              style={{
-                transitionDelay: "200ms",
-              }}
-            >
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-accent text-accent-foreground text-xs font-semibold rounded-full shadow-lg">
-                Eng tejamkor
-              </div>
-              
-              <div className="mb-6 mt-2">
-                <h3 className="text-2xl font-bold mb-2">Yillik reja</h3>
-                <div className="flex items-baseline gap-1 mb-1">
-                  <span className="text-4xl font-bold">340,000</span>
-                  <span className="text-lg text-muted-foreground">UZS</span>
+                {plan.badge && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <span className="px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-medium">
+                      {plan.badge}
+                    </span>
+                  </div>
+                )}
+                
+                <div className="mb-5">
+                  <h3 className="text-lg font-bold mb-1 text-foreground">{plan.name}</h3>
+                  <p className="text-sm text-muted-foreground mb-3">{plan.description}</p>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-bold text-foreground">{plan.price}</span>
+                    <span className="text-sm text-muted-foreground">UZS</span>
+                  </div>
                 </div>
-                <p className="text-sm text-muted-foreground mb-1">/ yil</p>
-                <p className="text-xs text-accent-foreground font-medium mb-1">
-                  Taxminan 28,300 UZS / oy ekvivalent
-                </p>
-                <p className="text-xs text-primary font-medium">
-                  Oylik rejaga nisbatan taxminan 42% tejamkor
-                </p>
+                
+                <ul className="space-y-2.5 mb-6">
+                  {plan.features.map((feature, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm">
+                      <Check className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                      <span className="text-foreground">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                
+                <Button 
+                  className={`w-full h-10 rounded-xl font-medium ${
+                    plan.highlighted 
+                      ? "" 
+                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                  }`}
+                  disabled={plan.cta === "Tez orada"}
+                  onClick={() => plan.cta === "Boshlash" && navigate("/modes")}
+                >
+                  {plan.cta}
+                </Button>
               </div>
-              
-              <ul className="space-y-2 sm:space-y-3 mb-6 sm:mb-8">
-                <li className="flex items-start gap-2 text-sm">
-                  <span className="text-primary">✓</span>
-                  <span>Barcha oylik reja imkoniyatlari</span>
-                </li>
-                <li className="flex items-start gap-2 text-sm">
-                  <span className="text-primary">✓</span>
-                  <span>Yiliga bir marta to'lov — ko'proq tejash</span>
-                </li>
-                <li className="flex items-start gap-2 text-sm">
-                  <span className="text-primary">✓</span>
-                  <span>Beta foydalanuvchilari uchun maxsus bonuslar (kelajakda)</span>
-                </li>
-              </ul>
-              
-              <Button 
-                variant="outline"
-                className="w-full h-11 rounded-[10px] font-medium hover:bg-accent transition-all"
-                onClick={() => navigate("/modes")}
-              >
-                Tez orada
-              </Button>
-            </Card>
+            ))}
           </div>
-          
-          <p className="text-center text-sm text-muted-foreground/80 mt-12 max-w-2xl mx-auto leading-relaxed">
-            Hozircha barcha foydalanuvchilar bepul beta rejimdan foydalanishyapti. Pullik rejimlar keyinroq ishga tushiriladi.
-          </p>
         </div>
       </section>
 
       {/* FAQ Section */}
-      <section className="py-14 sm:py-20 md:py-28">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-16 sm:py-20 border-t border-border/30">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6">
           <div 
             ref={faqRef.ref}
-            className={`text-center mb-8 sm:mb-12 md:mb-20 transition-all duration-500 ease-out ${
-              faqRef.isVisible 
-                ? "opacity-100 translate-y-0" 
-                : "opacity-0 translate-y-4"
+            className={`text-center mb-10 sm:mb-12 transition-all duration-600 ease-out ${
+              faqRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-2 sm:mb-4 tracking-tight">Frequently Asked Questions</h2>
+            <h2 className="text-display-sm sm:text-display-md font-bold mb-3 text-foreground">Frequently Asked Questions</h2>
+            <p className="text-muted-foreground text-base sm:text-lg">
+              Common questions about Bahor AI
+            </p>
           </div>
-          <Accordion type="single" collapsible className="space-y-3 sm:space-y-4">
+          
+          <Accordion type="single" collapsible className="space-y-3">
             {faqs.map((faq, index) => (
               <AccordionItem
                 key={index}
                 value={`item-${index}`}
-                className={`bg-background/80 backdrop-blur border border-border/50 rounded-lg px-4 sm:px-6 md:px-8 py-1 transition-all duration-300 hover:shadow-md ${
-                  faqRef.isVisible 
-                    ? "opacity-100 translate-y-0" 
-                    : "opacity-0 translate-y-4"
+                className={`border border-border/50 rounded-xl px-5 overflow-hidden bg-card transition-all duration-500 ${
+                  faqRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
                 }`}
-                style={{
-                  transitionDelay: `${index * 100}ms`,
-                }}
+                style={{ transitionDelay: `${index * 80}ms` }}
               >
-                <AccordionTrigger className="text-left hover:no-underline py-4 sm:py-6 [&[data-state=open]>svg]:rotate-180">
-                  <span className="font-semibold text-sm sm:text-[15px] pr-4">{faq.question}</span>
+                <AccordionTrigger className="text-sm sm:text-base font-medium py-4 hover:no-underline text-foreground">
+                  {faq.question}
                 </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground text-sm sm:text-[15px] leading-relaxed pb-4 sm:pb-6 animate-accordion-down">
+                <AccordionContent className="text-sm text-muted-foreground pb-4 leading-relaxed">
                   {faq.answer}
                 </AccordionContent>
               </AccordionItem>
@@ -569,21 +427,16 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/30 py-8 sm:py-12 md:py-14 bg-background/80 backdrop-blur">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
-            <p className="text-sm text-muted-foreground/80 font-medium">© 2025 Bahor AI</p>
-            <div className="flex gap-8 text-sm text-muted-foreground/70">
-              <a href="#" className="hover:text-foreground transition-colors font-medium relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-foreground after:transition-all hover:after:w-full">
-                Terms of Use
-              </a>
-              <a href="#" className="hover:text-foreground transition-colors font-medium relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-foreground after:transition-all hover:after:w-full">
-                Privacy Policy
-              </a>
-              <a href="#" className="hover:text-foreground transition-colors font-medium relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-foreground after:transition-all hover:after:w-full">
-                Help Center
-              </a>
+      <footer className="py-8 border-t border-border/30">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <img src={bahorLogo} alt="Bahor AI" className="h-7 w-auto" />
+              <span className="text-lg font-semibold text-foreground">Bahor AI</span>
             </div>
+            <p className="text-sm text-muted-foreground">
+              © 2024 Bahor AI. All rights reserved.
+            </p>
           </div>
         </div>
       </footer>

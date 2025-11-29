@@ -15,17 +15,17 @@ export default function ModeCard({ mode, language, onClick }: ModeCardProps) {
   return (
     <button
       onClick={onClick}
-      className="w-full rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow p-3 flex flex-col gap-2 text-left active:scale-95"
+      className="w-full rounded-2xl bg-card border border-border/50 shadow-premium-sm hover:shadow-premium-md hover:border-primary/30 hover:-translate-y-0.5 transition-all duration-200 p-4 flex flex-col gap-3 text-left active:scale-[0.98]"
     >
-      <div className="flex flex-col items-center text-center gap-2">
-        <div className="w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-2xl shadow-sm">
+      <div className="flex flex-col items-center text-center gap-2.5">
+        <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center text-2xl">
           {mode.icon}
         </div>
         <div className="space-y-1">
-          <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 leading-tight">
+          <h3 className="text-sm font-semibold text-foreground leading-tight">
             {modeTranslation.title}
           </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-2">
+          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
             {modeTranslation.subtitle}
           </p>
         </div>

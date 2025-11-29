@@ -18,7 +18,7 @@ export default function QuickSuggestions({
           key={index}
           onClick={() => onSelect(suggestion)}
           disabled={disabled}
-          className="flex-shrink-0 px-4 py-2 bg-secondary text-secondary-foreground rounded-full text-sm font-medium hover:bg-primary hover:text-primary-foreground transition-colors duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed border border-border"
+          className="flex-shrink-0 px-4 py-2.5 bg-card text-foreground rounded-xl text-sm font-medium hover:bg-primary hover:text-primary-foreground transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed border border-border/60 hover:border-primary/50 shadow-premium-sm hover:shadow-premium-md"
         >
           {suggestion}
         </button>

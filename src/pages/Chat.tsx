@@ -631,59 +631,60 @@ export default function Chat() {
   if (!modeInfo) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-50">
+    <div className="min-h-screen bg-background text-foreground">
       {/* History Drawer */}
       {isHistoryOpen && (
         <div className="fixed inset-0 z-50 flex">
           {/* Overlay */}
           <div
-            className="flex-1 bg-black/40"
+            className="flex-1 bg-background/80 backdrop-blur-sm"
             onClick={() => setIsHistoryOpen(false)}
           />
 
           {/* Drawer */}
-          <div className="w-64 max-w-[80vw] bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col">
-            <div className="px-3 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <div className="w-72 max-w-[85vw] bg-card border-l border-border/50 flex flex-col shadow-2xl animate-slide-in-right">
+            <div className="px-4 py-4 border-b border-border/50 flex items-center justify-between">
               <div className="flex flex-col">
-                <span className="text-xs font-semibold tracking-wide text-slate-400 dark:text-slate-500 uppercase">
+                <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                   {t.chat.chatHistory}
                 </span>
-                <span className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                <span className="text-sm font-bold text-foreground">
                   Bahor AI
                 </span>
               </div>
               <button
-                className="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
                 onClick={() => setIsHistoryOpen(false)}
                 aria-label="Close history"
               >
-                ✕
+                <X className="w-4 h-4 text-muted-foreground" />
               </button>
             </div>
 
             <button
               onClick={handleCreateNewSession}
-              className="m-3 mb-2 w-full rounded-md border border-dashed border-slate-300 dark:border-slate-700 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+              className="mx-3 mt-3 mb-2 rounded-xl border border-dashed border-border px-3 py-2.5 text-xs font-medium text-foreground hover:bg-secondary hover:border-primary/30 transition-all"
             >
               + {t.chat.defaultChatTitle}
             </button>
 
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto px-2 pb-2">
               {sessions.map((session) => (
                 <div
                   key={session.id}
                   className={clsx(
-                    "flex items-center justify-between px-3 py-2 text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800",
-                    session.id === currentSessionId &&
-                      "bg-emerald-50 dark:bg-emerald-900/20"
+                    "flex items-center justify-between px-3 py-2.5 text-xs cursor-pointer rounded-lg my-1 transition-colors",
+                    session.id === currentSessionId
+                      ? "bg-primary/10 text-foreground"
+                      : "hover:bg-secondary"
                   )}
                   onClick={() => handleSelectSession(session.id)}
                 >
                   <div className="flex-1 pr-2">
-                    <div className="font-medium text-slate-800 dark:text-slate-100 truncate">
+                    <div className="font-medium text-foreground truncate">
                       {session.title || t.chat.defaultChatTitle}
                     </div>
-                    <div className="text-[10px] text-slate-400 dark:text-slate-500">
+                    <div className="text-[10px] text-muted-foreground mt-0.5">
                       {new Date(session.updatedAt).toLocaleDateString()}
                     </div>
                   </div>
@@ -692,10 +693,10 @@ export default function Chat() {
                       e.stopPropagation();
                       setPendingDeleteSessionId(session.id);
                     }}
-                    className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-red-500"
+                    className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                     aria-label="Delete chat"
                   >
-                    🗑
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               ))}
@@ -706,43 +707,43 @@ export default function Chat() {
 
       <div className="mx-auto w-full max-w-3xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl flex flex-col h-screen">
         {/* Header */}
-        <div className="sticky top-0 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/70 backdrop-blur z-10">
+        <div className="sticky top-0 glass-strong border-b border-border/50 z-10">
           <div className="px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               <button
                 onClick={() => navigate("/")}
-                className="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition flex-shrink-0"
+                className="w-9 h-9 rounded-xl bg-secondary hover:bg-secondary/80 flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-95 transition flex-shrink-0"
                 aria-label={t.chat.back}
               >
                 <ArrowLeft className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setIsHistoryOpen(true)}
-                className="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition flex-shrink-0"
+                className="w-9 h-9 rounded-xl bg-secondary hover:bg-secondary/80 flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-95 transition flex-shrink-0"
                 aria-label="Open chat history"
               >
                 <Menu className="w-4 h-4" />
               </button>
-              <div className="flex-1 min-w-0">
-                <h1 className="text-base md:text-lg font-semibold text-slate-900 dark:text-slate-50">
+              <div className="flex-1 min-w-0 ml-1">
+                <h1 className="text-base md:text-lg font-semibold text-foreground">
                   {modeTranslation?.title || modeInfo.title}
                 </h1>
                 {modeTranslation?.subtitle && (
-                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                  <p className="text-xs text-muted-foreground truncate">
                     {modeTranslation.subtitle}
                   </p>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               {messages.length > 0 && (
                 <button
                   onClick={() => setShowDeleteModal(true)}
-                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0"
+                  className="p-2 hover:bg-secondary rounded-xl transition-colors flex-shrink-0"
                   aria-label={t.chat.clearChat}
                   title={t.chat.clearChat}
                 >
-                  <Trash2 className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                  <Trash2 className="w-4 h-4 text-muted-foreground" />
                 </button>
               )}
               <img src={bahorLogo} alt="Bahor AI" className="w-9 h-9 object-contain" />
@@ -767,13 +768,13 @@ export default function Chat() {
             <div className="flex items-center justify-center h-full">
               <div className="text-center max-w-sm space-y-3">
                 <div className="text-5xl mb-4">{modeInfo.icon}</div>
-                <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-50">
+                <h2 className="text-xl font-semibold text-foreground">
                   {modeTranslation?.title || modeInfo.title}
                 </h2>
-                <p className="text-sm text-slate-600 dark:text-slate-300">
+                <p className="text-sm text-muted-foreground">
                   {modeTranslation?.subtitle || modeInfo.subtitle}
                 </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 pt-2">
+                <p className="text-xs text-muted-foreground/70 pt-2">
                   {language === "uz" ? "Savolingizni yozing yoki quyidagi tezkor takliflardan foydalaning" :
                    language === "en" ? "Type your question or use quick suggestions below" :
                    language === "ru" ? "Введите свой вопрос или используйте быстрые предложения ниже" :
@@ -794,15 +795,15 @@ export default function Chat() {
               
               {(typing || processingStatus) && (
                 <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 shadow-sm">
+                  <div className="bg-card border border-border/50 rounded-2xl px-4 py-3 shadow-premium-sm">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-slate-600 dark:text-slate-300">
+                      <span className="text-sm text-muted-foreground">
                         {processingStatus || t.chat.typing}
                       </span>
                       <div className="flex gap-1">
-                        <span className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
-                        <span className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
-                        <span className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
+                        <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
+                        <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
+                        <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
                       </div>
                     </div>
                   </div>
@@ -814,7 +815,7 @@ export default function Chat() {
       </div>
 
         {/* Input Area */}
-        <div className="border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur">
+        <div className="border-t border-border/50 glass">
           {/* Quick Suggestions */}
           {modeSuggestions && modeSuggestions.length > 0 && messages.length === 0 && (
             <div className="py-3">
@@ -834,41 +835,41 @@ export default function Chat() {
                 {pendingAttachments.map((attachment) => (
                   <div
                     key={attachment.id}
-                    className="flex items-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg"
+                    className="flex items-center gap-2 px-3 py-2 bg-secondary rounded-xl"
                   >
                     {attachment.type.startsWith("image/") && attachment.previewUrl ? (
                       <img
                         src={attachment.previewUrl}
                         alt={attachment.name}
-                        className="w-12 h-12 object-cover rounded"
+                        className="w-12 h-12 object-cover rounded-lg"
                       />
                     ) : (
-                      <div className="w-12 h-12 bg-slate-200 dark:bg-slate-700 rounded flex items-center justify-center text-2xl">
-                        {attachment.type === "application/pdf" ? "📕" : "📄"}
+                      <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
+                        <FileText className="w-5 h-5 text-muted-foreground" />
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-900 dark:text-slate-50 truncate">
+                      <p className="text-sm font-medium text-foreground truncate">
                         {attachment.name}
                       </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                      <p className="text-xs text-muted-foreground">
                         {(attachment.size / 1024).toFixed(1)} KB
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => handleRemoveAttachment(attachment.id)}
-                      className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded"
+                      className="p-1.5 hover:bg-muted rounded-lg transition-colors"
                       aria-label="Remove attachment"
                     >
-                      <X className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                      <X className="w-4 h-4 text-muted-foreground" />
                     </button>
                   </div>
                 ))}
               </div>
             )}
 
-            <div className="flex items-end gap-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 shadow-sm">
+            <div className="flex items-end gap-2 rounded-2xl border border-border/60 bg-card px-3 py-2 shadow-premium-sm hover:border-primary/30 transition-colors">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -881,7 +882,7 @@ export default function Chat() {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isLoading || typing || isUploading}
-                className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition disabled:opacity-50 flex-shrink-0"
+                className="p-2 text-muted-foreground hover:text-foreground transition disabled:opacity-50 flex-shrink-0"
                 aria-label="Attach file"
               >
                 <Paperclip className="w-5 h-5" />
@@ -894,13 +895,13 @@ export default function Chat() {
                 placeholder={t.chatPlaceholder}
                 disabled={isLoading || typing}
                 rows={1}
-                className="flex-1 bg-transparent border-none outline-none resize-none text-[15px] leading-relaxed text-slate-900 dark:text-slate-50 placeholder:text-slate-400 dark:placeholder:text-slate-500 disabled:opacity-50 max-h-[140px] overflow-y-auto"
+                className="flex-1 bg-transparent border-none outline-none resize-none text-[15px] leading-relaxed text-foreground placeholder:text-muted-foreground disabled:opacity-50 max-h-[140px] overflow-y-auto"
                 style={{ minHeight: "24px" }}
               />
               <button
                 type="submit"
                 disabled={(!inputValue.trim() && pendingAttachments.length === 0) || isLoading || typing}
-                className="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                className="w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0 shadow-sm hover:shadow-md hover:glow-primary"
                 aria-label="Yuborish"
               >
                 <Send className="w-4 h-4" />
