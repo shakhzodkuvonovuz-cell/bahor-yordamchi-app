@@ -361,8 +361,7 @@ export default function Landing() {
 
       {/* Built for Uzbekistan Band */}
       <section className="py-16 sm:py-20 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/8 to-primary/5" />
-        <div className="absolute inset-0 pattern-uzbek opacity-20" />
+        <div className="absolute inset-0 pattern-uzbek opacity-10" />
         
         <div 
           ref={builtForRef.ref}
