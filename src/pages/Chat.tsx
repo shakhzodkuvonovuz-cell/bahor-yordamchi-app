@@ -18,6 +18,7 @@ import { useDailyUsage } from "@/hooks/useDailyUsage";
 import clsx from "clsx";
 import { useToast } from "@/hooks/use-toast";
 import bahorLogo from "@/assets/bahor-logo.png";
+import { processAttachmentsForOCR } from "@/services/ocrService";
 
 // Real streaming helper - processes SSE from DeepSeek API
 type StreamOptions = {
@@ -97,6 +98,7 @@ export default function Chat() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [ocrStatus, setOcrStatus] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -221,11 +223,14 @@ export default function Chat() {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         
-        // Only support images for now
-        if (!file.type.startsWith("image/")) {
+        // Support images and PDFs
+        const isImage = file.type.startsWith("image/");
+        const isPDF = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+        
+        if (!isImage && !isPDF) {
           toast({
             title: language === "uz" ? "Xatolik" : "Error",
-            description: language === "uz" ? `${file.name}: Faqat rasm fayllari qo'llab-quvvatlanadi` : `${file.name}: Only image files are supported`,
+            description: language === "uz" ? `${file.name}: Faqat rasm va PDF fayllar qo'llab-quvvatlanadi` : `${file.name}: Only image and PDF files are supported`,
             variant: "destructive",
           });
           continue;
@@ -241,7 +246,7 @@ export default function Chat() {
           continue;
         }
 
-        // Create preview URL for images
+        // Create preview URL for images and PDFs (used for OCR processing)
         const previewUrl = URL.createObjectURL(file);
 
         // Upload to Supabase storage
@@ -316,12 +321,14 @@ export default function Chat() {
       return;
     }
 
+    const attachmentsToProcess = [...pendingAttachments];
+    
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
       content: content.trim(),
       timestamp: new Date(),
-      attachments: pendingAttachments.length > 0 ? [...pendingAttachments] : undefined,
+      attachments: attachmentsToProcess.length > 0 ? attachmentsToProcess : undefined,
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -335,6 +342,37 @@ export default function Chat() {
     let assistantMessageCreated = false;
 
     try {
+      // Process OCR for attachments if any
+      let extractedText: string | null = null;
+      let hasOCR = false;
+      
+      if (attachmentsToProcess.length > 0) {
+        setOcrStatus(language === "uz" ? "Hujjat o'qilmoqda..." : 
+                     language === "en" ? "Reading document..." :
+                     language === "ru" ? "Чтение документа..." : 
+                     "Belge okunuyor...");
+        
+        const ocrResult = await processAttachmentsForOCR(
+          attachmentsToProcess,
+          (status) => setOcrStatus(status)
+        );
+        
+        extractedText = ocrResult.extractedText;
+        hasOCR = ocrResult.hasOCR;
+        setOcrStatus(null);
+        
+        // If OCR was attempted but failed
+        if (hasOCR && !extractedText) {
+          toast({
+            title: language === "uz" ? "Ogohlantirish" : "Warning",
+            description: language === "uz" 
+              ? "Hujjatni o'qib bo'lmadi. Iltimos, aniqroq rasm yuklang." 
+              : "Could not read document. Please upload a clearer image.",
+            variant: "destructive",
+          });
+        }
+      }
+      
       // Create conversation history for API (limit to last 12 messages)
       const recentMessages = messages.slice(-12);
       const conversationMessages = recentMessages.map((msg) => ({
@@ -342,10 +380,24 @@ export default function Chat() {
         content: msg.content,
       }));
       
-      // Add the new user message
+      // Build the message content with OCR text if available
+      let messageContent = content.trim();
+      if (extractedText) {
+        const ocrPrefix = language === "uz" 
+          ? "Yuklangan hujjatdan o'qilgan matn:" 
+          : language === "en" 
+          ? "Text extracted from uploaded document:"
+          : language === "ru"
+          ? "Текст, извлеченный из загруженного документа:"
+          : "Yuklenen belgeden cikarilan metin:";
+        
+        messageContent = `${messageContent}\n\n${ocrPrefix}\n\`\`\`\n${extractedText}\n\`\`\``;
+      }
+      
+      // Add the new user message with OCR content
       conversationMessages.push({
         role: "user" as const,
-        content: content.trim(),
+        content: messageContent,
       });
 
       // Call the backend API for streaming response
@@ -360,7 +412,8 @@ export default function Chat() {
           body: JSON.stringify({
             messages: conversationMessages,
             mode: mode || "general",
-            attachments: userMessage.attachments || [],
+            attachments: attachmentsToProcess,
+            hasOcrText: !!extractedText, // Flag to indicate OCR was used
           }),
         }
       );
@@ -374,10 +427,21 @@ export default function Chat() {
         onChunk: (chunk) => {
           if (!assistantMessageCreated) {
             // Create assistant message on first chunk
+            // Add OCR analysis prefix if OCR was used
+            const ocrAnalysisPrefix = extractedText 
+              ? (language === "uz" 
+                ? "📄 Yuklangan hujjatdan o'qilgan matn asosida tahlil:\n\n" 
+                : language === "en"
+                ? "📄 Analysis based on text read from uploaded document:\n\n"
+                : language === "ru"
+                ? "📄 Анализ на основе текста из загруженного документа:\n\n"
+                : "📄 Yuklenen belgeden okunan metne dayali analiz:\n\n")
+              : "";
+            
             const newAssistantMessage: Message = {
               id: assistantId,
               role: "assistant",
-              content: chunk,
+              content: ocrAnalysisPrefix + chunk,
               timestamp: new Date(),
             };
             setMessages((prev) => [...prev, newAssistantMessage]);
@@ -394,6 +458,7 @@ export default function Chat() {
         onDone: () => {
           setTyping(false);
           setIsLoading(false);
+          setOcrStatus(null);
           inputRef.current?.focus();
           
           // TODO: Backend integration - Backend should track and enforce limits
@@ -409,10 +474,17 @@ export default function Chat() {
       
       setTyping(false);
       setIsLoading(false);
+      setOcrStatus(null);
       inputRef.current?.focus();
       
-      // Show error toast (you can add toast notification here if desired)
-      alert("Hozircha serverda xatolik bo'ldi, birozdan so'ng qayta urinib ko'ring.");
+      // Show error toast
+      toast({
+        title: language === "uz" ? "Xatolik" : "Error",
+        description: language === "uz" 
+          ? "Hozircha serverda xatolik bo'ldi, birozdan so'ng qayta urinib ko'ring." 
+          : "Server error occurred. Please try again later.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -687,11 +759,13 @@ export default function Chat() {
                 <LimitReachedCard onDismiss={() => setShowLimitCard(false)} />
               )}
               
-              {typing && (
+              {(typing || ocrStatus) && (
                 <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 shadow-sm">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-slate-600 dark:text-slate-300">{t.chat.typing}</span>
+                      <span className="text-sm text-slate-600 dark:text-slate-300">
+                        {ocrStatus || t.chat.typing}
+                      </span>
                       <div className="flex gap-1">
                         <span className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
                         <span className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
@@ -729,7 +803,7 @@ export default function Chat() {
                     key={attachment.id}
                     className="flex items-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg"
                   >
-                    {attachment.previewUrl ? (
+                    {attachment.type.startsWith("image/") && attachment.previewUrl ? (
                       <img
                         src={attachment.previewUrl}
                         alt={attachment.name}
@@ -737,7 +811,7 @@ export default function Chat() {
                       />
                     ) : (
                       <div className="w-12 h-12 bg-slate-200 dark:bg-slate-700 rounded flex items-center justify-center text-2xl">
-                        📄
+                        {attachment.type === "application/pdf" ? "📕" : "📄"}
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
@@ -765,11 +839,10 @@ export default function Chat() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,.pdf,application/pdf"
                 multiple
                 onChange={handleFileSelect}
                 className="hidden"
-                capture="environment"
               />
               <button
                 type="button"
