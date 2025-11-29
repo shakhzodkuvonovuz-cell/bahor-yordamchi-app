@@ -1079,3 +1079,132 @@ select:focus-visible {
 .animate-glass-logo-breathe {
   animation: glass-logo-breathe 2s ease-in-out infinite;
 }
+
+/* ========================================
+   REFINED Voice Mode - Official Bahor AI Identity
+   Dark, elegant, teal, calm, premium, centered
+   ======================================== */
+
+/* Outer breathing glow */
+@keyframes voice-breathe-outer {
+  0%, 100% { 
+    transform: scale(1); 
+    opacity: 0.6;
+  }
+  50% { 
+    transform: scale(1.08); 
+    opacity: 0.9;
+  }
+}
+
+/* Inner breathing glow */
+@keyframes voice-breathe-inner {
+  0%, 100% { 
+    transform: scale(1); 
+    opacity: 0.7;
+  }
+  50% { 
+    transform: scale(1.05); 
+    opacity: 1;
+  }
+}
+
+/* Core pulse animation */
+@keyframes voice-core-pulse {
+  0%, 100% { 
+    transform: scale(1);
+    box-shadow: 0 0 40px rgba(0, 224, 200, 0.3), inset 0 0 30px rgba(0, 224, 200, 0.1);
+  }
+  50% { 
+    transform: scale(1.02);
+    box-shadow: 0 0 50px rgba(0, 224, 200, 0.4), inset 0 0 35px rgba(0, 224, 200, 0.15);
+  }
+}
+
+/* Logo glow animation */
+@keyframes voice-logo-glow-refined {
+  0%, 100% { 
+    filter: drop-shadow(0 0 12px rgba(0, 224, 200, 0.6));
+  }
+  50% { 
+    filter: drop-shadow(0 0 18px rgba(0, 224, 200, 0.8));
+  }
+}
+
+/* Micro-particle floating */
+@keyframes voice-particle-float {
+  0%, 100% { 
+    opacity: 0.3;
+    transform: translateY(0) scale(1);
+  }
+  25% { 
+    opacity: 0.7;
+    transform: translateY(-8px) scale(1.1);
+  }
+  50% { 
+    opacity: 0.5;
+    transform: translateY(-12px) scale(1);
+  }
+  75% { 
+    opacity: 0.8;
+    transform: translateY(-6px) scale(1.05);
+  }
+}
+
+/* Text glow effect */
+@keyframes voice-text-glow-refined {
+  0%, 100% { 
+    text-shadow: 0 0 20px rgba(0, 224, 200, 0.4);
+  }
+  50% { 
+    text-shadow: 0 0 30px rgba(0, 224, 200, 0.6);
+  }
+}
+
+/* Stop button heartbeat */
+@keyframes voice-stop-heartbeat {
+  0%, 100% { 
+    transform: scale(1);
+    box-shadow: 0 0 30px rgba(239, 68, 68, 0.3);
+  }
+  15% { 
+    transform: scale(1.05);
+    box-shadow: 0 0 40px rgba(239, 68, 68, 0.5);
+  }
+  30% { 
+    transform: scale(1);
+    box-shadow: 0 0 30px rgba(239, 68, 68, 0.3);
+  }
+  45% { 
+    transform: scale(1.03);
+    box-shadow: 0 0 35px rgba(239, 68, 68, 0.4);
+  }
+}
+
+.animate-voice-breathe-outer {
+  animation: voice-breathe-outer 3s ease-in-out infinite;
+}
+
+.animate-voice-breathe-inner {
+  animation: voice-breathe-inner 2.5s ease-in-out infinite;
+}
+
+.animate-voice-core-pulse {
+  animation: voice-core-pulse 2s ease-in-out infinite;
+}
+
+.animate-voice-logo-glow {
+  animation: voice-logo-glow-refined 2s ease-in-out infinite;
+}
+
+.animate-voice-particle-float {
+  animation: voice-particle-float 8s ease-in-out infinite;
+}
+
+.animate-voice-text-glow {
+  animation: voice-text-glow-refined 2s ease-in-out infinite;
+}
+
+.animate-voice-stop-heartbeat {
+  animation: voice-stop-heartbeat 1.5s ease-in-out infinite;
+}

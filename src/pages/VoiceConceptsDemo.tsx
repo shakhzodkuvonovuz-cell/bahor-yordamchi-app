@@ -1,5 +1,5 @@
 /**
- * Demo page to preview and compare all 5 voice UI concepts
+ * Demo page to preview and compare all voice UI concepts
  */
 
 import { useState } from "react";
@@ -13,17 +13,25 @@ import {
   VoiceConceptE,
   VoiceModeFinal,
   VoiceConceptPrism,
-  VoiceConceptGlass
+  VoiceConceptGlass,
+  VoiceConceptRefined
 } from "@/components/voice/concepts";
 
 const concepts = [
+  {
+    id: "REFINED",
+    name: "Refined",
+    subtitle: "Official Bahor AI Voice Identity",
+    colors: ["#02080a", "#00e0c8", "#0b1113"],
+    description: "Breathing glow, micro-particles, teal frequency ribbon — calm, cinematic, premium",
+    featured: true
+  },
   {
     id: "GLASS",
     name: "Glass",
     subtitle: "Premium floating glass panel",
     colors: ["#0f0f12", "#ffffff", "#13131a"],
-    description: "Apple VisionOS aesthetic — soft glowing glass, gentle voice line, ultra-premium calm",
-    featured: true
+    description: "Apple VisionOS aesthetic — soft glowing glass, gentle voice line, ultra-premium calm"
   },
   {
     id: "PRISM",
@@ -82,6 +90,7 @@ export default function VoiceConceptsDemo() {
 
   const renderDemo = () => {
     switch (activeDemo) {
+      case "REFINED": return <VoiceConceptRefined isOpen={true} onClose={() => setActiveDemo(null)} />;
       case "GLASS": return <VoiceConceptGlass isOpen={true} onClose={() => setActiveDemo(null)} />;
       case "PRISM": return <VoiceConceptPrism isOpen={true} onClose={() => setActiveDemo(null)} />;
       case "FINAL": return <VoiceModeFinal isOpen={true} onClose={() => setActiveDemo(null)} />;
@@ -107,7 +116,7 @@ export default function VoiceConceptsDemo() {
           </button>
           <div>
             <h1 className="text-xl font-semibold text-white">Voice UI Concepts</h1>
-            <p className="text-sm text-white/40">5 radically different designs for Bahor AI</p>
+            <p className="text-sm text-white/40">Compare voice mode designs for Bahor AI</p>
           </div>
         </div>
       </header>
@@ -120,15 +129,15 @@ export default function VoiceConceptsDemo() {
               key={concept.id}
               className={`group relative backdrop-blur-xl rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer ${
                 concept.featured 
-                  ? "bg-gradient-to-br from-[#00c7b1]/10 to-[#00c7b1]/5 border-2 border-[#00c7b1]/30 hover:border-[#00c7b1]/50 md:col-span-2 lg:col-span-1" 
+                  ? "bg-gradient-to-br from-[#00e0c8]/15 to-[#00e0c8]/5 border-2 border-[#00e0c8]/40 hover:border-[#00e0c8]/60 md:col-span-2 lg:col-span-1" 
                   : "bg-white/[0.02] border border-white/[0.05] hover:border-white/[0.1]"
               }`}
               onClick={() => setActiveDemo(concept.id)}
             >
               {/* Featured badge */}
               {concept.featured && (
-                <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-[#00c7b1]/20 border border-[#00c7b1]/30 text-[#00c7b1] text-xs font-semibold">
-                  ✨ Recommended
+                <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-[#00e0c8]/20 border border-[#00e0c8]/30 text-[#00e0c8] text-xs font-semibold">
+                  ⭐ Official
                 </div>
               )}
 
@@ -144,13 +153,13 @@ export default function VoiceConceptsDemo() {
                 <div className="flex items-center gap-3 mb-4">
                   <span className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold ${
                     concept.featured 
-                      ? "bg-[#00c7b1]/20 text-[#00c7b1]" 
+                      ? "bg-[#00e0c8]/20 text-[#00e0c8]" 
                       : "bg-white/5 text-white/80"
                   }`}>
-                    {concept.id === "FINAL" ? "★" : concept.id}
+                    {concept.featured ? "★" : concept.id.charAt(0)}
                   </span>
                   <div>
-                    <h2 className={`text-lg font-semibold ${concept.featured ? "text-[#00c7b1]" : "text-white"}`}>
+                    <h2 className={`text-lg font-semibold ${concept.featured ? "text-[#00e0c8]" : "text-white"}`}>
                       {concept.name}
                     </h2>
                     <p className="text-xs text-white/40">{concept.subtitle}</p>
@@ -165,10 +174,10 @@ export default function VoiceConceptsDemo() {
                 {/* Preview button */}
                 <button className={`w-full py-3 rounded-xl text-sm font-medium transition-colors ${
                   concept.featured 
-                    ? "bg-white/10 text-white hover:bg-white/15" 
+                    ? "bg-[#00e0c8]/20 text-[#00e0c8] hover:bg-[#00e0c8]/30" 
                     : "bg-white/5 text-white/70 hover:bg-white/10 group-hover:bg-[#00C7B1]/20 group-hover:text-[#00C7B1]"
                 }`}>
-                  {concept.featured ? `Preview ${concept.name}` : `Preview Concept ${concept.id}`}
+                  Preview {concept.name}
                 </button>
               </div>
             </div>
@@ -189,11 +198,17 @@ export default function VoiceConceptsDemo() {
                 </tr>
               </thead>
               <tbody className="text-white/60">
-                <tr className="border-b border-white/20 bg-white/5">
-                  <td className="py-3 px-4 font-medium text-white">★ Glass</td>
-                  <td className="py-3 px-4 text-white/80">VisionOS, premium</td>
-                  <td className="py-3 px-4 text-white/80">Floating panel, soft glow</td>
-                  <td className="py-3 px-4 text-white/80">NEW — Ultra-calm ✓</td>
+                <tr className="border-b border-white/20 bg-[#00e0c8]/5">
+                  <td className="py-3 px-4 font-medium text-[#00e0c8]">⭐ Refined</td>
+                  <td className="py-3 px-4 text-white/80">Teal circular identity</td>
+                  <td className="py-3 px-4 text-white/80">Breathing glow, particles, ribbon</td>
+                  <td className="py-3 px-4 text-white/80">OFFICIAL ✓</td>
+                </tr>
+                <tr className="border-b border-white/5">
+                  <td className="py-3 px-4 font-medium text-white">Glass</td>
+                  <td className="py-3 px-4">VisionOS, premium</td>
+                  <td className="py-3 px-4">Floating panel, soft glow</td>
+                  <td className="py-3 px-4">Ultra-calm</td>
                 </tr>
                 <tr className="border-b border-white/5">
                   <td className="py-3 px-4 font-medium text-white">Prism</td>
