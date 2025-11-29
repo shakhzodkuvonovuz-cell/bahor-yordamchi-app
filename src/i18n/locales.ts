@@ -48,6 +48,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     // Modes Section
     'section.exploreModes': 'Bahor AI rejimlarini kashf qiling',
     'section.exploreModes.subtitle': 'Har bir ehtiyoj uchun maxsus AI yordamchilar',
+    'mode.general.title': 'Umumiy suhbat',
+    'mode.general.desc': 'Har qanday savol va suhbat uchun universal yordamchi.',
     'mode.tech.title': 'Texnologiya va kod',
     'mode.tech.desc': 'Dasturlash, xatolarni tuzatish va texnik savollarda yordam.',
     'mode.life.title': 'Hayotiy yordam',
@@ -97,6 +99,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'pricing.yearly.feature3': "Birinchi bo'lib yangi funksiyalar",
     'pricing.yearly.badge': 'Eng tejamkor',
     'pricing.currency': 'UZS',
+    'pricing.comparison': "ChatGPT'dan 5 baravar arzon, tezroq javoblar bilan.",
     
     // FAQ Section
     'section.faq': "Ko'p beriladigan savollar",
@@ -194,6 +197,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     // Modes Section
     'section.exploreModes': 'Explore Bahor AI Modes',
     'section.exploreModes.subtitle': 'Specialized AI assistants for every need',
+    'mode.general.title': 'General Chat',
+    'mode.general.desc': 'A universal assistant for any questions and conversations.',
     'mode.tech.title': 'Technology & Coding',
     'mode.tech.desc': 'Get help with programming, debugging, and technical questions.',
     'mode.life.title': 'Life Assistance',
@@ -243,6 +248,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'pricing.yearly.feature3': 'Early access to new features',
     'pricing.yearly.badge': 'Best Value',
     'pricing.currency': 'UZS',
+    'pricing.comparison': 'Up to 5× cheaper than ChatGPT with faster responses.',
     
     // FAQ Section
     'section.faq': 'Frequently Asked Questions',
@@ -340,6 +346,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     // Modes Section
     'section.exploreModes': 'Изучите режимы Bahor AI',
     'section.exploreModes.subtitle': 'Специализированные ИИ-ассистенты для каждой потребности',
+    'mode.general.title': 'Общий чат',
+    'mode.general.desc': 'Универсальный помощник для любых вопросов и бесед.',
     'mode.tech.title': 'Технологии и код',
     'mode.tech.desc': 'Помощь с программированием, отладкой и техническими вопросами.',
     'mode.life.title': 'Жизненная помощь',
@@ -389,6 +397,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'pricing.yearly.feature3': 'Ранний доступ к новым функциям',
     'pricing.yearly.badge': 'Лучшая цена',
     'pricing.currency': 'UZS',
+    'pricing.comparison': 'В 5 раз дешевле ChatGPT с более быстрыми ответами.',
     
     // FAQ Section
     'section.faq': 'Часто задаваемые вопросы',
@@ -486,6 +495,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     // Modes Section
     'section.exploreModes': 'Bahor AI Modlarını Keşfedin',
     'section.exploreModes.subtitle': 'Her ihtiyaç için özel AI asistanlar',
+    'mode.general.title': 'Genel Sohbet',
+    'mode.general.desc': 'Her türlü soru ve sohbet için evrensel asistan.',
     'mode.tech.title': 'Teknoloji ve Kod',
     'mode.tech.desc': 'Programlama, hata ayıklama ve teknik sorularda yardım alın.',
     'mode.life.title': 'Yaşam Yardımı',
@@ -535,6 +546,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'pricing.yearly.feature3': 'Yeni özelliklere erken erişim',
     'pricing.yearly.badge': 'En İyi Değer',
     'pricing.currency': 'UZS',
+    'pricing.comparison': "ChatGPT'den 5 kat daha ucuz, daha hızlı yanıtlar ile.",
     
     // FAQ Section
     'section.faq': 'Sık Sorulan Sorular',
