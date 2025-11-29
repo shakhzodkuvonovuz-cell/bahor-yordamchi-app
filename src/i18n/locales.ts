@@ -234,6 +234,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'voice.demo.greeting': "Salom, bugun menga qanday yordam bera olasiz?",
     'voice.demo.question': "Ingliz tilida essay yozishga yordam bering",
     'voice.demo.answer': "Albatta! Essay mavzusi nima bo'ladi? Men sizga tuzilma, kirish, asosiy qism va xulosa yozishda yordam beraman.",
+    'voice.switchToText': "Matn rejimi",
     // Voice Mode States
     'voice.state.listening': "Tinglayapman...",
     'voice.state.listening.sub': "Tabiiy gapiring. Bahor AI tinglayapti.",
@@ -476,6 +477,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'voice.demo.greeting': "Hello, how can you help me today?",
     'voice.demo.question': "Help me write an essay in English",
     'voice.demo.answer': "Of course! What topic would you like? I can help you with structure, introduction, body paragraphs, and conclusion.",
+    'voice.switchToText': "Text mode",
     // Voice Mode States
     'voice.state.listening': "Listening...",
     'voice.state.listening.sub': "Speak naturally. Bahor AI is listening.",
@@ -718,6 +720,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'voice.demo.greeting': "Привет, чем вы можете мне помочь сегодня?",
     'voice.demo.question': "Помогите написать эссе на английском",
     'voice.demo.answer': "Конечно! Какая тема? Я помогу со структурой, введением, основной частью и заключением.",
+    'voice.switchToText': "Текстовый режим",
     // Voice Mode States
     'voice.state.listening': "Слушаю...",
     'voice.state.listening.sub': "Говорите естественно. Bahor AI слушает.",
@@ -960,6 +963,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'voice.demo.greeting': "Merhaba, bugün size nasıl yardımcı olabilirim?",
     'voice.demo.question': "İngilizce bir deneme yazmama yardım et",
     'voice.demo.answer': "Elbette! Konu ne olsun? Yapı, giriş, ana paragraflar ve sonuç konusunda yardımcı olabilirim.",
+    'voice.switchToText': "Metin modu",
     // Voice Mode States
     'voice.state.listening': "Dinliyorum...",
     'voice.state.listening.sub': "Doğal konuşun. Bahor AI dinliyor.",

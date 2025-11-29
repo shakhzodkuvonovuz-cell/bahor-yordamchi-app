@@ -27,83 +27,69 @@ export default function FluidWaveform({ isActive, amplitude = 0.5, state, classN
 
     const width = rect.width;
     const height = rect.height;
-    const centerY = height / 2;
+    const centerY = height * 0.45; // Slightly above center for floating effect
 
     let time = 0;
 
-    const getStateColors = () => {
-      switch (state) {
-        case "listening":
-          return {
-            primary: { r: 0, g: 212, b: 180 },
-            secondary: { r: 0, g: 180, b: 220 },
-            glow: { r: 0, g: 229, b: 193 },
-          };
-        case "speaking":
-          return {
-            primary: { r: 0, g: 220, b: 120 },
-            secondary: { r: 0, g: 212, b: 180 },
-            glow: { r: 100, g: 255, b: 150 },
-          };
-        default:
-          return {
-            primary: { r: 0, g: 180, b: 160 },
-            secondary: { r: 0, g: 160, b: 180 },
-            glow: { r: 0, g: 200, b: 180 },
-          };
-      }
+    // Bahor AI colors
+    const colors = {
+      primary: { r: 0, g: 224, b: 200 },    // #00E0C8
+      secondary: { r: 0, g: 200, b: 220 },  // Cyan
+      glow: { r: 80, g: 255, b: 220 },      // Bright
     };
 
     const animate = () => {
       if (!ctx || !canvas) return;
       
       ctx.clearRect(0, 0, width, height);
-      const colors = getStateColors();
-      const activeAmplitude = isActive ? amplitude : 0.12;
+      
+      const activeAmplitude = isActive ? Math.max(0.2, amplitude) : 0.08;
+      const speed = state === "speaking" ? 0.045 : 0.025;
 
-      const layers = 5;
+      // Create curved floating waveform (like liquid light)
+      const layers = 4;
       
       for (let layer = layers - 1; layer >= 0; layer--) {
-        const layerOffset = layer * 0.3;
-        const layerOpacity = 0.15 + (1 - layer / layers) * 0.55;
-        const layerAmplitude = (height * 0.35 * activeAmplitude) * (1 - layer * 0.12);
+        const layerOffset = layer * 0.4;
+        const layerOpacity = 0.12 + (1 - layer / layers) * 0.45;
+        const layerAmplitude = (height * 0.4 * activeAmplitude) * (1 - layer * 0.15);
         
+        // Curved gradient
         const gradient = ctx.createLinearGradient(0, centerY - layerAmplitude, width, centerY + layerAmplitude);
-        const c1 = colors.primary;
-        const c2 = colors.secondary;
-        const cg = colors.glow;
         
-        gradient.addColorStop(0, `rgba(${c1.r}, ${c1.g}, ${c1.b}, ${layerOpacity * 0.4})`);
-        gradient.addColorStop(0.3, `rgba(${c2.r}, ${c2.g}, ${c2.b}, ${layerOpacity * 0.7})`);
-        gradient.addColorStop(0.5, `rgba(${cg.r}, ${cg.g}, ${cg.b}, ${layerOpacity})`);
-        gradient.addColorStop(0.7, `rgba(${c2.r}, ${c2.g}, ${c2.b}, ${layerOpacity * 0.7})`);
-        gradient.addColorStop(1, `rgba(${c1.r}, ${c1.g}, ${c1.b}, ${layerOpacity * 0.4})`);
+        gradient.addColorStop(0, `rgba(${colors.primary.r}, ${colors.primary.g}, ${colors.primary.b}, ${layerOpacity * 0.3})`);
+        gradient.addColorStop(0.25, `rgba(${colors.secondary.r}, ${colors.secondary.g}, ${colors.secondary.b}, ${layerOpacity * 0.6})`);
+        gradient.addColorStop(0.5, `rgba(${colors.glow.r}, ${colors.glow.g}, ${colors.glow.b}, ${layerOpacity})`);
+        gradient.addColorStop(0.75, `rgba(${colors.secondary.r}, ${colors.secondary.g}, ${colors.secondary.b}, ${layerOpacity * 0.6})`);
+        gradient.addColorStop(1, `rgba(${colors.primary.r}, ${colors.primary.g}, ${colors.primary.b}, ${layerOpacity * 0.3})`);
 
-        const segments = 120;
+        const segments = 100;
         const points: { x: number; y: number }[] = [];
         
         for (let i = 0; i <= segments; i++) {
           const x = (i / segments) * width;
           const normalizedX = i / segments;
           
-          const speed = state === "speaking" ? 0.04 : 0.025;
-          const wave1 = Math.sin(normalizedX * Math.PI * 3 + time * speed + layerOffset) * layerAmplitude * 0.5;
-          const wave2 = Math.sin(normalizedX * Math.PI * 5 - time * (speed * 1.3) + layerOffset) * layerAmplitude * 0.3;
-          const wave3 = Math.sin(normalizedX * Math.PI * 2 + time * (speed * 0.7) + layerOffset) * layerAmplitude * 0.25;
-          const wave4 = Math.cos(normalizedX * Math.PI * 7 + time * (speed * 1.5)) * layerAmplitude * 0.12 * activeAmplitude;
+          // Multiple organic sine waves
+          const wave1 = Math.sin(normalizedX * Math.PI * 2.5 + time * speed + layerOffset) * layerAmplitude * 0.5;
+          const wave2 = Math.sin(normalizedX * Math.PI * 4 - time * (speed * 1.2) + layerOffset) * layerAmplitude * 0.3;
+          const wave3 = Math.cos(normalizedX * Math.PI * 1.5 + time * (speed * 0.8) + layerOffset) * layerAmplitude * 0.25;
+          const wave4 = Math.sin(normalizedX * Math.PI * 6 + time * (speed * 1.6)) * layerAmplitude * 0.1 * activeAmplitude;
           
-          const envelope = Math.pow(Math.sin(normalizedX * Math.PI), 0.8);
+          // Smooth curved envelope
+          const envelope = Math.pow(Math.sin(normalizedX * Math.PI), 0.7);
           const y = centerY + (wave1 + wave2 + wave3 + wave4) * envelope;
           
           points.push({ x, y });
         }
         
+        // Draw smooth bezier curve
         ctx.beginPath();
-        ctx.moveTo(points[0].x, centerY);
-        ctx.quadraticCurveTo(points[0].x, points[0].y, points[1].x, points[1].y);
+        ctx.moveTo(0, centerY);
         
-        for (let i = 1; i < points.length - 2; i++) {
-          const p0 = points[i - 1];
+        // Catmull-Rom to Bezier for maximum smoothness
+        for (let i = 0; i < points.length - 1; i++) {
+          const p0 = points[Math.max(0, i - 1)];
           const p1 = points[i];
           const p2 = points[i + 1];
           const p3 = points[Math.min(points.length - 1, i + 2)];
@@ -116,24 +102,27 @@ export default function FluidWaveform({ isActive, amplitude = 0.5, state, classN
           ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
         }
         
-        const lastPoint = points[points.length - 1];
-        ctx.quadraticCurveTo(lastPoint.x, lastPoint.y, lastPoint.x, centerY);
+        ctx.lineTo(width, centerY);
+        
+        // Create 3D depth with soft shadow fill
         ctx.lineTo(width, height);
         ctx.lineTo(0, height);
         ctx.closePath();
         
-        ctx.shadowColor = `rgba(${cg.r}, ${cg.g}, ${cg.b}, 0.4)`;
-        ctx.shadowBlur = 25 * (1 - layer * 0.15);
+        // Soft glow
+        ctx.shadowColor = `rgba(${colors.glow.r}, ${colors.glow.g}, ${colors.glow.b}, 0.35)`;
+        ctx.shadowBlur = 20 * (1 - layer * 0.2);
         ctx.fillStyle = gradient;
         ctx.fill();
         ctx.shadowBlur = 0;
         
+        // Bright stroke on top layer
         if (layer === 0) {
           ctx.beginPath();
           ctx.moveTo(points[0].x, points[0].y);
           
-          for (let i = 1; i < points.length - 2; i++) {
-            const p0 = points[i - 1];
+          for (let i = 0; i < points.length - 1; i++) {
+            const p0 = points[Math.max(0, i - 1)];
             const p1 = points[i];
             const p2 = points[i + 1];
             const p3 = points[Math.min(points.length - 1, i + 2)];
@@ -147,26 +136,20 @@ export default function FluidWaveform({ isActive, amplitude = 0.5, state, classN
           }
           
           const strokeGradient = ctx.createLinearGradient(0, 0, width, 0);
-          strokeGradient.addColorStop(0, `rgba(${c1.r}, ${c1.g}, ${c1.b}, 0.2)`);
-          strokeGradient.addColorStop(0.3, `rgba(${cg.r}, ${cg.g}, ${cg.b}, 0.8)`);
-          strokeGradient.addColorStop(0.5, `rgba(${cg.r}, ${cg.g}, ${cg.b}, 1)`);
-          strokeGradient.addColorStop(0.7, `rgba(${cg.r}, ${cg.g}, ${cg.b}, 0.8)`);
-          strokeGradient.addColorStop(1, `rgba(${c1.r}, ${c1.g}, ${c1.b}, 0.2)`);
+          strokeGradient.addColorStop(0, `rgba(${colors.primary.r}, ${colors.primary.g}, ${colors.primary.b}, 0.15)`);
+          strokeGradient.addColorStop(0.3, `rgba(${colors.glow.r}, ${colors.glow.g}, ${colors.glow.b}, 0.7)`);
+          strokeGradient.addColorStop(0.5, `rgba(${colors.glow.r}, ${colors.glow.g}, ${colors.glow.b}, 0.95)`);
+          strokeGradient.addColorStop(0.7, `rgba(${colors.glow.r}, ${colors.glow.g}, ${colors.glow.b}, 0.7)`);
+          strokeGradient.addColorStop(1, `rgba(${colors.primary.r}, ${colors.primary.g}, ${colors.primary.b}, 0.15)`);
           
           ctx.strokeStyle = strokeGradient;
-          ctx.lineWidth = 2.5;
-          ctx.shadowColor = `rgba(${cg.r}, ${cg.g}, ${cg.b}, 0.7)`;
-          ctx.shadowBlur = 20;
+          ctx.lineWidth = 2;
+          ctx.shadowColor = `rgba(${colors.glow.r}, ${colors.glow.g}, ${colors.glow.b}, 0.6)`;
+          ctx.shadowBlur = 15;
           ctx.stroke();
           ctx.shadowBlur = 0;
         }
       }
-
-      const reflectionGradient = ctx.createLinearGradient(0, centerY + 20, 0, height);
-      reflectionGradient.addColorStop(0, `rgba(${colors.glow.r}, ${colors.glow.g}, ${colors.glow.b}, 0.08)`);
-      reflectionGradient.addColorStop(1, "rgba(0, 0, 0, 0)");
-      ctx.fillStyle = reflectionGradient;
-      ctx.fillRect(0, centerY + 20, width, height - centerY - 20);
 
       time++;
       animationRef.current = requestAnimationFrame(animate);
@@ -183,15 +166,14 @@ export default function FluidWaveform({ isActive, amplitude = 0.5, state, classN
 
   return (
     <div className={cn("relative", className)}>
+      {/* Ambient glow under waveform */}
       <div 
         className={cn(
-          "absolute inset-0 rounded-full blur-3xl transition-opacity duration-700",
-          isActive ? "opacity-50" : "opacity-15"
+          "absolute inset-x-0 bottom-0 h-1/2 rounded-full blur-2xl transition-opacity duration-700",
+          isActive ? "opacity-40" : "opacity-10"
         )}
         style={{
-          background: `radial-gradient(ellipse 100% 80% at center, 
-            ${state === "listening" ? "rgba(0,212,180,0.25)" : state === "speaking" ? "rgba(100,255,150,0.25)" : "rgba(0,180,220,0.25)"} 0%, 
-            transparent 70%)`
+          background: "radial-gradient(ellipse 80% 100% at center bottom, rgba(0,224,200,0.2) 0%, transparent 70%)"
         }}
       />
       
