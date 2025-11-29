@@ -25,9 +25,12 @@ import {
 } from "lucide-react";
 import bahorLogo from "@/assets/bahor-logo.png";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+import { useTranslation } from "@/i18n/LanguageProvider";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 export default function Landing() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   
   const heroRef = useScrollAnimation({ threshold: 0.2 });
   const featuresRef = useScrollAnimation({ threshold: 0.1 });
@@ -39,76 +42,79 @@ export default function Landing() {
   const features = [
     {
       icon: <Globe className="w-5 h-5" />,
-      title: "Optimized for Uzbek language",
-      description: "Understands Uzbek slang, natural phrasing, and real-life context.",
+      title: t('feature.uzbekOptimized.title'),
+      description: t('feature.uzbekOptimized.desc'),
     },
     {
       icon: <Target className="w-5 h-5" />,
-      title: "Specialized modes",
-      description: "Coding, IELTS, business, marketing, homework help, and more.",
+      title: t('feature.specializedModes.title'),
+      description: t('feature.specializedModes.desc'),
     },
     {
       icon: <Zap className="w-5 h-5" />,
-      title: "Fast, simple, intuitive",
-      description: "No complicated menus. Just ask and get instant help.",
+      title: t('feature.fastSimple.title'),
+      description: t('feature.fastSimple.desc'),
     },
     {
       icon: <Sparkles className="w-5 h-5" />,
-      title: "Future premium plans",
-      description: "Currently free in beta. Paid plans will launch soon with additional features.",
+      title: t('feature.futurePlans.title'),
+      description: t('feature.futurePlans.desc'),
     },
   ];
 
   const modes = [
-    { icon: <Code2 className="w-5 h-5" />, title: "Technology & Coding", description: "Get help with programming, debugging, and technical questions." },
-    { icon: <Home className="w-5 h-5" />, title: "Life Assistance", description: "Practical advice for everyday life, recipes, and daily tasks." },
-    { icon: <Briefcase className="w-5 h-5" />, title: "Business & Marketing", description: "Strategic guidance for business growth and marketing campaigns." },
-    { icon: <BookOpen className="w-5 h-5" />, title: "English & IELTS", description: "Improve your English skills and prepare for IELTS exams." },
-    { icon: <GraduationCap className="w-5 h-5" />, title: "Homework & Subjects", description: "Get help with school assignments and academic subjects." },
-    { icon: <Briefcase className="w-5 h-5" />, title: "Job & Resume", description: "Build professional resumes and prepare for job interviews." },
-    { icon: <DollarSign className="w-5 h-5" />, title: "Financial Literacy", description: "Learn about budgeting, saving, and financial planning." },
-    { icon: <Heart className="w-5 h-5" />, title: "Health & Fitness", description: "Get advice on wellness, nutrition, and healthy living." },
+    { icon: <Code2 className="w-5 h-5" />, title: t('mode.tech.title'), description: t('mode.tech.desc') },
+    { icon: <Home className="w-5 h-5" />, title: t('mode.life.title'), description: t('mode.life.desc') },
+    { icon: <Briefcase className="w-5 h-5" />, title: t('mode.business.title'), description: t('mode.business.desc') },
+    { icon: <BookOpen className="w-5 h-5" />, title: t('mode.english.title'), description: t('mode.english.desc') },
+    { icon: <GraduationCap className="w-5 h-5" />, title: t('mode.homework.title'), description: t('mode.homework.desc') },
+    { icon: <Briefcase className="w-5 h-5" />, title: t('mode.job.title'), description: t('mode.job.desc') },
+    { icon: <DollarSign className="w-5 h-5" />, title: t('mode.finance.title'), description: t('mode.finance.desc') },
+    { icon: <Heart className="w-5 h-5" />, title: t('mode.health.title'), description: t('mode.health.desc') },
   ];
 
   const steps = [
-    { number: "1", title: "Ask anything", description: "From school assignments to recipes to coding help." },
-    { number: "2", title: "Choose a mode (optional)", description: "Get more precise answers by selecting a specialized mode." },
-    { number: "3", title: "Continue the conversation", description: "Refine, adjust, or ask follow-up questions instantly." },
+    { number: "1", title: t('step.1.title'), description: t('step.1.desc') },
+    { number: "2", title: t('step.2.title'), description: t('step.2.desc') },
+    { number: "3", title: t('step.3.title'), description: t('step.3.desc') },
   ];
 
   const faqs = [
-    { question: "Is Bahor AI the same as ChatGPT?", answer: "No. Bahor AI is customized for Uzbek users, local culture, and local use cases." },
-    { question: "Why is Bahor AI free right now?", answer: "We are in beta, collecting feedback and improving the service." },
-    { question: "What languages does Bahor AI support?", answer: "Primary language is Uzbek. English and Russian are also understood." },
-    { question: "Is my data safe?", answer: "Yes. No personal data is shared with third parties. See our privacy policy." },
+    { question: t('faq.1.question'), answer: t('faq.1.answer') },
+    { question: t('faq.2.question'), answer: t('faq.2.answer') },
+    { question: t('faq.3.question'), answer: t('faq.3.answer') },
+    { question: t('faq.4.question'), answer: t('faq.4.answer') },
   ];
 
   const pricingPlans = [
     {
-      name: "Free (beta)",
+      name: t('pricing.free.name'),
       price: "0",
-      description: "Boshlang'ich foydalanish uchun",
-      features: ["Kuniga 5 ta xabar", "Asosiy suhbat rejimi", "Cheklangan funksiyalar"],
-      cta: "Boshlash",
+      description: t('pricing.free.desc'),
+      features: [t('pricing.free.feature1'), t('pricing.free.feature2'), t('pricing.free.feature3')],
+      cta: t('button.start'),
+      ctaAction: "start",
       highlighted: false,
     },
     {
-      name: "Oylik reja",
+      name: t('pricing.monthly.name'),
       price: "49,000",
-      description: "Professional foydalanuvchilar uchun",
-      features: ["Cheksiz xabarlar", "Barcha maxsus rejimlar", "Fayl va rasm tahlili", "Tezkor javoblar"],
-      cta: "Tez orada",
+      description: t('pricing.monthly.desc'),
+      features: [t('pricing.monthly.feature1'), t('pricing.monthly.feature2'), t('pricing.monthly.feature3'), t('pricing.monthly.feature4')],
+      cta: t('button.comingSoon'),
+      ctaAction: "soon",
       highlighted: true,
-      badge: "Eng mashhur",
+      badge: t('pricing.monthly.badge'),
     },
     {
-      name: "Yillik reja",
+      name: t('pricing.yearly.name'),
       price: "340,000",
-      description: "Maksimal tejash",
-      features: ["Barcha oylik reja imkoniyatlari", "42% tejash", "Birinchi bo'lib yangi funksiyalar"],
-      cta: "Tez orada",
+      description: t('pricing.yearly.desc'),
+      features: [t('pricing.yearly.feature1'), t('pricing.yearly.feature2'), t('pricing.yearly.feature3')],
+      cta: t('button.comingSoon'),
+      ctaAction: "soon",
       highlighted: false,
-      badge: "Eng tejamkor",
+      badge: t('pricing.yearly.badge'),
     },
   ];
 
@@ -127,13 +133,16 @@ export default function Landing() {
               Bahor AI
             </span>
           </div>
-          <Button 
-            onClick={() => navigate("/modes")} 
-            size="sm"
-            className="h-9 px-5 rounded-xl font-medium shadow-sm hover:shadow-md hover:glow-primary transition-all"
-          >
-            Open App
-          </Button>
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher variant="pill" />
+            <Button 
+              onClick={() => navigate("/modes")} 
+              size="sm"
+              className="h-9 px-5 rounded-xl font-medium shadow-sm hover:shadow-md hover:glow-primary transition-all"
+            >
+              {t('button.openApp')}
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -150,16 +159,16 @@ export default function Landing() {
         >
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6 sm:mb-8">
             <Sparkles className="w-3.5 h-3.5" />
-            Currently in Beta
+            {t('badge.beta')}
           </div>
           
           <h1 className="text-display-md sm:text-display-lg md:text-display-xl font-bold mb-4 sm:mb-6 text-foreground leading-tight">
-            Birinchi o'zbek sun'iy intellekti — <br className="hidden sm:block" />
-            <span className="text-gradient-primary">o'zbeklar uchun.</span>
+            {t('app.tagline.main').split('—')[0]}— <br className="hidden sm:block" />
+            <span className="text-gradient-primary">{t('app.tagline.main').split('—')[1]?.trim() || "o'zbeklar uchun."}</span>
           </h1>
           
           <p className="text-base sm:text-lg md:text-xl text-muted-foreground mb-8 sm:mb-10 max-w-2xl mx-auto leading-relaxed">
-            A lightning-fast AI assistant designed specifically for the Uzbek language and culture.
+            {t('app.tagline.sub')}
           </p>
           
           <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
@@ -169,7 +178,7 @@ export default function Landing() {
               className="w-full sm:w-auto min-w-[200px] h-12 px-6 text-base font-medium shadow-lg hover:shadow-xl glow-primary hover:glow-primary-strong transition-all rounded-xl"
             >
               <MessageSquare className="w-4 h-4 mr-2" />
-              Open Bahor AI
+              {t('button.openApp')}
             </Button>
             <Button
               variant="outline"
@@ -177,13 +186,13 @@ export default function Landing() {
               className="w-full sm:w-auto min-w-[200px] h-12 px-6 text-base font-medium rounded-xl border-border/60 hover:bg-secondary/50 transition-all"
               onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
             >
-              Learn more
+              {t('button.learnMore')}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
           
           <p className="text-sm text-muted-foreground mt-6">
-            Currently available for free during beta.
+            {t('label.freeDuringBeta')}
           </p>
         </div>
       </section>
@@ -197,9 +206,9 @@ export default function Landing() {
               featuresRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
-            <h2 className="text-display-sm sm:text-display-md font-bold mb-3 text-foreground">Why choose Bahor AI?</h2>
+            <h2 className="text-display-sm sm:text-display-md font-bold mb-3 text-foreground">{t('section.whyChoose')}</h2>
             <p className="text-muted-foreground text-base sm:text-lg">
-              Built specifically for the needs of Uzbek speakers
+              {t('section.whyChoose.subtitle')}
             </p>
           </div>
           
@@ -236,9 +245,9 @@ export default function Landing() {
               modesRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
-            <h2 className="text-display-sm sm:text-display-md font-bold mb-3 text-foreground">Explore Bahor AI Modes</h2>
+            <h2 className="text-display-sm sm:text-display-md font-bold mb-3 text-foreground">{t('section.exploreModes')}</h2>
             <p className="text-muted-foreground text-base sm:text-lg">
-              Specialized AI assistants for every need
+              {t('section.exploreModes.subtitle')}
             </p>
           </div>
           
@@ -271,7 +280,7 @@ export default function Landing() {
               size="lg"
               className="h-11 px-6 text-base font-medium shadow-md hover:shadow-lg rounded-xl transition-all"
             >
-              Start using Bahor AI
+              {t('button.startUsing')}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
@@ -287,9 +296,9 @@ export default function Landing() {
               stepsRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
-            <h2 className="text-display-sm sm:text-display-md font-bold mb-3 text-foreground">How Bahor AI Works</h2>
+            <h2 className="text-display-sm sm:text-display-md font-bold mb-3 text-foreground">{t('section.howItWorks')}</h2>
             <p className="text-muted-foreground text-base sm:text-lg">
-              Get started in three simple steps
+              {t('section.howItWorks.subtitle')}
             </p>
           </div>
           
@@ -327,9 +336,9 @@ export default function Landing() {
               pricingRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
-            <h2 className="text-display-sm sm:text-display-md font-bold mb-3 text-foreground">Pricing</h2>
+            <h2 className="text-display-sm sm:text-display-md font-bold mb-3 text-foreground">{t('section.pricing')}</h2>
             <p className="text-muted-foreground text-base sm:text-lg max-w-xl mx-auto">
-              Choose the plan that works best for you
+              {t('section.pricing.subtitle')}
             </p>
           </div>
           
@@ -359,7 +368,7 @@ export default function Landing() {
                   <p className="text-sm text-muted-foreground mb-3">{plan.description}</p>
                   <div className="flex items-baseline gap-1">
                     <span className="text-3xl font-bold text-foreground">{plan.price}</span>
-                    <span className="text-sm text-muted-foreground">UZS</span>
+                    <span className="text-sm text-muted-foreground">{t('pricing.currency')}</span>
                   </div>
                 </div>
                 
@@ -378,8 +387,8 @@ export default function Landing() {
                       ? "" 
                       : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                   }`}
-                  disabled={plan.cta === "Tez orada"}
-                  onClick={() => plan.cta === "Boshlash" && navigate("/modes")}
+                  disabled={plan.ctaAction === "soon"}
+                  onClick={() => plan.ctaAction === "start" && navigate("/modes")}
                 >
                   {plan.cta}
                 </Button>
@@ -398,9 +407,9 @@ export default function Landing() {
               faqRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
-            <h2 className="text-display-sm sm:text-display-md font-bold mb-3 text-foreground">Frequently Asked Questions</h2>
+            <h2 className="text-display-sm sm:text-display-md font-bold mb-3 text-foreground">{t('section.faq')}</h2>
             <p className="text-muted-foreground text-base sm:text-lg">
-              Common questions about Bahor AI
+              {t('section.faq.subtitle')}
             </p>
           </div>
           
@@ -435,7 +444,7 @@ export default function Landing() {
               <span className="text-lg font-semibold text-foreground">Bahor AI</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              © 2024 Bahor AI. All rights reserved.
+              {t('footer.rights')}
             </p>
           </div>
         </div>

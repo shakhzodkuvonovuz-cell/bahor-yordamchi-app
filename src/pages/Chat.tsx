@@ -9,8 +9,9 @@ import LimitReachedCard from "@/components/LimitReachedCard";
 import { Message, ChatSession, ChatMode, ChatAttachment } from "@/types/chat";
 import { supabase } from "@/integrations/supabase/client";
 import { getModeInfo } from "@/data/modes";
-import { useLanguage } from "@/hooks/useLanguage";
+import { useTranslation } from "@/i18n/LanguageProvider";
 import { getTranslation } from "@/data/translations";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { loadChatsFromStorage, saveChatsToStorage, createNewSession } from "@/utils/chatStorage";
 import { generateChatTitle } from "@/utils/generateChatTitle";
 import { useAuth } from "@/hooks/useAuth";
@@ -84,7 +85,7 @@ export default function Chat() {
   const { mode } = useParams<{ mode: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { language } = useLanguage();
+  const { language, t: translate } = useTranslation();
   const t = getTranslation(language);
   const { user } = useAuth();
   
@@ -747,6 +748,7 @@ export default function Chat() {
                     <Trash2 className="w-4 h-4 text-muted-foreground" />
                   </button>
                 )}
+                <LanguageSwitcher variant="compact" />
                 <img src={bahorLogo} alt="Bahor AI" className="w-8 h-8 object-contain" />
               </div>
             </div>

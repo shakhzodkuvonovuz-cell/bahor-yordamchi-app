@@ -1,6 +1,7 @@
 import { Crown, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 interface LimitReachedCardProps {
   onDismiss?: () => void;
@@ -8,6 +9,7 @@ interface LimitReachedCardProps {
 
 export default function LimitReachedCard({ onDismiss }: LimitReachedCardProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <div className="flex justify-center my-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -18,10 +20,10 @@ export default function LimitReachedCard({ onDismiss }: LimitReachedCardProps) {
           </div>
           <div className="flex-1">
             <h3 className="text-lg font-bold text-foreground mb-1">
-              Bugungi bepul limit tugadi
+              {t('usage.limitReached')}
             </h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Bahor AI'ni to'liq ishlatish uchun Premium rejaga o'ting. Cheksiz suhbat, fayl va rasm tahlili, maxsus rejimlar va tezkor javoblar siz uchun ochiladi.
+              {t('usage.limitReached.desc')}
             </p>
           </div>
         </div>
@@ -32,7 +34,7 @@ export default function LimitReachedCard({ onDismiss }: LimitReachedCardProps) {
             onClick={() => navigate("/settings")}
           >
             <Crown className="w-4 h-4 mr-2" />
-            Premiumga o'tish
+            {t('usage.upgradeToPremium')}
           </Button>
           <Button
             variant="ghost"
@@ -40,7 +42,7 @@ export default function LimitReachedCard({ onDismiss }: LimitReachedCardProps) {
             onClick={onDismiss}
           >
             <Clock className="w-4 h-4 mr-2" />
-            Ertaga davom ettiraman
+            {t('usage.continueTomorrow')}
           </Button>
         </div>
       </div>
