@@ -705,76 +705,84 @@ export default function Chat() {
         </div>
       )}
 
-      <div className="mx-auto w-full max-w-3xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl flex flex-col h-screen">
-        {/* Header */}
-        <div className="sticky top-0 glass-strong border-b border-border/50 z-10">
-          <div className="px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <button
-                onClick={() => navigate("/")}
-                className="w-9 h-9 rounded-xl bg-secondary hover:bg-secondary/80 flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-95 transition flex-shrink-0"
-                aria-label={t.chat.back}
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setIsHistoryOpen(true)}
-                className="w-9 h-9 rounded-xl bg-secondary hover:bg-secondary/80 flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-95 transition flex-shrink-0"
-                aria-label="Open chat history"
-              >
-                <Menu className="w-4 h-4" />
-              </button>
-              <div className="flex-1 min-w-0 ml-1">
-                <h1 className="text-base md:text-lg font-semibold text-foreground">
-                  {modeTranslation?.title || modeInfo.title}
-                </h1>
-                {modeTranslation?.subtitle && (
-                  <p className="text-xs text-muted-foreground truncate">
-                    {modeTranslation.subtitle}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {messages.length > 0 && (
+      <div className="mx-auto w-full max-w-3xl lg:max-w-4xl flex flex-col h-screen px-0 sm:px-4">
+        {/* Header - Modern app bar with glassmorphism */}
+        <div className="sticky top-0 z-10">
+          <div className="glass-strong border-b border-border/40 rounded-b-2xl sm:rounded-b-3xl mx-0 sm:mx-2 shadow-premium-sm">
+            <div className="px-4 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setShowDeleteModal(true)}
-                  className="p-2 hover:bg-secondary rounded-xl transition-colors flex-shrink-0"
-                  aria-label={t.chat.clearChat}
-                  title={t.chat.clearChat}
+                  onClick={() => navigate("/")}
+                  className="w-9 h-9 rounded-xl bg-secondary/80 hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-[0.97] transition-all duration-200 flex-shrink-0"
+                  aria-label={t.chat.back}
                 >
-                  <Trash2 className="w-4 h-4 text-muted-foreground" />
+                  <ArrowLeft className="w-4 h-4" />
                 </button>
-              )}
-              <img src={bahorLogo} alt="Bahor AI" className="w-9 h-9 object-contain" />
+                <button
+                  onClick={() => setIsHistoryOpen(true)}
+                  className="w-9 h-9 rounded-xl bg-secondary/80 hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-[0.97] transition-all duration-200 flex-shrink-0"
+                  aria-label="Open chat history"
+                >
+                  <Menu className="w-4 h-4" />
+                </button>
+                <div className="flex-1 min-w-0 ml-2">
+                  <h1 className="text-base font-semibold text-foreground truncate">
+                    {modeTranslation?.title || modeInfo.title}
+                  </h1>
+                  {modeTranslation?.subtitle && (
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {modeTranslation.subtitle}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {messages.length > 0 && (
+                  <button
+                    onClick={() => setShowDeleteModal(true)}
+                    className="w-9 h-9 rounded-xl hover:bg-secondary/80 flex items-center justify-center transition-all duration-200 active:scale-[0.97] flex-shrink-0"
+                    aria-label={t.chat.clearChat}
+                    title={t.chat.clearChat}
+                  >
+                    <Trash2 className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                )}
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                  <img src={bahorLogo} alt="Bahor AI" className="w-6 h-6 object-contain" />
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
 
-        {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto px-4 pb-4 pt-3">
+        {/* Messages Area - Clean conversation flow */}
+        <div className="flex-1 overflow-y-auto px-3 sm:px-4 pb-4 pt-4">
           {/* Daily Usage Indicator */}
           {messages.length > 0 && (
-            <DailyUsageIndicator 
-              used={usedToday}
-              limit={dailyLimit}
-              isNearLimit={isNearLimit}
-              hasReachedLimit={hasReachedLimit}
-            />
+            <div className="mb-4">
+              <DailyUsageIndicator 
+                used={usedToday}
+                limit={dailyLimit}
+                isNearLimit={isNearLimit}
+                hasReachedLimit={hasReachedLimit}
+              />
+            </div>
           )}
           
           {messages.length === 0 ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center max-w-sm space-y-3">
-                <div className="text-5xl mb-4">{modeInfo.icon}</div>
+            <div className="flex items-center justify-center h-full min-h-[50vh]">
+              <div className="text-center max-w-sm space-y-4 animate-fade-in">
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-4xl mb-6">
+                  {modeInfo.icon}
+                </div>
                 <h2 className="text-xl font-semibold text-foreground">
                   {modeTranslation?.title || modeInfo.title}
                 </h2>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground leading-relaxed">
                   {modeTranslation?.subtitle || modeInfo.subtitle}
                 </p>
-                <p className="text-xs text-muted-foreground/70 pt-2">
+                <p className="text-xs text-muted-foreground/60 pt-2">
                   {language === "uz" ? "Savolingizni yozing yoki quyidagi tezkor takliflardan foydalaning" :
                    language === "en" ? "Type your question or use quick suggestions below" :
                    language === "ru" ? "Введите свой вопрос или используйте быстрые предложения ниже" :
@@ -783,7 +791,7 @@ export default function Chat() {
               </div>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {messages.map((message) => (
                 <ChatMessage key={message.id} message={message} />
               ))}
@@ -793,17 +801,21 @@ export default function Chat() {
                 <LimitReachedCard onDismiss={() => setShowLimitCard(false)} />
               )}
               
+              {/* Typing Indicator - Premium animation */}
               {(typing || processingStatus) && (
-                <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <div className="bg-card border border-border/50 rounded-2xl px-4 py-3 shadow-premium-sm">
-                    <div className="flex items-center gap-2">
+                <div className="flex gap-3 justify-start chat-message-ai">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                    <div className="w-4 h-4 rounded-full bg-primary animate-subtle-pulse" />
+                  </div>
+                  <div className="bg-card border border-border/50 rounded-2xl rounded-tl-md px-4 py-3 shadow-premium-sm">
+                    <div className="flex items-center gap-3">
                       <span className="text-sm text-muted-foreground">
                         {processingStatus || t.chat.typing}
                       </span>
-                      <div className="flex gap-1">
-                        <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
-                        <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
-                        <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
+                      <div className="flex gap-1.5">
+                        <span className="typing-dot w-2 h-2 bg-primary rounded-full" />
+                        <span className="typing-dot w-2 h-2 bg-primary rounded-full" />
+                        <span className="typing-dot w-2 h-2 bg-primary rounded-full" />
                       </div>
                     </div>
                   </div>
@@ -814,11 +826,11 @@ export default function Chat() {
           )}
       </div>
 
-        {/* Input Area */}
-        <div className="border-t border-border/50 glass">
+        {/* Input Area - Modern sticky bottom bar */}
+        <div className="sticky bottom-0 bg-background/95 backdrop-blur-xl border-t border-border/40 pb-safe">
           {/* Quick Suggestions */}
           {modeSuggestions && modeSuggestions.length > 0 && messages.length === 0 && (
-            <div className="py-3">
+            <div className="py-3 border-b border-border/30">
               <QuickSuggestions
                 suggestions={modeSuggestions}
                 onSelect={handleSendMessage}
@@ -828,48 +840,49 @@ export default function Chat() {
           )}
 
           {/* Input Form */}
-          <form onSubmit={handleSubmit} className="px-4 py-3">
+          <form onSubmit={handleSubmit} className="px-3 sm:px-4 py-3">
             {/* Attachment Previews */}
             {pendingAttachments.length > 0 && (
-              <div className="mb-2 flex flex-wrap gap-2">
+              <div className="mb-3 flex flex-wrap gap-2">
                 {pendingAttachments.map((attachment) => (
                   <div
                     key={attachment.id}
-                    className="flex items-center gap-2 px-3 py-2 bg-secondary rounded-xl"
+                    className="flex items-center gap-2 px-3 py-2 bg-secondary/80 rounded-xl border border-border/30 animate-scale-in"
                   >
                     {attachment.type.startsWith("image/") && attachment.previewUrl ? (
                       <img
                         src={attachment.previewUrl}
                         alt={attachment.name}
-                        className="w-12 h-12 object-cover rounded-lg"
+                        className="w-10 h-10 object-cover rounded-lg"
                       />
                     ) : (
-                      <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
-                        <FileText className="w-5 h-5 text-muted-foreground" />
+                      <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">
+                        <FileText className="w-4 h-4 text-muted-foreground" />
                       </div>
                     )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">
+                    <div className="flex-1 min-w-0 max-w-[120px]">
+                      <p className="text-xs font-medium text-foreground truncate">
                         {attachment.name}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-[10px] text-muted-foreground">
                         {(attachment.size / 1024).toFixed(1)} KB
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => handleRemoveAttachment(attachment.id)}
-                      className="p-1.5 hover:bg-muted rounded-lg transition-colors"
+                      className="p-1 hover:bg-destructive/10 rounded-lg transition-colors active:scale-95"
                       aria-label="Remove attachment"
                     >
-                      <X className="w-4 h-4 text-muted-foreground" />
+                      <X className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
                     </button>
                   </div>
                 ))}
               </div>
             )}
 
-            <div className="flex items-end gap-2 rounded-2xl border border-border/60 bg-card px-3 py-2 shadow-premium-sm hover:border-primary/30 transition-colors">
+            {/* Input Container */}
+            <div className="flex items-end gap-2 rounded-2xl border border-border/60 bg-card px-2 py-1.5 shadow-premium-sm hover:border-primary/30 focus-within:border-primary/40 focus-within:shadow-glow transition-all duration-200">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -882,7 +895,7 @@ export default function Chat() {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isLoading || typing || isUploading}
-                className="p-2 text-muted-foreground hover:text-foreground transition disabled:opacity-50 flex-shrink-0"
+                className="p-2.5 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-xl transition-all duration-200 disabled:opacity-40 flex-shrink-0 active:scale-95"
                 aria-label="Attach file"
               >
                 <Paperclip className="w-5 h-5" />
@@ -895,13 +908,13 @@ export default function Chat() {
                 placeholder={t.chatPlaceholder}
                 disabled={isLoading || typing}
                 rows={1}
-                className="flex-1 bg-transparent border-none outline-none resize-none text-[15px] leading-relaxed text-foreground placeholder:text-muted-foreground disabled:opacity-50 max-h-[140px] overflow-y-auto"
-                style={{ minHeight: "24px" }}
+                className="flex-1 bg-transparent border-none outline-none resize-none text-[15px] leading-relaxed text-foreground placeholder:text-muted-foreground/70 disabled:opacity-50 max-h-[140px] overflow-y-auto py-2"
+                style={{ minHeight: "28px" }}
               />
               <button
                 type="submit"
                 disabled={(!inputValue.trim() && pendingAttachments.length === 0) || isLoading || typing}
-                className="w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0 shadow-sm hover:shadow-md hover:glow-primary"
+                className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 active:scale-[0.97] transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0 shadow-sm hover:shadow-md disabled:shadow-none"
                 aria-label="Yuborish"
               >
                 <Send className="w-4 h-4" />
