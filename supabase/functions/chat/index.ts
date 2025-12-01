@@ -1,14 +1,28 @@
 // BahorAI Clean Stable Edge Function
-// No search, no timeouts, no heavy logs.
+// Safe Google Search integration with strict triggers.
 // Fully working DeepSeek streaming with SSE format.
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { googleSearch } from "./google.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Strict search trigger check - only specific keywords
+function shouldUseSearch(userMsg: string): boolean {
+  const q = userMsg.toLowerCase();
+  return (
+    q.includes("yangilik") ||
+    q.includes("yangiliklar") ||
+    q.includes("qidir") ||
+    q.includes("search") ||
+    q.includes("news") ||
+    q.includes("oxirgi")
+  );
+}
 
 // Simple mode prompts
 const MODE_PROMPTS: Record<string, string> = {
@@ -70,10 +84,45 @@ serve(async (req) => {
     // Get mode-specific prompt
     const modeKey = mode || "general";
     const modePrompt = MODE_PROMPTS[modeKey] || MODE_PROMPTS.general;
-    const systemPrompt = `${BASE_PROMPT}\n\n${modePrompt}`;
 
     // Limit to last 12 messages
     const recentMessages = messages.slice(-12);
+
+    // Get the last user message for search check
+    const lastUserMessage = recentMessages
+      .filter((m: any) => m.role === "user")
+      .pop()?.content || "";
+
+    // Safe search with strict triggers
+    let searchResults = "";
+    if (shouldUseSearch(lastUserMessage)) {
+      console.log("🔍 Search triggered:", lastUserMessage.substring(0, 50));
+      try {
+        searchResults = await googleSearch(lastUserMessage);
+        if (searchResults) {
+          console.log("✅ Search OK");
+        } else {
+          console.log("ℹ️ No search results");
+        }
+      } catch (err) {
+        console.log("⚠️ Search failed, continuing without:", err);
+        searchResults = "";
+      }
+    } else {
+      console.log("⏭️ Search skipped");
+    }
+
+    // Build system prompt with optional search results
+    const systemPrompt = `${BASE_PROMPT}
+
+${modePrompt}
+
+${searchResults ? `
+QIDIRUV NATIJALARI:
+${searchResults}
+
+Agar yuqorida qidiruv natijalari bo'lsa, ularga suyanib javob ber va manbalarni ko'rsat.
+` : ""}`;
 
     // Build messages with system prompt
     const finalMessages = [
@@ -81,7 +130,7 @@ serve(async (req) => {
       ...recentMessages,
     ];
 
-    console.log(`Chat request: mode=${modeKey}, messages=${recentMessages.length}`);
+    console.log(`Chat request: mode=${modeKey}, messages=${recentMessages.length}, search=${!!searchResults}`);
 
     // Call DeepSeek API with streaming
     const response = await fetch("https://api.deepseek.com/chat/completions", {
@@ -93,7 +142,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "deepseek-chat",
         messages: finalMessages,
-        temperature: 0.5,
+        temperature: 0.6,
         max_tokens: 2000,
         stream: true,
       }),
