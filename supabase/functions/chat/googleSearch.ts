@@ -1,10 +1,9 @@
-export async function googleSearch(query: string) {
+export async function googleSearch(query: string): Promise<any[]> {
   const apiKey = Deno.env.get("GOOGLE_SEARCH_API_KEY");
   const cx = Deno.env.get("GOOGLE_CX");
 
-  console.log("🔍 Google Search starting...");
-  console.log("API Key exists:", !!apiKey);
-  console.log("CX exists:", !!cx);
+  // Minimal logging to prevent edge function hangs
+  console.log("🔍 Search:", query.substring(0, 50), "| Keys exist:", !!apiKey, !!cx);
 
   if (!apiKey || !cx) {
     console.error("❌ Missing GOOGLE_SEARCH_API_KEY or GOOGLE_CX");
@@ -18,45 +17,37 @@ export async function googleSearch(query: string) {
     url.searchParams.set("q", query);
     url.searchParams.set("num", "5");
 
-    console.log("🌐 Fetching:", url.toString().replace(apiKey, "***API_KEY***"));
-
     const res = await fetch(url.toString());
     
-    console.log("📡 Response status:", res.status);
-
+    // Quick fail on non-200 without logging huge error bodies
     if (!res.ok) {
-      const errorText = await res.text();
-      console.error("❌ Google API error:", res.status, errorText);
+      console.error("❌ Google API error:", res.status);
       return [];
     }
 
     const data = await res.json();
     
-    // Log search info
-    console.log("📊 Search info:", JSON.stringify(data.searchInformation || {}, null, 2));
-    
     if (data.error) {
-      console.error("❌ Google API returned error:", JSON.stringify(data.error, null, 2));
+      console.error("❌ Google error code:", data.error.code || "unknown");
       return [];
     }
 
     if (!data.items || data.items.length === 0) {
-      console.warn("⚠️ Google returned 0 results for query:", query);
-      console.log("📦 Full response:", JSON.stringify(data, null, 2));
+      console.log("⚠️ No results found");
       return [];
     }
 
-    const results = data.items.map((item: any) => ({
+    const results = data.items.slice(0, 5).map((item: any) => ({
       title: item.title || "",
       link: item.link || "",
       snippet: item.snippet || "",
       formattedUrl: item.formattedUrl || "",
     }));
 
-    console.log(`✅ Returning ${results.length} search results`);
+    console.log(`✅ ${results.length} results`);
     return results;
   } catch (error) {
-    console.error("❌ googleSearch() exception:", error);
+    console.error("❌ Search exception");
     return [];
   }
 }
