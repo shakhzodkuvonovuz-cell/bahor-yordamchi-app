@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronDown, ChevronUp, Globe, Eye, Check, Brain, Sparkles, Zap, ExternalLink, Search } from "lucide-react";
+import { ChevronDown, ChevronUp, Globe, Check, Search, ExternalLink } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import bahorLogo from "@/assets/bahor-logo.png";
 import clsx from "clsx";
@@ -14,7 +14,6 @@ export interface ThinkingStatus {
   taskType?: 'coding' | 'translation' | 'essay' | 'math' | 'general' | 'analysis';
   isDeepReasoning?: boolean;
   reasoningDepth?: 'low' | 'medium' | 'high';
-  // New properties for search integration
   searchUsed?: boolean;
   searchUrls?: string[];
   reasoningSteps?: string;
@@ -24,7 +23,6 @@ interface ThinkingBarProps {
   status: ThinkingStatus;
   onToggleExpand?: () => void;
   isCollapsing?: boolean;
-  // New props
   searchUsed?: boolean;
   searchUrls?: string[];
   reasoningSteps?: string;
@@ -40,99 +38,32 @@ export default function ThinkingBar({
 }: ThinkingBarProps) {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [elapsedTime, setElapsedTime] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
   const [animatingStep, setAnimatingStep] = useState<number | null>(null);
-  const [progressDotPosition, setProgressDotPosition] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Merge props with status
   const effectiveSearchUsed = searchUsed || status.searchUsed || false;
   const effectiveSearchUrls = searchUrls.length > 0 ? searchUrls : (status.searchUrls || []);
-  const effectiveReasoningSteps = reasoningSteps || status.reasoningSteps;
 
-  // Timer effect
+  // Reset on idle
   useEffect(() => {
     if (status.phase === 'idle') {
-      setElapsedTime(0);
       setCompletedSteps([]);
       setCurrentStep(0);
       setAnimatingStep(null);
-      setProgressDotPosition(0);
+      setIsExpanded(false);
       return;
     }
-    
-    const timer = setInterval(() => {
-      setElapsedTime(prev => prev + 1);
-    }, 1000);
-    
-    return () => clearInterval(timer);
   }, [status.phase]);
 
-  // Get steps for progression
-  const getSteps = () => {
-    const taskType = status.taskType || 'general';
-    
-    // Add search step if search is being used
-    if (effectiveSearchUsed || status.phase === 'searching') {
-      return [
-        t('thinking.step.searching.query'),
-        t('thinking.step.searching.sources'),
-        t('thinking.step.searching.analyzing'),
-        t('thinking.step.searching.compiling'),
-      ];
-    }
-    
-    if (status.phase === 'vision') {
-      return [
-        t('thinking.step.vision.scanning'),
-        t('thinking.step.vision.recognizing'),
-        t('thinking.step.vision.understanding'),
-        t('thinking.step.vision.formulating'),
-      ];
-    }
-    
-    switch (taskType) {
-      case 'coding':
-        return [
-          t('thinking.step.coding.analyzing'),
-          t('thinking.step.coding.patterns'),
-          t('thinking.step.coding.solution'),
-          t('thinking.step.coding.optimizing'),
-        ];
-      case 'translation':
-        return [
-          t('thinking.step.translation.understanding'),
-          t('thinking.step.translation.context'),
-          t('thinking.step.translation.adapting'),
-          t('thinking.step.translation.polishing'),
-        ];
-      case 'essay':
-        return [
-          t('thinking.step.essay.analyzing'),
-          t('thinking.step.essay.structuring'),
-          t('thinking.step.essay.writing'),
-          t('thinking.step.essay.reviewing'),
-        ];
-      case 'math':
-        return [
-          t('thinking.step.math.parsing'),
-          t('thinking.step.math.method'),
-          t('thinking.step.math.calculating'),
-          t('thinking.step.math.verifying'),
-        ];
-      default:
-        return [
-          t('thinking.step.understanding'),
-          t('thinking.step.selecting'),
-          t('thinking.step.drafting'),
-          t('thinking.step.checking'),
-        ];
-    }
-  };
-
-  const steps = status.details?.length ? status.details : getSteps();
+  // Default steps
+  const steps = [
+    t('thinking.step.understanding') || 'Savolingizni tahlil qilmoqda',
+    t('thinking.step.selecting') || 'Kerakli manbalarni tanlamoqda',
+    t('thinking.step.drafting') || 'Javobni tuzmoqda',
+  ];
 
   // Step progression animation
   useEffect(() => {
@@ -147,7 +78,6 @@ export default function ThinkingBar({
             setCompletedSteps(curr => [...curr, prev]);
             setAnimatingStep(null);
           }, 200);
-          setProgressDotPosition(prev);
         }
         return next < steps.length ? next : prev;
       });
@@ -163,18 +93,6 @@ export default function ThinkingBar({
     onToggleExpand?.();
   };
 
-  const getPhaseLabel = () => {
-    if (elapsedTime > 8) return t('thinking.slow');
-    return status.shortLabel;
-  };
-
-  const getTimeEstimate = () => {
-    if (status.phase === 'finalising') return t('thinking.almostDone');
-    if (elapsedTime < 2) return '~2-4 ' + t('thinking.seconds');
-    if (elapsedTime > 6) return t('thinking.fewMoreSeconds');
-    return '';
-  };
-
   // Extract domain from URL for display
   const getDomain = (url: string) => {
     try {
@@ -188,206 +106,214 @@ export default function ThinkingBar({
     <div 
       ref={containerRef}
       className={clsx(
-        "w-full max-w-[90%] sm:max-w-[80%] lg:max-w-[75%] mb-3",
+        "w-full max-w-[90%] sm:max-w-[80%] lg:max-w-[75%] mb-2",
         "transition-all duration-300 ease-out",
         isCollapsing && "opacity-0 translate-y-1 scale-[0.98]"
       )}
     >
       <div
         className={clsx(
-          "relative overflow-hidden rounded-2xl transition-all duration-300",
-          "bg-card/80 backdrop-blur-sm border border-primary/15",
-          "shadow-[0_2px_20px_hsl(var(--primary)/0.06)]",
-          isExpanded && "shadow-[0_4px_30px_hsl(var(--primary)/0.1)]"
+          "relative overflow-hidden rounded-2xl transition-all duration-200",
+          "bg-transparent",
         )}
       >
-        {/* Collapsed Bar - Minimal design */}
+        {/* Collapsed Bar - Minimal glowing orb design */}
         <button
           onClick={handleToggle}
-          className="relative w-full flex items-center gap-3 px-4 py-3 transition-all duration-200 group"
+          className="relative w-full flex items-center gap-3 px-3 py-2 transition-all duration-200 group"
         >
-          {/* Small animated logo */}
+          {/* Glowing mint-green orb */}
           <div className="relative flex-shrink-0">
             <div 
-              className="relative w-8 h-8 rounded-lg bg-background/80 border border-primary/20 flex items-center justify-center"
-              style={{ animation: status.phase !== 'idle' ? 'pendulum-rotate 4s ease-in-out infinite' : 'none' }}
+              className="relative w-9 h-9 rounded-full flex items-center justify-center"
+              style={{ 
+                background: 'radial-gradient(circle, rgba(82, 209, 201, 0.25) 0%, transparent 70%)',
+                animation: 'orb-pulse 2s ease-in-out infinite',
+              }}
             >
-              <img 
-                src={bahorLogo} 
-                alt="Bahor AI" 
-                className="w-5 h-5 object-contain"
-                style={{ filter: 'drop-shadow(0 0 4px hsl(var(--primary) / 0.3))' }}
-              />
+              {/* Inner orb with logo */}
+              <div 
+                className="w-7 h-7 rounded-full flex items-center justify-center"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(82, 209, 201, 0.3), rgba(82, 209, 201, 0.15))',
+                  boxShadow: '0 0 12px rgba(82, 209, 201, 0.4), inset 0 0 8px rgba(82, 209, 201, 0.2)',
+                  animation: 'orb-glow 2s ease-in-out infinite',
+                }}
+              >
+                <img 
+                  src={bahorLogo} 
+                  alt="Bahor AI" 
+                  className="w-4 h-4 object-contain"
+                  style={{ filter: 'drop-shadow(0 0 4px rgba(82, 209, 201, 0.5))' }}
+                />
+              </div>
             </div>
           </div>
 
           {/* Status Text */}
-          <div className="flex-1 flex flex-col gap-0.5 min-w-0 text-left">
-            <div className="flex items-center gap-2">
-              <PhaseIcon phase={effectiveSearchUsed ? 'searching' : status.phase} />
-              <span className="text-sm font-medium text-foreground truncate">
-                {getPhaseLabel()}
-              </span>
-              
-              {/* Search indicator */}
-              {effectiveSearchUsed && (
-                <span className="flex items-center gap-1 text-xs text-primary/80 bg-primary/10 px-2 py-0.5 rounded-full">
-                  <Search className="w-3 h-3" />
-                  <span className="hidden sm:inline">Web-qidiruv</span>
-                </span>
-              )}
-            </div>
+          <div className="flex items-center gap-2">
+            <span 
+              className="text-sm font-medium"
+              style={{ color: 'rgba(244, 244, 244, 0.85)' }}
+            >
+              BahorAI fikrlamoqda…
+            </span>
             
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              {elapsedTime > 0 && (
-                <span className="font-mono tabular-nums opacity-70">{elapsedTime}s</span>
-              )}
-              {!isExpanded && (
-                <span className="opacity-60 truncate">
-                  {t('thinking.clickToExpand') || '(bosib kengaytiring)'}
-                </span>
-              )}
+            {/* Thinking dots */}
+            <div className="flex items-center gap-0.5">
+              {[0, 1, 2].map((i) => (
+                <span 
+                  key={i}
+                  className="w-1 h-1 rounded-full"
+                  style={{
+                    backgroundColor: '#52D1C9',
+                    animation: 'thinking-bounce 1.4s ease-in-out infinite',
+                    animationDelay: `${i * 150}ms`,
+                  }}
+                />
+              ))}
             </div>
           </div>
 
-          {/* Thinking dots */}
-          <div className="flex items-center gap-1 mr-1">
-            {[0, 1, 2].map((i) => (
-              <span 
-                key={i}
-                className="w-1 h-1 rounded-full bg-primary/60"
-                style={{
-                  animation: 'thinking-bounce 1.4s ease-in-out infinite',
-                  animationDelay: `${i * 150}ms`,
-                }}
-              />
-            ))}
-          </div>
-
-          <div className="flex-shrink-0 text-muted-foreground/60 group-hover:text-muted-foreground transition-colors">
+          {/* Expand/collapse indicator */}
+          <div 
+            className="ml-auto flex-shrink-0 transition-colors"
+            style={{ color: 'rgba(255, 255, 255, 0.5)' }}
+          >
             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </div>
         </button>
 
-        {/* Thin progress bar */}
-        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-muted/10 overflow-hidden">
-          <div 
-            className="h-full bg-gradient-to-r from-primary/30 via-primary to-primary/30"
-            style={{
-              width: `${Math.min((currentStep + 1) / steps.length * 100, 100)}%`,
-              transition: 'width 0.7s cubic-bezier(0.4, 0, 0.2, 1)',
-            }}
-          />
-        </div>
-
-        {/* Expanded Panel */}
+        {/* Expanded Panel - grows downward */}
         {isExpanded && (
-          <div className="px-4 pb-4 pt-2 border-t border-primary/10 animate-accordion-down">
+          <div 
+            className="px-4 pb-4 pt-2 animate-accordion-down"
+            style={{
+              background: 'rgba(30, 35, 45, 0.6)',
+              backdropFilter: 'blur(8px)',
+              borderRadius: '0 0 16px 16px',
+              boxShadow: '0 0 12px rgba(82, 209, 201, 0.15)',
+            }}
+          >
             {/* Reasoning steps */}
-            <div className="relative space-y-0 mt-3">
+            <div className="space-y-2 mt-2">
               {steps.map((step, index) => {
                 const isCompleted = completedSteps.includes(index);
                 const isCurrent = currentStep === index;
                 const isAnimating = animatingStep === index;
                 
                 return (
-                  <div key={index} className="relative flex items-start">
-                    {index < steps.length - 1 && (
-                      <div className="absolute left-4 top-8 w-[2px] h-6 overflow-hidden">
-                        <div 
-                          className={clsx("absolute inset-0 transition-all duration-500", isCompleted ? "opacity-100" : "opacity-20")}
-                          style={{
-                            background: isCompleted 
-                              ? 'linear-gradient(180deg, hsl(var(--primary)), hsl(var(--primary) / 0.2))'
-                              : 'linear-gradient(180deg, hsl(var(--primary) / 0.15), transparent)',
-                          }}
-                        />
-                      </div>
-                    )}
-                    
+                  <div 
+                    key={index} 
+                    className="flex items-center gap-3"
+                    style={{ 
+                      animation: 'step-fade-in 0.3s ease-out forwards',
+                      animationDelay: `${index * 80}ms`,
+                      opacity: 0,
+                    }}
+                  >
+                    {/* Step indicator */}
                     <div 
-                      className={clsx("flex items-center gap-3 py-2 transition-all duration-300 w-full")}
-                      style={{ animationDelay: `${index * 80}ms`, animation: 'step-fade-in 0.3s ease-out forwards', opacity: 0 }}
+                      className={clsx(
+                        "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300",
+                      )}
+                      style={{
+                        backgroundColor: isCompleted 
+                          ? 'rgba(82, 209, 201, 0.25)' 
+                          : isCurrent 
+                          ? 'rgba(82, 209, 201, 0.15)' 
+                          : 'rgba(255, 255, 255, 0.1)',
+                        border: isCurrent && !isCompleted 
+                          ? '1px solid rgba(82, 209, 201, 0.4)' 
+                          : 'none',
+                      }}
                     >
-                      <div 
-                        className={clsx(
-                          "relative flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300",
-                          isCompleted ? "bg-primary/15" : isCurrent ? "bg-primary/10 border border-primary/30" : "bg-muted/20 border border-border/30"
-                        )}
-                      >
-                        {isCompleted ? (
-                          <div className={clsx("transition-transform", isAnimating && "animate-checkmark-pop")}>
-                            <Check className="w-4 h-4 text-primary" />
-                          </div>
-                        ) : (
-                          <span className={clsx("text-xs font-medium", isCurrent ? "text-primary" : "text-muted-foreground")}>
-                            {index + 1}
-                          </span>
-                        )}
-                      </div>
-
-                      <span className={clsx("text-sm leading-relaxed transition-colors duration-300", isCompleted || isCurrent ? "text-foreground" : "text-muted-foreground/70")}>
-                        {step}
-                      </span>
+                      {isCompleted ? (
+                        <div className={clsx("transition-transform", isAnimating && "animate-checkmark-pop")}>
+                          <Check className="w-3 h-3" style={{ color: '#52D1C9' }} />
+                        </div>
+                      ) : (
+                        <span 
+                          className="text-[10px] font-medium"
+                          style={{ color: isCurrent ? '#52D1C9' : 'rgba(255, 255, 255, 0.5)' }}
+                        >
+                          {index + 1}
+                        </span>
+                      )}
                     </div>
+
+                    {/* Step text */}
+                    <span 
+                      className="text-sm leading-relaxed transition-colors duration-300"
+                      style={{ 
+                        color: isCompleted || isCurrent 
+                          ? 'rgba(244, 244, 244, 0.85)' 
+                          : 'rgba(255, 255, 255, 0.5)' 
+                      }}
+                    >
+                      {isCompleted ? '✔️' : ''} {step}
+                    </span>
                   </div>
                 );
               })}
             </div>
 
-            {/* Search URLs section */}
-            {effectiveSearchUrls.length > 0 && (
-              <div className="mt-4 pt-3 border-t border-border/20">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                  <Globe className="w-3.5 h-3.5" />
-                  <span>{t('thinking.sourcesUsed') || 'Foydalanilgan manbalar'}:</span>
+            {/* Search section */}
+            {effectiveSearchUsed && (
+              <div 
+                className="mt-4 pt-3"
+                style={{ borderTop: '1px solid rgba(82, 209, 201, 0.2)' }}
+              >
+                <div className="flex items-center gap-2 mb-3">
+                  <Search className="w-4 h-4" style={{ color: '#52D1C9' }} />
+                  <span 
+                    className="text-sm font-medium"
+                    style={{ color: 'rgba(244, 244, 244, 0.85)' }}
+                  >
+                    🔍 Qidiruv ishlatildi
+                  </span>
                 </div>
-                <div className="space-y-1.5">
-                  {effectiveSearchUrls.slice(0, 4).map((url, index) => (
-                    <a
-                      key={index}
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-xs text-primary/80 hover:text-primary transition-colors group/link"
-                    >
-                      <ExternalLink className="w-3 h-3 flex-shrink-0" />
-                      <span className="truncate">{getDomain(url)}</span>
-                    </a>
-                  ))}
-                </div>
+                
+                {/* Search URLs */}
+                {effectiveSearchUrls.length > 0 && (
+                  <div className="space-y-2 ml-6">
+                    {effectiveSearchUrls.slice(0, 5).map((url, index) => (
+                      <a
+                        key={index}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-start gap-2 text-xs transition-colors hover:opacity-80"
+                        style={{ color: 'rgba(82, 209, 201, 0.9)' }}
+                      >
+                        <ExternalLink className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                        <span className="break-all">{getDomain(url)}</span>
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
-
-            {/* Reasoning text if provided */}
-            {effectiveReasoningSteps && (
-              <div className="mt-4 pt-3 border-t border-border/20">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                  <Brain className="w-3.5 h-3.5" />
-                  <span>{t('thinking.reasoningProcess') || 'Fikrlash jarayoni'}:</span>
-                </div>
-                <p className="text-xs text-muted-foreground/80 leading-relaxed">
-                  {effectiveReasoningSteps}
-                </p>
-              </div>
-            )}
-
-            <div className="mt-4 pt-3 border-t border-border/10">
-              <p className="text-[11px] text-muted-foreground/50 leading-relaxed">{t('thinking.explanation')}</p>
-            </div>
           </div>
         )}
       </div>
 
       <style>{`
+        @keyframes orb-pulse {
+          0%, 100% { opacity: 0.6; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.05); }
+        }
+        @keyframes orb-glow {
+          0%, 100% { 
+            box-shadow: 0 0 12px rgba(82, 209, 201, 0.4), inset 0 0 8px rgba(82, 209, 201, 0.2);
+          }
+          50% { 
+            box-shadow: 0 0 20px rgba(82, 209, 201, 0.6), inset 0 0 12px rgba(82, 209, 201, 0.3);
+          }
+        }
         @keyframes thinking-bounce {
           0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
-          30% { transform: translateY(-3px); opacity: 0.8; }
-        }
-        @keyframes pendulum-rotate {
-          0%, 100% { transform: rotate(0deg); }
-          25% { transform: rotate(2deg); }
-          75% { transform: rotate(-2deg); }
+          30% { transform: translateY(-3px); opacity: 1; }
         }
         @keyframes step-fade-in {
           from { opacity: 0; transform: translateX(-6px); }
@@ -395,26 +321,11 @@ export default function ThinkingBar({
         }
         @keyframes checkmark-pop {
           0% { transform: scale(1); }
-          50% { transform: scale(1.15); }
+          50% { transform: scale(1.2); }
           100% { transform: scale(1); }
         }
         .animate-checkmark-pop { animation: checkmark-pop 0.2s ease-out; }
       `}</style>
     </div>
   );
-}
-
-function PhaseIcon({ phase }: { phase: ThinkingPhase }) {
-  const iconClass = "w-3.5 h-3.5 text-primary";
-  
-  switch (phase) {
-    case 'searching':
-      return <Globe className={clsx(iconClass, "animate-pulse")} />;
-    case 'vision':
-      return <Eye className={clsx(iconClass, "animate-pulse")} />;
-    case 'finalising':
-      return <Zap className={iconClass} />;
-    default:
-      return <Sparkles className={clsx(iconClass, "animate-pulse")} />;
-  }
 }
