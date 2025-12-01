@@ -161,6 +161,9 @@ export const translations: Record<Lang, Record<string, string>> = {
     'thinking.showReasoning': "To'liq fikrlashni ko'rsatish",
     'thinking.hideReasoning': "Fikrlashni yashirish",
     'thinking.deepReasoning': "🧠 Chuqur fikrlash faol",
+    'thinking.clickToExpand': "(bosib kengaytiring)",
+    'thinking.sourcesUsed': "Foydalanilgan manbalar",
+    'thinking.reasoningProcess': "Fikrlash jarayoni",
     
     // General steps
     'thinking.step.understanding': "Savolingizni tahlil qilmoqda",
@@ -404,6 +407,9 @@ export const translations: Record<Lang, Record<string, string>> = {
     'thinking.showReasoning': "Show full reasoning",
     'thinking.hideReasoning': "Hide reasoning",
     'thinking.deepReasoning': "🧠 Deep reasoning active",
+    'thinking.clickToExpand': "(click to expand)",
+    'thinking.sourcesUsed': "Sources used",
+    'thinking.reasoningProcess': "Reasoning process",
     
     // General steps
     'thinking.step.understanding': "Analyzing your question",
@@ -647,6 +653,9 @@ export const translations: Record<Lang, Record<string, string>> = {
     'thinking.showReasoning': "Показать полный ход мысли",
     'thinking.hideReasoning': "Скрыть ход мысли",
     'thinking.deepReasoning': "🧠 Глубокое рассуждение активно",
+    'thinking.clickToExpand': "(нажмите для расширения)",
+    'thinking.sourcesUsed': "Использованные источники",
+    'thinking.reasoningProcess': "Процесс рассуждения",
     
     // General steps
     'thinking.step.understanding': "Анализирую ваш вопрос",
@@ -890,6 +899,9 @@ export const translations: Record<Lang, Record<string, string>> = {
     'thinking.showReasoning': "Tam düşünce sürecini göster",
     'thinking.hideReasoning': "Düşünce sürecini gizle",
     'thinking.deepReasoning': "🧠 Derin düşünme aktif",
+    'thinking.clickToExpand': "(genişletmek için tıkla)",
+    'thinking.sourcesUsed': "Kullanılan kaynaklar",
+    'thinking.reasoningProcess': "Düşünme süreci",
     
     // General steps
     'thinking.step.understanding': "Sorunuz analiz ediliyor",
