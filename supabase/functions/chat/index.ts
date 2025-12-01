@@ -591,9 +591,10 @@ ${JSON.stringify(searchResults, null, 2)}
     console.log(`Calling DeepSeek API for mode: ${modeKey}, search used: ${searchUsed}`);
 
     // Call DeepSeek API with streaming enabled
-    let response;
+    console.log("Starting DeepSeek API call...");
+    
     try {
-      response = await fetch("https://api.deepseek.com/chat/completions", {
+      const response = await fetch("https://api.deepseek.com/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -603,7 +604,7 @@ ${JSON.stringify(searchResults, null, 2)}
           model: "deepseek-chat",
           messages: messagesWithSystem,
           temperature: 0.5,
-          max_tokens: 800,
+          max_tokens: 2000,
           stream: true,
         }),
       });
@@ -621,6 +622,8 @@ ${JSON.stringify(searchResults, null, 2)}
           }
         );
       }
+
+      console.log("DeepSeek API response received, starting stream...");
 
       // Create a TransformStream to prepend metadata
       const { readable, writable } = new TransformStream();
@@ -643,13 +646,21 @@ ${JSON.stringify(searchResults, null, 2)}
           try {
             while (true) {
               const { done, value } = await reader.read();
-              if (done) break;
+              if (done) {
+                console.log("DeepSeek stream complete");
+                break;
+              }
               await writer.write(value);
             }
+          } catch (streamError) {
+            console.error("Stream error:", streamError);
           } finally {
             await writer.close();
           }
         })();
+      } else {
+        console.error("No reader available from DeepSeek response");
+        await writer.close();
       }
 
       return new Response(readable, {
