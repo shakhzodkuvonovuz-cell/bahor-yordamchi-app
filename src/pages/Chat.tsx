@@ -29,6 +29,7 @@ type StreamOptions = {
   onChunk: (chunk: string) => void;
   onDone: () => void;
   onError: (error: Error) => void;
+  onMetadata?: (metadata: { search_used: boolean; search_urls: string[] }) => void;
 };
 
 async function processStreamingResponse(
@@ -65,6 +66,16 @@ async function processStreamingResponse(
         try {
           const jsonStr = trimmedLine.slice(6);
           const parsed = JSON.parse(jsonStr);
+          
+          // Handle metadata event from backend
+          if (parsed.type === "metadata") {
+            options.onMetadata?.({
+              search_used: parsed.search_used || false,
+              search_urls: parsed.search_urls || [],
+            });
+            continue;
+          }
+          
           const content = parsed.choices?.[0]?.delta?.content;
           
           if (content) {
@@ -109,6 +120,9 @@ export default function Chat() {
     shortLabel: '',
     details: [],
   });
+  const [searchUsed, setSearchUsed] = useState(false);
+  const [searchUrls, setSearchUrls] = useState<string[]>([]);
+  const [thinkingMessageId, setThinkingMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -368,6 +382,11 @@ export default function Chat() {
         translate('thinking.step.drafting'),
       ],
     });
+    
+    // Reset search state for new message
+    setSearchUsed(false);
+    setSearchUrls([]);
+    setThinkingMessageId(userMessage.id);
 
     // Prepare assistant message ID but don't add to state yet
     const assistantId = crypto.randomUUID?.() ?? (Date.now() + 1).toString();
@@ -489,6 +508,20 @@ export default function Chat() {
 
       // Process the streaming response
       await processStreamingResponse(response, {
+        onMetadata: (metadata) => {
+          // Handle search metadata from backend
+          if (metadata.search_used) {
+            setSearchUsed(true);
+            setSearchUrls(metadata.search_urls || []);
+            setThinkingStatus(prev => ({
+              ...prev,
+              phase: 'searching',
+              shortLabel: translate('thinking.searching'),
+              searchUsed: true,
+              searchUrls: metadata.search_urls || [],
+            }));
+          }
+        },
         onChunk: (chunk) => {
           // Update to finalising phase when streaming starts
           if (!assistantMessageCreated) {
@@ -539,6 +572,7 @@ export default function Chat() {
           setIsLoading(false);
           setProcessingStatus(null);
           setThinkingStatus({ phase: 'idle', shortLabel: '', details: [] });
+          setThinkingMessageId(null);
           inputRef.current?.focus();
           
           // TODO: Backend integration - Backend should track and enforce limits
@@ -855,8 +889,29 @@ export default function Chat() {
             </div>
           ) : (
             <div className="space-y-5 max-w-3xl mx-auto">
-              {messages.map((message) => (
-                <ChatMessage key={message.id} message={message} />
+              {messages.map((message, index) => (
+                <div key={message.id}>
+                  <ChatMessage message={message} />
+                  
+                  {/* Show ThinkingBar right after the user message that triggered it */}
+                  {message.role === 'user' && 
+                   message.id === thinkingMessageId && 
+                   thinkingStatus.phase !== 'idle' && (
+                    <div className="flex justify-start mt-4">
+                      <ThinkingBar 
+                        status={thinkingStatus}
+                        searchUsed={searchUsed}
+                        searchUrls={searchUrls}
+                        onToggleExpand={() => {
+                          setThinkingStatus(prev => ({
+                            ...prev,
+                            expanded: !prev.expanded,
+                          }));
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
               ))}
               
               {/* Show limit reached card */}
@@ -864,20 +919,6 @@ export default function Chat() {
                 <LimitReachedCard onDismiss={() => setShowLimitCard(false)} />
               )}
               
-              {/* ThinkingBar - Premium thinking experience */}
-              {thinkingStatus.phase !== 'idle' && (
-                <div className="flex justify-start">
-                  <ThinkingBar 
-                    status={thinkingStatus}
-                    onToggleExpand={() => {
-                      setThinkingStatus(prev => ({
-                        ...prev,
-                        expanded: !prev.expanded,
-                      }));
-                    }}
-                  />
-                </div>
-              )}
               <div ref={messagesEndRef} className="h-4" />
             </div>
           )}

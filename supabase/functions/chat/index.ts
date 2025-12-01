@@ -571,7 +571,10 @@ ${JSON.stringify(searchResults, null, 2)}
       ...recentMessages,
     ];
 
-    console.log(`Calling DeepSeek API for mode: ${modeKey}, search used: ${searchResults.length > 0}`);
+    const searchUsed = searchResults.length > 0;
+    const searchUrls = searchResults.map((r: any) => r.link).filter(Boolean);
+    
+    console.log(`Calling DeepSeek API for mode: ${modeKey}, search used: ${searchUsed}`);
 
     // Call DeepSeek API with streaming enabled
     let response;
@@ -605,8 +608,37 @@ ${JSON.stringify(searchResults, null, 2)}
         );
       }
 
-      // Return the streaming response directly
-      return new Response(response.body, {
+      // Create a TransformStream to prepend metadata
+      const { readable, writable } = new TransformStream();
+      const writer = writable.getWriter();
+      const encoder = new TextEncoder();
+      
+      // Send metadata event first
+      const metadataEvent = `data: ${JSON.stringify({
+        type: "metadata",
+        search_used: searchUsed,
+        search_urls: searchUrls,
+      })}\n\n`;
+      
+      await writer.write(encoder.encode(metadataEvent));
+      
+      // Pipe the rest of the DeepSeek response
+      const reader = response.body?.getReader();
+      if (reader) {
+        (async () => {
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              await writer.write(value);
+            }
+          } finally {
+            await writer.close();
+          }
+        })();
+      }
+
+      return new Response(readable, {
         headers: {
           ...corsHeaders,
           'Content-Type': 'text/event-stream',
