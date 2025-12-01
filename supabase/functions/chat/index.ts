@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { googleSearch } from "./googleSearch.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -450,13 +451,52 @@ serve(async (req) => {
     const routeKey = mode || "general";
     const modeKey = MODE_KEY_BY_ROUTE[routeKey] ?? "general";
 
-    // Build the system prompt
+    // Build the base mode prompt
     const modePrompt = MODE_PROMPTS[modeKey] ?? MODE_PROMPTS.general;
-    const systemPrompt = `${BASE_PROMPT}\n\n${modePrompt}`;
 
     // Limit chat history to last 10-12 messages for faster responses
     let recentMessages = messages.slice(-12);
     
+    // Get the last user message for search decision
+    const lastUserMessage = recentMessages.filter((m: any) => m.role === "user").pop();
+    const userMessageText = lastUserMessage?.content?.toLowerCase() || "";
+
+    // Check if we should perform web search
+    const shouldSearch =
+      userMessageText.includes("qidir") ||
+      userMessageText.includes("search") ||
+      userMessageText.includes("kim") ||
+      userMessageText.includes("nima") ||
+      userMessageText.includes("haqida") ||
+      userMessageText.includes("yangilik") ||
+      userMessageText.includes("news");
+
+    let searchResults: any[] = [];
+    if (shouldSearch && lastUserMessage?.content) {
+      console.log(`Performing web search for: ${lastUserMessage.content.substring(0, 100)}...`);
+      searchResults = await googleSearch(lastUserMessage.content);
+      console.log(`Search returned ${searchResults.length} results`);
+    }
+
+    // Build the system prompt with search results if available
+    let systemPrompt = `${BASE_PROMPT}\n\n${modePrompt}`;
+    
+    if (searchResults.length > 0) {
+      systemPrompt += `
+
+⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
+🔍 WEB SEARCH RESULTS
+⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
+
+You have access to the following web search results. Use them to provide accurate, up-to-date information.
+When citing information from these sources, mention the source naturally in your response.
+If the search results don't contain relevant information, answer based on your knowledge but note the limitation.
+
+Search Results:
+${JSON.stringify(searchResults, null, 2)}
+`;
+    }
+
     // Process attachments for the last user message if present
     if (attachments && attachments.length > 0 && recentMessages.length > 0) {
       const lastMessage = recentMessages[recentMessages.length - 1];
@@ -509,7 +549,7 @@ serve(async (req) => {
       ...recentMessages,
     ];
 
-    console.log(`Calling DeepSeek API for mode: ${modeKey}`);
+    console.log(`Calling DeepSeek API for mode: ${modeKey}, search used: ${searchResults.length > 0}`);
 
     // Call DeepSeek API with streaming enabled
     let response;
