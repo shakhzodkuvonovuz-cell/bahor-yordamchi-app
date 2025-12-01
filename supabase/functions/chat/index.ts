@@ -461,44 +461,35 @@ serve(async (req) => {
     const lastUserMessage = recentMessages.filter((m: any) => m.role === "user").pop();
     const userMessageText = lastUserMessage?.content?.toLowerCase() || "";
 
-    // TEMPORARILY DISABLED: Web search causing freezes due to Google API 404 errors
-    // Re-enable once GOOGLE_CX is properly configured in Google Cloud Console
-    const ENABLE_SEARCH = false;
+    // Web search enabled - strict trigger words only
+    const ENABLE_SEARCH = true;
     
-    // More strict search trigger - only explicit search keywords
-    const shouldSearch = ENABLE_SEARCH && (
-      userMessageText.includes("qidir") ||
-      userMessageText.includes("search") ||
-      userMessageText.includes("yangilik") ||
-      userMessageText.includes("news")
-    );
+    // Strict search trigger - only explicit search keywords
+    const searchTriggers = ["yangilik", "qidir", "oxirgi yangiliklar", "search", "news"];
+    const shouldSearch = ENABLE_SEARCH && searchTriggers.some(trigger => userMessageText.includes(trigger));
 
-    // Timeout wrapper for search
+    // Timeout wrapper for search - ensures DeepSeek runs even if search fails
     const searchWithTimeout = async (query: string, timeoutMs: number = 3000): Promise<any[]> => {
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-        
         const result = await Promise.race([
           googleSearch(query),
           new Promise<any[]>((_, reject) => 
             setTimeout(() => reject(new Error("Search timeout")), timeoutMs)
           )
         ]);
-        
-        clearTimeout(timeoutId);
         return result;
       } catch (e) {
-        console.log("Search skipped or timed out:", e instanceof Error ? e.message : "Unknown error");
+        console.log("Search failed/timed out, continuing without search");
         return [];
       }
     };
 
     let searchResults: any[] = [];
     if (shouldSearch && lastUserMessage?.content) {
-      console.log(`Performing web search for: ${lastUserMessage.content.substring(0, 100)}...`);
+      console.log("Search triggered:", lastUserMessage.content.substring(0, 80));
       searchResults = await searchWithTimeout(lastUserMessage.content, 3000);
-      console.log(`Search returned ${searchResults.length} results`);
+    } else {
+      console.log("Search skipped");
     }
 
     // Build the system prompt with search results if available
