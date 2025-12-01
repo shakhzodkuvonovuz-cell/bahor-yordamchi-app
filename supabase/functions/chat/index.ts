@@ -461,20 +461,43 @@ serve(async (req) => {
     const lastUserMessage = recentMessages.filter((m: any) => m.role === "user").pop();
     const userMessageText = lastUserMessage?.content?.toLowerCase() || "";
 
-    // Check if we should perform web search
-    const shouldSearch =
+    // TEMPORARILY DISABLED: Web search causing freezes due to Google API 404 errors
+    // Re-enable once GOOGLE_CX is properly configured in Google Cloud Console
+    const ENABLE_SEARCH = false;
+    
+    // More strict search trigger - only explicit search keywords
+    const shouldSearch = ENABLE_SEARCH && (
       userMessageText.includes("qidir") ||
       userMessageText.includes("search") ||
-      userMessageText.includes("kim") ||
-      userMessageText.includes("nima") ||
-      userMessageText.includes("haqida") ||
       userMessageText.includes("yangilik") ||
-      userMessageText.includes("news");
+      userMessageText.includes("news")
+    );
+
+    // Timeout wrapper for search
+    const searchWithTimeout = async (query: string, timeoutMs: number = 3000): Promise<any[]> => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+        
+        const result = await Promise.race([
+          googleSearch(query),
+          new Promise<any[]>((_, reject) => 
+            setTimeout(() => reject(new Error("Search timeout")), timeoutMs)
+          )
+        ]);
+        
+        clearTimeout(timeoutId);
+        return result;
+      } catch (e) {
+        console.log("Search skipped or timed out:", e instanceof Error ? e.message : "Unknown error");
+        return [];
+      }
+    };
 
     let searchResults: any[] = [];
     if (shouldSearch && lastUserMessage?.content) {
       console.log(`Performing web search for: ${lastUserMessage.content.substring(0, 100)}...`);
-      searchResults = await googleSearch(lastUserMessage.content);
+      searchResults = await searchWithTimeout(lastUserMessage.content, 3000);
       console.log(`Search returned ${searchResults.length} results`);
     }
 
