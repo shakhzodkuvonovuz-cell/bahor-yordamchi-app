@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronDown, ChevronUp, Globe, Check, Search, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronUp, Check, Search, ExternalLink } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import bahorLogo from "@/assets/bahor-logo.png";
 import clsx from "clsx";
@@ -43,11 +43,9 @@ export default function ThinkingBar({
   const [animatingStep, setAnimatingStep] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Merge props with status
   const effectiveSearchUsed = searchUsed || status.searchUsed || false;
   const effectiveSearchUrls = searchUrls.length > 0 ? searchUrls : (status.searchUrls || []);
 
-  // Reset on idle
   useEffect(() => {
     if (status.phase === 'idle') {
       setCompletedSteps([]);
@@ -58,14 +56,12 @@ export default function ThinkingBar({
     }
   }, [status.phase]);
 
-  // Default steps
   const steps = [
     t('thinking.step.understanding') || 'Savolingizni tahlil qilmoqda',
     t('thinking.step.selecting') || 'Kerakli manbalarni tanlamoqda',
     t('thinking.step.drafting') || 'Javobni tuzmoqda',
   ];
 
-  // Step progression animation
   useEffect(() => {
     if (status.phase === 'idle') return;
     
@@ -93,7 +89,6 @@ export default function ThinkingBar({
     onToggleExpand?.();
   };
 
-  // Extract domain from URL for display
   const getDomain = (url: string) => {
     try {
       return new URL(url).hostname.replace('www.', '');
@@ -106,7 +101,7 @@ export default function ThinkingBar({
     <div 
       ref={containerRef}
       className={clsx(
-        "w-full max-w-[90%] sm:max-w-[80%] lg:max-w-[75%] mb-2",
+        "w-full mb-3",
         "transition-all duration-300 ease-out",
         isCollapsing && "opacity-0 translate-y-1 scale-[0.98]"
       )}
@@ -114,89 +109,81 @@ export default function ThinkingBar({
       <div
         className={clsx(
           "relative overflow-hidden rounded-2xl transition-all duration-200",
-          "bg-transparent",
+          "bg-slate-800/60 dark:bg-slate-900/70 backdrop-blur-sm",
+          "border border-slate-700/50"
         )}
+        style={{
+          boxShadow: '0 0 16px rgba(82, 209, 201, 0.15)',
+        }}
       >
-        {/* Collapsed Bar - Minimal glowing orb design */}
+        {/* Full-Width Header Bar */}
         <button
           onClick={handleToggle}
-          className="relative w-full flex items-center gap-3 px-3 py-2 transition-all duration-200 group"
+          className="w-full flex items-center justify-between gap-3 px-4 py-3 transition-all duration-200 hover:bg-slate-700/30"
+          style={{ minHeight: '52px' }}
         >
-          {/* Glowing mint-green orb */}
-          <div className="relative flex-shrink-0">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
             <div 
-              className="relative w-9 h-9 rounded-full flex items-center justify-center"
-              style={{ 
-                background: 'radial-gradient(circle, rgba(82, 209, 201, 0.25) 0%, transparent 70%)',
-                animation: 'orb-pulse 2s ease-in-out infinite',
+              className="relative flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
+              style={{
+                background: 'linear-gradient(135deg, rgba(82, 209, 201, 0.3), rgba(82, 209, 201, 0.15))',
+                boxShadow: '0 0 12px rgba(82, 209, 201, 0.4)',
+                animation: 'thinking-glow 2s ease-in-out infinite',
               }}
             >
-              {/* Inner orb with logo */}
-              <div 
-                className="w-7 h-7 rounded-full flex items-center justify-center"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(82, 209, 201, 0.3), rgba(82, 209, 201, 0.15))',
-                  boxShadow: '0 0 12px rgba(82, 209, 201, 0.4), inset 0 0 8px rgba(82, 209, 201, 0.2)',
-                  animation: 'orb-glow 2s ease-in-out infinite',
-                }}
-              >
-                <img 
-                  src={bahorLogo} 
-                  alt="Bahor AI" 
-                  className="w-4 h-4 object-contain"
-                  style={{ filter: 'drop-shadow(0 0 4px rgba(82, 209, 201, 0.5))' }}
-                />
-              </div>
+              <img 
+                src={bahorLogo} 
+                alt="Bahor AI" 
+                className="w-5 h-5 object-contain"
+                style={{ filter: 'drop-shadow(0 0 4px rgba(82, 209, 201, 0.5))' }}
+              />
             </div>
-          </div>
 
-          {/* Status Text */}
-          <div className="flex items-center gap-2">
             <span 
-              className="text-sm font-medium"
-              style={{ color: 'rgba(244, 244, 244, 0.85)' }}
+              className="text-sm sm:text-base font-medium truncate"
+              style={{ color: 'rgba(244, 244, 244, 0.9)' }}
             >
               BahorAI fikrlamoqda…
             </span>
-            
-            {/* Thinking dots */}
-            <div className="flex items-center gap-0.5">
+          </div>
+
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <div className="flex items-center gap-1">
               {[0, 1, 2].map((i) => (
                 <span 
                   key={i}
-                  className="w-1 h-1 rounded-full"
+                  className="w-1.5 h-1.5 rounded-full"
                   style={{
                     backgroundColor: '#52D1C9',
-                    animation: 'thinking-bounce 1.4s ease-in-out infinite',
+                    animation: 'thinking-dot-bounce 1.4s ease-in-out infinite',
                     animationDelay: `${i * 150}ms`,
                   }}
                 />
               ))}
             </div>
-          </div>
 
-          {/* Expand/collapse indicator */}
-          <div 
-            className="ml-auto flex-shrink-0 transition-colors"
-            style={{ color: 'rgba(255, 255, 255, 0.5)' }}
-          >
-            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            <div 
+              className="transition-transform duration-200"
+              style={{ color: 'rgba(255, 255, 255, 0.6)' }}
+            >
+              {isExpanded ? (
+                <ChevronUp className="w-5 h-5" />
+              ) : (
+                <ChevronDown className="w-5 h-5" />
+              )}
+            </div>
           </div>
         </button>
 
-        {/* Expanded Panel - grows downward */}
-        {isExpanded && (
-          <div 
-            className="px-4 pb-4 pt-2 animate-accordion-down"
-            style={{
-              background: 'rgba(30, 35, 45, 0.6)',
-              backdropFilter: 'blur(8px)',
-              borderRadius: '0 0 16px 16px',
-              boxShadow: '0 0 12px rgba(82, 209, 201, 0.15)',
-            }}
-          >
-            {/* Reasoning steps */}
-            <div className="space-y-2 mt-2">
+        {/* Expanded Panel */}
+        <div 
+          className={clsx(
+            "overflow-hidden transition-all duration-300 ease-out",
+            isExpanded ? "max-h-[400px] opacity-100" : "max-h-0 opacity-0"
+          )}
+        >
+          <div className="px-4 pb-4 pt-2 border-t border-slate-700/50">
+            <div className="space-y-2.5 mt-1">
               {steps.map((step, index) => {
                 const isCompleted = completedSteps.includes(index);
                 const isCurrent = currentStep === index;
@@ -207,58 +194,58 @@ export default function ThinkingBar({
                     key={index} 
                     className="flex items-center gap-3"
                     style={{ 
-                      animation: 'step-fade-in 0.3s ease-out forwards',
+                      animation: 'step-slide-in 0.3s ease-out forwards',
                       animationDelay: `${index * 80}ms`,
                       opacity: 0,
                     }}
                   >
-                    {/* Step indicator */}
                     <div 
-                      className={clsx(
-                        "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300",
-                      )}
+                      className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300"
                       style={{
                         backgroundColor: isCompleted 
                           ? 'rgba(82, 209, 201, 0.25)' 
                           : isCurrent 
                           ? 'rgba(82, 209, 201, 0.15)' 
-                          : 'rgba(255, 255, 255, 0.1)',
+                          : 'rgba(255, 255, 255, 0.08)',
                         border: isCurrent && !isCompleted 
-                          ? '1px solid rgba(82, 209, 201, 0.4)' 
-                          : 'none',
+                          ? '2px solid rgba(82, 209, 201, 0.5)' 
+                          : isCompleted
+                          ? '2px solid rgba(82, 209, 201, 0.4)'
+                          : '2px solid transparent',
                       }}
                     >
                       {isCompleted ? (
                         <div className={clsx("transition-transform", isAnimating && "animate-checkmark-pop")}>
-                          <Check className="w-3 h-3" style={{ color: '#52D1C9' }} />
+                          <Check className="w-3.5 h-3.5" style={{ color: '#52D1C9' }} />
                         </div>
                       ) : (
                         <span 
-                          className="text-[10px] font-medium"
-                          style={{ color: isCurrent ? '#52D1C9' : 'rgba(255, 255, 255, 0.5)' }}
+                          className="text-xs font-medium"
+                          style={{ color: isCurrent ? '#52D1C9' : 'rgba(255, 255, 255, 0.4)' }}
                         >
                           {index + 1}
                         </span>
                       )}
                     </div>
 
-                    {/* Step text */}
                     <span 
                       className="text-sm leading-relaxed transition-colors duration-300"
                       style={{ 
-                        color: isCompleted || isCurrent 
+                        color: isCompleted 
+                          ? 'rgba(82, 209, 201, 0.9)' 
+                          : isCurrent 
                           ? 'rgba(244, 244, 244, 0.85)' 
-                          : 'rgba(255, 255, 255, 0.5)' 
+                          : 'rgba(255, 255, 255, 0.45)' 
                       }}
                     >
-                      {isCompleted ? '✔️' : ''} {step}
+                      {isCompleted && <span className="mr-1.5">✔</span>}
+                      {step}
                     </span>
                   </div>
                 );
               })}
             </div>
 
-            {/* Search section */}
             {effectiveSearchUsed && (
               <div 
                 className="mt-4 pt-3"
@@ -274,7 +261,6 @@ export default function ThinkingBar({
                   </span>
                 </div>
                 
-                {/* Search URLs */}
                 {effectiveSearchUrls.length > 0 && (
                   <div className="space-y-2 ml-6">
                     {effectiveSearchUrls.slice(0, 5).map((url, index) => (
@@ -295,36 +281,48 @@ export default function ThinkingBar({
               </div>
             )}
           </div>
-        )}
+        </div>
       </div>
 
       <style>{`
-        @keyframes orb-pulse {
-          0%, 100% { opacity: 0.6; transform: scale(1); }
-          50% { opacity: 1; transform: scale(1.05); }
-        }
-        @keyframes orb-glow {
+        @keyframes thinking-glow {
           0%, 100% { 
-            box-shadow: 0 0 12px rgba(82, 209, 201, 0.4), inset 0 0 8px rgba(82, 209, 201, 0.2);
+            box-shadow: 0 0 12px rgba(82, 209, 201, 0.4);
+            opacity: 0.85;
           }
           50% { 
-            box-shadow: 0 0 20px rgba(82, 209, 201, 0.6), inset 0 0 12px rgba(82, 209, 201, 0.3);
+            box-shadow: 0 0 20px rgba(82, 209, 201, 0.6);
+            opacity: 1;
           }
         }
-        @keyframes thinking-bounce {
-          0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
-          30% { transform: translateY(-3px); opacity: 1; }
+        @keyframes thinking-dot-bounce {
+          0%, 60%, 100% { 
+            transform: translateY(0); 
+            opacity: 0.4; 
+          }
+          30% { 
+            transform: translateY(-4px); 
+            opacity: 1; 
+          }
         }
-        @keyframes step-fade-in {
-          from { opacity: 0; transform: translateX(-6px); }
-          to { opacity: 1; transform: translateX(0); }
+        @keyframes step-slide-in {
+          from { 
+            opacity: 0; 
+            transform: translateX(-8px); 
+          }
+          to { 
+            opacity: 1; 
+            transform: translateX(0); 
+          }
         }
         @keyframes checkmark-pop {
           0% { transform: scale(1); }
-          50% { transform: scale(1.2); }
+          50% { transform: scale(1.3); }
           100% { transform: scale(1); }
         }
-        .animate-checkmark-pop { animation: checkmark-pop 0.2s ease-out; }
+        .animate-checkmark-pop { 
+          animation: checkmark-pop 0.25s ease-out; 
+        }
       `}</style>
     </div>
   );
