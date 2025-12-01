@@ -485,12 +485,34 @@ serve(async (req) => {
       systemPrompt += `
 
 ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-🔍 WEB SEARCH RESULTS
+🔍 WEB SEARCH BEHAVIOR (search_used: true)
 ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-You have access to the following web search results. Use them to provide accurate, up-to-date information.
-When citing information from these sources, mention the source naturally in your response.
-If the search results don't contain relevant information, answer based on your knowledge but note the limitation.
+You MUST follow these rules when responding:
+
+1. Begin your answer with the section title:
+   "🔍 Qidiruv natijalari:"
+   
+2. Display the top 2–4 results from the search, each including:
+   - Source/site name (bold)
+   - A short 1–2 sentence snippet summarizing the content
+   - The full URL exactly as received (do NOT fabricate)
+
+   Example format:
+   • **Kun.uz** — Mirziyoyev MDH sammitida ishtirok etdi…
+     https://kun.uz/news/...
+
+3. After showing the results, ALWAYS include a section titled:
+   "📌 Xulosa:"
+   where you combine the information into a short final answer in the user's language.
+
+4. NEVER invent sources or URLs.
+   NEVER hallucinate missing information.
+   If a URL is missing, say: "(URL qidiruv tizimidan kelmadi)".
+
+5. If the search returned no meaningful results:
+   - Write: "Ishonchli natijalar topilmadi."
+   - Then provide a general background answer if relevant.
 
 Search Results:
 ${JSON.stringify(searchResults, null, 2)}
