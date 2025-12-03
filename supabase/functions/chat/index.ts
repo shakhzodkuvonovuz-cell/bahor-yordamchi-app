@@ -157,8 +157,35 @@ Agar yuqorida qidiruv natijalari bo'lsa, ularga suyanib javob ber va manbalarni 
       );
     }
 
-    // Stream the response directly (DeepSeek already returns SSE format)
-    return new Response(response.body, {
+    // Create a custom stream that sends metadata first, then DeepSeek response
+    const encoder = new TextEncoder();
+    const reader = response.body!.getReader();
+    
+    const stream = new ReadableStream({
+      async start(controller) {
+        // Send metadata first (search status)
+        const metadata = {
+          type: "metadata",
+          search_used: !!searchResults,
+          search_urls: [], // We don't parse individual URLs yet
+        };
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(metadata)}\n\n`));
+        
+        // Then pipe through DeepSeek response
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            controller.enqueue(value);
+          }
+          controller.close();
+        } catch (err) {
+          controller.error(err);
+        }
+      },
+    });
+    
+    return new Response(stream, {
       headers: {
         ...corsHeaders,
         'Content-Type': 'text/event-stream',
