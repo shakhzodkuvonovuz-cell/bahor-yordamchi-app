@@ -259,6 +259,9 @@ export default function Settings() {
             </div>
           </div>
 
+          {/* Premium Upgrade Card - Only for free users */}
+          {profile?.plan === 'free' && <PremiumUpgradeCard />}
+
           {/* Separator */}
           <div className="h-px bg-border/30" />
 
