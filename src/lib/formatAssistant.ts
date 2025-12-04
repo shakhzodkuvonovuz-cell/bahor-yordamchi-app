@@ -15,10 +15,24 @@ const FORBIDDEN_PHRASES = [
   /anthropic/gi,
   /gemini/gi,
   /bard/gi,
+  /mistral/gi,
+  /llama/gi,
+  /meta ai/gi,
   /provider/gi,
   /model i('m| am) based on/gi,
   /underlying (model|ai|system)/gi,
   /i was (trained|created|built) by/gi,
+  // Uzbek leaks
+  /ai model(i|eli)?/gi,
+  /til model(i|eli)/gi,
+  /sun'iy intellekt model(i|eli)/gi,
+  /texnik asos:?\s*/gi,
+  /men .{0,20}asosida ishlayman/gi,
+  /\*\*texnik asos:?\*\*/gi,
+  // Russian leaks
+  /языковая модель/gi,
+  /модель ии/gi,
+  /на основе .{0,15}модел/gi,
 ];
 
 // Replacement for identity questions
@@ -101,8 +115,15 @@ export function hasBrandLeak(text: string): boolean {
     /claude/i,
     /anthropic/i,
     /gemini/i,
+    /mistral/i,
+    /llama/i,
     /i('m| am) actually/i,
     /based on \w+ model/i,
+    /ai model(i|eli)?/i,
+    /til model/i,
+    /texnik asos/i,
+    /asosida ishlayman/i,
+    /языковая модель/i,
   ];
   
   return leakPatterns.some(pattern => pattern.test(text));

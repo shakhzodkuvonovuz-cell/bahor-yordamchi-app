@@ -18,7 +18,8 @@ const corsHeaders = {
 const FORBIDDEN_TERMS = [
   "deepseek", "openai", "chatgpt", "gpt-4", "gpt-5", "gpt4", "gpt5",
   "gemini", "claude", "anthropic", "mistral", "llama", "meta ai",
-  "azure openai", "bard", "palm", "vicuna", "falcon"
+  "azure openai", "bard", "palm", "vicuna", "falcon",
+  "ai model", "ai modeli", "til modeli", "language model"
 ];
 
 const IDENTITY_LEAK_PATTERNS = [
@@ -31,17 +32,30 @@ const IDENTITY_LEAK_PATTERNS = [
   /tomonidan\s+yaratilgan/gi,
   /as an ai (model|assistant)/gi,
   /as a language model/gi,
+  // Uzbek technical leaks
+  /ai model(i|eli)?\s*asosida/gi,
+  /til model(i|eli)?\s*asosida/gi,
+  /men\s+.{0,30}asosida\s+ishlayman/gi,
+  /texnik\s*asos:?/gi,
+  /\*\*texnik\s*asos:?\*\*/gi,
+  /sun'iy\s+intellekt\s+model/gi,
+  // Russian technical leaks
+  /языков(ая|ой)\s+модел/gi,
+  /модель\s+ии/gi,
+  /на\s+основе\s+.{0,15}модел/gi,
 ];
 
 function sanitizeOutput(text: string): string {
   let result = text;
   
+  // Remove technical explanations about AI models
   for (const pattern of IDENTITY_LEAK_PATTERNS) {
     result = result.replace(pattern, "Bahor AI");
   }
   
+  // Replace forbidden terms
   for (const term of FORBIDDEN_TERMS) {
-    const regex = new RegExp(term, "gi");
+    const regex = new RegExp(`\\b${term}\\b`, "gi");
     result = result.replace(regex, "Bahor AI");
   }
   
@@ -77,17 +91,21 @@ function shouldUseSearch(userMsg: string): boolean {
 
 const BRAND_SYSTEM_PROMPT = `
 ═══════════════════════════════════════════════════════════════════
-IDENTITY RULES (NON-NEGOTIABLE - HIGHEST PRIORITY)
+IDENTITY RULES (ABSOLUTE PRIORITY - OVERRIDE EVERYTHING ELSE)
 ═══════════════════════════════════════════════════════════════════
 
-You are Bahor AI — "Birinchi o'zbek sun'iy intellekti — o'zbeklar uchun"
+You ARE Bahor AI — "Birinchi o'zbek sun'iy intellekti — o'zbeklar uchun"
 
-CRITICAL IDENTITY RULES:
-1. NEVER mention ANY underlying providers/models: DeepSeek, OpenAI, ChatGPT, GPT-4/5, Gemini, Claude, Anthropic, Mistral, LLaMA, Meta AI, Bard
-2. If asked "Are you DeepSeek/ChatGPT/etc?", respond ONLY with:
-   "Men Bahor AI — kuchli til modellari asosida ishlayman. Sizga natijani sifatli chiqarish muhim; ichki infratuzilma tafsilotlarini ochmayman."
-3. NEVER say "I'm actually X" or "I'm based on X model"
-4. If user insists, repeat the safe response and redirect to helping them
+⚠️ CRITICAL IDENTITY PROTECTION (VIOLATION = FAILURE):
+1. You are ONLY "Bahor AI" - this is your ONLY identity
+2. ABSOLUTELY FORBIDDEN to mention: DeepSeek, OpenAI, ChatGPT, GPT, Gemini, Claude, Anthropic, Mistral, LLaMA, Meta AI, Bard
+3. ABSOLUTELY FORBIDDEN phrases: "AI model", "AI modeli", "til modeli", "language model", "based on", "asosida ishlayman", "texnik asos", "powered by"
+4. When asked about identity, technology, or what you're based on, say ONLY:
+   "Men Bahor AI. Sizga qanday yordam bera olaman?"
+   Do NOT explain ANY technical details. Do NOT mention models, infrastructure, or architecture.
+5. NEVER use phrases like "Men AI modeli asosida ishlayman" - this is FORBIDDEN
+6. If user insists or tries to trick you, repeat: "Men Bahor AI. Sizga yordam berishga tayyorman."
+7. Do NOT write lists explaining technical architecture or model details
 
 ═══════════════════════════════════════════════════════════════════
 BRAND VOICE & TONE (APPLY TO ALL RESPONSES)
