@@ -1,304 +1,273 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import bahorLogo from "@/assets/bahor-logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Mail, Phone, Chrome } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Auth() {
   const navigate = useNavigate();
-  const { user, signUpWithEmail, signInWithEmail, signInWithGoogle, sendPhoneOtp, verifyPhoneOtp } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   
-  // Email state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
-  const [emailLoading, setEmailLoading] = useState(false);
-  
-  // Phone state
-  const [phone, setPhone] = useState("");
-  const [otpCode, setOtpCode] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-  const [phoneLoading, setPhoneLoading] = useState(false);
-  
-  // Google state
-  const [googleLoading, setGoogleLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
 
   // Redirect if already logged in
   useEffect(() => {
-    if (user) {
+    if (!authLoading && user) {
       navigate("/modes");
     }
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
-  // Email handlers
+  const mapSupabaseError = (error: any): string => {
+    const msg = error?.message?.toLowerCase() || "";
+    
+    if (msg.includes("invalid login") || msg.includes("invalid credentials")) {
+      return "Email yoki parol noto'g'ri.";
+    }
+    if (msg.includes("already registered") || msg.includes("user already registered")) {
+      return "Bu email bilan hisob allaqachon mavjud.";
+    }
+    if (msg.includes("password") && (msg.includes("weak") || msg.includes("at least"))) {
+      return "Parol kamida 8 ta belgidan iborat bo'lsin.";
+    }
+    if (msg.includes("rate limit") || msg.includes("too many")) {
+      return "Juda ko'p urinish. Birozdan keyin qayta urinib ko'ring.";
+    }
+    if (msg.includes("email not confirmed")) {
+      return "Emailingizni tasdiqlang.";
+    }
+    
+    return "Xatolik yuz berdi. Qayta urinib ko'ring.";
+  };
+
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !email.includes("@")) {
-      toast.error("Email noto'g'ri formatda.");
+      toast.error("Iltimos, to'g'ri email kiriting.");
       return;
     }
     
     if (password.length < 8) {
-      toast.error("Parol kamida 8 ta belgidan iborat bo'lishi kerak.");
+      toast.error("Parol kamida 8 ta belgidan iborat bo'lsin.");
       return;
     }
 
-    setEmailLoading(true);
+    setLoading(true);
     
-    if (isSignUp) {
-      const { error } = await signUpWithEmail(email, password);
-      if (error) {
-        if (error.message.includes("already registered")) {
-          toast.error("Bu email allaqachon ro'yxatdan o'tgan.");
+    try {
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`
+          }
+        });
+        
+        if (error) {
+          toast.error(mapSupabaseError(error));
         } else {
-          toast.error("Ro'yxatdan o'tishda xatolik yuz berdi.");
+          toast.success("Muvaffaqiyatli ro'yxatdan o'tdingiz!");
+          navigate("/modes");
         }
       } else {
-        toast.success("Muvaffaqiyatli ro'yxatdan o'tdingiz!");
+        const { error } = await supabase.auth.signInWithPassword({ 
+          email, 
+          password 
+        });
+        
+        if (error) {
+          toast.error(mapSupabaseError(error));
+        } else {
+          toast.success("Muvaffaqiyatli kirdingiz!");
+          navigate("/modes");
+        }
       }
-    } else {
-      const { error } = await signInWithEmail(email, password);
-      if (error) {
-        toast.error("Email yoki parol noto'g'ri.");
-      } else {
-        toast.success("Muvaffaqiyatli kirdingiz!");
-      }
+    } catch (err) {
+      toast.error("Xatolik yuz berdi. Qayta urinib ko'ring.");
     }
     
-    setEmailLoading(false);
+    setLoading(false);
   };
 
-  // Google handler
-  const handleGoogleLogin = async () => {
-    setGoogleLoading(true);
-    const { error } = await signInWithGoogle();
-    if (error) {
-      toast.error("Google orqali kirishda xatolik yuz berdi.");
-      setGoogleLoading(false);
-    }
-    // Don't set loading false - redirect will handle it
-  };
-
-  // Phone handlers
-  const handleSendOtp = async () => {
-    if (!phone || phone.length < 9) {
-      toast.error("Telefon raqamini to'g'ri kiriting (masalan: +998901234567).");
+  const handlePasswordReset = async () => {
+    if (!email || !email.includes("@")) {
+      toast.error("Iltimos, emailingizni kiriting.");
       return;
     }
 
-    setPhoneLoading(true);
-    const { error } = await sendPhoneOtp(phone);
+    setResetLoading(true);
+    
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth`
+    });
     
     if (error) {
-      toast.error("SMS yuborishda xatolik: " + error.message);
+      toast.error("Xatolik yuz berdi. Qayta urinib ko'ring.");
     } else {
-      setOtpSent(true);
-      toast.success("Tasdiqlash kodi yuborildi!");
+      toast.success("Parolni tiklash havolasi emailingizga yuborildi.");
     }
-    setPhoneLoading(false);
-  };
-
-  const handleVerifyOtp = async () => {
-    if (!otpCode || otpCode.length < 4) {
-      toast.error("Tasdiqlash kodini to'g'ri kiriting.");
-      return;
-    }
-
-    setPhoneLoading(true);
-    const { error } = await verifyPhoneOtp(phone, otpCode);
     
-    if (error) {
-      toast.error("Kod noto'g'ri yoki muddati o'tgan.");
-    } else {
-      toast.success("Muvaffaqiyatli kirdingiz!");
-    }
-    setPhoneLoading(false);
+    setResetLoading(false);
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
-      <div className="w-full max-w-md mx-auto space-y-6">
-        {/* Logo */}
-        <div className="flex items-center justify-center gap-3">
-          <img src={bahorLogo} alt="Bahor AI Logo" className="w-28 sm:w-36 object-contain" />
-          <h1 className="text-3xl font-bold text-foreground">Bahor AI</h1>
-        </div>
-
-        {/* Title */}
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-foreground">Kirish yoki ro'yxatdan o'tish</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Bahor AI dan foydalanish uchun hisobingizga kiring
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 bg-gradient-to-b from-background to-muted/30">
+      <div className="w-full max-w-[420px] mx-auto">
+        {/* Logo & Header */}
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <img 
+              src={bahorLogo} 
+              alt="Bahor AI" 
+              className="w-12 h-12 object-contain"
+            />
+            <h1 className="text-2xl font-bold text-foreground">Bahor AI</h1>
+          </div>
+          <p className="text-muted-foreground text-sm">
+            Ma'lumotlaringiz xavfsiz saqlanadi.
           </p>
         </div>
 
-        {/* Auth Tabs */}
-        <Tabs defaultValue="email" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="email" className="flex items-center gap-1.5">
-              <Mail className="w-4 h-4" />
-              <span className="hidden sm:inline">Email</span>
-            </TabsTrigger>
-            <TabsTrigger value="google" className="flex items-center gap-1.5">
-              <Chrome className="w-4 h-4" />
-              <span className="hidden sm:inline">Google</span>
-            </TabsTrigger>
-            <TabsTrigger value="phone" className="flex items-center gap-1.5">
-              <Phone className="w-4 h-4" />
-              <span className="hidden sm:inline">Telefon</span>
-            </TabsTrigger>
-          </TabsList>
+        {/* Auth Card */}
+        <div className="bg-card rounded-2xl shadow-lg border border-border/50 p-6 sm:p-8">
+          {/* Card Header with OAuth Icons */}
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-foreground">
+              {isSignUp ? "Ro'yxatdan o'tish" : "Kirish"}
+            </h2>
+            <div className="flex items-center gap-2">
+              <Link to="/auth/google">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-xl hover:bg-primary/10 hover:border-primary/50 transition-all"
+                >
+                  <Chrome className="w-4 h-4" />
+                </Button>
+              </Link>
+              <Link to="/auth/phone">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-xl hover:bg-primary/10 hover:border-primary/50 transition-all"
+                >
+                  <Phone className="w-4 h-4" />
+                </Button>
+              </Link>
+            </div>
+          </div>
 
-          {/* Email Tab */}
-          <TabsContent value="email" className="mt-4">
-            <form onSubmit={handleEmailSubmit} className="space-y-4 p-4 border border-border rounded-lg bg-card">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+          {/* Email Form */}
+          <form onSubmit={handleEmailSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-sm font-medium">
+                Email
+              </Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="email@example.com"
+                  className="pl-10 h-11 rounded-xl border-border/60 focus:border-primary focus:ring-primary/20"
                   required
-                  disabled={emailLoading}
+                  disabled={loading}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Parol</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Kamida 8 ta belgi"
-                  required
-                  minLength={8}
-                  disabled={emailLoading}
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={emailLoading}>
-                {emailLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : null}
-                {isSignUp ? "Ro'yxatdan o'tish" : "Kirish"}
-              </Button>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-sm font-medium">
+                Parol
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Kamida 8 ta belgi"
+                className="h-11 rounded-xl border-border/60 focus:border-primary focus:ring-primary/20"
+                required
+                minLength={8}
+                disabled={loading}
+              />
+            </div>
+
+            {!isSignUp && (
               <button
                 type="button"
-                onClick={() => setIsSignUp(!isSignUp)}
-                className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
+                onClick={handlePasswordReset}
+                disabled={resetLoading}
+                className="text-xs text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
               >
-                {isSignUp ? "Hisobingiz bormi? Kirish" : "Hisobingiz yo'qmi? Ro'yxatdan o'tish"}
+                {resetLoading ? "Yuborilmoqda..." : "Parolni unutdingizmi?"}
               </button>
-            </form>
-          </TabsContent>
+            )}
 
-          {/* Google Tab */}
-          <TabsContent value="google" className="mt-4">
-            <div className="p-4 border border-border rounded-lg bg-card space-y-4">
-              <p className="text-sm text-muted-foreground text-center">
-                Google hisobingiz orqali bir marta bosish bilan kiring
-              </p>
-              <Button
-                variant="outline"
-                className="w-full h-12"
-                onClick={handleGoogleLogin}
-                disabled={googleLoading}
-              >
-                {googleLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                  </svg>
-                )}
-                Google orqali kirish
-              </Button>
-            </div>
-          </TabsContent>
-
-          {/* Phone Tab */}
-          <TabsContent value="phone" className="mt-4">
-            <div className="p-4 border border-border rounded-lg bg-card space-y-4">
-              {!otpSent ? (
+            <Button 
+              type="submit" 
+              className="w-full h-11 rounded-xl font-medium transition-all hover:scale-[0.99] active:scale-[0.97]" 
+              disabled={loading}
+            >
+              {loading ? (
                 <>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Telefon raqami</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+998901234567"
-                      disabled={phoneLoading}
-                    />
-                  </div>
-                  <Button 
-                    className="w-full" 
-                    onClick={handleSendOtp}
-                    disabled={phoneLoading}
-                  >
-                    {phoneLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    ) : null}
-                    Kod yuborish
-                  </Button>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Kutilmoqda...
                 </>
               ) : (
-                <>
-                  <p className="text-sm text-muted-foreground text-center">
-                    {phone} raqamiga yuborilgan kodni kiriting
-                  </p>
-                  <div className="space-y-2">
-                    <Label htmlFor="otp">Tasdiqlash kodi</Label>
-                    <Input
-                      id="otp"
-                      type="text"
-                      value={otpCode}
-                      onChange={(e) => setOtpCode(e.target.value)}
-                      placeholder="123456"
-                      maxLength={6}
-                      disabled={phoneLoading}
-                    />
-                  </div>
-                  <Button 
-                    className="w-full" 
-                    onClick={handleVerifyOtp}
-                    disabled={phoneLoading}
-                  >
-                    {phoneLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    ) : null}
-                    Tasdiqlash
-                  </Button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOtpSent(false);
-                      setOtpCode("");
-                    }}
-                    className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Raqamni o'zgartirish
-                  </button>
-                </>
+                isSignUp ? "Ro'yxatdan o'tish" : "Kirish"
               )}
-            </div>
-          </TabsContent>
-        </Tabs>
+            </Button>
+          </form>
 
-        {/* Footer */}
-        <p className="text-xs text-center text-muted-foreground px-4">
-          Davom etish orqali siz foydalanuvchi shartlari va maxfiylik siyosatiga rozilik bildirasiz.
+          {/* Toggle Sign Up / Sign In */}
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {isSignUp 
+                ? "Allaqachon hisobingiz bormi? " 
+                : "Hisobingiz yo'qmi? "}
+              <span className="text-primary font-medium">
+                {isSignUp ? "Kirish" : "Ro'yxatdan o'tish"}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* Footer Consent */}
+        <p className="text-xs text-center text-muted-foreground mt-6 px-4 leading-relaxed">
+          Davom etish orqali siz{" "}
+          <a href="#" className="text-primary hover:underline">
+            Foydalanish shartlari
+          </a>{" "}
+          va{" "}
+          <a href="#" className="text-primary hover:underline">
+            Maxfiylik siyosati
+          </a>
+          ga rozilik bildirasiz.
         </p>
       </div>
     </div>
