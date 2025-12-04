@@ -6,7 +6,7 @@ import QuickSuggestions from "@/components/QuickSuggestions";
 import { DeleteChatModal } from "@/components/DeleteChatModal";
 import DailyUsageIndicator from "@/components/DailyUsageIndicator";
 import LimitReachedCard from "@/components/LimitReachedCard";
-import ThinkingBar, { ThinkingStatus, ThinkingPhase } from "@/components/ThinkingBar";
+
 import { VoiceModeButton, VoiceModePanel } from "@/components/voice";
 import {
   ScrollToBottom,
@@ -30,6 +30,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import * as chatStore from "@/lib/chatStore";
 
 import { useHaptics } from "@/hooks/useHaptics";
+import { haptic } from "@/lib/haptics";
 import { useIsMobile } from "@/hooks/use-mobile";
 import clsx from "clsx";
 import { useToast } from "@/hooks/use-toast";
@@ -182,14 +183,8 @@ export default function Chat() {
   const [isUploading, setIsUploading] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<string | null>(null);
   const [isVoiceModeOpen, setIsVoiceModeOpen] = useState(false);
-  const [thinkingStatus, setThinkingStatus] = useState<ThinkingStatus>({
-    phase: 'idle',
-    shortLabel: '',
-    details: [],
-  });
   const [searchUsed, setSearchUsed] = useState(false);
   const [searchUrls, setSearchUrls] = useState<string[]>([]);
-  const [thinkingMessageId, setThinkingMessageId] = useState<string | null>(null);
   
   // Trace state for "Reasoned for Xs" feature
   const [activeTrace, setActiveTrace] = useState<MessageTrace | null>(null);
@@ -600,13 +595,6 @@ export default function Chat() {
     
     const parentMessage = messages.find(m => m.id === parentMessageId);
     
-    setThinkingStatus({
-      phase: 'reasoning',
-      shortLabel: translate('thinking.reasoning'),
-      details: [translate('thinking.step.understanding'), translate('thinking.step.drafting')],
-    });
-    setThinkingMessageId(parentMessageId);
-    
     const assistantId = crypto.randomUUID?.() ?? (Date.now() + 1).toString();
     
     try {
@@ -675,8 +663,6 @@ export default function Chat() {
         onDone: async () => {
           setTyping(false);
           setIsLoading(false);
-          setThinkingStatus({ phase: 'idle', shortLabel: '', details: [] });
-          setThinkingMessageId(null);
           
           // Save to DB
           if (fullContent.trim()) {
@@ -698,7 +684,6 @@ export default function Chat() {
           console.error("Variant stream error:", error);
           setTyping(false);
           setIsLoading(false);
-          setThinkingStatus({ phase: 'idle', shortLabel: '', details: [] });
           
           // Remove failed message
           setMessages(prev => prev.filter(m => m.id !== assistantId));
@@ -721,7 +706,6 @@ export default function Chat() {
       console.error("Variant generation error:", error);
       setTyping(false);
       setIsLoading(false);
-      setThinkingStatus({ phase: 'idle', shortLabel: '', details: [] });
       
       toast({
         title: language === "uz" ? "Xatolik" : "Error",
@@ -876,27 +860,8 @@ export default function Chat() {
     const hasImages = attachmentsToProcess.some(att => isVisionSupportedImage(att));
     const hasPdf = attachmentsToProcess.some(att => att.type === 'application/pdf' || att.name.toLowerCase().endsWith('.pdf'));
     
-    let initialPhase: ThinkingPhase = 'reasoning';
-    let initialLabel = translate('thinking.reasoning');
-    
-    if (hasImages || hasPdf) {
-      initialPhase = 'vision';
-      initialLabel = translate('thinking.vision');
-    }
-    
-    setThinkingStatus({
-      phase: initialPhase,
-      shortLabel: initialLabel,
-      details: [
-        translate('thinking.step.understanding'),
-        translate('thinking.step.selecting'),
-        translate('thinking.step.drafting'),
-      ],
-    });
-    
     setSearchUsed(false);
     setSearchUrls([]);
-    setThinkingMessageId(tempUserMessageId);
 
     const assistantId = crypto.randomUUID?.() ?? (Date.now() + 1).toString();
     let assistantMessageCreated = false;
@@ -915,7 +880,6 @@ export default function Chat() {
       setMessages((prev) => 
         prev.map(m => m.id === tempUserMessageId ? { ...m, id: savedUserMessage.id } : m)
       );
-      setThinkingMessageId(savedUserMessage.id);
       
       // Auto-title thread if it's the first message
       const currentThread = threads.find(t => t.id === currentThreadId);
@@ -1011,13 +975,6 @@ export default function Chat() {
         content: messageContent,
       });
 
-      if (attachmentsToProcess.length > 0) {
-        setThinkingStatus(prev => ({
-          ...prev,
-          phase: 'reasoning',
-          shortLabel: translate('thinking.reasoning'),
-        }));
-      }
 
       const accessToken = session?.access_token;
       if (!accessToken) {
@@ -1059,7 +1016,6 @@ export default function Chat() {
           setShowLimitCard(true);
           setTyping(false);
           setIsLoading(false);
-          setThinkingStatus({ phase: 'idle', shortLabel: '', details: [] });
           setMessages((prev) => prev.filter(m => m.id !== (savedUserMessageId || tempUserMessageId)));
           toast({
             title: language === "uz" ? "Limit tugadi" : "Limit reached",
@@ -1145,24 +1101,12 @@ export default function Chat() {
           if (metadata.search_used) {
             setSearchUsed(true);
             setSearchUrls(metadata.search_urls || []);
-            setThinkingStatus(prev => ({
-              ...prev,
-              phase: 'searching',
-              shortLabel: translate('thinking.searching'),
-              searchUsed: true,
-              searchUrls: metadata.search_urls || [],
-            }));
           }
         },
         onChunk: (chunk) => {
           assistantContent += chunk;
           
           if (!assistantMessageCreated) {
-            setThinkingStatus(prev => ({
-              ...prev,
-              phase: 'finalising',
-              shortLabel: translate('thinking.finalising'),
-            }));
             
             const analysisPrefix = analysisContent 
               ? (analysisType === 'vision'
@@ -1202,8 +1146,6 @@ export default function Chat() {
           setTyping(false);
           setIsLoading(false);
           setProcessingStatus(null);
-          setThinkingStatus({ phase: 'idle', shortLabel: '', details: [] });
-          setThinkingMessageId(null);
           inputRef.current?.focus();
           
           // Attach trace to message using ref (avoids stale closure issue)
@@ -1262,7 +1204,6 @@ export default function Chat() {
       setTyping(false);
       setIsLoading(false);
       setProcessingStatus(null);
-      setThinkingStatus({ phase: 'idle', shortLabel: '', details: [] });
       setActiveTrace(null);
       inputRef.current?.focus();
       
@@ -1590,38 +1531,22 @@ export default function Chat() {
                     isMobile={isMobile}
                   />
                   
-                  {message.role === 'user' && 
-                   message.id === thinkingMessageId && 
-                   thinkingStatus.phase !== 'idle' && (
-                    <div className="flex justify-start mt-4">
-                      <ThinkingBar 
-                        status={thinkingStatus}
-                        searchUsed={searchUsed}
-                        searchUrls={searchUrls}
-                        onToggleExpand={() => {
-                          setThinkingStatus(prev => ({
-                            ...prev,
-                            expanded: !prev.expanded,
-                          }));
-                        }}
-                      />
-                    </div>
-                  )}
                   
-                  {/* ReasonedChip for assistant messages - NEVER disappears after completion */}
+                  {/* ReasonedChip (status pill) - shows during streaming and persists after completion */}
                   {message.role === 'assistant' && (
-                    message.trace || 
-                    (message.id === lastAssistantMessageId && activeTrace)
+                    message.trace ||  // Persisted trace from DB/history
+                    (message.id === lastAssistantMessageId && (activeTrace || isLoading)) // Current message while generating
                   ) && (
                     <div className="flex justify-start mt-2 ml-12">
                       <ReasonedChip
                         trace={message.trace || (message.id === lastAssistantMessageId ? activeTrace : null)}
-                        isGenerating={isLoading && !message.trace && message.id === lastAssistantMessageId}
+                        isGenerating={(isLoading || typing) && !message.trace && message.id === lastAssistantMessageId}
                         language={language}
                         elapsedLive={message.id === lastAssistantMessageId && !message.trace ? liveElapsedMs : undefined}
                         onClick={() => {
                           const traceData = message.trace || (message.id === lastAssistantMessageId ? activeTrace : null);
                           if (traceData?.isComplete) {
+                            haptic("selection");
                             setSelectedTraceMessageId(message.id);
                             setTraceSheetOpen(true);
                           }
