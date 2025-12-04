@@ -9,6 +9,10 @@ export interface ChatThread {
   is_archived: boolean;
   created_at: string;
   updated_at: string;
+  summary?: string | null;
+  summary_updated_at?: string | null;
+  last_message_preview?: string | null;
+  message_count?: number | null;
 }
 
 export interface ChatMessage {
@@ -41,7 +45,7 @@ export interface ChatAttachmentRecord {
 export async function listThreads(userId: string, mode?: string): Promise<ChatThread[]> {
   let query = supabase
     .from("chat_threads")
-    .select("*")
+    .select("id, user_id, title, mode, is_archived, created_at, updated_at, summary, summary_updated_at, last_message_preview, message_count")
     .eq("user_id", userId)
     .eq("is_archived", false)
     .order("updated_at", { ascending: false });
@@ -58,6 +62,40 @@ export async function listThreads(userId: string, mode?: string): Promise<ChatTh
   }
 
   return (data || []) as ChatThread[];
+}
+
+export async function getThread(threadId: string): Promise<ChatThread | null> {
+  const { data, error } = await supabase
+    .from("chat_threads")
+    .select("id, user_id, title, mode, is_archived, created_at, updated_at, summary, summary_updated_at, last_message_preview, message_count")
+    .eq("id", threadId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error getting thread:", error);
+    throw error;
+  }
+
+  return data as ChatThread | null;
+}
+
+export async function updateThreadSummary(
+  threadId: string,
+  summary: string,
+  summaryUpdatedAt: string
+): Promise<void> {
+  const { error } = await supabase
+    .from("chat_threads")
+    .update({ 
+      summary, 
+      summary_updated_at: summaryUpdatedAt 
+    })
+    .eq("id", threadId);
+
+  if (error) {
+    console.error("Error updating thread summary:", error);
+    throw error;
+  }
 }
 
 export async function createThread(
@@ -282,6 +320,104 @@ export async function getAttachments(threadId: string): Promise<ChatAttachmentRe
   }
 
   return (data || []) as ChatAttachmentRecord[];
+}
+
+// ============= Summary Generation =============
+
+// Debounce tracker to avoid spam
+const summaryDebounceMap = new Map<string, number>();
+
+export async function maybeGenerateSummary(
+  threadId: string,
+  accessToken: string
+): Promise<{ triggered: boolean; summary?: string }> {
+  // Check debounce (30 seconds client-side minimum)
+  const lastAttempt = summaryDebounceMap.get(threadId);
+  const now = Date.now();
+  if (lastAttempt && now - lastAttempt < 30000) {
+    return { triggered: false };
+  }
+
+  try {
+    // Get thread to check message_count
+    const thread = await getThread(threadId);
+    if (!thread) {
+      return { triggered: false };
+    }
+
+    const messageCount = thread.message_count || 0;
+    
+    // Only trigger if:
+    // 1. No summary exists and at least 3 messages
+    // 2. OR message_count is multiple of 10
+    const shouldGenerate = 
+      (!thread.summary && messageCount >= 3) ||
+      (messageCount > 0 && messageCount % 10 === 0);
+
+    if (!shouldGenerate) {
+      return { triggered: false };
+    }
+
+    // Update debounce tracker
+    summaryDebounceMap.set(threadId, now);
+
+    // Call edge function
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/summarize-thread`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ threadId }),
+      }
+    );
+
+    if (!response.ok) {
+      console.warn("Summary generation failed:", response.status);
+      return { triggered: true };
+    }
+
+    const result = await response.json();
+    return { 
+      triggered: true, 
+      summary: result.summary 
+    };
+  } catch (error) {
+    console.warn("Summary generation error:", error);
+    return { triggered: false };
+  }
+}
+
+// Get recent messages with thread summary for AI context
+export async function getMessagesWithContext(
+  threadId: string,
+  options?: { recentLimit?: number }
+): Promise<{ summary: string | null; messages: ChatMessage[] }> {
+  const recentLimit = options?.recentLimit || 10;
+
+  // Get thread summary
+  const thread = await getThread(threadId);
+  const summary = thread?.summary || null;
+
+  // Get recent messages
+  const { data, error } = await supabase
+    .from("chat_messages")
+    .select("*")
+    .eq("thread_id", threadId)
+    .order("created_at", { ascending: false })
+    .limit(recentLimit);
+
+  if (error) {
+    console.error("Error getting messages with context:", error);
+    throw error;
+  }
+
+  // Reverse to chronological order
+  const messages = ((data || []) as ChatMessage[]).reverse();
+
+  return { summary, messages };
 }
 
 // ============= Migration Helper =============

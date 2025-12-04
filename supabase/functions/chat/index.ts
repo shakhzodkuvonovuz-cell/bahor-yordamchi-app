@@ -218,7 +218,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, mode } = await req.json();
+    const { messages, mode, threadSummary } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(
@@ -310,14 +310,24 @@ serve(async (req) => {
       }
     }
 
-    // Build system prompt
+    // Build system prompt with thread summary if available
+    let summaryContext = "";
+    if (threadSummary) {
+      summaryContext = `
+THREAD MEMORY (previous conversation summary):
+${threadSummary}
+
+Use this context to maintain continuity. Don't repeat information unless asked.
+`;
+    }
+
     const systemPrompt = `${BRAND_SYSTEM_PROMPT}
 
 ${styleClamp}
 
 MODE: ${modeKey.toUpperCase()}
 ${modePrompt}
-
+${summaryContext}
 ${searchResults ? `
 QIDIRUV NATIJALARI:
 ${searchResults}
