@@ -32,14 +32,12 @@ const IDENTITY_LEAK_PATTERNS = [
   /tomonidan\s+yaratilgan/gi,
   /as an ai (model|assistant)/gi,
   /as a language model/gi,
-  // Uzbek technical leaks
   /ai model(i|eli)?\s*asosida/gi,
   /til model(i|eli)?\s*asosida/gi,
   /men\s+.{0,30}asosida\s+ishlayman/gi,
   /texnik\s*asos:?/gi,
   /\*\*texnik\s*asos:?\*\*/gi,
   /sun'iy\s+intellekt\s+model/gi,
-  // Russian technical leaks
   /языков(ая|ой)\s+модел/gi,
   /модель\s+ии/gi,
   /на\s+основе\s+.{0,15}модел/gi,
@@ -47,18 +45,13 @@ const IDENTITY_LEAK_PATTERNS = [
 
 function sanitizeOutput(text: string): string {
   let result = text;
-  
-  // Remove technical explanations about AI models
   for (const pattern of IDENTITY_LEAK_PATTERNS) {
     result = result.replace(pattern, "Bahor AI");
   }
-  
-  // Replace forbidden terms
   for (const term of FORBIDDEN_TERMS) {
     const regex = new RegExp(`\\b${term}\\b`, "gi");
     result = result.replace(regex, "Bahor AI");
   }
-  
   return result;
 }
 
@@ -76,18 +69,46 @@ function isIdentityQuestion(msg: string): boolean {
 function shouldUseSearch(userMsg: string): boolean {
   const q = userMsg.toLowerCase();
   const searchTriggers = [
-    // Uzbek
     "yangilik", "yangiliklar", "qidir", "qidirish", "oxirgi", "so'nggi",
     "bugungi", "hozirgi", "joriy", "kim", "nima haqida", "qachon",
-    // English
     "search", "news", "latest", "recent", "current", "find", "look up",
     "what is", "who is", "when did",
-    // Russian
     "новости", "поиск", "найти", "последние", "текущие",
-    // Questions that likely need fresh info
     "narxi", "price", "цена", "kurs", "rate", "ob-havo", "weather", "погода"
   ];
   return searchTriggers.some(t => q.includes(t));
+}
+
+// ============================================
+// TRACE EVENT HELPER
+// ============================================
+
+type TraceStep = 'thinking' | 'analyzing_request' | 'image_analysis' | 'web_search' | 
+                 'reading_files' | 'drafting_answer' | 'safety_check' | 'formatting' | 'saving';
+
+interface TraceSource {
+  title: string;
+  url: string;
+}
+
+function createTraceEvent(step: TraceStep, status: 'start' | 'end', startTime: number, data?: { sources?: TraceSource[] }): string {
+  const event = {
+    type: 'trace',
+    step,
+    status,
+    t: Date.now() - startTime,
+    ...(data && { data }),
+  };
+  return `data: ${JSON.stringify(event)}\n\n`;
+}
+
+function createTraceComplete(startTime: number, sources: TraceSource[]): string {
+  const event = {
+    type: 'trace_complete',
+    elapsed_ms: Date.now() - startTime,
+    sources,
+  };
+  return `data: ${JSON.stringify(event)}\n\n`;
 }
 
 // ============================================
@@ -189,7 +210,6 @@ REFUSE briefly + offer alternative:
 - Harmful content → Politely decline
 `;
 
-// Mode-specific prompts (concise)
 const MODE_PROMPTS: Record<string, string> = {
   general: "ROLE: Versatile assistant. Be warm, helpful. Keep it short + practical. Ask 1 question only if needed.",
   coding: "ROLE: Senior engineer (15+ years). Solve with code, explain clearly. Format code well. Keep explanations concise. Ask 1 clarifying question if needed.",
@@ -206,7 +226,6 @@ const MODE_PROMPTS: Record<string, string> = {
   health: "ROLE: Wellness advisor. General tips only. ALWAYS recommend seeing doctor for medical issues.",
 };
 
-// Style clamp based on plan
 const STYLE_CLAMP = {
   free: "STYLE: Keep answers SHORT (max 6-8 sentences). If complex: summarize + offer to expand with 'batafsil'.",
   premium: "STYLE: Can be more detailed. Still prioritize clarity over length.",
@@ -217,8 +236,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const requestStartTime = Date.now();
+
   try {
-    const { messages, mode, threadSummary } = await req.json();
+    const { messages, mode, threadSummary, hasAnalysis, analysisType } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(
@@ -290,23 +311,44 @@ serve(async (req) => {
     const styleClamp = usageResult?.plan === 'free' ? STYLE_CLAMP.free : STYLE_CLAMP.premium;
     const recentMessages = messages.slice(-12);
 
+    // Collect sources from web search
+    const collectedSources: TraceSource[] = [];
+
     // Check for search
     const lastUserMessage = recentMessages.filter((m: any) => m.role === "user").pop()?.content || "";
     let searchResults = "";
     let searchUrls: string[] = [];
+    let didSearch = false;
     
     if (shouldUseSearch(lastUserMessage)) {
-      console.log(`🔍 Search triggered for: "${lastUserMessage.substring(0, 50)}..."`);
+      didSearch = true;
       try {
         searchResults = await googleSearch(lastUserMessage);
-        // Extract URLs from results
         if (searchResults) {
           const urlMatches = searchResults.match(/https?:\/\/[^\s\n]+/g);
           searchUrls = urlMatches ? urlMatches.slice(0, 5) : [];
-          console.log(`✅ Search found ${searchUrls.length} URLs`);
+          
+          // Extract source titles from search results
+          const titleMatches = searchResults.matchAll(/\*\*([^*]+)\*\*\s*\n[^h]*?(https?:\/\/[^\s\n]+)/g);
+          for (const match of titleMatches) {
+            collectedSources.push({
+              title: match[1].trim(),
+              url: match[2].trim(),
+            });
+          }
+          
+          // Fallback: if no titles found, just use URLs
+          if (collectedSources.length === 0) {
+            for (const url of searchUrls) {
+              try {
+                const domain = new URL(url).hostname.replace(/^www\./, '');
+                collectedSources.push({ title: domain, url });
+              } catch { /* ignore */ }
+            }
+          }
         }
       } catch (err) {
-        console.log("⚠️ Search failed, continuing without:", err);
+        console.log("Search failed:", err);
       }
     }
 
@@ -367,21 +409,52 @@ Agar yuqorida qidiruv natijalari bo'lsa, ularga suyanib javob ber va manbalarni 
       );
     }
 
-    // Stream with sanitization
+    // Stream with trace events
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
     const reader = response.body!.getReader();
     
     const stream = new ReadableStream({
       async start(controller) {
-        // Send metadata first
+        // Emit initial trace: thinking
+        controller.enqueue(encoder.encode(createTraceEvent('thinking', 'start', requestStartTime)));
+        
+        // If we did image/document analysis, emit that trace
+        if (hasAnalysis) {
+          controller.enqueue(encoder.encode(createTraceEvent('thinking', 'end', requestStartTime)));
+          controller.enqueue(encoder.encode(
+            createTraceEvent(analysisType === 'vision' ? 'image_analysis' : 'reading_files', 'start', requestStartTime)
+          ));
+          controller.enqueue(encoder.encode(
+            createTraceEvent(analysisType === 'vision' ? 'image_analysis' : 'reading_files', 'end', requestStartTime)
+          ));
+          controller.enqueue(encoder.encode(createTraceEvent('thinking', 'start', requestStartTime)));
+        }
+        
+        // If web search was used, emit search trace
+        if (didSearch) {
+          controller.enqueue(encoder.encode(createTraceEvent('thinking', 'end', requestStartTime)));
+          controller.enqueue(encoder.encode(createTraceEvent('web_search', 'start', requestStartTime)));
+          controller.enqueue(encoder.encode(
+            createTraceEvent('web_search', 'end', requestStartTime, { sources: collectedSources })
+          ));
+          controller.enqueue(encoder.encode(createTraceEvent('thinking', 'start', requestStartTime)));
+        }
+        
+        // Send metadata (legacy support)
         const metadata = {
           type: "metadata",
-          search_used: !!searchResults,
+          search_used: didSearch,
           search_urls: searchUrls,
           usage: usageResult,
         };
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(metadata)}\n\n`));
+        
+        // End thinking, start drafting
+        controller.enqueue(encoder.encode(createTraceEvent('thinking', 'end', requestStartTime)));
+        controller.enqueue(encoder.encode(createTraceEvent('drafting_answer', 'start', requestStartTime)));
+        
+        let firstChunkSent = false;
         
         try {
           while (true) {
@@ -390,8 +463,21 @@ Agar yuqorida qidiruv natijalari bo'lsa, ularga suyanib javob ber va manbalarni 
             
             const chunk = decoder.decode(value, { stream: true });
             const sanitizedChunk = sanitizeOutput(chunk);
+            
+            // Mark first real content
+            if (!firstChunkSent && sanitizedChunk.includes('"content"')) {
+              firstChunkSent = true;
+            }
+            
             controller.enqueue(encoder.encode(sanitizedChunk));
           }
+          
+          // End drafting
+          controller.enqueue(encoder.encode(createTraceEvent('drafting_answer', 'end', requestStartTime)));
+          
+          // Emit trace complete with total time and sources
+          controller.enqueue(encoder.encode(createTraceComplete(requestStartTime, collectedSources)));
+          
           controller.close();
         } catch (err) {
           controller.error(err);
