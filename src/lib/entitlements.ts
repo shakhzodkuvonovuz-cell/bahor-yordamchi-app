@@ -67,42 +67,45 @@ export async function fetchUserEntitlement(userId: string): Promise<Entitlement>
 }
 
 /**
- * Fetch the current user's daily usage from the database
+ * Fetch the current user's daily usage from the edge function (includes devBypass check)
  */
 export async function fetchDailyUsage(userId: string): Promise<DailyUsageData> {
   const today = new Date().toISOString().split('T')[0];
 
   try {
-    // First get entitlement to know the limit
-    const entitlement = await fetchUserEntitlement(userId);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      return { date: today, used: 0, limit: 5, isPremium: false, isDevBypass: false };
+    }
 
-    // Fetch daily usage
-    const { data: usageData, error: usageError } = await supabase
-      .from('daily_usage')
-      .select('messages_count')
-      .eq('user_id', userId)
-      .eq('date', today)
-      .single();
+    // Call edge function which has access to DEV_UNLIMITED_EMAILS
+    const res = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-entitlements?action=my-entitlement`,
+      {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
 
-    const used = usageError ? 0 : (usageData?.messages_count || 0);
-    const limit = entitlement.isPremium ? -1 : 5; // -1 = unlimited
+    if (!res.ok) {
+      console.error('Failed to fetch entitlement:', res.status);
+      return { date: today, used: 0, limit: 5, isPremium: false, isDevBypass: false };
+    }
 
+    const data = await res.json();
+    
     return {
-      date: today,
-      used,
-      limit,
-      isPremium: entitlement.isPremium,
-      isDevBypass: entitlement.isDevBypass || false,
+      date: data.usage?.date || today,
+      used: data.usage?.used || 0,
+      limit: data.usage?.limit || 5,
+      isPremium: data.isPremium || false,
+      isDevBypass: data.isDevBypass || false,
     };
   } catch (err) {
     console.error('Daily usage fetch failed:', err);
-    return {
-      date: today,
-      used: 0,
-      limit: 5,
-      isPremium: false,
-      isDevBypass: false,
-    };
+    return { date: today, used: 0, limit: 5, isPremium: false, isDevBypass: false };
   }
 }
 
