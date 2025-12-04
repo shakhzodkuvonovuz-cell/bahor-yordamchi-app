@@ -1,3 +1,5 @@
+import type { MessageTrace } from "./trace";
+
 export type ChatMode = "general" | "ielts" | "homework" | "job" | "daily" | "business" | "tech" | "financial" | "health";
 
 export interface ChatAttachment {
@@ -16,6 +18,7 @@ export interface Message {
   timestamp: Date;
   attachments?: ChatAttachment[];
   reaction?: "like" | "dislike" | null;
+  trace?: MessageTrace;
   meta?: {
     variant?: "shorter" | "longer" | "simplify" | "detailed" | "regen" | "continue";
     parentAssistantId?: string;

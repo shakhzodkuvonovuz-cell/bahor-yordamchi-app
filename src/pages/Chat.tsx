@@ -16,7 +16,10 @@ import {
 } from "@/components/chat";
 import { ChatListSkeleton, ChatMessagesSkeleton } from "@/components/chat/ChatListSkeleton";
 import { ChatMigrationModal, checkMigrationNeeded } from "@/components/ChatMigrationModal";
+import { ReasonedChip } from "@/components/chat/ReasonedChip";
+import { TraceSheet } from "@/components/chat/TraceSheet";
 import { Message, ChatAttachment } from "@/types/chat";
+import type { TraceEvent, TraceComplete, MessageTrace, TraceStepData } from "@/types/trace";
 import { supabase } from "@/integrations/supabase/client";
 import { getModeInfo } from "@/data/modes";
 import { useTranslation } from "@/i18n/LanguageProvider";
@@ -52,12 +55,14 @@ function formatRelativeTime(dateString: string, lang: string): string {
   return date.toLocaleDateString();
 }
 
-// Real streaming helper - processes SSE from DeepSeek API
+// Real streaming helper - processes SSE from DeepSeek API with trace events
 type StreamOptions = {
   onChunk: (chunk: string) => void;
   onDone: () => void;
   onError: (error: Error) => void;
   onMetadata?: (metadata: { search_used: boolean; search_urls: string[] }) => void;
+  onTrace?: (event: TraceEvent) => void;
+  onTraceComplete?: (event: TraceComplete) => void;
 };
 
 async function processStreamingResponse(
@@ -95,6 +100,18 @@ async function processStreamingResponse(
           const jsonStr = trimmedLine.slice(6);
           const parsed = JSON.parse(jsonStr);
           
+          // Handle trace events
+          if (parsed.type === "trace") {
+            options.onTrace?.(parsed as TraceEvent);
+            continue;
+          }
+          
+          // Handle trace complete
+          if (parsed.type === "trace_complete") {
+            options.onTraceComplete?.(parsed as TraceComplete);
+            continue;
+          }
+          
           // Handle metadata event from backend
           if (parsed.type === "metadata") {
             options.onMetadata?.({
@@ -111,7 +128,6 @@ async function processStreamingResponse(
           }
         } catch (e) {
           // Skip malformed JSON chunks
-          console.warn("Failed to parse chunk:", e);
         }
       }
     }
@@ -174,6 +190,12 @@ export default function Chat() {
   const [searchUsed, setSearchUsed] = useState(false);
   const [searchUrls, setSearchUrls] = useState<string[]>([]);
   const [thinkingMessageId, setThinkingMessageId] = useState<string | null>(null);
+  
+  // Trace state for "Reasoned for Xs" feature
+  const [activeTrace, setActiveTrace] = useState<MessageTrace | null>(null);
+  const [traceSheetOpen, setTraceSheetOpen] = useState(false);
+  const [selectedTraceMessageId, setSelectedTraceMessageId] = useState<string | null>(null);
+  const traceStepsRef = useRef<Map<string, TraceStepData>>(new Map());
   
   // Chat UX polish states
   const [isAtBottom, setIsAtBottom] = useState(true);
@@ -1053,7 +1075,36 @@ export default function Chat() {
 
       let assistantContent = "";
       
+      // Reset trace state
+      traceStepsRef.current.clear();
+      setActiveTrace({ steps: [], elapsedMs: 0, sources: [], isComplete: false });
+      
       await processStreamingResponse(response, {
+        onTrace: (event) => {
+          const { step, status, t, data } = event;
+          if (status === 'start') {
+            traceStepsRef.current.set(step, { step, startMs: t });
+          } else if (status === 'end') {
+            const existing = traceStepsRef.current.get(step);
+            if (existing) {
+              existing.endMs = t;
+              existing.durMs = t - existing.startMs;
+              if (data) existing.data = data;
+            }
+            setActiveTrace(prev => prev ? {
+              ...prev,
+              steps: Array.from(traceStepsRef.current.values()),
+            } : null);
+          }
+        },
+        onTraceComplete: (event) => {
+          setActiveTrace({
+            steps: Array.from(traceStepsRef.current.values()),
+            elapsedMs: event.elapsed_ms,
+            sources: event.sources || [],
+            isComplete: true,
+          });
+        },
         onMetadata: (metadata) => {
           if (metadata.search_used) {
             setSearchUsed(true);
@@ -1119,6 +1170,16 @@ export default function Chat() {
           setThinkingMessageId(null);
           inputRef.current?.focus();
           
+          // Attach trace to message
+          const finalTrace = activeTrace;
+          if (finalTrace?.isComplete) {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId ? { ...m, trace: finalTrace } : m
+              )
+            );
+          }
+          
           // Save assistant message to DB
           if (assistantContent && user) {
             try {
@@ -1128,7 +1189,6 @@ export default function Chat() {
                 content: assistantContent,
               });
               
-              // Update message ID with real one
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantId ? { ...m, id: savedAssistant.id } : m
@@ -1136,12 +1196,10 @@ export default function Chat() {
               );
               setLastAssistantMessageId(savedAssistant.id);
               
-              // Trigger summary generation (debounced, non-blocking)
               if (session?.access_token) {
                 chatStore.maybeGenerateSummary(currentThreadId, session.access_token)
                   .then(result => {
                     if (result.summary) {
-                      // Update local thread data with new summary
                       setThreads(prev => prev.map(t => 
                         t.id === currentThreadId 
                           ? { ...t, summary: result.summary }
@@ -1149,7 +1207,7 @@ export default function Chat() {
                       ));
                     }
                   })
-                  .catch(() => {}); // Silently ignore errors
+                  .catch(() => {});
               }
             } catch (err) {
               console.error("Error saving assistant message:", err);
@@ -1169,6 +1227,7 @@ export default function Chat() {
       setIsLoading(false);
       setProcessingStatus(null);
       setThinkingStatus({ phase: 'idle', shortLabel: '', details: [] });
+      setActiveTrace(null);
       inputRef.current?.focus();
       
       toast({
@@ -1513,6 +1572,23 @@ export default function Chat() {
                     </div>
                   )}
                   
+                  {/* ReasonedChip for assistant messages with trace */}
+                  {message.role === 'assistant' && (message.trace || (thinkingMessageId && activeTrace && !activeTrace.isComplete)) && (
+                    <div className="flex justify-start mt-2 ml-12">
+                      <ReasonedChip
+                        trace={message.trace || (message.id === lastAssistantMessageId ? activeTrace : null)}
+                        isGenerating={isLoading && !message.trace}
+                        language={language}
+                        onClick={() => {
+                          if (message.trace || activeTrace?.isComplete) {
+                            setSelectedTraceMessageId(message.id);
+                            setTraceSheetOpen(true);
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
+                  
                   {message.role === 'assistant' && 
                    message.id === lastAssistantMessageId && 
                    !isLoading && 
@@ -1677,6 +1753,14 @@ export default function Chat() {
           setIsVoiceModeOpen(false);
           setTimeout(() => inputRef.current?.focus(), 100);
         }}
+      />
+
+      {/* Trace Sheet */}
+      <TraceSheet
+        open={traceSheetOpen}
+        onOpenChange={setTraceSheetOpen}
+        trace={selectedTraceMessageId ? messages.find(m => m.id === selectedTraceMessageId)?.trace || activeTrace : null}
+        language={language}
       />
     </div>
   );
