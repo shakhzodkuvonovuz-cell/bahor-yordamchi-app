@@ -5,4 +5,6 @@ export { FollowUpSuggestions } from "./FollowUpSuggestions";
 export { ChatEmptyState } from "./ChatEmptyState";
 export { EditingIndicator } from "./EditingIndicator";
 export { default as BahorCard, parseMessageForCards, hasCardContent } from "./BahorCard";
+export { default as ChatHeader } from "./ChatHeader";
+export { default as CollapsibleMessage } from "./CollapsibleMessage";
 export type { CardType, ParsedSection } from "./BahorCard";

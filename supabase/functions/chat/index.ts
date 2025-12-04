@@ -1,6 +1,5 @@
-// BahorAI Edge Function with Daily Limit Enforcement
-// Uses increment_daily_usage RPC for atomic usage tracking
-// Includes brand identity protection and output sanitization
+// BahorAI Edge Function with Brand Voice Layer
+// Premium, human, Uzbek-first AI assistant
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -12,14 +11,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Forbidden vendor/model names (case-insensitive)
+// ============================================
+// BRAND PROTECTION - OUTPUT SANITIZATION
+// ============================================
+
 const FORBIDDEN_TERMS = [
   "deepseek", "openai", "chatgpt", "gpt-4", "gpt-5", "gpt4", "gpt5",
   "gemini", "claude", "anthropic", "mistral", "llama", "meta ai",
   "azure openai", "bard", "palm", "vicuna", "falcon"
 ];
 
-// Patterns that reveal identity (case-insensitive)
 const IDENTITY_LEAK_PATTERNS = [
   /aslida\s+(deepseek|openai|chatgpt|gemini|claude|anthropic)/gi,
   /men\s+(deepseek|openai|chatgpt|gemini|claude)/gi,
@@ -28,18 +29,17 @@ const IDENTITY_LEAK_PATTERNS = [
   /powered by\s+(deepseek|openai|chatgpt|gemini|claude)/gi,
   /я\s+(deepseek|chatgpt|gemini|claude)/gi,
   /tomonidan\s+yaratilgan/gi,
+  /as an ai (model|assistant)/gi,
+  /as a language model/gi,
 ];
 
-// Sanitize output to remove vendor names
 function sanitizeOutput(text: string): string {
   let result = text;
   
-  // Remove identity leak patterns first
   for (const pattern of IDENTITY_LEAK_PATTERNS) {
     result = result.replace(pattern, "Bahor AI");
   }
   
-  // Replace forbidden terms (case-insensitive)
   for (const term of FORBIDDEN_TERMS) {
     const regex = new RegExp(term, "gi");
     result = result.replace(regex, "Bahor AI");
@@ -48,7 +48,6 @@ function sanitizeOutput(text: string): string {
   return result;
 }
 
-// Check if user is asking about AI identity
 function isIdentityQuestion(msg: string): boolean {
   const q = msg.toLowerCase();
   const identityPatterns = [
@@ -60,7 +59,6 @@ function isIdentityQuestion(msg: string): boolean {
   return identityPatterns.some(p => q.includes(p));
 }
 
-// Strict search trigger check - only specific keywords
 function shouldUseSearch(userMsg: string): boolean {
   const q = userMsg.toLowerCase();
   return (
@@ -73,52 +71,116 @@ function shouldUseSearch(userMsg: string): boolean {
   );
 }
 
-// Simple mode prompts
+// ============================================
+// BRAND VOICE SYSTEM PROMPT
+// ============================================
+
+const BRAND_SYSTEM_PROMPT = `
+═══════════════════════════════════════════════════════════════════
+IDENTITY RULES (NON-NEGOTIABLE - HIGHEST PRIORITY)
+═══════════════════════════════════════════════════════════════════
+
+You are Bahor AI — "Birinchi o'zbek sun'iy intellekti — o'zbeklar uchun"
+
+CRITICAL IDENTITY RULES:
+1. NEVER mention ANY underlying providers/models: DeepSeek, OpenAI, ChatGPT, GPT-4/5, Gemini, Claude, Anthropic, Mistral, LLaMA, Meta AI, Bard
+2. If asked "Are you DeepSeek/ChatGPT/etc?", respond ONLY with:
+   "Men Bahor AI — kuchli til modellari asosida ishlayman. Sizga natijani sifatli chiqarish muhim; ichki infratuzilma tafsilotlarini ochmayman."
+3. NEVER say "I'm actually X" or "I'm based on X model"
+4. If user insists, repeat the safe response and redirect to helping them
+
+═══════════════════════════════════════════════════════════════════
+BRAND VOICE & TONE (APPLY TO ALL RESPONSES)
+═══════════════════════════════════════════════════════════════════
+
+TONE: Premium, human, warm, practical, confident
+- Speak like a smart friend, not a robot or professor
+- Be direct and helpful — no filler phrases
+- Sound confident but not arrogant
+
+OUTPUT FORMAT RULES (CRITICAL):
+1. Default: 3-8 SHORT sentences. No walls of text.
+2. Avoid long bullet lists unless user asks for "batafsil"
+3. If steps needed: MAX 4-6 steps, each step MAX 1 line
+4. If unclear: Ask ONLY 1 follow-up question at the end
+5. Emoji: 0-1 MAX per response. Default is none.
+6. Never scold the user; always be supportive
+
+RESPONSE STRUCTURE (when helpful):
+1) 1-line direct answer (no preamble)
+2) "Qadamlar:" if steps needed (optional)
+3) "Yana nima kerak?" OR 1 follow-up question (optional)
+
+FORBIDDEN IN RESPONSES:
+- "As an AI model..." or "As a language model..."
+- Long disclaimers at the start
+- Generic filler like "Great question!"
+- Excessive bullet points (keep to 4-6 max)
+
+═══════════════════════════════════════════════════════════════════
+LANGUAGE MATCHING (CRITICAL)
+═══════════════════════════════════════════════════════════════════
+
+Match the user's language EXACTLY:
+- User writes Uzbek → Respond FULLY in Uzbek
+- User writes English → Respond FULLY in English
+- User writes Russian → Respond FULLY in Russian
+- User writes Turkish → Respond FULLY in Turkish
+
+NEVER default to Uzbek unless user writes in Uzbek.
+NEVER mix languages unless user explicitly mixes.
+
+UZBEK STYLE (when speaking Uzbek):
+- Natural phrases: "Mayli, tushuntirib beraman", "Qisqacha qilib aytsam..."
+- Conversational: "Tushunarli bo'ldimi?", "Yana savol bo'lsa yozing"
+- Avoid robotic translations
+
+═══════════════════════════════════════════════════════════════════
+UZBEK CULTURAL CONTEXT
+═══════════════════════════════════════════════════════════════════
+
+You understand Uzbek life: cities, culture (mahalla, to'y, bozor), education (DTM, kontrakt), common concerns (ish topish, til sertifikatlari, viza).
+
+When giving examples, prefer Uzbek names and situations.
+
+CULTURAL SENSITIVITY: Respect religion, family values, traditions.
+If unsure about facts: "Bu haqda aniq ma'lumotim yo'q"
+
+═══════════════════════════════════════════════════════════════════
+SAFETY RULES (ALL MODES)
+═══════════════════════════════════════════════════════════════════
+
+REFUSE briefly + offer alternative:
+- Medical diagnosis → "Shifokor bilan maslahatlashing"
+- Legal advice → "Yurist bilan gaplashing"
+- Religious rulings → "Imom yoki olimdan so'rang"
+- Harmful content → Politely decline
+`;
+
+// Mode-specific prompts (concise)
 const MODE_PROMPTS: Record<string, string> = {
-  general: "You are Bahor AI, a helpful Uzbek AI assistant. Be friendly and conversational.",
-  coding: "You are Bahor AI, a senior software engineer. Help with code, debugging, and technical questions.",
-  ielts: "You are Bahor AI, an IELTS trainer. Help with English learning and exam preparation.",
-  english: "You are Bahor AI, an English language tutor. Help users improve their English.",
-  homework: "You are Bahor AI, an academic tutor. Help students understand concepts, not just copy answers.",
-  daily: "You are Bahor AI, a life assistant. Help with everyday questions and advice.",
-  business: "You are Bahor AI, a business consultant. Help with marketing, strategy, and business questions.",
-  job: "You are Bahor AI, a career coach. Help with resumes, interviews, and job searching.",
-  financial: "You are Bahor AI, a financial literacy educator. Explain money concepts simply.",
-  finance: "You are Bahor AI, a financial literacy educator. Explain money concepts simply.",
-  health: "You are Bahor AI, a wellness advisor. Give general health tips but always recommend seeing a doctor for medical issues.",
+  general: "ROLE: Versatile assistant. Be warm, helpful. Keep it short + practical. Ask 1 question only if needed.",
+  coding: "ROLE: Senior engineer (15+ years). Solve with code, explain clearly. Format code well. Keep explanations concise. Ask 1 clarifying question if needed.",
+  tech: "ROLE: Senior engineer (15+ years). Solve with code, explain clearly. Format code well. Keep explanations concise. Ask 1 clarifying question if needed.",
+  ielts: "ROLE: IELTS trainer. Correct gently + explain WHY. Give band-7+ examples. Don't write full essays for copy-paste. Keep it short.",
+  english: "ROLE: English tutor. Patient, encouraging. Correct mistakes gently. Keep explanations simple.",
+  homework: "ROLE: Academic tutor. Teach understanding, not memorization. Guide to own answers. Keep it short.",
+  daily: "ROLE: Life assistant. Warm, practical. Use local context. Keep advice actionable.",
+  daily_life: "ROLE: Life assistant. Warm, practical. Use local context. Keep advice actionable.",
+  business: "ROLE: Business strategist. Give: Diagnosis → Strategy → Steps (max 4). Tailor to local market.",
+  job: "ROLE: Career coach. Help with resume/interview prep. Use modern HR standards. Keep it practical.",
+  finance: "ROLE: Financial educator. Use UZS examples. Don't recommend specific products. Don't promise profit.",
+  financial: "ROLE: Financial educator. Use UZS examples. Don't recommend specific products. Don't promise profit.",
+  health: "ROLE: Wellness advisor. General tips only. ALWAYS recommend seeing doctor for medical issues.",
 };
 
-// Brand identity guard - added to every request
-const IDENTITY_GUARD = `
-CRITICAL IDENTITY RULES (HIGHEST PRIORITY):
-- You are Bahor AI, the first Uzbek AI assistant.
-- NEVER mention DeepSeek, OpenAI, ChatGPT, GPT-4, GPT-5, Gemini, Claude, Anthropic, Mistral, LLaMA, or any other AI provider/model names.
-- If asked "Are you DeepSeek/ChatGPT/etc?", respond: "Men Bahor AI — o'zbeklar uchun maxsus yaratilgan sun'iy intellekt yordamchiman."
-- NEVER say "I'm actually X" or "I'm based on X model" or confirm any model name.
-- Always identify as Bahor AI only.
-`;
-
-const BASE_PROMPT = `
-${IDENTITY_GUARD}
-
-You are Bahor AI — an intelligent assistant made for Uzbek people.
-
-LANGUAGE RULES:
-- Respond in the same language the user writes in
-- If user writes in Uzbek, respond in Uzbek
-- If user writes in English, respond in English
-- If user writes in Russian, respond in Russian
-- Never mix languages unless asked
-
-BEHAVIOR:
-- Be helpful, clear, and concise
-- Use simple language
-- If unsure, say so honestly
-- Never invent facts
-`;
+// Style clamp based on plan
+const STYLE_CLAMP = {
+  free: "STYLE: Keep answers SHORT (max 6-8 sentences). If complex: summarize + offer to expand with 'batafsil'.",
+  premium: "STYLE: Can be more detailed. Still prioritize clarity over length.",
+};
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -133,7 +195,7 @@ serve(async (req) => {
       );
     }
 
-    // Get auth token from request
+    // Auth
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -142,37 +204,21 @@ serve(async (req) => {
       );
     }
 
-    // Extract the JWT token from "Bearer <token>"
     const token = authHeader.replace('Bearer ', '');
-
-    // Initialize Supabase admin client for server-side operations
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
-    // Create admin client for database operations
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Validate the JWT token and get user
     const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
     
-    if (userError) {
-      console.error('Auth error:', userError.message);
+    if (userError || !user) {
       return new Response(
         JSON.stringify({ error: "AUTH_REQUIRED", message: "Sessiya tugagan. Qaytadan kiring." }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    
-    if (!user) {
-      return new Response(
-        JSON.stringify({ error: "AUTH_REQUIRED", message: "Iltimos, tizimga kiring." }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    console.log(`User authenticated: ${user.id}`);
 
-    // Check and increment daily usage (atomic operation)
+    // Usage check
     const today = new Date().toISOString().split('T')[0];
     const { data: usageResult, error: usageError } = await supabaseAdmin.rpc(
       'increment_daily_usage',
@@ -187,7 +233,6 @@ serve(async (req) => {
       );
     }
 
-    // Check if user is allowed to send message
     if (!usageResult?.allowed) {
       return new Response(
         JSON.stringify({ 
@@ -201,47 +246,36 @@ serve(async (req) => {
 
     const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
     if (!deepseekApiKey) {
-      console.error('Missing DEEPSEEK_API_KEY');
       return new Response(
         JSON.stringify({ error: "SERVER_ERROR", message: "Server konfiguratsiya xatosi" }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Get mode-specific prompt
+    // Build prompt
     const modeKey = mode || "general";
     const modePrompt = MODE_PROMPTS[modeKey] || MODE_PROMPTS.general;
-
-    // Limit to last 12 messages
+    const styleClamp = usageResult?.plan === 'free' ? STYLE_CLAMP.free : STYLE_CLAMP.premium;
     const recentMessages = messages.slice(-12);
 
-    // Get the last user message for search check
-    const lastUserMessage = recentMessages
-      .filter((m: any) => m.role === "user")
-      .pop()?.content || "";
-
-    // Safe search with strict triggers
+    // Check for search
+    const lastUserMessage = recentMessages.filter((m: any) => m.role === "user").pop()?.content || "";
     let searchResults = "";
+    
     if (shouldUseSearch(lastUserMessage)) {
-      console.log("🔍 Search triggered:", lastUserMessage.substring(0, 50));
       try {
         searchResults = await googleSearch(lastUserMessage);
-        if (searchResults) {
-          console.log("✅ Search OK");
-        } else {
-          console.log("ℹ️ No search results");
-        }
       } catch (err) {
-        console.log("⚠️ Search failed, continuing without:", err);
-        searchResults = "";
+        console.log("Search failed, continuing:", err);
       }
-    } else {
-      console.log("⏭️ Search skipped");
     }
 
-    // Build system prompt with optional search results
-    const systemPrompt = `${BASE_PROMPT}
+    // Build system prompt
+    const systemPrompt = `${BRAND_SYSTEM_PROMPT}
 
+${styleClamp}
+
+MODE: ${modeKey.toUpperCase()}
 ${modePrompt}
 
 ${searchResults ? `
@@ -251,15 +285,14 @@ ${searchResults}
 Agar yuqorida qidiruv natijalari bo'lsa, ularga suyanib javob ber va manbalarni ko'rsat.
 ` : ""}`;
 
-    // Build messages with system prompt
     const finalMessages = [
       { role: "system", content: systemPrompt },
       ...recentMessages,
     ];
 
-    console.log(`Chat request: user=${user.id}, mode=${modeKey}, messages=${recentMessages.length}, usage=${usageResult.used}/${usageResult.limit}`);
+    console.log(`Chat: user=${user.id}, mode=${modeKey}, msgs=${recentMessages.length}, usage=${usageResult.used}/${usageResult.limit}`);
 
-    // Call DeepSeek API with streaming
+    // Call DeepSeek
     const response = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
       headers: {
@@ -284,14 +317,14 @@ Agar yuqorida qidiruv natijalari bo'lsa, ularga suyanib javob ber va manbalarni 
       );
     }
 
-    // Create a custom stream that sends metadata first, then sanitized DeepSeek response
+    // Stream with sanitization
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
     const reader = response.body!.getReader();
     
     const stream = new ReadableStream({
       async start(controller) {
-        // Send metadata first (search status + usage info)
+        // Send metadata first
         const metadata = {
           type: "metadata",
           search_used: !!searchResults,
@@ -300,13 +333,11 @@ Agar yuqorida qidiruv natijalari bo'lsa, ularga suyanib javob ber va manbalarni 
         };
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(metadata)}\n\n`));
         
-        // Then pipe through DeepSeek response with sanitization
         try {
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
             
-            // Decode, sanitize, and re-encode the chunk
             const chunk = decoder.decode(value, { stream: true });
             const sanitizedChunk = sanitizeOutput(chunk);
             controller.enqueue(encoder.encode(sanitizedChunk));
