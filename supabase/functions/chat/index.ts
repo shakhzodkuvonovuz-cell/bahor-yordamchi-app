@@ -1,5 +1,6 @@
 // BahorAI Edge Function with Daily Limit Enforcement
 // Uses increment_daily_usage RPC for atomic usage tracking
+// Includes brand identity protection and output sanitization
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -10,6 +11,54 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Forbidden vendor/model names (case-insensitive)
+const FORBIDDEN_TERMS = [
+  "deepseek", "openai", "chatgpt", "gpt-4", "gpt-5", "gpt4", "gpt5",
+  "gemini", "claude", "anthropic", "mistral", "llama", "meta ai",
+  "azure openai", "bard", "palm", "vicuna", "falcon"
+];
+
+// Patterns that reveal identity (case-insensitive)
+const IDENTITY_LEAK_PATTERNS = [
+  /aslida\s+(deepseek|openai|chatgpt|gemini|claude|anthropic)/gi,
+  /men\s+(deepseek|openai|chatgpt|gemini|claude)/gi,
+  /i('m| am)\s+(actually\s+)?(deepseek|openai|chatgpt|gemini|claude)/gi,
+  /based on\s+(deepseek|openai|chatgpt|gemini|claude)/gi,
+  /powered by\s+(deepseek|openai|chatgpt|gemini|claude)/gi,
+  /я\s+(deepseek|chatgpt|gemini|claude)/gi,
+  /tomonidan\s+yaratilgan/gi,
+];
+
+// Sanitize output to remove vendor names
+function sanitizeOutput(text: string): string {
+  let result = text;
+  
+  // Remove identity leak patterns first
+  for (const pattern of IDENTITY_LEAK_PATTERNS) {
+    result = result.replace(pattern, "Bahor AI");
+  }
+  
+  // Replace forbidden terms (case-insensitive)
+  for (const term of FORBIDDEN_TERMS) {
+    const regex = new RegExp(term, "gi");
+    result = result.replace(regex, "Bahor AI");
+  }
+  
+  return result;
+}
+
+// Check if user is asking about AI identity
+function isIdentityQuestion(msg: string): boolean {
+  const q = msg.toLowerCase();
+  const identityPatterns = [
+    "deepseek", "openai", "chatgpt", "gpt-4", "gpt-5", "gemini", "claude",
+    "qaysi model", "which model", "what model", "какая модель",
+    "sen kimsan", "who are you", "кто ты", "kim yaratgan", "who created",
+    "qanday ai", "what ai are you", "какой ты ai"
+  ];
+  return identityPatterns.some(p => q.includes(p));
+}
 
 // Strict search trigger check - only specific keywords
 function shouldUseSearch(userMsg: string): boolean {
@@ -39,7 +88,19 @@ const MODE_PROMPTS: Record<string, string> = {
   health: "You are Bahor AI, a wellness advisor. Give general health tips but always recommend seeing a doctor for medical issues.",
 };
 
+// Brand identity guard - added to every request
+const IDENTITY_GUARD = `
+CRITICAL IDENTITY RULES (HIGHEST PRIORITY):
+- You are Bahor AI, the first Uzbek AI assistant.
+- NEVER mention DeepSeek, OpenAI, ChatGPT, GPT-4, GPT-5, Gemini, Claude, Anthropic, Mistral, LLaMA, or any other AI provider/model names.
+- If asked "Are you DeepSeek/ChatGPT/etc?", respond: "Men Bahor AI — o'zbeklar uchun maxsus yaratilgan sun'iy intellekt yordamchiman."
+- NEVER say "I'm actually X" or "I'm based on X model" or confirm any model name.
+- Always identify as Bahor AI only.
+`;
+
 const BASE_PROMPT = `
+${IDENTITY_GUARD}
+
 You are Bahor AI — an intelligent assistant made for Uzbek people.
 
 LANGUAGE RULES:
@@ -223,8 +284,9 @@ Agar yuqorida qidiruv natijalari bo'lsa, ularga suyanib javob ber va manbalarni 
       );
     }
 
-    // Create a custom stream that sends metadata first, then DeepSeek response
+    // Create a custom stream that sends metadata first, then sanitized DeepSeek response
     const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
     const reader = response.body!.getReader();
     
     const stream = new ReadableStream({
@@ -238,12 +300,16 @@ Agar yuqorida qidiruv natijalari bo'lsa, ularga suyanib javob ber va manbalarni 
         };
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(metadata)}\n\n`));
         
-        // Then pipe through DeepSeek response
+        // Then pipe through DeepSeek response with sanitization
         try {
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            controller.enqueue(value);
+            
+            // Decode, sanitize, and re-encode the chunk
+            const chunk = decoder.decode(value, { stream: true });
+            const sanitizedChunk = sanitizeOutput(chunk);
+            controller.enqueue(encoder.encode(sanitizedChunk));
           }
           controller.close();
         } catch (err) {
