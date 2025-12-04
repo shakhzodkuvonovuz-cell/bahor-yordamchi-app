@@ -4,6 +4,15 @@
 
 /* Premium Design System - Dark-first, Multi-million dollar AI aesthetic */
 
+/* ============================================
+   DESIGN SYSTEM TOKENS
+   Spacing: 8 / 12 / 16 / 24 / 32
+   Radius: sm(8px) / md(12px) / lg(16px) / xl(20px)
+   Typography: H1(24) / H2(18) / Body(15) / Caption(13)
+   Shadow: sm / md / lg (defined in variables)
+   Hit area: min 44px for tappable elements
+   ============================================ */
+
 @layer base {
   :root {
     /* Light mode - Clean, minimal */

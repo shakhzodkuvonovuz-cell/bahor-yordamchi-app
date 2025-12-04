@@ -17,7 +17,7 @@ import SubscriptionStatus from "@/components/SubscriptionStatus";
 import ProfileEditModal from "@/components/ProfileEditModal";
 import ProfilePhotoUpload from "@/components/ProfilePhotoUpload";
 import PremiumUpgradeCard from "@/components/PremiumUpgradeCard";
-import PricingPlansSection from "@/components/PricingPlansSection";
+
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -137,28 +137,28 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-screen bg-background dark:bg-slate-950 overflow-x-hidden">
-      {/* Header */}
-      <div className="sticky top-0 bg-card/95 backdrop-blur-lg border-b border-border/50 shadow-sm z-10">
+    <div className="min-h-screen bg-background overflow-x-hidden">
+      {/* Header - 44px min hit area */}
+      <header className="sticky top-0 bg-card/95 backdrop-blur-lg border-b border-border/40 shadow-premium-sm z-10">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
-            className="p-2 hover:bg-secondary rounded-xl transition-colors shrink-0"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-secondary rounded-xl transition-colors shrink-0"
             aria-label={t.settings.back}
           >
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
-          <h1 className="text-lg font-bold text-foreground truncate">{t.settings.title}</h1>
+          <h1 className="text-lg font-semibold text-foreground truncate">{t.settings.title}</h1>
         </div>
-      </div>
+      </header>
 
       {/* Content */}
-      <ScrollArea className="h-[calc(100vh-60px)]">
-        <div className="max-w-2xl mx-auto px-4 py-6 space-y-6 overflow-x-hidden">
+      <ScrollArea className="h-[calc(100vh-56px)]">
+        <div className="max-w-2xl mx-auto px-4 py-6 space-y-4 overflow-x-hidden">
           
           {/* Profile Section */}
-          <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] w-full">
-            <div className="px-4 sm:px-6 py-5">
+          <section className="bg-card border border-border/40 rounded-2xl overflow-hidden shadow-premium-sm w-full">
+            <div className="px-4 sm:px-6 py-4">
               <div className="flex items-start gap-3 sm:gap-4">
                 {/* Profile Photo */}
                 <div 
@@ -219,64 +219,44 @@ export default function Settings() {
                 </div>
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* Account Overview Card */}
-          <div className="bg-gradient-to-br from-card to-primary/5 border border-border/50 rounded-2xl p-4 sm:p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] w-full">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
-              <div className="space-y-2 min-w-0 flex-1">
-                <h3 className="text-base sm:text-lg font-bold text-foreground">Hisob holati</h3>
-                <div className="space-y-1.5">
+          {/* Account Overview Card - PRIMARY Premium CTA for free users */}
+          {profile?.plan === 'free' ? (
+            <PremiumUpgradeCard />
+          ) : (
+            <section className="bg-card border border-border/40 rounded-2xl p-4 shadow-premium-sm w-full">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-foreground">
-                    Reja: {profile?.plan === 'free' && 'Bepul'}
-                    {profile?.plan === 'monthly' && 'Premium (oylik)'}
-                    {profile?.plan === 'yearly' && 'Premium (yillik)'}
+                    {profile?.plan === 'monthly' ? 'Premium (oylik)' : 'Premium (yillik)'}
                   </p>
-                  {profile?.plan === 'free' && profile?.messagesToday !== undefined && (
-                    <p className="text-xs text-muted-foreground">
-                      {profile.messagesToday} / {profile.dailyLimit} so'rov ishlatildi
-                    </p>
-                  )}
-                  {profile?.plan !== 'free' && (
-                    <p className="text-xs text-muted-foreground">
-                      Cheksiz so'rovlar
-                    </p>
-                  )}
+                  <p className="text-xs text-muted-foreground mt-0.5">Cheksiz so'rovlar</p>
                 </div>
+                <Button 
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setSubscriptionDrawerOpen(true)}
+                  className="shrink-0 min-h-[44px]"
+                >
+                  Boshqarish
+                </Button>
               </div>
-              <Button 
-                size="sm"
-                onClick={() => setSubscriptionDrawerOpen(true)}
-                className={`w-full sm:w-auto ${profile?.plan === 'free' 
-                  ? "bg-gradient-to-r from-primary to-primary/80"
-                  : ""
-                }`}
-                variant={profile?.plan === 'free' ? 'default' : 'outline'}
-              >
-                <Crown className="w-4 h-4 mr-1.5" />
-                {profile?.plan === 'free' ? 'Premium' : 'Boshqarish'}
-              </Button>
-            </div>
-          </div>
-
-          {/* Premium Upgrade Card - Only for free users */}
-          {profile?.plan === 'free' && <PremiumUpgradeCard />}
-
-          {/* Separator */}
-          <div className="h-px bg-border/30" />
+            </section>
+          )}
 
           {/* Notifications Section */}
-          <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] w-full">
-            <div className="px-4 sm:px-6 py-4 border-b border-border">
-              <h2 className="text-base sm:text-lg font-semibold text-foreground">Bildirishnomalar</h2>
-            </div>
-            <div className="divide-y divide-border">
-              <div className="px-4 sm:px-6 py-4 flex items-center justify-between gap-3 min-w-0">
+          <section className="bg-card border border-border/40 rounded-2xl overflow-hidden shadow-premium-sm w-full">
+            <header className="px-4 py-3 border-b border-border/40">
+              <h2 className="text-[15px] font-semibold text-foreground">Bildirishnomalar</h2>
+            </header>
+            <div className="divide-y divide-border/40">
+              <div className="px-4 min-h-[56px] flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <Bell className="w-5 h-5 text-muted-foreground shrink-0" />
                   <div className="min-w-0">
-                    <p className="font-medium text-foreground text-sm sm:text-base truncate">Yangiliklar</p>
-                    <p className="text-xs text-muted-foreground truncate">Yangi funksiyalar</p>
+                    <p className="font-medium text-foreground text-[15px]">Yangiliklar</p>
+                    <p className="text-[13px] text-muted-foreground">Yangi funksiyalar</p>
                   </div>
                 </div>
                 <Switch 
@@ -285,12 +265,12 @@ export default function Settings() {
                   className="shrink-0"
                 />
               </div>
-              <div className="px-4 sm:px-6 py-4 flex items-center justify-between gap-3 min-w-0">
+              <div className="px-4 min-h-[56px] flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <Zap className="w-5 h-5 text-muted-foreground shrink-0" />
                   <div className="min-w-0">
-                    <p className="font-medium text-foreground text-sm sm:text-base truncate">Maslahatlar</p>
-                    <p className="text-xs text-muted-foreground truncate">Foydali g'oyalar</p>
+                    <p className="font-medium text-foreground text-[15px]">Maslahatlar</p>
+                    <p className="text-[13px] text-muted-foreground">Foydali g'oyalar</p>
                   </div>
                 </div>
                 <Switch 
@@ -299,12 +279,12 @@ export default function Settings() {
                   className="shrink-0"
                 />
               </div>
-              <div className="px-4 sm:px-6 py-4 flex items-center justify-between gap-3 min-w-0">
+              <div className="px-4 min-h-[56px] flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <CreditCard className="w-5 h-5 text-muted-foreground shrink-0" />
                   <div className="min-w-0">
-                    <p className="font-medium text-foreground text-sm sm:text-base truncate">Chegirmalar</p>
-                    <p className="text-xs text-muted-foreground truncate">Maxsus takliflar</p>
+                    <p className="font-medium text-foreground text-[15px]">Chegirmalar</p>
+                    <p className="text-[13px] text-muted-foreground">Maxsus takliflar</p>
                   </div>
                 </div>
                 <Switch 
@@ -314,49 +294,21 @@ export default function Settings() {
                 />
               </div>
             </div>
-          </div>
-
-          {/* Separator */}
-          <div className="h-px bg-border/30" />
+          </section>
 
           {/* App Experience Section */}
-          <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] w-full">
-            <div className="px-4 sm:px-6 py-4 border-b border-border">
-              <h2 className="text-base sm:text-lg font-semibold text-foreground">Bahor AI tajribasi</h2>
-            </div>
-            <div className="divide-y divide-border">
-              {/* Response Speed */}
-              <Collapsible open={openSection === "speed"} onOpenChange={() => toggleSection("speed")}>
-                <CollapsibleTrigger className="w-full px-4 sm:px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors min-w-0">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <Zap className="w-5 h-5 text-muted-foreground shrink-0" />
-                    <div className="text-left min-w-0">
-                      <p className="font-medium text-foreground text-sm sm:text-base">Javob tezligi</p>
-                      <p className="text-xs text-muted-foreground">Standart</p>
-                    </div>
-                  </div>
-                  <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${openSection === "speed" ? "rotate-90" : ""}`} />
-                </CollapsibleTrigger>
-                <CollapsibleContent className="px-4 sm:px-6 py-4 bg-muted/30">
-                  <div className="space-y-3">
-                    <button className="w-full py-3 px-4 rounded-xl bg-primary text-primary-foreground font-medium text-sm">
-                      Standart
-                    </button>
-                    <button className="w-full py-3 px-4 rounded-xl bg-secondary text-secondary-foreground hover:bg-secondary/80 font-medium flex items-center justify-center gap-2 text-sm">
-                      <Crown className="w-4 h-4 shrink-0" />
-                      <span>Tezkor (Premium)</span>
-                    </button>
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-
+          <section className="bg-card border border-border/40 rounded-2xl overflow-hidden shadow-premium-sm w-full">
+            <header className="px-4 py-3 border-b border-border/40">
+              <h2 className="text-[15px] font-semibold text-foreground">Bahor AI tajribasi</h2>
+            </header>
+            <div className="divide-y divide-border/40">
               {/* Animations */}
-              <div className="px-4 sm:px-6 py-4 flex items-center justify-between gap-3 min-w-0">
+              <div className="px-4 min-h-[56px] flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <Zap className="w-5 h-5 text-muted-foreground shrink-0" />
                   <div className="min-w-0">
-                    <p className="font-medium text-foreground text-sm sm:text-base">Animatsiyalar</p>
-                    <p className="text-xs text-muted-foreground truncate">Interfeys effektlari</p>
+                    <p className="font-medium text-foreground text-[15px]">Animatsiyalar</p>
+                    <p className="text-[13px] text-muted-foreground">Interfeys effektlari</p>
                   </div>
                 </div>
                 <Switch 
@@ -367,12 +319,12 @@ export default function Settings() {
               </div>
 
               {/* Smart Suggestions */}
-              <div className="px-4 sm:px-6 py-4 flex items-center justify-between gap-3 min-w-0">
+              <div className="px-4 min-h-[56px] flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <Zap className="w-5 h-5 text-muted-foreground shrink-0" />
                   <div className="min-w-0">
-                    <p className="font-medium text-foreground text-sm sm:text-base">Aqlli takliflar</p>
-                    <p className="text-xs text-muted-foreground truncate">Tavsiya etilgan savollar</p>
+                    <p className="font-medium text-foreground text-[15px]">Aqlli takliflar</p>
+                    <p className="text-[13px] text-muted-foreground">Tavsiya etilgan savollar</p>
                   </div>
                 </div>
                 <Switch 
@@ -382,25 +334,22 @@ export default function Settings() {
                 />
               </div>
             </div>
-          </div>
-
-          {/* Separator */}
-          <div className="h-px bg-border/30" />
+          </section>
 
           {/* Security Section */}
-          <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] w-full">
-            <div className="px-4 sm:px-6 py-4 border-b border-border">
-              <h2 className="text-base sm:text-lg font-semibold text-foreground">Xavfsizlik</h2>
-            </div>
-            <div className="divide-y divide-border">
+          <section className="bg-card border border-border/40 rounded-2xl overflow-hidden shadow-premium-sm w-full">
+            <header className="px-4 py-3 border-b border-border/40">
+              <h2 className="text-[15px] font-semibold text-foreground">Xavfsizlik</h2>
+            </header>
+            <div className="divide-y divide-border/40">
               {/* Change Password */}
               <button
                 onClick={() => toast({ description: "Bu funksiya tez orada qo'shiladi" })}
-                className="w-full px-4 sm:px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors min-w-0"
+                className="w-full px-4 min-h-[56px] flex items-center justify-between hover:bg-muted/50 transition-colors"
               >
-                <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-center gap-3">
                   <Lock className="w-5 h-5 text-muted-foreground shrink-0" />
-                  <span className="font-medium text-foreground text-sm sm:text-base">Parolni o'zgartirish</span>
+                  <span className="font-medium text-foreground text-[15px]">Parolni o'zgartirish</span>
                 </div>
                 <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
               </button>
@@ -416,156 +365,115 @@ export default function Settings() {
                     toast({ description: "Xatolik yuz berdi", variant: "destructive" });
                   }
                 }}
-                className="w-full px-4 sm:px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors min-w-0"
+                className="w-full px-4 min-h-[56px] flex items-center justify-between hover:bg-muted/50 transition-colors"
               >
-                <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
                   <Shield className="w-5 h-5 text-muted-foreground shrink-0" />
-                  <span className="font-medium text-foreground text-sm sm:text-base truncate">Barcha qurilmalardan chiqish</span>
+                  <span className="font-medium text-foreground text-[15px]">Barcha qurilmalardan chiqish</span>
                 </div>
                 <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
               </button>
             </div>
-          </div>
-
-          {/* Separator */}
-          <div className="h-px bg-border/30" />
+          </section>
 
           {/* Logout Button */}
-          <div className="flex justify-center">
-            <button
-              onClick={handleLogout}
-              className="text-red-500 hover:text-red-600 font-medium text-sm hover:underline transition-all"
-            >
-              <div className="flex items-center gap-2">
-                <LogOut className="w-4 h-4" />
-                <span>{t.settings.logout}</span>
-              </div>
-            </button>
-          </div>
-
-          {/* Separator */}
-          <div className="h-px bg-border/30" />
+          <button
+            onClick={handleLogout}
+            className="w-full min-h-[44px] flex items-center justify-center gap-2 text-destructive hover:text-destructive/80 font-medium text-[15px] transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>{t.settings.logout}</span>
+          </button>
 
           {/* Section 2: Ilova (App) */}
-          <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] w-full">
-            <div className="px-4 sm:px-6 py-4 border-b border-border">
-              <h2 className="text-base sm:text-lg font-semibold text-foreground">Ilova sozlamalari</h2>
-            </div>
-            <div className="divide-y divide-border">
+          <section className="bg-card border border-border/40 rounded-2xl overflow-hidden shadow-premium-sm w-full">
+            <header className="px-4 py-3 border-b border-border/40">
+              <h2 className="text-[15px] font-semibold text-foreground">Ilova sozlamalari</h2>
+            </header>
+            <div className="divide-y divide-border/40">
               {/* Til (Language) */}
               <Collapsible open={openSection === "language"} onOpenChange={() => toggleSection("language")}>
-                <CollapsibleTrigger className="w-full px-4 sm:px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors min-w-0">
-                  <div className="flex items-center gap-3 min-w-0">
+                <CollapsibleTrigger className="w-full px-4 min-h-[56px] flex items-center justify-between hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-3">
                     <Globe className="w-5 h-5 text-muted-foreground shrink-0" />
-                    <span className="font-medium text-foreground text-sm sm:text-base">{t.settings.language}</span>
+                    <span className="font-medium text-foreground text-[15px]">{t.settings.language}</span>
                   </div>
                   <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${openSection === "language" ? "rotate-90" : ""}`} />
                 </CollapsibleTrigger>
-                <CollapsibleContent className="px-4 sm:px-6 py-4 bg-muted/30">
-                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                    <button
-                      onClick={() => setLanguage("uz")}
-                      className={`py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-medium transition-all text-sm ${
-                        language === "uz"
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                      }`}
-                    >
-                      O'zbekcha
-                    </button>
-                    <button
-                      onClick={() => setLanguage("en")}
-                      className={`py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-medium transition-all text-sm ${
-                        language === "en"
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                      }`}
-                    >
-                      English
-                    </button>
-                    <button
-                      onClick={() => setLanguage("ru")}
-                      className={`py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-medium transition-all text-sm ${
-                        language === "ru"
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                      }`}
-                    >
-                      Русский
-                    </button>
-                    <button
-                      onClick={() => setLanguage("tr")}
-                      className={`py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-medium transition-all text-sm ${
-                        language === "tr"
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                      }`}
-                    >
-                      Türkçe
-                    </button>
+                <CollapsibleContent className="px-4 py-3 bg-muted/30">
+                  <div className="grid grid-cols-2 gap-2">
+                    {(["uz", "en", "ru", "tr"] as const).map((lang) => (
+                      <button
+                        key={lang}
+                        onClick={() => setLanguage(lang)}
+                        className={`min-h-[44px] px-3 rounded-xl font-medium transition-all text-[15px] ${
+                          language === lang
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                        }`}
+                      >
+                        {lang === "uz" ? "O'zbekcha" : lang === "en" ? "English" : lang === "ru" ? "Русский" : "Türkçe"}
+                      </button>
+                    ))}
                   </div>
                 </CollapsibleContent>
               </Collapsible>
 
               {/* Mavzu (Theme) */}
               <Collapsible open={openSection === "theme"} onOpenChange={() => toggleSection("theme")}>
-                <CollapsibleTrigger className="w-full px-4 sm:px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors min-w-0">
-                  <div className="flex items-center gap-3 min-w-0">
+                <CollapsibleTrigger className="w-full px-4 min-h-[56px] flex items-center justify-between hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-3">
                     {theme === "dark" ? (
                       <Moon className="w-5 h-5 text-muted-foreground shrink-0" />
                     ) : (
                       <Sun className="w-5 h-5 text-muted-foreground shrink-0" />
                     )}
-                    <span className="font-medium text-foreground text-sm sm:text-base">{t.settings.theme}</span>
+                    <span className="font-medium text-foreground text-[15px]">{t.settings.theme}</span>
                   </div>
                   <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${openSection === "theme" ? "rotate-90" : ""}`} />
                 </CollapsibleTrigger>
-                <CollapsibleContent className="px-4 sm:px-6 py-4 bg-muted/30">
-                  <div className="flex gap-2 sm:gap-3">
+                <CollapsibleContent className="px-4 py-3 bg-muted/30">
+                  <div className="flex gap-2">
                     <button
                       onClick={() => setTheme("light")}
-                      className={`flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-medium transition-all text-sm ${
+                      className={`flex-1 min-h-[44px] px-3 rounded-xl font-medium transition-all text-[15px] flex items-center justify-center gap-2 ${
                         theme === "light"
                           ? "bg-primary text-primary-foreground shadow-sm"
                           : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                       }`}
                     >
-                      <div className="flex items-center justify-center gap-1.5 sm:gap-2">
-                        <Sun className="w-4 h-4 shrink-0" />
-                        <span>Yorug'</span>
-                      </div>
+                      <Sun className="w-4 h-4 shrink-0" />
+                      <span>Yorug'</span>
                     </button>
                     <button
                       onClick={() => setTheme("dark")}
-                      className={`flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-medium transition-all text-sm ${
+                      className={`flex-1 min-h-[44px] px-3 rounded-xl font-medium transition-all text-[15px] flex items-center justify-center gap-2 ${
                         theme === "dark"
                           ? "bg-primary text-primary-foreground shadow-sm"
                           : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                       }`}
                     >
-                      <div className="flex items-center justify-center gap-1.5 sm:gap-2">
-                        <Moon className="w-4 h-4 shrink-0" />
-                        <span>Qorong'i</span>
-                      </div>
+                      <Moon className="w-4 h-4 shrink-0" />
+                      <span>Qorong'i</span>
                     </button>
                   </div>
                 </CollapsibleContent>
               </Collapsible>
 
-              {/* Obuna holati (Subscription) - secondary link style */}
+              {/* Obuna holati (Subscription) - secondary link */}
               <Drawer open={subscriptionDrawerOpen} onOpenChange={setSubscriptionDrawerOpen}>
                 <DrawerTrigger asChild>
-                  <button className="w-full px-4 sm:px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors min-w-0">
-                    <div className="flex items-center gap-3 min-w-0">
+                  <button className="w-full px-4 min-h-[56px] flex items-center justify-between hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-3">
                       <CreditCard className="w-5 h-5 text-muted-foreground shrink-0" />
-                      <span className="font-medium text-foreground text-sm sm:text-base">{t.settings.subscription}</span>
+                      <span className="font-medium text-foreground text-[15px]">{t.settings.subscription}</span>
                     </div>
                     <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
                   </button>
                 </DrawerTrigger>
-                <DrawerContent className="max-h-[90vh] bg-background dark:bg-slate-950">
-                  <DrawerHeader className="text-center border-b border-border/30">
-                    <DrawerTitle className="text-xl font-bold">Obuna holati</DrawerTitle>
+                <DrawerContent className="max-h-[90vh] bg-background">
+                  <DrawerHeader className="text-center border-b border-border/40">
+                    <DrawerTitle className="text-lg font-semibold">Obuna holati</DrawerTitle>
                   </DrawerHeader>
                   <ScrollArea className="px-4 pb-6 pt-4">
                     <SubscriptionStatus />
@@ -573,60 +481,57 @@ export default function Settings() {
                 </DrawerContent>
               </Drawer>
             </div>
-          </div>
-
-          {/* Separator */}
-          <div className="h-px bg-border/30" />
+          </section>
 
           {/* Section 3: Yordam va huquqiy (Support & Legal) */}
-          <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] w-full">
-            <div className="px-4 sm:px-6 py-4 border-b border-border">
-              <h2 className="text-base sm:text-lg font-semibold text-foreground">{t.settings.helpLegal}</h2>
-            </div>
-            <div className="divide-y divide-border">
+          <section className="bg-card border border-border/40 rounded-2xl overflow-hidden shadow-premium-sm w-full">
+            <header className="px-4 py-3 border-b border-border/40">
+              <h2 className="text-[15px] font-semibold text-foreground">{t.settings.helpLegal}</h2>
+            </header>
+            <div className="divide-y divide-border/40">
               {/* Yordam markazi */}
               <Collapsible open={openSection === "help"} onOpenChange={() => toggleSection("help")}>
-                <CollapsibleTrigger className="w-full px-4 sm:px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors min-w-0">
-                  <div className="flex items-center gap-3 min-w-0">
+                <CollapsibleTrigger className="w-full px-4 min-h-[56px] flex items-center justify-between hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-3">
                     <HelpCircle className="w-5 h-5 text-muted-foreground shrink-0" />
-                    <span className="font-medium text-foreground text-sm sm:text-base">{t.settings.helpCenter}</span>
+                    <span className="font-medium text-foreground text-[15px]">{t.settings.helpCenter}</span>
                   </div>
                   <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${openSection === "help" ? "rotate-90" : ""}`} />
                 </CollapsibleTrigger>
-                <CollapsibleContent className="px-4 sm:px-6 py-4 bg-muted/30">
-                  <p className="text-sm text-muted-foreground leading-relaxed break-words">
-                    FAQ va qo'llanmalar tez orada qo'shiladi. Savollaringiz bo'lsa: <a href="mailto:support@bahorai.com" className="text-primary underline break-all">support@bahorai.com</a>
+                <CollapsibleContent className="px-4 py-3 bg-muted/30">
+                  <p className="text-[13px] text-muted-foreground leading-relaxed">
+                    FAQ va qo'llanmalar tez orada qo'shiladi. Savollaringiz bo'lsa: <a href="mailto:support@bahorai.com" className="text-primary underline">support@bahorai.com</a>
                   </p>
                 </CollapsibleContent>
               </Collapsible>
 
               {/* Xatolik haqida xabar berish */}
               <Collapsible open={openSection === "bug"} onOpenChange={() => toggleSection("bug")}>
-                <CollapsibleTrigger className="w-full px-4 sm:px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors min-w-0">
-                  <div className="flex items-center gap-3 min-w-0">
+                <CollapsibleTrigger className="w-full px-4 min-h-[56px] flex items-center justify-between hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-3">
                     <Mail className="w-5 h-5 text-muted-foreground shrink-0" />
-                    <span className="font-medium text-foreground text-sm sm:text-base">{t.settings.reportBug}</span>
+                    <span className="font-medium text-foreground text-[15px]">{t.settings.reportBug}</span>
                   </div>
                   <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${openSection === "bug" ? "rotate-90" : ""}`} />
                 </CollapsibleTrigger>
-                <CollapsibleContent className="px-4 sm:px-6 py-4 bg-muted/30">
-                  <p className="text-sm text-muted-foreground leading-relaxed break-words">
-                    Xatolik haqida: <a href="mailto:support@bahorai.com?subject=Xatolik haqida" className="text-primary underline break-all">support@bahorai.com</a>
+                <CollapsibleContent className="px-4 py-3 bg-muted/30">
+                  <p className="text-[13px] text-muted-foreground leading-relaxed">
+                    Xatolik haqida: <a href="mailto:support@bahorai.com?subject=Xatolik haqida" className="text-primary underline">support@bahorai.com</a>
                   </p>
                 </CollapsibleContent>
               </Collapsible>
 
               {/* Foydalanish shartlari */}
               <Collapsible open={openSection === "terms"} onOpenChange={() => toggleSection("terms")}>
-                <CollapsibleTrigger className="w-full px-4 sm:px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors min-w-0">
-                  <div className="flex items-center gap-3 min-w-0">
+                <CollapsibleTrigger className="w-full px-4 min-h-[56px] flex items-center justify-between hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-3">
                     <FileText className="w-5 h-5 text-muted-foreground shrink-0" />
-                    <span className="font-medium text-foreground text-sm sm:text-base">{t.settings.terms}</span>
+                    <span className="font-medium text-foreground text-[15px]">{t.settings.terms}</span>
                   </div>
                   <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${openSection === "terms" ? "rotate-90" : ""}`} />
                 </CollapsibleTrigger>
-                <CollapsibleContent className="px-4 sm:px-6 py-4 bg-muted/30">
-                  <p className="text-sm text-muted-foreground leading-relaxed">
+                <CollapsibleContent className="px-4 py-3 bg-muted/30">
+                  <p className="text-[13px] text-muted-foreground leading-relaxed">
                     Foydalanish shartlari sahifasi tayyorlanmoqda.
                   </p>
                 </CollapsibleContent>
@@ -634,27 +539,31 @@ export default function Settings() {
 
               {/* Maxfiylik siyosati */}
               <Collapsible open={openSection === "privacy"} onOpenChange={() => toggleSection("privacy")}>
-                <CollapsibleTrigger className="w-full px-4 sm:px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors min-w-0">
-                  <div className="flex items-center gap-3 min-w-0">
+                <CollapsibleTrigger className="w-full px-4 min-h-[56px] flex items-center justify-between hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-3">
                     <FileText className="w-5 h-5 text-muted-foreground shrink-0" />
-                    <span className="font-medium text-foreground text-sm sm:text-base">{t.settings.privacy}</span>
+                    <span className="font-medium text-foreground text-[15px]">{t.settings.privacy}</span>
                   </div>
                   <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${openSection === "privacy" ? "rotate-90" : ""}`} />
                 </CollapsibleTrigger>
-                <CollapsibleContent className="px-4 sm:px-6 py-4 bg-muted/30">
-                  <p className="text-sm text-muted-foreground leading-relaxed">
+                <CollapsibleContent className="px-4 py-3 bg-muted/30">
+                  <p className="text-[13px] text-muted-foreground leading-relaxed">
                     Maxfiylik siyosati tez kunda qo'shiladi.
                   </p>
                 </CollapsibleContent>
               </Collapsible>
             </div>
-          </div>
+          </section>
 
-          {/* Separator */}
-          <div className="h-px bg-border/30" />
-
-          {/* Pricing Plans Section */}
-          <PricingPlansSection />
+          {/* Pricing Plans - Secondary text link for free users */}
+          {profile?.plan === 'free' && (
+            <button
+              onClick={() => setSubscriptionDrawerOpen(true)}
+              className="w-full text-center text-[13px] text-primary hover:underline transition-colors py-2"
+            >
+              Barcha rejalar va narxlarni ko'rish →
+            </button>
+          )}
 
           {/* Bottom Padding */}
           <div className="h-6" />
