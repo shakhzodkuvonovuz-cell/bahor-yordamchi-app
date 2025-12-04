@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { X, Mic, Square, Volume2, VolumeX, MessageSquare } from "lucide-react";
+import { X, Mic, Square, Volume2, VolumeX, MessageSquare, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n/LanguageProvider";
+import { stt, tts, getSpeechCapabilities } from "@/services/speechService";
 import bahorLogo from "@/assets/bahor-logo.png";
 
 export type VoiceState = "idle" | "listening" | "thinking" | "speaking";
@@ -10,9 +11,10 @@ interface VoiceModeProps {
   isOpen: boolean;
   onClose: () => void;
   onTranscriptionComplete?: (text: string) => void;
+  onSendMessage?: (text: string) => Promise<string>;
 }
 
-// Subtle floating particles - very small and minimal
+// Subtle floating particles
 const FloatingParticles = ({ count = 6 }: { count?: number }) => {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -33,7 +35,7 @@ const FloatingParticles = ({ count = 6 }: { count?: number }) => {
   );
 };
 
-// Waveform component - soft flowing animation
+// Waveform component
 const VoiceWaveform = ({ amplitude = 0.5, isActive = false }: { amplitude?: number; isActive?: boolean }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
@@ -63,7 +65,6 @@ const VoiceWaveform = ({ amplitude = 0.5, isActive = false }: { amplitude?: numb
       phaseRef.current += 0.02;
       const phase = phaseRef.current;
       
-      // Create gradient
       const gradient = ctx.createLinearGradient(0, 0, rect.width, 0);
       gradient.addColorStop(0, "rgba(0, 199, 177, 0)");
       gradient.addColorStop(0.3, "rgba(0, 199, 177, 0.4)");
@@ -74,7 +75,6 @@ const VoiceWaveform = ({ amplitude = 0.5, isActive = false }: { amplitude?: numb
       ctx.beginPath();
       ctx.moveTo(0, rect.height / 2);
 
-      // Draw smooth wave
       for (let x = 0; x <= rect.width; x += 2) {
         const normalizedX = x / rect.width;
         const waveHeight = Math.sin(normalizedX * Math.PI * 3 + phase) * 
@@ -89,7 +89,6 @@ const VoiceWaveform = ({ amplitude = 0.5, isActive = false }: { amplitude?: numb
       ctx.filter = "blur(1px)";
       ctx.stroke();
 
-      // Draw glow layer
       ctx.beginPath();
       ctx.moveTo(0, rect.height / 2);
       for (let x = 0; x <= rect.width; x += 2) {
@@ -123,20 +122,26 @@ const VoiceWaveform = ({ amplitude = 0.5, isActive = false }: { amplitude?: numb
   );
 };
 
-export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplete }: VoiceModeProps) {
+export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplete, onSendMessage }: VoiceModeProps) {
   const { t, language } = useTranslation();
   const [state, setState] = useState<VoiceState>("idle");
   const [amplitude, setAmplitude] = useState(0.3);
   const [transcription, setTranscription] = useState("");
+  const [interimTranscription, setInterimTranscription] = useState("");
   const [isMuted, setIsMuted] = useState(false);
   const [answerPreview, setAnswerPreview] = useState("");
   const [isExiting, setIsExiting] = useState(false);
   const [buttonPressed, setButtonPressed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number>();
+  const finalTranscriptRef = useRef("");
+
+  // Get platform capabilities
+  const capabilities = getSpeechCapabilities();
 
   // Localized state text
   const getStateText = () => {
@@ -159,6 +164,30 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
     return texts[language] || texts.en;
   };
 
+  const getErrorText = (errorType: string) => {
+    const errors: Record<string, Record<string, string>> = {
+      'not-allowed': {
+        uz: "Mikrofonga ruxsat berilmadi",
+        en: "Microphone permission denied",
+        ru: "Доступ к микрофону запрещён",
+        tr: "Mikrofon izni reddedildi",
+      },
+      'no-speech': {
+        uz: "Ovoz eshitilmadi",
+        en: "No speech detected",
+        ru: "Речь не обнаружена",
+        tr: "Konuşma algılanmadı",
+      },
+      default: {
+        uz: "Xatolik yuz berdi",
+        en: "An error occurred",
+        ru: "Произошла ошибка",
+        tr: "Bir hata oluştu",
+      },
+    };
+    return errors[errorType]?.[language] || errors.default[language] || errors.default.en;
+  };
+
   const updateAmplitude = useCallback(() => {
     if (analyserRef.current && state === "listening") {
       const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
@@ -171,7 +200,13 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
   }, [state]);
 
   const startListening = async () => {
+    setError(null);
+    finalTranscriptRef.current = "";
+    setTranscription("");
+    setInterimTranscription("");
+
     try {
+      // Start audio visualization
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
@@ -183,15 +218,49 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
       source.connect(analyserRef.current);
 
       setState("listening");
-      setTranscription("");
       updateAmplitude();
-      simulateSpeechRecognition();
+
+      // Start speech recognition
+      const started = await stt.start({
+        language,
+        onResult: (text, isFinal) => {
+          if (isFinal) {
+            finalTranscriptRef.current += (finalTranscriptRef.current ? " " : "") + text;
+            setTranscription(finalTranscriptRef.current);
+            setInterimTranscription("");
+          } else {
+            setInterimTranscription(text);
+          }
+        },
+        onError: (errorType) => {
+          console.error("STT error:", errorType);
+          if (errorType !== 'aborted' && errorType !== 'no-speech') {
+            setError(getErrorText(errorType));
+          }
+        },
+        onEnd: () => {
+          // Speech recognition ended - process if we have text
+          if (finalTranscriptRef.current.trim()) {
+            processTranscription(finalTranscriptRef.current);
+          } else {
+            setState("idle");
+          }
+        },
+      });
+
+      if (!started) {
+        throw new Error("Failed to start speech recognition");
+      }
     } catch (error) {
-      console.error("Error accessing microphone:", error);
+      console.error("Error starting voice:", error);
+      setError(getErrorText('not-allowed'));
+      setState("idle");
     }
   };
 
   const stopListening = () => {
+    stt.stop();
+    
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
@@ -203,73 +272,72 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
+  };
 
-    if (state === "listening" && transcription.trim()) {
-      setState("thinking");
-      simulateProcessing();
+  const processTranscription = async (text: string) => {
+    setState("thinking");
+    setTranscription(text);
+    
+    // If we have a message handler, get AI response
+    if (onSendMessage) {
+      try {
+        const response = await onSendMessage(text);
+        setAnswerPreview(response);
+        setState("speaking");
+        
+        // Speak the response if not muted
+        if (!isMuted) {
+          tts.speak({
+            text: response,
+            language,
+            onStart: () => setState("speaking"),
+            onEnd: () => {
+              if (onTranscriptionComplete) {
+                onTranscriptionComplete(text);
+              }
+              handleClose();
+            },
+            onError: () => {
+              // Even if TTS fails, still complete
+              if (onTranscriptionComplete) {
+                onTranscriptionComplete(text);
+              }
+              handleClose();
+            },
+          });
+        } else {
+          // If muted, just wait a bit and close
+          setTimeout(() => {
+            if (onTranscriptionComplete) {
+              onTranscriptionComplete(text);
+            }
+            handleClose();
+          }, 2000);
+        }
+      } catch (error) {
+        console.error("Error getting AI response:", error);
+        setError(getErrorText('default'));
+        setState("idle");
+      }
     } else {
-      setState("idle");
+      // No message handler - just pass transcription back
+      if (onTranscriptionComplete) {
+        onTranscriptionComplete(text);
+      }
+      handleClose();
     }
   };
 
-  const simulateSpeechRecognition = () => {
-    const demoTexts: Record<string, string[]> = {
-      uz: ["Salom, bugun menga qanday yordam bera olasiz?", "Ingliz tilida essay yozishga yordam bering"],
-      en: ["Hello, how can you help me today?", "Help me write an essay in English"],
-      ru: ["Привет, как ты можешь мне помочь сегодня?", "Помоги мне написать эссе на английском"],
-      tr: ["Merhaba, bugün bana nasıl yardımcı olabilirsin?", "İngilizce bir makale yazmama yardım et"],
-    };
-
-    const texts = demoTexts[language] || demoTexts.en;
-    const fullText = texts[Math.floor(Math.random() * texts.length)];
-    const words = fullText.split(" ");
-    let currentText = "";
-    let wordIndex = 0;
-
-    const addWord = () => {
-      if (wordIndex < words.length && state === "listening") {
-        currentText += (currentText ? " " : "") + words[wordIndex];
-        setTranscription(currentText);
-        wordIndex++;
-        setTimeout(addWord, 160 + Math.random() * 200);
-      }
-    };
-
-    setTimeout(addWord, 350);
-  };
-
-  const simulateProcessing = () => {
-    setTimeout(() => {
-      setState("speaking");
-      simulateAnswer();
-    }, 2000);
-  };
-
-  const simulateAnswer = () => {
-    const answers: Record<string, string> = {
-      uz: "Albatta! Essay mavzusi nima bo'ladi? Men sizga tuzilma, kirish, asosiy qism va xulosa yozishda yordam beraman.",
-      en: "Of course! What topic would you like? I can help you with structure, introduction, body, and conclusion.",
-      ru: "Конечно! Какую тему вы хотите? Я помогу вам со структурой, введением, основной частью и заключением.",
-      tr: "Tabii! Hangi konuyu tercih edersiniz? Yapı, giriş, ana bölüm ve sonuç konusunda yardımcı olabilirim.",
-    };
-
-    setAnswerPreview(answers[language] || answers.en);
-
-    setTimeout(() => {
-      if (onTranscriptionComplete && transcription.trim()) {
-        onTranscriptionComplete(transcription);
-      }
-      handleClose();
-    }, 3000);
-  };
-
   const handleClose = () => {
+    tts.stop();
     setIsExiting(true);
     setTimeout(() => {
       stopListening();
       setState("idle");
       setTranscription("");
+      setInterimTranscription("");
       setAnswerPreview("");
+      setError(null);
       setIsExiting(false);
       onClose();
     }, 350);
@@ -281,13 +349,23 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
 
     if (state === "listening") {
       stopListening();
+      if (finalTranscriptRef.current.trim() || transcription.trim()) {
+        processTranscription(finalTranscriptRef.current || transcription);
+      } else {
+        setState("idle");
+      }
     } else if (state === "idle") {
       startListening();
+    } else if (state === "speaking") {
+      tts.stop();
+      handleClose();
     }
   };
 
   useEffect(() => {
     return () => {
+      stt.abort();
+      tts.stop();
       stopListening();
     };
   }, []);
@@ -301,6 +379,8 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
 
   if (!isOpen) return null;
 
+  const displayTranscription = transcription + (interimTranscription ? (transcription ? " " : "") + interimTranscription : "");
+
   return (
     <div
       className={cn(
@@ -308,13 +388,13 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
         isExiting ? "animate-voice-panel-exit" : "animate-voice-panel-enter"
       )}
     >
-      {/* Backdrop blur over chat */}
+      {/* Backdrop blur */}
       <div
         className="absolute inset-0 backdrop-blur-[16px] bg-background/80"
         onClick={handleClose}
       />
 
-      {/* Main content container */}
+      {/* Main content */}
       <div className="relative z-10 flex flex-col h-full">
         {/* Header */}
         <div className="flex items-center justify-between p-4">
@@ -334,6 +414,13 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
           </button>
 
           <div className="flex items-center gap-2">
+            {/* Platform indicator for iOS */}
+            {capabilities.needsWhisperFallback && (
+              <span className="text-xs text-muted-foreground/50 hidden sm:inline">
+                iOS mode
+              </span>
+            )}
+            
             <button
               onClick={() => setIsMuted(!isMuted)}
               className={cn(
@@ -362,10 +449,8 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
 
         {/* Main interaction zone */}
         <div className="flex-1 flex flex-col items-center justify-center px-6">
-          {/* Subtle floating particles - fewer, smaller */}
           <FloatingParticles count={6} />
 
-          {/* Very subtle radial gradient */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
@@ -373,9 +458,8 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
             }}
           />
 
-          {/* Main orb container - SMALL, 110-140px max */}
+          {/* Main orb */}
           <div className="relative mb-6">
-            {/* Subtle breathing glow - small */}
             <div
               className={cn(
                 "absolute inset-[-12px] rounded-full transition-all duration-700",
@@ -396,7 +480,6 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
               }}
             />
 
-            {/* Rotating thin ring (thinking state only) */}
             {state === "thinking" && (
               <div
                 className="absolute inset-[-6px] rounded-full border border-primary/30 animate-voice-ring-rotate"
@@ -404,7 +487,6 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
               />
             )}
 
-            {/* Small orbiting particles (speaking state only) */}
             {state === "speaking" && (
               <>
                 {[0, 1, 2].map((i) => (
@@ -420,7 +502,6 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
               </>
             )}
 
-            {/* Main circle - SMALL: 110px mobile, 130px desktop */}
             <div
               className={cn(
                 "relative w-[110px] h-[110px] md:w-[130px] md:h-[130px] rounded-full",
@@ -440,7 +521,6 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
                     : "0 0 15px hsl(var(--primary) / 0.1), inset 0 0 8px hsl(var(--primary) / 0.02)",
               }}
             >
-              {/* Bahor AI Logo - SMALL: 48px mobile, 56px desktop */}
               <img
                 src={bahorLogo}
                 alt="Bahor AI"
@@ -468,7 +548,15 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
             </div>
           )}
 
-          {/* Thin waveform (listening only) - subtle */}
+          {/* Error message */}
+          {error && (
+            <div className="flex items-center gap-2 mb-4 px-4 py-2 rounded-xl bg-destructive/10 border border-destructive/20 animate-voice-fade-in">
+              <AlertCircle className="w-4 h-4 text-destructive" />
+              <p className="text-sm text-destructive">{error}</p>
+            </div>
+          )}
+
+          {/* Waveform */}
           {state === "listening" && (
             <div className="w-full max-w-xs h-[14px] mb-5 animate-voice-fade-in">
               <VoiceWaveform amplitude={amplitude} isActive={true} />
@@ -476,11 +564,11 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
           )}
 
           {/* Live transcription */}
-          {transcription && (
+          {displayTranscription && (
             <div className="w-full max-w-sm mb-4 animate-voice-fade-in">
               <div className="rounded-xl px-4 py-3 bg-card/50 backdrop-blur-sm border border-border/20">
                 <p className="text-center text-sm text-foreground/70">
-                  {transcription}
+                  {displayTranscription}
                   {state === "listening" && (
                     <span className="inline-block w-0.5 h-4 bg-primary ml-1 animate-pulse" />
                   )}
@@ -489,7 +577,7 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
             </div>
           )}
 
-          {/* Answer preview (speaking state) */}
+          {/* Answer preview */}
           {state === "speaking" && answerPreview && (
             <div className="w-full max-w-sm animate-voice-slide-up">
               <div className="rounded-xl p-4 bg-card/60 backdrop-blur-sm border border-border/20">
@@ -497,7 +585,7 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
                   <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                     <img src={bahorLogo} alt="" className="w-5 h-5 object-contain" />
                   </div>
-                  <p className="text-sm text-foreground/80 leading-relaxed">{answerPreview}</p>
+                  <p className="text-sm text-foreground/80 leading-relaxed line-clamp-4">{answerPreview}</p>
                 </div>
               </div>
             </div>
@@ -521,12 +609,16 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
                 boxShadow: "0 0 20px hsl(var(--primary) / 0.1)",
               }}
             >
-              {/* Ripple effect */}
               {buttonPressed && (
                 <div className="absolute inset-0 rounded-2xl bg-primary/10 animate-voice-button-ripple" />
               )}
 
               {state === "listening" ? (
+                <>
+                  <Square className="w-5 h-5 text-primary" />
+                  <span className="text-sm font-medium text-primary">{getStopText()}</span>
+                </>
+              ) : state === "speaking" ? (
                 <>
                   <Square className="w-5 h-5 text-primary" />
                   <span className="text-sm font-medium text-primary">{getStopText()}</span>
@@ -541,7 +633,6 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
               )}
             </button>
 
-            {/* Hint text */}
             <p className="text-xs text-muted-foreground/50">
               {state === "listening"
                 ? language === "uz"
