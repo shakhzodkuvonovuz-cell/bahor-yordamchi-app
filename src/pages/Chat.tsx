@@ -213,8 +213,9 @@ export default function Chat() {
   // Usage tracking from profile (backend-driven)
   const usedToday = profile?.messages_today || 0;
   const dailyLimit = profile?.daily_limit || 5;
-  const hasReachedLimit = usedToday >= dailyLimit;
-  const isNearLimit = usedToday >= dailyLimit - 1;
+  const isPremium = profile?.plan === 'premium' || profile?.plan === 'monthly' || profile?.plan === 'yearly';
+  const hasReachedLimit = !isPremium && usedToday >= dailyLimit;
+  const isNearLimit = !isPremium && usedToday >= dailyLimit - 1;
   const [showLimitCard, setShowLimitCard] = useState(false);
 
   const modeInfo = getModeInfo(mode || "");
@@ -1469,7 +1470,7 @@ export default function Chat() {
                 {modeTranslation?.title || modeInfo.title}
               </h1>
               <p className="text-[10px] sm:text-xs text-muted-foreground">
-                {usedToday}/{dailyLimit} {translate('usage.requests')}
+                {isPremium ? 'Cheksiz' : `${usedToday}/${dailyLimit}`} {translate('usage.requests')}
               </p>
             </div>
 
