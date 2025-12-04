@@ -275,8 +275,16 @@ serve(async (req) => {
     // ENTITLEMENTS + DAILY LIMIT CHECK
     // ===========================================
     const userEmail = user.email?.toLowerCase() || '';
-    const devUnlimitedEmails = (Deno.env.get('DEV_UNLIMITED_EMAILS') || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+    const devUnlimitedRaw = Deno.env.get('DEV_UNLIMITED_EMAILS') || '';
+    const devUnlimitedEmails = devUnlimitedRaw.split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
     const isDevBypass = devUnlimitedEmails.includes(userEmail);
+    
+    console.log('[Entitlement Check]', { 
+      userEmail, 
+      devUnlimitedRaw: devUnlimitedRaw.substring(0, 50), // partial for privacy
+      devUnlimitedEmails, 
+      isDevBypass 
+    });
 
     // Get entitlement from database
     let isPremium = isDevBypass;
