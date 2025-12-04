@@ -193,9 +193,13 @@ export default function Chat() {
   
   // Trace state for "Reasoned for Xs" feature
   const [activeTrace, setActiveTrace] = useState<MessageTrace | null>(null);
+  const activeTraceRef = useRef<MessageTrace | null>(null);
   const [traceSheetOpen, setTraceSheetOpen] = useState(false);
   const [selectedTraceMessageId, setSelectedTraceMessageId] = useState<string | null>(null);
   const traceStepsRef = useRef<Map<string, TraceStepData>>(new Map());
+  const [liveElapsedMs, setLiveElapsedMs] = useState(0);
+  const traceStartTimeRef = useRef<number | null>(null);
+  const traceTimerRef = useRef<number | null>(null);
   
   // Chat UX polish states
   const [isAtBottom, setIsAtBottom] = useState(true);
@@ -260,6 +264,15 @@ export default function Chat() {
       setShowMigrationModal(true);
     }
   }, [user]);
+
+  // Cleanup trace timer on unmount
+  useEffect(() => {
+    return () => {
+      if (traceTimerRef.current) {
+        clearInterval(traceTimerRef.current);
+      }
+    };
+  }, []);
 
   // Load threads from Supabase
   const loadThreads = useCallback(async () => {
@@ -1075,9 +1088,23 @@ export default function Chat() {
 
       let assistantContent = "";
       
-      // Reset trace state
+      // Reset trace state and start live timer
       traceStepsRef.current.clear();
       setActiveTrace({ steps: [], elapsedMs: 0, sources: [], isComplete: false });
+      setLiveElapsedMs(0);
+      traceStartTimeRef.current = Date.now();
+      
+      // Clear any existing timer
+      if (traceTimerRef.current) {
+        clearInterval(traceTimerRef.current);
+      }
+      
+      // Start live elapsed timer (update every 100ms for smooth display)
+      traceTimerRef.current = window.setInterval(() => {
+        if (traceStartTimeRef.current) {
+          setLiveElapsedMs(Date.now() - traceStartTimeRef.current);
+        }
+      }, 100);
       
       await processStreamingResponse(response, {
         onTrace: (event) => {
@@ -1098,12 +1125,21 @@ export default function Chat() {
           }
         },
         onTraceComplete: (event) => {
-          setActiveTrace({
+          // Stop the live timer
+          if (traceTimerRef.current) {
+            clearInterval(traceTimerRef.current);
+            traceTimerRef.current = null;
+          }
+          traceStartTimeRef.current = null;
+          
+          const completedTrace: MessageTrace = {
             steps: Array.from(traceStepsRef.current.values()),
             elapsedMs: event.elapsed_ms,
             sources: event.sources || [],
             isComplete: true,
-          });
+          };
+          activeTraceRef.current = completedTrace;
+          setActiveTrace(completedTrace);
         },
         onMetadata: (metadata) => {
           if (metadata.search_used) {
@@ -1170,8 +1206,8 @@ export default function Chat() {
           setThinkingMessageId(null);
           inputRef.current?.focus();
           
-          // Attach trace to message
-          const finalTrace = activeTrace;
+          // Attach trace to message using ref (avoids stale closure issue)
+          const finalTrace = activeTraceRef.current;
           if (finalTrace?.isComplete) {
             setMessages((prev) =>
               prev.map((m) =>
@@ -1572,15 +1608,20 @@ export default function Chat() {
                     </div>
                   )}
                   
-                  {/* ReasonedChip for assistant messages with trace */}
-                  {message.role === 'assistant' && (message.trace || (thinkingMessageId && activeTrace && !activeTrace.isComplete)) && (
+                  {/* ReasonedChip for assistant messages - NEVER disappears after completion */}
+                  {message.role === 'assistant' && (
+                    message.trace || 
+                    (message.id === lastAssistantMessageId && activeTrace)
+                  ) && (
                     <div className="flex justify-start mt-2 ml-12">
                       <ReasonedChip
                         trace={message.trace || (message.id === lastAssistantMessageId ? activeTrace : null)}
-                        isGenerating={isLoading && !message.trace}
+                        isGenerating={isLoading && !message.trace && message.id === lastAssistantMessageId}
                         language={language}
+                        elapsedLive={message.id === lastAssistantMessageId && !message.trace ? liveElapsedMs : undefined}
                         onClick={() => {
-                          if (message.trace || activeTrace?.isComplete) {
+                          const traceData = message.trace || (message.id === lastAssistantMessageId ? activeTrace : null);
+                          if (traceData?.isComplete) {
                             setSelectedTraceMessageId(message.id);
                             setTraceSheetOpen(true);
                           }
