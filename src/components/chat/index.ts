@@ -1,4 +1,6 @@
 export { MessageActions, MessageActionsPopover } from "./MessageActions";
+export { MessageActionsBar, MessageActionsSheet } from "./MessageActionsBar";
+export type { MessageVariant, MessageActionsBarProps } from "./MessageActionsBar";
 export { ScrollToBottom } from "./ScrollToBottom";
 export { NewMessagesDivider } from "./NewMessagesDivider";
 export { FollowUpSuggestions } from "./FollowUpSuggestions";
