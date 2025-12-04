@@ -1,9 +1,9 @@
-// BahorAI Clean Stable Edge Function
-// Safe Google Search integration with strict triggers.
-// Fully working DeepSeek streaming with SSE format.
+// BahorAI Edge Function with Daily Limit Enforcement
+// Uses increment_daily_usage RPC for atomic usage tracking
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { googleSearch } from "./google.ts";
 
 const corsHeaders = {
@@ -72,11 +72,63 @@ serve(async (req) => {
       );
     }
 
+    // Get auth token from request
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "AUTH_REQUIRED", message: "Iltimos, tizimga kiring" }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Initialize Supabase client with user's token
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: "AUTH_REQUIRED", message: "Sessiya tugagan. Qaytadan kiring." }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check and increment daily usage (atomic operation)
+    const today = new Date().toISOString().split('T')[0];
+    const { data: usageResult, error: usageError } = await supabase.rpc(
+      'increment_daily_usage',
+      { p_user_id: user.id, p_today: today }
+    );
+
+    if (usageError) {
+      console.error('Usage check error:', usageError);
+      return new Response(
+        JSON.stringify({ error: "SERVER_ERROR", message: "Xatolik yuz berdi" }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check if user is allowed to send message
+    if (!usageResult?.allowed) {
+      return new Response(
+        JSON.stringify({ 
+          error: "DAILY_LIMIT_REACHED", 
+          message: "Bugungi limit tugadi. Ertaga yana davom eting yoki Premiumga o'ting.",
+          usage: usageResult
+        }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
     if (!deepseekApiKey) {
       console.error('Missing DEEPSEEK_API_KEY');
       return new Response(
-        JSON.stringify({ error: "Server configuration error" }),
+        JSON.stringify({ error: "SERVER_ERROR", message: "Server konfiguratsiya xatosi" }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -130,7 +182,7 @@ Agar yuqorida qidiruv natijalari bo'lsa, ularga suyanib javob ber va manbalarni 
       ...recentMessages,
     ];
 
-    console.log(`Chat request: mode=${modeKey}, messages=${recentMessages.length}, search=${!!searchResults}`);
+    console.log(`Chat request: user=${user.id}, mode=${modeKey}, messages=${recentMessages.length}, usage=${usageResult.used}/${usageResult.limit}`);
 
     // Call DeepSeek API with streaming
     const response = await fetch("https://api.deepseek.com/chat/completions", {
@@ -152,7 +204,7 @@ Agar yuqorida qidiruv natijalari bo'lsa, ularga suyanib javob ber va manbalarni 
       const errorText = await response.text();
       console.error('DeepSeek error:', response.status, errorText.substring(0, 200));
       return new Response(
-        JSON.stringify({ error: "AI service error" }),
+        JSON.stringify({ error: "AI_ERROR", message: "AI xizmati xatosi" }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -163,11 +215,12 @@ Agar yuqorida qidiruv natijalari bo'lsa, ularga suyanib javob ber va manbalarni 
     
     const stream = new ReadableStream({
       async start(controller) {
-        // Send metadata first (search status)
+        // Send metadata first (search status + usage info)
         const metadata = {
           type: "metadata",
           search_used: !!searchResults,
-          search_urls: [], // We don't parse individual URLs yet
+          search_urls: [],
+          usage: usageResult,
         };
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(metadata)}\n\n`));
         
@@ -197,7 +250,7 @@ Agar yuqorida qidiruv natijalari bo'lsa, ularga suyanib javob ber va manbalarni 
   } catch (error) {
     console.error('Edge function error:', error);
     return new Response(
-      JSON.stringify({ error: "Server error" }),
+      JSON.stringify({ error: "SERVER_ERROR", message: "Server xatosi" }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

@@ -12,25 +12,24 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from 
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import SubscriptionStatus from "@/components/SubscriptionStatus";
 import ProfileEditModal from "@/components/ProfileEditModal";
 import ProfilePhotoUpload from "@/components/ProfilePhotoUpload";
 import PremiumUpgradeCard from "@/components/PremiumUpgradeCard";
+import UsageProgressBar from "@/components/UsageProgressBar";
+import SettingsProfileSkeleton from "@/components/SettingsProfileSkeleton";
 
 
 export default function Settings() {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const { language, setLanguage } = useLanguage();
-  const { user, signOut } = useAuth();
+  const { user, profile, profileLoading, signOut, refreshProfile } = useAuth();
   const t = getTranslation(language);
   
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [subscriptionDrawerOpen, setSubscriptionDrawerOpen] = useState(false);
   const [profileEditOpen, setProfileEditOpen] = useState(false);
-  const [profile, setProfile] = useState<any>(null);
-  const [loadingProfile, setLoadingProfile] = useState(true);
   
   // Load preferences from localStorage
   const loadPreferences = () => {
@@ -60,67 +59,45 @@ export default function Settings() {
     localStorage.setItem("bahorai_preferences", JSON.stringify(updated));
   };
 
-  useEffect(() => {
-    loadProfile();
-  }, [user]);
-
-  const loadProfile = async () => {
-    if (!user) return;
-    
-    setLoadingProfile(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        console.error("No session found");
-        return;
-      }
-
-      // Call edge function to get profile
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/profile`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        console.error("Error loading profile:", error);
-        return;
-      }
-
-      const profileData = await response.json();
-      
-      // Load avatar from localStorage (overrides backend avatarUrl if present)
-      const localAvatar = localStorage.getItem("bahorai_user_avatar");
-      if (localAvatar) {
-        profileData.avatarUrl = localAvatar;
-      }
-      
-      setProfile(profileData);
-    } catch (error) {
-      console.error("Error loading profile:", error);
-    } finally {
-      setLoadingProfile(false);
-    }
-  };
-
   const toggleSection = (section: string) => {
     setOpenSection(openSection === section ? null : section);
   };
 
   const getInitials = () => {
-    if (profile?.firstName && profile?.lastName) {
-      return `${profile.firstName[0]}${profile.lastName[0]}`.toUpperCase();
+    if (profile?.first_name && profile?.last_name) {
+      return `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase();
+    }
+    if (profile?.full_name) {
+      const parts = profile.full_name.split(' ');
+      return parts.length > 1 
+        ? `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+        : parts[0][0].toUpperCase();
     }
     if (profile?.email || user?.email) {
       return (profile?.email || user?.email)[0].toUpperCase();
     }
     return "BA";
+  };
+
+  const getDisplayName = () => {
+    if (profile?.first_name && profile?.last_name) {
+      return `${profile.first_name} ${profile.last_name}`;
+    }
+    if (profile?.full_name) {
+      return profile.full_name;
+    }
+    return "Foydalanuvchi";
+  };
+
+  const getPlanLabel = () => {
+    switch (profile?.plan) {
+      case 'free': return 'Bepul';
+      case 'premium':
+      case 'monthly': return 'Premium';
+      case 'ultra':
+      case 'yearly': return 'Ultra';
+      default: return 'Bepul';
+    }
   };
 
   const handleLogout = async () => {
@@ -156,93 +133,111 @@ export default function Settings() {
       <ScrollArea className="h-[calc(100vh-56px)]">
         <div className="max-w-2xl mx-auto px-4 py-6 space-y-4 overflow-x-hidden">
           
-          {/* Profile Section */}
-          <section className="bg-card border border-border/40 rounded-2xl overflow-hidden shadow-premium-sm w-full">
-            <div className="px-4 sm:px-6 py-4">
-              <div className="flex items-start gap-3 sm:gap-4">
-                {/* Profile Photo */}
-                <div 
-                  className="relative cursor-pointer group shrink-0" 
-                  onClick={() => {
-                    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
-                    input?.click();
-                  }}
-                >
-                  <Avatar className="w-16 h-16 sm:w-20 sm:h-20 transition-opacity group-hover:opacity-80">
-                    <AvatarImage src={profile?.avatarUrl || ""} />
-                    <AvatarFallback className="bg-gradient-to-br from-primary via-primary/60 to-primary/30 text-primary-foreground text-lg sm:text-xl font-bold">
-                      {getInitials()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <ProfilePhotoUpload 
-                    currentAvatarUrl={profile?.avatarUrl}
-                    onPhotoUpdated={loadProfile}
-                  />
-                </div>
-
-                {/* User Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-lg sm:text-xl font-bold text-foreground truncate">
-                        {profile?.firstName && profile?.lastName
-                          ? `${profile.firstName} ${profile.lastName}`
-                          : "Foydalanuvchi"}
-                      </h3>
-                      <p className="text-sm text-muted-foreground truncate mt-0.5 max-w-[180px] sm:max-w-none">
-                        {profile?.email || user?.email}
-                      </p>
-                      {profile?.plan && (
-                        <div className="mt-2">
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                            profile.plan === 'free' 
-                              ? 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                              : 'bg-gradient-to-r from-primary/20 to-primary/10 text-primary border border-primary/30'
-                          }`}>
-                            {profile.plan === 'free' && 'Bepul'}
-                            {profile.plan === 'monthly' && <><Crown className="w-3 h-3" /> Premium</>}
-                            {profile.plan === 'yearly' && <><Crown className="w-3 h-3" /> Premium</>}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setProfileEditOpen(true)}
-                      className="shrink-0 self-start"
+          {/* Loading Skeleton */}
+          {profileLoading ? (
+            <SettingsProfileSkeleton />
+          ) : (
+            <>
+              {/* Profile Section */}
+              <section className="bg-card border border-border/40 rounded-2xl overflow-hidden shadow-premium-sm w-full">
+                <div className="px-4 sm:px-6 py-4">
+                  <div className="flex items-start gap-3 sm:gap-4">
+                    {/* Profile Photo */}
+                    <div 
+                      className="relative cursor-pointer group shrink-0" 
+                      onClick={() => {
+                        const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+                        input?.click();
+                      }}
                     >
-                      <Edit className="w-4 h-4 sm:mr-1" />
-                      <span className="hidden sm:inline">Tahrirlash</span>
-                    </Button>
+                      <Avatar className="w-16 h-16 sm:w-20 sm:h-20 transition-opacity group-hover:opacity-80">
+                        <AvatarImage src={profile?.avatar_url || ""} />
+                        <AvatarFallback className="bg-gradient-to-br from-primary via-primary/60 to-primary/30 text-primary-foreground text-lg sm:text-xl font-bold">
+                          {getInitials()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <ProfilePhotoUpload 
+                        currentAvatarUrl={profile?.avatar_url}
+                        onPhotoUpdated={refreshProfile}
+                      />
+                    </div>
+
+                    {/* User Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-lg sm:text-xl font-bold text-foreground truncate">
+                            {getDisplayName()}
+                          </h3>
+                          <p className="text-sm text-muted-foreground truncate mt-0.5 max-w-[180px] sm:max-w-none">
+                            {profile?.email || user?.email}
+                          </p>
+                          {profile && (
+                            <div className="mt-2">
+                              <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                                profile.plan === 'free' 
+                                  ? 'bg-secondary text-secondary-foreground'
+                                  : 'bg-gradient-to-r from-primary/20 to-primary/10 text-primary border border-primary/30'
+                              }`}>
+                                {profile.plan !== 'free' && <Crown className="w-3 h-3" />}
+                                {getPlanLabel()}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setProfileEditOpen(true)}
+                          className="shrink-0 self-start"
+                        >
+                          <Edit className="w-4 h-4 sm:mr-1" />
+                          <span className="hidden sm:inline">Tahrirlash</span>
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </section>
+              </section>
 
-          {/* Account Overview Card - PRIMARY Premium CTA for free users */}
-          {profile?.plan === 'free' ? (
-            <PremiumUpgradeCard />
-          ) : (
-            <section className="bg-card border border-border/40 rounded-2xl p-4 shadow-premium-sm w-full">
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-foreground">
-                    {profile?.plan === 'monthly' ? 'Premium (oylik)' : 'Premium (yillik)'}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Cheksiz so'rovlar</p>
-                </div>
-                <Button 
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setSubscriptionDrawerOpen(true)}
-                  className="shrink-0 min-h-[44px]"
-                >
-                  Boshqarish
-                </Button>
-              </div>
-            </section>
+              {/* Usage Progress Bar */}
+              {profile && (
+                <section className="bg-card border border-border/40 rounded-2xl p-4 shadow-premium-sm w-full">
+                  <UsageProgressBar 
+                    used={profile.messages_today || 0}
+                    limit={profile.daily_limit || 5}
+                    plan={profile.plan || 'free'}
+                  />
+                </section>
+              )}
+
+              {/* Premium Upgrade Card for free users */}
+              {profile?.plan === 'free' && <PremiumUpgradeCard />}
+
+              {/* Manage Subscription for premium users */}
+              {profile && profile.plan !== 'free' && (
+                <section className="bg-card border border-border/40 rounded-2xl p-4 shadow-premium-sm w-full">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-foreground">
+                        {getPlanLabel()} reja
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {profile.plan === 'ultra' || profile.plan === 'yearly' ? 'Yillik obuna' : 'Oylik obuna'}
+                      </p>
+                    </div>
+                    <Button 
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setSubscriptionDrawerOpen(true)}
+                      className="shrink-0 min-h-[44px]"
+                    >
+                      Boshqarish
+                    </Button>
+                  </div>
+                </section>
+              )}
+            </>
           )}
 
           {/* Notifications Section */}
@@ -576,7 +571,7 @@ export default function Settings() {
           open={profileEditOpen}
           onOpenChange={setProfileEditOpen}
           profile={profile}
-          onProfileUpdated={loadProfile}
+          onProfileUpdated={refreshProfile}
         />
       )}
     </div>

@@ -23,8 +23,8 @@ import { getTranslation } from "@/data/translations";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { loadChatsFromStorage, saveChatsToStorage, createNewSession } from "@/utils/chatStorage";
 import { generateChatTitle } from "@/utils/generateChatTitle";
-import { useAuth } from "@/hooks/useAuth";
-import { useDailyUsage } from "@/hooks/useDailyUsage";
+import { useAuth } from "@/contexts/AuthContext";
+
 import { useHaptics } from "@/hooks/useHaptics";
 import { useIsMobile } from "@/hooks/use-mobile";
 import clsx from "clsx";
@@ -109,7 +109,7 @@ export default function Chat() {
   const location = useLocation();
   const { language, t: translate } = useTranslation();
   const t = getTranslation(language);
-  const { user } = useAuth();
+  const { user, session, profile, refreshProfile } = useAuth();
   const isMobile = useIsMobile();
   const { lightTap } = useHaptics();
   
@@ -149,8 +149,11 @@ export default function Chat() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   
-  // TODO: Backend integration - Replace with real usage tracking from backend
-  const { usedToday, dailyLimit, hasReachedLimit, isNearLimit, incrementUsage } = useDailyUsage();
+  // Usage tracking from profile (backend-driven)
+  const usedToday = profile?.messages_today || 0;
+  const dailyLimit = profile?.daily_limit || 5;
+  const hasReachedLimit = usedToday >= dailyLimit;
+  const isNearLimit = usedToday >= dailyLimit - 1;
   const [showLimitCard, setShowLimitCard] = useState(false);
 
   const modeInfo = getModeInfo(mode || "");
@@ -626,13 +629,27 @@ export default function Chat() {
       }
 
       // Call the backend API for streaming response
+      const accessToken = session?.access_token;
+      if (!accessToken) {
+        toast({
+          title: language === "uz" ? "Xatolik" : "Error",
+          description: language === "uz" 
+            ? "Iltimos, tizimga qaytadan kiring" 
+            : "Please log in again",
+          variant: "destructive",
+        });
+        setTyping(false);
+        setIsLoading(false);
+        return;
+      }
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({
             messages: conversationMessages,
@@ -644,8 +661,41 @@ export default function Chat() {
         }
       );
 
+      // Handle specific error codes
       if (!response.ok) {
-        throw new Error("Failed to get response from server");
+        const errorData = await response.json().catch(() => ({}));
+        
+        if (errorData.error === "DAILY_LIMIT_REACHED") {
+          setShowLimitCard(true);
+          setTyping(false);
+          setIsLoading(false);
+          setThinkingStatus({ phase: 'idle', shortLabel: '', details: [] });
+          // Remove the user message we just added since it wasn't processed
+          setMessages((prev) => prev.filter(m => m.id !== userMessage.id));
+          toast({
+            title: language === "uz" ? "Limit tugadi" : "Limit reached",
+            description: language === "uz" 
+              ? "Bugungi limit tugadi. Ertaga yana davom eting yoki Premiumga o'ting." 
+              : "Daily limit reached. Continue tomorrow or upgrade to Premium.",
+            variant: "destructive",
+          });
+          // Refresh profile to get updated usage
+          refreshProfile();
+          return;
+        }
+        
+        if (errorData.error === "AUTH_REQUIRED") {
+          toast({
+            title: language === "uz" ? "Sessiya tugadi" : "Session expired",
+            description: errorData.message || (language === "uz" ? "Qaytadan kiring" : "Please log in again"),
+            variant: "destructive",
+          });
+          setTyping(false);
+          setIsLoading(false);
+          return;
+        }
+        
+        throw new Error(errorData.message || "Failed to get response from server");
       }
 
       // Process the streaming response
@@ -717,9 +767,8 @@ export default function Chat() {
           setThinkingMessageId(null);
           inputRef.current?.focus();
           
-          // TODO: Backend integration - Backend should track and enforce limits
-          // Increment usage count after successful AI response
-          incrementUsage();
+          // Refresh profile to get updated usage from backend
+          refreshProfile();
         },
         onError: (error) => {
           throw error;
