@@ -1,135 +1,16 @@
 import { useState, useRef, useEffect } from "react";
-import { Copy, RefreshCw, Edit3, X, Check } from "lucide-react";
+import { Copy, Edit3, Check } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageProvider";
 
-interface MessageActionsProps {
-  messageId: string;
-  messageRole: "user" | "assistant";
-  messageContent: string;
-  isOpen: boolean;
-  onClose: () => void;
-  onCopy: () => void;
-  onEdit?: () => void;
-  onRegenerate?: () => void;
-  position?: { x: number; y: number };
-  isMobile: boolean;
-}
-
-export function MessageActions({
-  messageRole,
-  isOpen,
-  onClose,
-  onCopy,
-  onEdit,
-  onRegenerate,
-  isMobile,
-}: MessageActionsProps) {
-  const { language } = useTranslation();
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = () => {
-    onCopy();
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
-
-  const labels = {
-    copy: language === "uz" ? "Nusxa olish" : language === "en" ? "Copy" : language === "ru" ? "Копировать" : "Kopyala",
-    edit: language === "uz" ? "Tahrirlash" : language === "en" ? "Edit" : language === "ru" ? "Редактировать" : "Düzenle",
-    regenerate: language === "uz" ? "Qayta yaratish" : language === "en" ? "Regenerate" : language === "ru" ? "Перегенерировать" : "Yeniden oluştur",
-  };
-
-  if (!isOpen) return null;
-
-  // Mobile: Bottom sheet
-  if (isMobile) {
-    return (
-      <>
-        {/* Overlay */}
-        <div
-          className="fixed inset-0 z-50 bg-background/60 backdrop-blur-sm animate-fade-in"
-          onClick={onClose}
-        />
-        {/* Bottom Sheet */}
-        <div className="fixed bottom-0 left-0 right-0 z-50 animate-slide-up">
-          <div className="bg-card border-t border-border/40 rounded-t-3xl shadow-2xl p-4 pb-8 safe-area-bottom">
-            <div className="w-12 h-1.5 bg-muted rounded-full mx-auto mb-4" />
-            <div className="space-y-2">
-              {/* Copy */}
-              <button
-                onClick={handleCopy}
-                className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-secondary/60 active:bg-secondary transition-colors"
-              >
-                {copied ? (
-                  <Check className="w-5 h-5 text-primary" />
-                ) : (
-                  <Copy className="w-5 h-5 text-muted-foreground" />
-                )}
-                <span className="text-[15px] font-medium text-foreground">
-                  {copied ? (language === "uz" ? "Nusxa olindi" : "Copied") : labels.copy}
-                </span>
-              </button>
-
-              {/* Edit - User messages only */}
-              {messageRole === "user" && onEdit && (
-                <button
-                  onClick={() => {
-                    onEdit();
-                    onClose();
-                  }}
-                  className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-secondary/60 active:bg-secondary transition-colors"
-                >
-                  <Edit3 className="w-5 h-5 text-muted-foreground" />
-                  <span className="text-[15px] font-medium text-foreground">{labels.edit}</span>
-                </button>
-              )}
-
-              {/* Regenerate - Assistant messages only */}
-              {messageRole === "assistant" && onRegenerate && (
-                <button
-                  onClick={() => {
-                    onRegenerate();
-                    onClose();
-                  }}
-                  className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-secondary/60 active:bg-secondary transition-colors"
-                >
-                  <RefreshCw className="w-5 h-5 text-muted-foreground" />
-                  <span className="text-[15px] font-medium text-foreground">{labels.regenerate}</span>
-                </button>
-              )}
-
-              {/* Cancel */}
-              <button
-                onClick={onClose}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 mt-2 rounded-xl bg-secondary/60 hover:bg-secondary transition-colors"
-              >
-                <X className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">
-                  {language === "uz" ? "Bekor qilish" : language === "en" ? "Cancel" : language === "ru" ? "Отмена" : "İptal"}
-                </span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  }
-
-  // Desktop: Popover menu (rendered inline near the message)
-  return null; // Desktop popover is handled differently in ChatMessage
-}
-
-// Desktop hover menu component
+// Desktop hover menu component for USER messages only (Copy/Edit)
 export function MessageActionsPopover({
   messageRole,
   onCopy,
   onEdit,
-  onRegenerate,
 }: {
   messageRole: "user" | "assistant";
   onCopy: () => void;
   onEdit?: () => void;
-  onRegenerate?: () => void;
 }) {
   const { language } = useTranslation();
   const [copied, setCopied] = useState(false);
@@ -160,8 +41,10 @@ export function MessageActionsPopover({
   const labels = {
     copy: language === "uz" ? "Nusxa olish" : language === "en" ? "Copy" : language === "ru" ? "Копировать" : "Kopyala",
     edit: language === "uz" ? "Tahrirlash" : language === "en" ? "Edit" : language === "ru" ? "Редактировать" : "Düzenle",
-    regenerate: language === "uz" ? "Qayta yaratish" : language === "en" ? "Regenerate" : language === "ru" ? "Перегенерировать" : "Yeniden oluştur",
   };
+
+  // Only show for user messages
+  if (messageRole !== "user") return null;
 
   return (
     <div ref={menuRef} className="relative">
@@ -194,8 +77,8 @@ export function MessageActionsPopover({
             </span>
           </button>
 
-          {/* Edit - User only */}
-          {messageRole === "user" && onEdit && (
+          {/* Edit */}
+          {onEdit && (
             <button
               onClick={() => {
                 onEdit();
@@ -205,20 +88,6 @@ export function MessageActionsPopover({
             >
               <Edit3 className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm text-foreground">{labels.edit}</span>
-            </button>
-          )}
-
-          {/* Regenerate - Assistant only */}
-          {messageRole === "assistant" && onRegenerate && (
-            <button
-              onClick={() => {
-                onRegenerate();
-                setIsOpen(false);
-              }}
-              className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-secondary/60 transition-colors text-left"
-            >
-              <RefreshCw className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm text-foreground">{labels.regenerate}</span>
             </button>
           )}
         </div>
