@@ -14,6 +14,134 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_attachments: {
+        Row: {
+          bucket: string
+          created_at: string
+          id: string
+          message_id: string | null
+          mime_type: string | null
+          original_name: string | null
+          path: string
+          size_bytes: number | null
+          thread_id: string | null
+          user_id: string
+        }
+        Insert: {
+          bucket?: string
+          created_at?: string
+          id?: string
+          message_id?: string | null
+          mime_type?: string | null
+          original_name?: string | null
+          path: string
+          size_bytes?: number | null
+          thread_id?: string | null
+          user_id: string
+        }
+        Update: {
+          bucket?: string
+          created_at?: string
+          id?: string
+          message_id?: string | null
+          mime_type?: string | null
+          original_name?: string | null
+          path?: string
+          size_bytes?: number | null
+          thread_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_attachments_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "chat_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          model: string | null
+          role: string
+          thread_id: string
+          tokens_in: number | null
+          tokens_out: number | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          model?: string | null
+          role: string
+          thread_id: string
+          tokens_in?: number | null
+          tokens_out?: number | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          model?: string | null
+          role?: string
+          thread_id?: string
+          tokens_in?: number | null
+          tokens_out?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "chat_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_threads: {
+        Row: {
+          created_at: string
+          id: string
+          is_archived: boolean
+          mode: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_archived?: boolean
+          mode?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_archived?: boolean
+          mode?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

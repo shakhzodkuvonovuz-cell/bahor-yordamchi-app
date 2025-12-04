@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Send, Trash2, Menu, Paperclip, X, FileText } from "lucide-react";
+import { ArrowLeft, Send, Trash2, Menu, Paperclip, X, FileText, RefreshCw } from "lucide-react";
 import ChatMessage from "@/components/ChatMessage";
 import QuickSuggestions from "@/components/QuickSuggestions";
 import { DeleteChatModal } from "@/components/DeleteChatModal";
@@ -15,15 +15,17 @@ import {
   ChatEmptyState,
   EditingIndicator,
 } from "@/components/chat";
-import { Message, ChatSession, ChatAttachment } from "@/types/chat";
+import { ChatListSkeleton, ChatMessagesSkeleton } from "@/components/chat/ChatListSkeleton";
+import { ChatMigrationModal, checkMigrationNeeded } from "@/components/ChatMigrationModal";
+import { Message, ChatAttachment } from "@/types/chat";
 import { supabase } from "@/integrations/supabase/client";
 import { getModeInfo } from "@/data/modes";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { getTranslation } from "@/data/translations";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { loadChatsFromStorage, saveChatsToStorage, createNewSession } from "@/utils/chatStorage";
 import { generateChatTitle } from "@/utils/generateChatTitle";
 import { useAuth } from "@/contexts/AuthContext";
+import * as chatStore from "@/lib/chatStore";
 
 import { useHaptics } from "@/hooks/useHaptics";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -103,6 +105,16 @@ async function processStreamingResponse(
   }
 }
 
+// Convert DB message to UI Message type
+function dbMessageToUI(msg: chatStore.ChatMessage): Message {
+  return {
+    id: msg.id,
+    role: msg.role as "user" | "assistant",
+    content: msg.content,
+    timestamp: new Date(msg.created_at),
+  };
+}
+
 export default function Chat() {
   const { mode } = useParams<{ mode: string }>();
   const navigate = useNavigate();
@@ -113,14 +125,23 @@ export default function Chat() {
   const isMobile = useIsMobile();
   const { lightTap } = useHaptics();
   
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  // Supabase-backed state
+  const [threads, setThreads] = useState<chatStore.ChatThread[]>([]);
+  const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoadingThreads, setIsLoadingThreads] = useState(true);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(false);
+  const [messageOffset, setMessageOffset] = useState(0);
+  
+  // Migration modal state
+  const [showMigrationModal, setShowMigrationModal] = useState(false);
+  
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [typing, setTyping] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [pendingDeleteSessionId, setPendingDeleteSessionId] = useState<string | null>(null);
+  const [pendingDeleteThreadId, setPendingDeleteThreadId] = useState<string | null>(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -192,75 +213,117 @@ export default function Chat() {
     return () => container.removeEventListener("scroll", onScroll);
   }, [handleScroll]);
 
-  // Initialize sessions on mount
+  // Check for migration on mount (only for logged in users)
+  useEffect(() => {
+    if (user && checkMigrationNeeded()) {
+      setShowMigrationModal(true);
+    }
+  }, [user]);
+
+  // Load threads from Supabase
+  const loadThreads = useCallback(async () => {
+    if (!user || !mode) return;
+    
+    setIsLoadingThreads(true);
+    try {
+      const fetchedThreads = await chatStore.listThreads(user.id, mode);
+      setThreads(fetchedThreads);
+      
+      // If no threads exist, create one
+      if (fetchedThreads.length === 0) {
+        const newThread = await chatStore.createThread(user.id, {
+          title: t.chat.defaultChatTitle,
+          mode,
+        });
+        setThreads([newThread]);
+        setCurrentThreadId(newThread.id);
+        setMessages([]);
+      } else {
+        // Select most recent thread
+        const mostRecent = fetchedThreads[0];
+        setCurrentThreadId(mostRecent.id);
+      }
+    } catch (error) {
+      console.error("Error loading threads:", error);
+      toast({
+        title: language === "uz" ? "Xatolik" : "Error",
+        description: language === "uz" 
+          ? "Suhbatlarni yuklashda xatolik" 
+          : "Failed to load chats",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingThreads(false);
+    }
+  }, [user, mode, t.chat.defaultChatTitle, language, toast]);
+
+  // Load messages for current thread
+  const loadMessages = useCallback(async (threadId: string, append = false) => {
+    if (!threadId) return;
+    
+    setIsLoadingMessages(true);
+    try {
+      const offset = append ? messageOffset : 0;
+      const fetchedMessages = await chatStore.getMessages(threadId, { limit: 30, offset });
+      const uiMessages = fetchedMessages.map(dbMessageToUI);
+      
+      if (append) {
+        setMessages(prev => [...uiMessages, ...prev]);
+      } else {
+        setMessages(uiMessages);
+        setMessageOffset(0);
+      }
+      
+      // Check if there are more messages
+      const totalCount = await chatStore.getMessageCount(threadId);
+      setHasMoreMessages(totalCount > (append ? messageOffset + 30 : 30));
+      
+      // Track last assistant message
+      const lastAssistant = [...uiMessages].reverse().find(m => m.role === "assistant");
+      if (lastAssistant) {
+        setLastAssistantMessageId(lastAssistant.id);
+      }
+    } catch (error) {
+      console.error("Error loading messages:", error);
+      toast({
+        title: language === "uz" ? "Xatolik" : "Error",
+        description: language === "uz" 
+          ? "Xabarlarni yuklashda xatolik" 
+          : "Failed to load messages",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingMessages(false);
+    }
+  }, [messageOffset, language, toast]);
+
+  // Load more (earlier) messages
+  const loadMoreMessages = useCallback(async () => {
+    if (!currentThreadId || isLoadingMessages) return;
+    
+    const newOffset = messageOffset + 30;
+    setMessageOffset(newOffset);
+    await loadMessages(currentThreadId, true);
+  }, [currentThreadId, messageOffset, isLoadingMessages, loadMessages]);
+
+  // Initialize on mount
   useEffect(() => {
     if (!mode) return;
-
-    const storage = loadChatsFromStorage();
-    
-    // If no data for this mode, create default session
-    if (!storage[mode]) {
-      const defaultSession = createNewSession(mode, t.chat.defaultChatTitle);
-      storage[mode] = {
-        sessions: [defaultSession],
-        messagesById: { [defaultSession.id]: [] },
-      };
-      saveChatsToStorage(storage);
-      setSessions([defaultSession]);
-      setCurrentSessionId(defaultSession.id);
-      setMessages([]);
-    } else {
-      const modeData = storage[mode];
-      setSessions(modeData.sessions);
-      
-      // Pick most recent session
-      const mostRecent = [...modeData.sessions].sort(
-        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-      )[0];
-      
-      setCurrentSessionId(mostRecent.id);
-      setMessages(modeData.messagesById[mostRecent.id] || []);
+    if (!user) {
+      // Not logged in - redirect to auth
+      navigate("/auth");
+      return;
     }
-  }, [mode, t.chat.defaultChatTitle]);
+    
+    loadThreads();
+  }, [mode, user, loadThreads, navigate]);
 
-  // Save messages whenever they change
+  // Load messages when thread changes
   useEffect(() => {
-    if (!mode || !currentSessionId) return;
-
-    const storage = loadChatsFromStorage();
-    if (!storage[mode]) return;
-
-    storage[mode].messagesById[currentSessionId] = messages;
-    
-    // Update updatedAt for current session
-    const session = storage[mode].sessions.find(s => s.id === currentSessionId);
-    if (session) {
-      session.updatedAt = new Date().toISOString();
-      
-      // Auto-name chat from first user message
-      const isDefaultTitle = 
-        session.title === t.chat.defaultChatTitle || 
-        session.title === "Yangi suhbat" || 
-        session.title === "New chat";
-      
-      const firstUserMessage = messages.find(m => m.role === "user");
-      
-      if (isDefaultTitle && firstUserMessage && messages.length >= 1) {
-        session.title = generateChatTitle(firstUserMessage.content, mode);
-      }
+    if (currentThreadId) {
+      loadMessages(currentThreadId);
     }
-
-    saveChatsToStorage(storage);
-    
-    // Update sessions state to reflect new updatedAt
-    setSessions([...storage[mode].sessions]);
-    
-    // Track last assistant message for follow-up suggestions
-    const lastAssistant = [...messages].reverse().find(m => m.role === "assistant");
-    if (lastAssistant) {
-      setLastAssistantMessageId(lastAssistant.id);
-    }
-  }, [messages, currentSessionId, mode, t.chat.defaultChatTitle]);
+  }, [currentThreadId, loadMessages]);
 
   useEffect(() => {
     if (!modeInfo) {
@@ -277,7 +340,6 @@ export default function Chat() {
   // Auto-focus input after AI finishes responding
   useEffect(() => {
     if (!isLoading && !typing) {
-      // Small delay to ensure DOM has updated
       const timer = setTimeout(() => {
         inputRef.current?.focus();
       }, 100);
@@ -288,12 +350,11 @@ export default function Chat() {
   // Handle initial message from home page
   useEffect(() => {
     const state = location.state as { initialMessage?: string } | null;
-    if (state?.initialMessage) {
+    if (state?.initialMessage && currentThreadId) {
       handleSendMessage(state.initialMessage);
-      // Clear the state to prevent re-sending on re-render
       navigate(location.pathname, { replace: true, state: {} });
     }
-  }, []);
+  }, [currentThreadId]);
 
   const scrollToBottom = (smooth = true) => {
     messagesEndRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
@@ -321,7 +382,6 @@ export default function Chat() {
     setInputValue(content);
     inputRef.current?.focus();
     
-    // Auto-grow textarea
     setTimeout(() => {
       if (inputRef.current) {
         inputRef.current.style.height = "auto";
@@ -342,11 +402,9 @@ export default function Chat() {
 
   // Regenerate assistant response
   const handleRegenerateMessage = async (messageId: string) => {
-    // Find the user message that preceded this assistant message
     const messageIndex = messages.findIndex(m => m.id === messageId);
     if (messageIndex <= 0) return;
     
-    // Find the last user message before this assistant message
     let userMessageIndex = messageIndex - 1;
     while (userMessageIndex >= 0 && messages[userMessageIndex].role !== "user") {
       userMessageIndex--;
@@ -355,8 +413,6 @@ export default function Chat() {
     if (userMessageIndex < 0) return;
     
     const userMessage = messages[userMessageIndex];
-    
-    // Send the user message again (will append new response)
     handleSendMessage(userMessage.content);
   };
 
@@ -379,7 +435,6 @@ export default function Chat() {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         
-        // Support images and PDFs
         const isImage = file.type.startsWith("image/");
         const isPDF = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
         
@@ -392,7 +447,6 @@ export default function Chat() {
           continue;
         }
 
-        // Validate file size (10MB limit)
         if (file.size > 10 * 1024 * 1024) {
           toast({
             title: language === "uz" ? "Xatolik" : "Error",
@@ -402,13 +456,10 @@ export default function Chat() {
           continue;
         }
 
-        // Create preview URL for images and PDFs (used for OCR processing)
         const previewUrl = URL.createObjectURL(file);
-
-        // Upload to Supabase storage
         const fileExt = file.name.split(".").pop();
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}-${i}.${fileExt}`;
-        const filePath = `${fileName}`;
+        const filePath = `${user?.id}/${fileName}`;
 
         const { data, error } = await supabase.storage
           .from("chat-attachments")
@@ -424,7 +475,6 @@ export default function Chat() {
           continue;
         }
 
-        // Get public URL
         const { data: { publicUrl } } = supabase.storage
           .from("chat-attachments")
           .getPublicUrl(filePath);
@@ -439,6 +489,17 @@ export default function Chat() {
         };
 
         newAttachments.push(attachment);
+
+        // Save attachment record to DB
+        if (currentThreadId && user) {
+          await chatStore.attachFile(user.id, {
+            threadId: currentThreadId,
+            path: filePath,
+            mimeType: file.type,
+            sizeBytes: file.size,
+            originalName: file.name,
+          }).catch(console.error);
+        }
       }
 
       if (newAttachments.length > 0) {
@@ -468,17 +529,14 @@ export default function Chat() {
   };
 
   const handleSendMessage = async (content: string) => {
-    if ((!content.trim() && pendingAttachments.length === 0) || isLoading || typing || !mode) return;
+    if ((!content.trim() && pendingAttachments.length === 0) || isLoading || typing || !mode || !user || !currentThreadId) return;
     
-    // Clear editing state if active
     if (editingMessageId) {
       setEditingMessageId(null);
     }
     
-    // Haptic feedback on send
     lightTap();
     
-    // TODO: Backend integration - Check limit via backend API instead of local storage
     if (hasReachedLimit) {
       setShowLimitCard(true);
       scrollToBottom();
@@ -487,8 +545,10 @@ export default function Chat() {
 
     const attachmentsToProcess = [...pendingAttachments];
     
+    // Create optimistic user message
+    const tempUserMessageId = `temp-${Date.now()}`;
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: tempUserMessageId,
       role: "user",
       content: content.trim(),
       timestamp: new Date(),
@@ -501,12 +561,10 @@ export default function Chat() {
     setIsLoading(true);
     setTyping(true);
     
-    // Reset textarea height
     if (inputRef.current) {
       inputRef.current.style.height = "auto";
     }
     
-    // Determine initial thinking phase based on attachments
     const hasImages = attachmentsToProcess.some(att => isVisionSupportedImage(att));
     const hasPdf = attachmentsToProcess.some(att => att.type === 'application/pdf' || att.name.toLowerCase().endsWith('.pdf'));
     
@@ -528,22 +586,44 @@ export default function Chat() {
       ],
     });
     
-    // Reset search state for new message
     setSearchUsed(false);
     setSearchUrls([]);
-    setThinkingMessageId(userMessage.id);
+    setThinkingMessageId(tempUserMessageId);
 
-    // Prepare assistant message ID but don't add to state yet
     const assistantId = crypto.randomUUID?.() ?? (Date.now() + 1).toString();
     let assistantMessageCreated = false;
+    let savedUserMessageId: string | null = null;
 
     try {
-      // Process attachments with Vision AI (images) or OCR (text PDFs)
+      // Save user message to DB
+      const savedUserMessage = await chatStore.addMessage(user.id, {
+        threadId: currentThreadId,
+        role: "user",
+        content: content.trim(),
+      });
+      savedUserMessageId = savedUserMessage.id;
+      
+      // Update optimistic message with real ID
+      setMessages((prev) => 
+        prev.map(m => m.id === tempUserMessageId ? { ...m, id: savedUserMessage.id } : m)
+      );
+      setThinkingMessageId(savedUserMessage.id);
+      
+      // Auto-title thread if it's the first message
+      const currentThread = threads.find(t => t.id === currentThreadId);
+      if (currentThread && (currentThread.title === "Yangi chat" || currentThread.title === t.chat.defaultChatTitle)) {
+        const newTitle = generateChatTitle(content.trim());
+        await chatStore.renameThread(currentThreadId, newTitle);
+        setThreads(prev => prev.map(th => 
+          th.id === currentThreadId ? { ...th, title: newTitle } : th
+        ));
+      }
+
+      // Process attachments
       let analysisContent: string | null = null;
       let analysisType: 'vision' | 'ocr' | 'mixed' | null = null;
       
       if (attachmentsToProcess.length > 0) {
-        // Check if any images need vision analysis
         const hasImages = attachmentsToProcess.some(att => isVisionSupportedImage(att));
         
         setProcessingStatus(
@@ -572,7 +652,6 @@ export default function Chat() {
         analysisType = analysisResult.type;
         setProcessingStatus(null);
         
-        // If processing was attempted but failed
         if (!analysisContent && attachmentsToProcess.length > 0) {
           toast({
             title: language === "uz" ? "Ogohlantirish" : "Warning",
@@ -584,14 +663,13 @@ export default function Chat() {
         }
       }
       
-      // Create conversation history for API (limit to last 12 messages)
+      // Create conversation history for API
       const recentMessages = messages.slice(-12);
       const conversationMessages = recentMessages.map((msg) => ({
         role: msg.role,
         content: msg.content,
       }));
       
-      // Build the message content with analysis if available
       let messageContent = content.trim();
       if (analysisContent) {
         const analysisPrefix = analysisType === 'vision'
@@ -613,13 +691,11 @@ export default function Chat() {
         messageContent = `${messageContent}\n\n${analysisPrefix}\n\`\`\`\n${analysisContent}\n\`\`\``;
       }
       
-      // Add the new user message with analysis content
       conversationMessages.push({
         role: "user" as const,
         content: messageContent,
       });
 
-      // Update thinking status to reasoning phase after attachment processing
       if (attachmentsToProcess.length > 0) {
         setThinkingStatus(prev => ({
           ...prev,
@@ -628,7 +704,6 @@ export default function Chat() {
         }));
       }
 
-      // Call the backend API for streaming response
       const accessToken = session?.access_token;
       if (!accessToken) {
         toast({
@@ -661,7 +736,6 @@ export default function Chat() {
         }
       );
 
-      // Handle specific error codes
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         
@@ -670,8 +744,7 @@ export default function Chat() {
           setTyping(false);
           setIsLoading(false);
           setThinkingStatus({ phase: 'idle', shortLabel: '', details: [] });
-          // Remove the user message we just added since it wasn't processed
-          setMessages((prev) => prev.filter(m => m.id !== userMessage.id));
+          setMessages((prev) => prev.filter(m => m.id !== (savedUserMessageId || tempUserMessageId)));
           toast({
             title: language === "uz" ? "Limit tugadi" : "Limit reached",
             description: language === "uz" 
@@ -679,7 +752,6 @@ export default function Chat() {
               : "Daily limit reached. Continue tomorrow or upgrade to Premium.",
             variant: "destructive",
           });
-          // Refresh profile to get updated usage
           refreshProfile();
           return;
         }
@@ -698,10 +770,10 @@ export default function Chat() {
         throw new Error(errorData.message || "Failed to get response from server");
       }
 
-      // Process the streaming response
+      let assistantContent = "";
+      
       await processStreamingResponse(response, {
         onMetadata: (metadata) => {
-          // Handle search metadata from backend
           if (metadata.search_used) {
             setSearchUsed(true);
             setSearchUrls(metadata.search_urls || []);
@@ -715,15 +787,15 @@ export default function Chat() {
           }
         },
         onChunk: (chunk) => {
-          // Update to finalising phase when streaming starts
+          assistantContent += chunk;
+          
           if (!assistantMessageCreated) {
             setThinkingStatus(prev => ({
               ...prev,
               phase: 'finalising',
               shortLabel: translate('thinking.finalising'),
             }));
-            // Create assistant message on first chunk
-            // Add analysis prefix based on type (vision or OCR)
+            
             const analysisPrefix = analysisContent 
               ? (analysisType === 'vision'
                 ? (language === "uz" 
@@ -751,7 +823,6 @@ export default function Chat() {
             setMessages((prev) => [...prev, newAssistantMessage]);
             assistantMessageCreated = true;
           } else {
-            // Update existing assistant message
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === assistantId ? { ...m, content: m.content + chunk } : m
@@ -759,7 +830,7 @@ export default function Chat() {
             );
           }
         },
-        onDone: () => {
+        onDone: async () => {
           setTyping(false);
           setIsLoading(false);
           setProcessingStatus(null);
@@ -767,7 +838,27 @@ export default function Chat() {
           setThinkingMessageId(null);
           inputRef.current?.focus();
           
-          // Refresh profile to get updated usage from backend
+          // Save assistant message to DB
+          if (assistantContent && user) {
+            try {
+              const savedAssistant = await chatStore.addMessage(user.id, {
+                threadId: currentThreadId,
+                role: "assistant",
+                content: assistantContent,
+              });
+              
+              // Update message ID with real one
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantId ? { ...m, id: savedAssistant.id } : m
+                )
+              );
+              setLastAssistantMessageId(savedAssistant.id);
+            } catch (err) {
+              console.error("Error saving assistant message:", err);
+            }
+          }
+          
           refreshProfile();
         },
         onError: (error) => {
@@ -783,7 +874,6 @@ export default function Chat() {
       setThinkingStatus({ phase: 'idle', shortLabel: '', details: [] });
       inputRef.current?.focus();
       
-      // Show error toast
       toast({
         title: language === "uz" ? "Xatolik" : "Error",
         description: language === "uz" 
@@ -794,88 +884,92 @@ export default function Chat() {
     }
   };
 
-  const handleClearChat = () => {
-    if (!currentSessionId || !mode) return;
+  const handleClearChat = async () => {
+    if (!currentThreadId || !mode || !user) return;
     
-    const storage = loadChatsFromStorage();
-    if (!storage[mode]) return;
-
-    // Clear messages for current session
-    storage[mode].messagesById[currentSessionId] = [];
-    saveChatsToStorage(storage);
-    setMessages([]);
-  };
-
-  const handleCreateNewSession = () => {
-    if (!mode) return;
-
-    const newSession = createNewSession(mode, t.chat.defaultChatTitle);
-    const storage = loadChatsFromStorage();
-    
-    if (!storage[mode]) {
-      storage[mode] = {
-        sessions: [newSession],
-        messagesById: { [newSession.id]: [] },
-      };
-    } else {
-      storage[mode].sessions.unshift(newSession);
-      storage[mode].messagesById[newSession.id] = [];
-    }
-    
-    saveChatsToStorage(storage);
-    setSessions([newSession, ...sessions]);
-    setCurrentSessionId(newSession.id);
-    setMessages([]);
-    setIsHistoryOpen(false);
-  };
-
-  const handleSelectSession = (sessionId: string) => {
-    if (!mode) return;
-    
-    const storage = loadChatsFromStorage();
-    if (!storage[mode]) return;
-
-    setCurrentSessionId(sessionId);
-    setMessages(storage[mode].messagesById[sessionId] || []);
-    setIsHistoryOpen(false);
-  };
-
-  const handleDeleteSession = (sessionId: string) => {
-    if (!mode) return;
-
-    const storage = loadChatsFromStorage();
-    if (!storage[mode]) return;
-
-    const modeData = storage[mode];
-    const updatedSessions = modeData.sessions.filter(s => s.id !== sessionId);
-    const { [sessionId]: _removed, ...updatedMessagesById } = modeData.messagesById;
-
-    if (updatedSessions.length === 0) {
-      // No sessions left: create a new default one
-      const newSession = createNewSession(mode, t.chat.defaultChatTitle);
-      storage[mode] = {
-        sessions: [newSession],
-        messagesById: { [newSession.id]: [] },
-      };
-      saveChatsToStorage(storage);
-      setSessions([newSession]);
-      setCurrentSessionId(newSession.id);
+    try {
+      // Delete all messages for this thread (messages will cascade delete)
+      // Then recreate an empty state
+      await chatStore.deleteThread(currentThreadId);
+      
+      // Create new thread
+      const newThread = await chatStore.createThread(user.id, {
+        title: t.chat.defaultChatTitle,
+        mode,
+      });
+      
+      setThreads(prev => prev.filter(t => t.id !== currentThreadId).concat([newThread]));
+      setCurrentThreadId(newThread.id);
       setMessages([]);
-    } else {
-      // Still have sessions
-      storage[mode] = {
-        sessions: updatedSessions,
-        messagesById: updatedMessagesById,
-      };
-      saveChatsToStorage(storage);
-      setSessions(updatedSessions);
+    } catch (error) {
+      console.error("Error clearing chat:", error);
+      toast({
+        title: language === "uz" ? "Xatolik" : "Error",
+        description: language === "uz" ? "Suhbatni tozalashda xatolik" : "Failed to clear chat",
+        variant: "destructive",
+      });
+    }
+  };
 
-      // If deleted current session, switch to another
-      if (sessionId === currentSessionId) {
-        const newCurrentId = updatedSessions[0].id;
-        setCurrentSessionId(newCurrentId);
-        setMessages(updatedMessagesById[newCurrentId] || []);
+  const handleCreateNewThread = async () => {
+    if (!mode || !user) return;
+
+    try {
+      const newThread = await chatStore.createThread(user.id, {
+        title: t.chat.defaultChatTitle,
+        mode,
+      });
+      
+      setThreads(prev => [newThread, ...prev]);
+      setCurrentThreadId(newThread.id);
+      setMessages([]);
+      setIsHistoryOpen(false);
+    } catch (error) {
+      console.error("Error creating new thread:", error);
+      toast({
+        title: language === "uz" ? "Xatolik" : "Error",
+        description: language === "uz" ? "Yangi suhbat yaratishda xatolik" : "Failed to create new chat",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSelectThread = (threadId: string) => {
+    setCurrentThreadId(threadId);
+    setIsHistoryOpen(false);
+  };
+
+  const handleDeleteThread = async (threadId: string) => {
+    if (!mode || !user) return;
+
+    try {
+      await chatStore.deleteThread(threadId);
+      
+      const updatedThreads = threads.filter(t => t.id !== threadId);
+      
+      if (updatedThreads.length === 0) {
+        // Create new default thread
+        const newThread = await chatStore.createThread(user.id, {
+          title: t.chat.defaultChatTitle,
+          mode,
+        });
+        setThreads([newThread]);
+        setCurrentThreadId(newThread.id);
+        setMessages([]);
+      } else {
+        setThreads(updatedThreads);
+        
+        if (threadId === currentThreadId) {
+          setCurrentThreadId(updatedThreads[0].id);
+        }
       }
+    } catch (error) {
+      console.error("Error deleting thread:", error);
+      toast({
+        title: language === "uz" ? "Xatolik" : "Error",
+        description: language === "uz" ? "Suhbatni o'chirishda xatolik" : "Failed to delete chat",
+        variant: "destructive",
+      });
     }
   };
 
@@ -894,20 +988,30 @@ export default function Chat() {
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputValue(e.target.value);
     
-    // Auto-grow textarea
     const textarea = e.target;
     textarea.style.height = "auto";
-    const newHeight = Math.min(textarea.scrollHeight, 140); // Max ~6 lines
+    const newHeight = Math.min(textarea.scrollHeight, 140);
     textarea.style.height = `${newHeight}px`;
   };
 
-  // Get active message for mobile actions
   const activeMessage = messages.find(m => m.id === activeActionMessageId);
 
   if (!modeInfo) return null;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-background/95 relative">
+      {/* Migration Modal */}
+      {user && (
+        <ChatMigrationModal
+          open={showMigrationModal}
+          onComplete={() => {
+            setShowMigrationModal(false);
+            loadThreads();
+          }}
+          userId={user.id}
+        />
+      )}
+
       {/* Subtle background glow */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[120px]" />
@@ -917,13 +1021,11 @@ export default function Chat() {
       {/* History Drawer */}
       {isHistoryOpen && (
         <div className="fixed inset-0 z-50 flex">
-          {/* Overlay */}
           <div
             className="flex-1 bg-background/80 backdrop-blur-sm"
             onClick={() => setIsHistoryOpen(false)}
           />
 
-          {/* Drawer */}
           <div className="w-80 max-w-[85vw] bg-card/95 backdrop-blur-xl border-l border-border/30 flex flex-col shadow-2xl animate-slide-in-right">
             <div className="px-5 py-4 border-b border-border/30 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -947,97 +1049,96 @@ export default function Chat() {
             </div>
 
             <button
-              onClick={handleCreateNewSession}
+              onClick={handleCreateNewThread}
               className="mx-4 mt-4 mb-2 rounded-xl border border-dashed border-primary/30 bg-primary/5 px-4 py-3 text-sm font-medium text-foreground hover:bg-primary/10 hover:border-primary/50 transition-all"
             >
               + {t.chat.defaultChatTitle}
             </button>
 
             <div className="flex-1 overflow-y-auto px-3 pb-4">
-              {sessions.map((session) => (
-                <div
-                  key={session.id}
-                  className={clsx(
-                    "flex items-center justify-between px-3 py-3 text-sm cursor-pointer rounded-xl my-1.5 transition-all",
-                    session.id === currentSessionId
-                      ? "bg-primary/10 border border-primary/20 text-foreground"
-                      : "hover:bg-secondary/60 border border-transparent"
-                  )}
-                  onClick={() => handleSelectSession(session.id)}
-                >
-                  <div className="flex-1 pr-2 min-w-0">
-                    <div className="font-medium text-foreground truncate">
-                      {session.title || t.chat.defaultChatTitle}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-0.5">
-                      {new Date(session.updatedAt).toLocaleDateString()}
-                    </div>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPendingDeleteSessionId(session.id);
-                    }}
-                    className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                    aria-label="Delete chat"
+              {isLoadingThreads ? (
+                <ChatListSkeleton />
+              ) : (
+                threads.map((thread) => (
+                  <div
+                    key={thread.id}
+                    className={clsx(
+                      "flex items-center justify-between px-3 py-3 text-sm cursor-pointer rounded-xl my-1.5 transition-all",
+                      thread.id === currentThreadId
+                        ? "bg-primary/10 border border-primary/20 text-foreground"
+                        : "hover:bg-secondary/60 border border-transparent"
+                    )}
+                    onClick={() => handleSelectThread(thread.id)}
                   >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
+                    <div className="flex-1 pr-2 min-w-0">
+                      <div className="font-medium text-foreground truncate">
+                        {thread.title || t.chat.defaultChatTitle}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        {new Date(thread.updated_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPendingDeleteThreadId(thread.id);
+                      }}
+                      className="p-2 rounded-lg hover:bg-destructive/10 transition-colors"
+                      aria-label="Delete chat"
+                    >
+                      <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
       )}
 
       {/* Main Chat Container */}
-      <div className="relative mx-auto w-full max-w-4xl lg:max-w-5xl flex flex-col h-[100dvh]">
-        {/* Header - Compact glass bar */}
-        <div className="sticky top-0 z-10 px-3 sm:px-6 pt-2 sm:pt-3 pb-1">
-          <div className="glass-strong rounded-xl sm:rounded-2xl border border-border/30 shadow-md">
-            <div className="px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-2">
-              {/* Left section - Back + History */}
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <button
-                  onClick={() => navigate("/")}
-                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-secondary/60 hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-[0.97] transition-all duration-200 flex-shrink-0"
-                  aria-label={t.chat.back}
-                >
-                  <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-                </button>
-                <button
-                  onClick={() => setIsHistoryOpen(true)}
-                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-secondary/60 hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-[0.97] transition-all duration-200 flex-shrink-0"
-                  aria-label="Open chat history"
-                >
-                  <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
-                </button>
-              </div>
+      <div className="flex flex-col h-screen max-w-5xl mx-auto">
+        {/* Header */}
+        <div className="sticky top-0 z-40 glass-strong border-b border-border/20">
+          <div className="flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <button
+                onClick={() => navigate("/")}
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-secondary/60 hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-[0.97] transition-all duration-200 flex-shrink-0"
+                aria-label={t.chat.back}
+              >
+                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+              <button
+                onClick={() => setIsHistoryOpen(true)}
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-secondary/60 hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-[0.97] transition-all duration-200 flex-shrink-0"
+                aria-label="Open chat history"
+              >
+                <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+            </div>
 
-              {/* Center - Mode title */}
-              <div className="flex-1 min-w-0 text-center">
-                <h1 className="text-sm sm:text-base font-semibold text-foreground truncate">
-                  {modeTranslation?.title || modeInfo.title}
-                </h1>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">
-                  {usedToday}/{dailyLimit} {translate('usage.requests')}
-                </p>
-              </div>
+            <div className="flex-1 min-w-0 text-center">
+              <h1 className="text-sm sm:text-base font-semibold text-foreground truncate">
+                {modeTranslation?.title || modeInfo.title}
+              </h1>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">
+                {usedToday}/{dailyLimit} {translate('usage.requests')}
+              </p>
+            </div>
 
-              {/* Right section - Actions */}
-              <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-                {messages.length > 0 && (
-                  <button
-                    onClick={() => setShowDeleteModal(true)}
-                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl hover:bg-secondary/60 flex items-center justify-center transition-all duration-200 active:scale-[0.97]"
-                    aria-label={t.chat.clearChat}
-                    title={t.chat.clearChat}
-                  >
-                    <Trash2 className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
-                  </button>
-                )}
-                <LanguageSwitcher variant="compact" />
-              </div>
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+              {messages.length > 0 && (
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl hover:bg-secondary/60 flex items-center justify-center transition-all duration-200 active:scale-[0.97]"
+                  aria-label={t.chat.clearChat}
+                  title={t.chat.clearChat}
+                >
+                  <Trash2 className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
+                </button>
+              )}
+              <LanguageSwitcher variant="compact" />
             </div>
           </div>
         </div>
@@ -1047,10 +1148,26 @@ export default function Chat() {
           ref={messagesContainerRef}
           className="flex-1 overflow-y-auto px-3 sm:px-6 pb-4 pt-4 sm:pt-6"
         >
-          {messages.length === 0 ? (
+          {isLoadingMessages ? (
+            <ChatMessagesSkeleton />
+          ) : messages.length === 0 ? (
             <ChatEmptyState modeInfo={modeInfo} modeTranslation={modeTranslation} />
           ) : (
             <div className="space-y-5 max-w-3xl mx-auto">
+              {/* Load more button */}
+              {hasMoreMessages && (
+                <div className="flex justify-center">
+                  <button
+                    onClick={loadMoreMessages}
+                    disabled={isLoadingMessages}
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary rounded-xl transition-colors"
+                  >
+                    <RefreshCw className={clsx("w-4 h-4", isLoadingMessages && "animate-spin")} />
+                    {language === "uz" ? "Oldingi xabarlar" : "Earlier messages"}
+                  </button>
+                </div>
+              )}
+              
               {messages.map((message, index) => (
                 <div key={message.id}>
                   <ChatMessage
@@ -1063,7 +1180,6 @@ export default function Chat() {
                     onLongPress={handleLongPress}
                   />
                   
-                  {/* Show ThinkingBar right after the user message that triggered it */}
                   {message.role === 'user' && 
                    message.id === thinkingMessageId && 
                    thinkingStatus.phase !== 'idle' && (
@@ -1082,7 +1198,6 @@ export default function Chat() {
                     </div>
                   )}
                   
-                  {/* Follow-up suggestions after last assistant message */}
                   {message.role === 'assistant' && 
                    message.id === lastAssistantMessageId && 
                    !isLoading && 
@@ -1096,7 +1211,6 @@ export default function Chat() {
                 </div>
               ))}
               
-              {/* Show limit reached card */}
               {showLimitCard && hasReachedLimit && (
                 <LimitReachedCard onDismiss={() => setShowLimitCard(false)} />
               )}
@@ -1106,15 +1220,13 @@ export default function Chat() {
           )}
         </div>
 
-        {/* Scroll to bottom button - positioned inside container */}
         <ScrollToBottom 
           visible={showScrollButton} 
           onClick={() => scrollToBottom()} 
         />
 
-        {/* Input Area - Premium sticky bottom bar with safe area */}
+        {/* Input Area */}
         <div className="sticky bottom-0 px-3 sm:px-6 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-6 pt-2">
-          {/* Quick Suggestions */}
           {modeSuggestions && modeSuggestions.length > 0 && messages.length === 0 && (
             <div className="pb-3">
               <QuickSuggestions
@@ -1125,14 +1237,11 @@ export default function Chat() {
             </div>
           )}
 
-          {/* Input Container */}
           <div className="glass-strong rounded-2xl border border-border/30 shadow-lg p-2">
-            {/* Editing indicator */}
             {editingMessageId && (
               <EditingIndicator onCancel={handleCancelEdit} />
             )}
             
-            {/* Attachment Previews */}
             {pendingAttachments.length > 0 && (
               <div className="mb-2 px-2 flex flex-wrap gap-2">
                 {pendingAttachments.map((attachment) => (
@@ -1202,7 +1311,6 @@ export default function Chat() {
                 className="flex-1 bg-transparent border-none outline-none resize-none text-[15px] leading-relaxed text-foreground placeholder:text-muted-foreground/60 disabled:opacity-50 max-h-[140px] overflow-y-auto py-3 px-1"
               />
               
-              {/* Voice Mode Button */}
               <VoiceModeButton
                 onClick={() => setIsVoiceModeOpen(true)}
                 disabled={isLoading || typing}
@@ -1250,16 +1358,16 @@ export default function Chat() {
         onCancel={() => setShowDeleteModal(false)}
       />
 
-      {/* Delete Session Modal */}
+      {/* Delete Thread Modal */}
       <DeleteChatModal
-        open={!!pendingDeleteSessionId}
+        open={!!pendingDeleteThreadId}
         onConfirm={() => {
-          if (pendingDeleteSessionId) {
-            handleDeleteSession(pendingDeleteSessionId);
-            setPendingDeleteSessionId(null);
+          if (pendingDeleteThreadId) {
+            handleDeleteThread(pendingDeleteThreadId);
+            setPendingDeleteThreadId(null);
           }
         }}
-        onCancel={() => setPendingDeleteSessionId(null)}
+        onCancel={() => setPendingDeleteThreadId(null)}
       />
 
       {/* Voice Mode Panel */}
@@ -1269,7 +1377,6 @@ export default function Chat() {
         onTranscriptionComplete={(text) => {
           setInputValue(text);
           setIsVoiceModeOpen(false);
-          // Auto-focus the input so user can edit or send
           setTimeout(() => inputRef.current?.focus(), 100);
         }}
       />
