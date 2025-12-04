@@ -208,21 +208,23 @@ export default function Settings() {
                     limit={profile.daily_limit || 5}
                     plan={profile.plan || 'free'}
                   />
-                  {/* Dev Reset Button */}
-                  <button
-                    onClick={() => {
-                      const today = new Date().toISOString().split('T')[0];
-                      localStorage.removeItem(`bahorai_usage_${today}`);
-                      refreshProfile();
-                      toast({
-                        description: "Kunlik limit qayta o'rnatildi (test uchun)",
-                      });
-                    }}
-                    className="mt-3 w-full flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground py-2 px-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                  >
-                    <RotateCcw className="w-3 h-3" />
-                    <span>Limitni qayta o'rnatish (dev)</span>
-                  </button>
+                  {/* Dev Reset Button - only in development */}
+                  {import.meta.env.DEV && (
+                    <button
+                      onClick={() => {
+                        const today = new Date().toISOString().split('T')[0];
+                        localStorage.removeItem(`bahorai_usage_${today}`);
+                        refreshProfile();
+                        toast({
+                          description: "Kunlik limit qayta o'rnatildi (test uchun)",
+                        });
+                      }}
+                      className="mt-3 w-full flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground py-2 px-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>Limitni qayta o'rnatish (dev)</span>
+                    </button>
+                  )}
                 </section>
               )}
 
