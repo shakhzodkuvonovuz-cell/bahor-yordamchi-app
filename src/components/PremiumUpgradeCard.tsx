@@ -1,9 +1,38 @@
-import { Crown } from "lucide-react";
+import { useState } from "react";
+import { Crown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 export default function PremiumUpgradeCard() {
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+
+  const handleUpgrade = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('stripe-create-checkout', {
+        body: {}
+      });
+
+      if (error) throw error;
+      
+      if (data?.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = data.url;
+      } else {
+        throw new Error("Checkout URL not received");
+      }
+    } catch (error) {
+      console.error("Checkout error:", error);
+      toast({
+        title: "Xatolik",
+        description: "To'lov sahifasini ochishda xatolik. Iltimos qayta urinib ko'ring.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-2xl p-6">
@@ -38,11 +67,25 @@ export default function PremiumUpgradeCard() {
 
         <Button
           className="w-full mt-4 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-          onClick={() => navigate("/settings")}
+          onClick={handleUpgrade}
+          disabled={loading}
         >
-          <Crown className="w-4 h-4 mr-2" />
-          Premiumga o'tish
+          {loading ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Yuklanmoqda...
+            </>
+          ) : (
+            <>
+              <Crown className="w-4 h-4 mr-2" />
+              Premiumga o'tish
+            </>
+          )}
         </Button>
+
+        <p className="text-xs text-center text-muted-foreground">
+          Test rejimi: $5/oy (≈49,000 UZS)
+        </p>
       </div>
     </div>
   );
