@@ -4,7 +4,7 @@ import { ArrowLeft, User, Globe, Moon, Sun, Shield, HelpCircle, FileText, Mail, 
 import { useTheme } from "@/hooks/useTheme";
 import { useLanguage, Language } from "@/hooks/useLanguage";
 import { getTranslation } from "@/data/translations";
-import { useAuth, signOut } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -23,7 +23,7 @@ export default function Settings() {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const { language, setLanguage } = useLanguage();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const t = getTranslation(language);
   
   const [openSection, setOpenSection] = useState<string | null>(null);
@@ -132,7 +132,7 @@ export default function Settings() {
         variant: "destructive",
       });
     } else {
-      navigate("/login");
+      navigate("/auth");
     }
   };
 
@@ -411,9 +411,9 @@ export default function Settings() {
               <button
                 onClick={async () => {
                   try {
-                    await supabase.auth.signOut();
+                    await signOut();
                     toast({ description: "Barcha qurilmalardan chiqdingiz" });
-                    navigate("/login");
+                    navigate("/auth");
                   } catch (error) {
                     toast({ description: "Xatolik yuz berdi", variant: "destructive" });
                   }
