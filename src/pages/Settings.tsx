@@ -137,39 +137,40 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-screen bg-background dark:bg-slate-950">{/* Header */}
+    <div className="min-h-screen bg-background dark:bg-slate-950 overflow-x-hidden">
+      {/* Header */}
       <div className="sticky top-0 bg-card/95 backdrop-blur-lg border-b border-border/50 shadow-sm z-10">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
-            className="p-2 hover:bg-secondary rounded-xl transition-colors"
+            className="p-2 hover:bg-secondary rounded-xl transition-colors shrink-0"
             aria-label={t.settings.back}
           >
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
-          <h1 className="text-lg font-bold text-foreground">{t.settings.title}</h1>
+          <h1 className="text-lg font-bold text-foreground truncate">{t.settings.title}</h1>
         </div>
       </div>
 
       {/* Content */}
       <ScrollArea className="h-[calc(100vh-60px)]">
-        <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+        <div className="max-w-2xl mx-auto px-4 py-6 space-y-6 overflow-x-hidden">
           
           {/* Profile Section */}
-          <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
-            <div className="px-6 py-6">
-              <div className="flex items-start gap-4">
+          <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] w-full">
+            <div className="px-4 sm:px-6 py-5">
+              <div className="flex items-start gap-3 sm:gap-4">
                 {/* Profile Photo */}
                 <div 
-                  className="relative cursor-pointer group" 
+                  className="relative cursor-pointer group shrink-0" 
                   onClick={() => {
                     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
                     input?.click();
                   }}
                 >
-                  <Avatar className="w-20 h-20 transition-opacity group-hover:opacity-80">
+                  <Avatar className="w-16 h-16 sm:w-20 sm:h-20 transition-opacity group-hover:opacity-80">
                     <AvatarImage src={profile?.avatarUrl || ""} />
-                    <AvatarFallback className="bg-gradient-to-br from-primary via-primary/60 to-primary/30 text-primary-foreground text-xl font-bold">
+                    <AvatarFallback className="bg-gradient-to-br from-primary via-primary/60 to-primary/30 text-primary-foreground text-lg sm:text-xl font-bold">
                       {getInitials()}
                     </AvatarFallback>
                   </Avatar>
@@ -181,14 +182,14 @@ export default function Settings() {
 
                 {/* User Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-xl font-bold text-foreground truncate">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-lg sm:text-xl font-bold text-foreground truncate">
                         {profile?.firstName && profile?.lastName
                           ? `${profile.firstName} ${profile.lastName}`
                           : "Foydalanuvchi"}
                       </h3>
-                      <p className="text-sm text-muted-foreground truncate mt-1">
+                      <p className="text-sm text-muted-foreground truncate mt-0.5 max-w-[180px] sm:max-w-none">
                         {profile?.email || user?.email}
                       </p>
                       {profile?.plan && (
@@ -198,9 +199,9 @@ export default function Settings() {
                               ? 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
                               : 'bg-gradient-to-r from-primary/20 to-primary/10 text-primary border border-primary/30'
                           }`}>
-                            {profile.plan === 'free' && 'Bepul reja'}
-                            {profile.plan === 'monthly' && <><Crown className="w-3 h-3" /> Oylik Premium</>}
-                            {profile.plan === 'yearly' && <><Crown className="w-3 h-3" /> Yillik Premium</>}
+                            {profile.plan === 'free' && 'Bepul'}
+                            {profile.plan === 'monthly' && <><Crown className="w-3 h-3" /> Premium</>}
+                            {profile.plan === 'yearly' && <><Crown className="w-3 h-3" /> Premium</>}
                           </span>
                         </div>
                       )}
@@ -209,10 +210,10 @@ export default function Settings() {
                       variant="outline"
                       size="sm"
                       onClick={() => setProfileEditOpen(true)}
-                      className="shrink-0"
+                      className="shrink-0 self-start"
                     >
-                      <Edit className="w-4 h-4 mr-1" />
-                      Tahrirlash
+                      <Edit className="w-4 h-4 sm:mr-1" />
+                      <span className="hidden sm:inline">Tahrirlash</span>
                     </Button>
                   </div>
                 </div>
@@ -221,31 +222,24 @@ export default function Settings() {
           </div>
 
           {/* Account Overview Card */}
-          <div className="bg-gradient-to-br from-card to-primary/5 border border-border/50 rounded-2xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-2 flex-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-bold text-foreground">Hisob holati</h3>
-                </div>
-                <div className="space-y-2">
+          <div className="bg-gradient-to-br from-card to-primary/5 border border-border/50 rounded-2xl p-4 sm:p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] w-full">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+              <div className="space-y-2 min-w-0 flex-1">
+                <h3 className="text-base sm:text-lg font-bold text-foreground">Hisob holati</h3>
+                <div className="space-y-1.5">
                   <p className="text-sm font-medium text-foreground">
-                    Reja: {profile?.plan === 'free' && 'Bepul reja'}
+                    Reja: {profile?.plan === 'free' && 'Bepul'}
                     {profile?.plan === 'monthly' && 'Premium (oylik)'}
                     {profile?.plan === 'yearly' && 'Premium (yillik)'}
                   </p>
                   {profile?.plan === 'free' && profile?.messagesToday !== undefined && (
-                    <>
-                      <p className="text-xs text-muted-foreground">
-                        Bugungi limit: {profile.messagesToday} / {profile.dailyLimit} so'rov
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Hozir siz bepul rejadasiz. Kuniga {profile.dailyLimit} ta so'rov limiti mavjud.
-                      </p>
-                    </>
+                    <p className="text-xs text-muted-foreground">
+                      {profile.messagesToday} / {profile.dailyLimit} so'rov ishlatildi
+                    </p>
                   )}
                   {profile?.plan !== 'free' && (
                     <p className="text-xs text-muted-foreground">
-                      Cheksiz so'rovlar va barcha premium funksiyalar.
+                      Cheksiz so'rovlar
                     </p>
                   )}
                 </div>
@@ -253,67 +247,67 @@ export default function Settings() {
               <Button 
                 size="sm"
                 onClick={() => setSubscriptionDrawerOpen(true)}
-                className={profile?.plan === 'free' 
-                  ? "bg-gradient-to-r from-primary to-primary/80 shrink-0"
-                  : "shrink-0"
-                }
+                className={`w-full sm:w-auto ${profile?.plan === 'free' 
+                  ? "bg-gradient-to-r from-primary to-primary/80"
+                  : ""
+                }`}
                 variant={profile?.plan === 'free' ? 'default' : 'outline'}
               >
-                <Crown className="w-4 h-4 mr-1" />
-                {profile?.plan === 'free' ? 'Premiumga o\'tish' : 'Rejani boshqarish'}
+                <Crown className="w-4 h-4 mr-1.5" />
+                {profile?.plan === 'free' ? 'Premium' : 'Boshqarish'}
               </Button>
             </div>
           </div>
-
-          {/* Premium Upgrade Card - Only for free users */}
-          <PremiumUpgradeCard />
 
           {/* Separator */}
           <div className="h-px bg-border/30" />
 
           {/* Notifications Section */}
-          <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
-            <div className="px-6 py-4 border-b border-border">
-              <h2 className="text-lg font-semibold text-foreground">Bildirishnomalar</h2>
+          <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] w-full">
+            <div className="px-4 sm:px-6 py-4 border-b border-border">
+              <h2 className="text-base sm:text-lg font-semibold text-foreground">Bildirishnomalar</h2>
             </div>
             <div className="divide-y divide-border">
-              <div className="px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-3 flex-1">
-                  <Bell className="w-5 h-5 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium text-foreground">Bahor AI yangiliklari</p>
-                    <p className="text-xs text-muted-foreground">Yangi funksiyalar haqida</p>
+              <div className="px-4 sm:px-6 py-4 flex items-center justify-between gap-3 min-w-0">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <Bell className="w-5 h-5 text-muted-foreground shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-medium text-foreground text-sm sm:text-base truncate">Yangiliklar</p>
+                    <p className="text-xs text-muted-foreground truncate">Yangi funksiyalar</p>
                   </div>
                 </div>
                 <Switch 
                   checked={preferences.newsUpdates} 
-                  onCheckedChange={(checked) => updatePreference('newsUpdates', checked)} 
+                  onCheckedChange={(checked) => updatePreference('newsUpdates', checked)}
+                  className="shrink-0"
                 />
               </div>
-              <div className="px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-3 flex-1">
-                  <Zap className="w-5 h-5 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium text-foreground">Foydali maslahatlar va g'oyalar</p>
-                    <p className="text-xs text-muted-foreground">Bahor AI tajribasi</p>
+              <div className="px-4 sm:px-6 py-4 flex items-center justify-between gap-3 min-w-0">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <Zap className="w-5 h-5 text-muted-foreground shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-medium text-foreground text-sm sm:text-base truncate">Maslahatlar</p>
+                    <p className="text-xs text-muted-foreground truncate">Foydali g'oyalar</p>
                   </div>
                 </div>
                 <Switch 
                   checked={preferences.suggestions} 
-                  onCheckedChange={(checked) => updatePreference('suggestions', checked)} 
+                  onCheckedChange={(checked) => updatePreference('suggestions', checked)}
+                  className="shrink-0"
                 />
               </div>
-              <div className="px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-3 flex-1">
-                  <CreditCard className="w-5 h-5 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium text-foreground">Chegirmalar va aksiyalar</p>
-                    <p className="text-xs text-muted-foreground">Maxsus takliflar</p>
+              <div className="px-4 sm:px-6 py-4 flex items-center justify-between gap-3 min-w-0">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <CreditCard className="w-5 h-5 text-muted-foreground shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-medium text-foreground text-sm sm:text-base truncate">Chegirmalar</p>
+                    <p className="text-xs text-muted-foreground truncate">Maxsus takliflar</p>
                   </div>
                 </div>
                 <Switch 
                   checked={preferences.pushNotifications} 
-                  onCheckedChange={(checked) => updatePreference('pushNotifications', checked)} 
+                  onCheckedChange={(checked) => updatePreference('pushNotifications', checked)}
+                  className="shrink-0"
                 />
               </div>
             </div>
@@ -323,64 +317,65 @@ export default function Settings() {
           <div className="h-px bg-border/30" />
 
           {/* App Experience Section */}
-          <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
-            <div className="px-6 py-4 border-b border-border">
-              <h2 className="text-lg font-semibold text-foreground">Bahor AI tajribasi</h2>
+          <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] w-full">
+            <div className="px-4 sm:px-6 py-4 border-b border-border">
+              <h2 className="text-base sm:text-lg font-semibold text-foreground">Bahor AI tajribasi</h2>
             </div>
-            <div className="divide-y divide-border">{/* ... keep existing code ... */}
-
+            <div className="divide-y divide-border">
               {/* Response Speed */}
               <Collapsible open={openSection === "speed"} onOpenChange={() => toggleSection("speed")}>
-                <CollapsibleTrigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <Zap className="w-5 h-5 text-muted-foreground" />
-                    <div className="text-left">
-                      <p className="font-medium text-foreground">Javob tezligi</p>
+                <CollapsibleTrigger className="w-full px-4 sm:px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors min-w-0">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Zap className="w-5 h-5 text-muted-foreground shrink-0" />
+                    <div className="text-left min-w-0">
+                      <p className="font-medium text-foreground text-sm sm:text-base">Javob tezligi</p>
                       <p className="text-xs text-muted-foreground">Standart</p>
                     </div>
                   </div>
-                  <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${openSection === "speed" ? "rotate-90" : ""}`} />
+                  <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${openSection === "speed" ? "rotate-90" : ""}`} />
                 </CollapsibleTrigger>
-                <CollapsibleContent className="px-6 py-4 bg-muted/30">
+                <CollapsibleContent className="px-4 sm:px-6 py-4 bg-muted/30">
                   <div className="space-y-3">
-                    <button className="w-full py-3 px-4 rounded-xl bg-primary text-primary-foreground font-medium">
+                    <button className="w-full py-3 px-4 rounded-xl bg-primary text-primary-foreground font-medium text-sm">
                       Standart
                     </button>
-                    <button className="w-full py-3 px-4 rounded-xl bg-secondary text-secondary-foreground hover:bg-secondary/80 font-medium flex items-center justify-center gap-2">
-                      <Crown className="w-4 h-4" />
-                      Tezkor (Premium)
+                    <button className="w-full py-3 px-4 rounded-xl bg-secondary text-secondary-foreground hover:bg-secondary/80 font-medium flex items-center justify-center gap-2 text-sm">
+                      <Crown className="w-4 h-4 shrink-0" />
+                      <span>Tezkor (Premium)</span>
                     </button>
                   </div>
                 </CollapsibleContent>
               </Collapsible>
 
               {/* Animations */}
-              <div className="px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-3 flex-1">
-                  <Zap className="w-5 h-5 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium text-foreground">Chat animatsiyalari</p>
-                    <p className="text-xs text-muted-foreground">Interfeys effektlari</p>
+              <div className="px-4 sm:px-6 py-4 flex items-center justify-between gap-3 min-w-0">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <Zap className="w-5 h-5 text-muted-foreground shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-medium text-foreground text-sm sm:text-base">Animatsiyalar</p>
+                    <p className="text-xs text-muted-foreground truncate">Interfeys effektlari</p>
                   </div>
                 </div>
                 <Switch 
                   checked={preferences.animations} 
-                  onCheckedChange={(checked) => updatePreference('animations', checked)} 
+                  onCheckedChange={(checked) => updatePreference('animations', checked)}
+                  className="shrink-0"
                 />
               </div>
 
               {/* Smart Suggestions */}
-              <div className="px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-3 flex-1">
-                  <Zap className="w-5 h-5 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium text-foreground">Aqlli takliflar</p>
-                    <p className="text-xs text-muted-foreground">Tavsiya etilgan savollar</p>
+              <div className="px-4 sm:px-6 py-4 flex items-center justify-between gap-3 min-w-0">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <Zap className="w-5 h-5 text-muted-foreground shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-medium text-foreground text-sm sm:text-base">Aqlli takliflar</p>
+                    <p className="text-xs text-muted-foreground truncate">Tavsiya etilgan savollar</p>
                   </div>
                 </div>
                 <Switch 
                   checked={preferences.smartSuggestions} 
-                  onCheckedChange={(checked) => updatePreference('smartSuggestions', checked)} 
+                  onCheckedChange={(checked) => updatePreference('smartSuggestions', checked)}
+                  className="shrink-0"
                 />
               </div>
             </div>
@@ -390,21 +385,21 @@ export default function Settings() {
           <div className="h-px bg-border/30" />
 
           {/* Security Section */}
-          <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
-            <div className="px-6 py-4 border-b border-border">
-              <h2 className="text-lg font-semibold text-foreground">Xavfsizlik</h2>
+          <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] w-full">
+            <div className="px-4 sm:px-6 py-4 border-b border-border">
+              <h2 className="text-base sm:text-lg font-semibold text-foreground">Xavfsizlik</h2>
             </div>
             <div className="divide-y divide-border">
               {/* Change Password */}
               <button
                 onClick={() => toast({ description: "Bu funksiya tez orada qo'shiladi" })}
-                className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors"
+                className="w-full px-4 sm:px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors min-w-0"
               >
-                <div className="flex items-center gap-3">
-                  <Lock className="w-5 h-5 text-muted-foreground" />
-                  <span className="font-medium text-foreground">Parolni o'zgartirish</span>
+                <div className="flex items-center gap-3 min-w-0">
+                  <Lock className="w-5 h-5 text-muted-foreground shrink-0" />
+                  <span className="font-medium text-foreground text-sm sm:text-base">Parolni o'zgartirish</span>
                 </div>
-                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
               </button>
 
               {/* Logout All Devices */}
@@ -418,13 +413,13 @@ export default function Settings() {
                     toast({ description: "Xatolik yuz berdi", variant: "destructive" });
                   }
                 }}
-                className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors"
+                className="w-full px-4 sm:px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors min-w-0"
               >
-                <div className="flex items-center gap-3">
-                  <Shield className="w-5 h-5 text-muted-foreground" />
-                  <span className="font-medium text-foreground">Barcha qurilmalardan chiqish</span>
+                <div className="flex items-center gap-3 min-w-0">
+                  <Shield className="w-5 h-5 text-muted-foreground shrink-0" />
+                  <span className="font-medium text-foreground text-sm sm:text-base truncate">Barcha qurilmalardan chiqish</span>
                 </div>
-                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
               </button>
             </div>
           </div>
@@ -449,25 +444,25 @@ export default function Settings() {
           <div className="h-px bg-border/30" />
 
           {/* Section 2: Ilova (App) */}
-          <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
-            <div className="px-6 py-4 border-b border-border">
-              <h2 className="text-lg font-semibold text-foreground">Ilova sozlamalari</h2>
+          <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] w-full">
+            <div className="px-4 sm:px-6 py-4 border-b border-border">
+              <h2 className="text-base sm:text-lg font-semibold text-foreground">Ilova sozlamalari</h2>
             </div>
             <div className="divide-y divide-border">
               {/* Til (Language) */}
               <Collapsible open={openSection === "language"} onOpenChange={() => toggleSection("language")}>
-                <CollapsibleTrigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <Globe className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium text-foreground">{t.settings.language}</span>
+                <CollapsibleTrigger className="w-full px-4 sm:px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors min-w-0">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Globe className="w-5 h-5 text-muted-foreground shrink-0" />
+                    <span className="font-medium text-foreground text-sm sm:text-base">{t.settings.language}</span>
                   </div>
-                  <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${openSection === "language" ? "rotate-90" : ""}`} />
+                  <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${openSection === "language" ? "rotate-90" : ""}`} />
                 </CollapsibleTrigger>
-                <CollapsibleContent className="px-6 py-4 bg-muted/30">
-                  <div className="grid grid-cols-2 gap-3">
+                <CollapsibleContent className="px-4 sm:px-6 py-4 bg-muted/30">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
                     <button
                       onClick={() => setLanguage("uz")}
-                      className={`py-3 px-4 rounded-xl font-medium transition-all ${
+                      className={`py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-medium transition-all text-sm ${
                         language === "uz"
                           ? "bg-primary text-primary-foreground shadow-sm"
                           : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
@@ -477,7 +472,7 @@ export default function Settings() {
                     </button>
                     <button
                       onClick={() => setLanguage("en")}
-                      className={`py-3 px-4 rounded-xl font-medium transition-all ${
+                      className={`py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-medium transition-all text-sm ${
                         language === "en"
                           ? "bg-primary text-primary-foreground shadow-sm"
                           : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
@@ -487,7 +482,7 @@ export default function Settings() {
                     </button>
                     <button
                       onClick={() => setLanguage("ru")}
-                      className={`py-3 px-4 rounded-xl font-medium transition-all ${
+                      className={`py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-medium transition-all text-sm ${
                         language === "ru"
                           ? "bg-primary text-primary-foreground shadow-sm"
                           : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
@@ -497,7 +492,7 @@ export default function Settings() {
                     </button>
                     <button
                       onClick={() => setLanguage("tr")}
-                      className={`py-3 px-4 rounded-xl font-medium transition-all ${
+                      className={`py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-medium transition-all text-sm ${
                         language === "tr"
                           ? "bg-primary text-primary-foreground shadow-sm"
                           : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
@@ -511,42 +506,42 @@ export default function Settings() {
 
               {/* Mavzu (Theme) */}
               <Collapsible open={openSection === "theme"} onOpenChange={() => toggleSection("theme")}>
-                <CollapsibleTrigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-3">
+                <CollapsibleTrigger className="w-full px-4 sm:px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors min-w-0">
+                  <div className="flex items-center gap-3 min-w-0">
                     {theme === "dark" ? (
-                      <Moon className="w-5 h-5 text-muted-foreground" />
+                      <Moon className="w-5 h-5 text-muted-foreground shrink-0" />
                     ) : (
-                      <Sun className="w-5 h-5 text-muted-foreground" />
+                      <Sun className="w-5 h-5 text-muted-foreground shrink-0" />
                     )}
-                    <span className="font-medium text-foreground">{t.settings.theme}</span>
+                    <span className="font-medium text-foreground text-sm sm:text-base">{t.settings.theme}</span>
                   </div>
-                  <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${openSection === "theme" ? "rotate-90" : ""}`} />
+                  <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${openSection === "theme" ? "rotate-90" : ""}`} />
                 </CollapsibleTrigger>
-                <CollapsibleContent className="px-6 py-4 bg-muted/30">
-                  <div className="flex gap-3">
+                <CollapsibleContent className="px-4 sm:px-6 py-4 bg-muted/30">
+                  <div className="flex gap-2 sm:gap-3">
                     <button
                       onClick={() => setTheme("light")}
-                      className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
+                      className={`flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-medium transition-all text-sm ${
                         theme === "light"
                           ? "bg-primary text-primary-foreground shadow-sm"
                           : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                       }`}
                     >
-                      <div className="flex items-center justify-center gap-2">
-                        <Sun className="w-4 h-4" />
+                      <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+                        <Sun className="w-4 h-4 shrink-0" />
                         <span>Yorug'</span>
                       </div>
                     </button>
                     <button
                       onClick={() => setTheme("dark")}
-                      className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
+                      className={`flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-medium transition-all text-sm ${
                         theme === "dark"
                           ? "bg-primary text-primary-foreground shadow-sm"
                           : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                       }`}
                     >
-                      <div className="flex items-center justify-center gap-2">
-                        <Moon className="w-4 h-4" />
+                      <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+                        <Moon className="w-4 h-4 shrink-0" />
                         <span>Qorong'i</span>
                       </div>
                     </button>
@@ -554,15 +549,15 @@ export default function Settings() {
                 </CollapsibleContent>
               </Collapsible>
 
-              {/* Obuna holati (Subscription) */}
+              {/* Obuna holati (Subscription) - secondary link style */}
               <Drawer open={subscriptionDrawerOpen} onOpenChange={setSubscriptionDrawerOpen}>
                 <DrawerTrigger asChild>
-                  <button className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <CreditCard className="w-5 h-5 text-muted-foreground" />
-                      <span className="font-medium text-foreground">{t.settings.subscription}</span>
+                  <button className="w-full px-4 sm:px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors min-w-0">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <CreditCard className="w-5 h-5 text-muted-foreground shrink-0" />
+                      <span className="font-medium text-foreground text-sm sm:text-base">{t.settings.subscription}</span>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
                   </button>
                 </DrawerTrigger>
                 <DrawerContent className="max-h-[90vh] bg-background dark:bg-slate-950">
@@ -581,71 +576,71 @@ export default function Settings() {
           <div className="h-px bg-border/30" />
 
           {/* Section 3: Yordam va huquqiy (Support & Legal) */}
-          <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
-            <div className="px-6 py-4 border-b border-border">
-              <h2 className="text-lg font-semibold text-foreground">{t.settings.helpLegal}</h2>
+          <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] w-full">
+            <div className="px-4 sm:px-6 py-4 border-b border-border">
+              <h2 className="text-base sm:text-lg font-semibold text-foreground">{t.settings.helpLegal}</h2>
             </div>
             <div className="divide-y divide-border">
               {/* Yordam markazi */}
               <Collapsible open={openSection === "help"} onOpenChange={() => toggleSection("help")}>
-                <CollapsibleTrigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <HelpCircle className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium text-foreground">{t.settings.helpCenter}</span>
+                <CollapsibleTrigger className="w-full px-4 sm:px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors min-w-0">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <HelpCircle className="w-5 h-5 text-muted-foreground shrink-0" />
+                    <span className="font-medium text-foreground text-sm sm:text-base">{t.settings.helpCenter}</span>
                   </div>
-                  <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${openSection === "help" ? "rotate-90" : ""}`} />
+                  <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${openSection === "help" ? "rotate-90" : ""}`} />
                 </CollapsibleTrigger>
-                <CollapsibleContent className="px-6 py-4 bg-muted/30">
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    FAQ va qo'llanmalar tez orada qo'shiladi. Hozircha savollaringiz bo'lsa, bizga email orqali murojaat qiling: <a href="mailto:support@bahorai.com" className="text-primary underline">support@bahorai.com</a>
+                <CollapsibleContent className="px-4 sm:px-6 py-4 bg-muted/30">
+                  <p className="text-sm text-muted-foreground leading-relaxed break-words">
+                    FAQ va qo'llanmalar tez orada qo'shiladi. Savollaringiz bo'lsa: <a href="mailto:support@bahorai.com" className="text-primary underline break-all">support@bahorai.com</a>
                   </p>
                 </CollapsibleContent>
               </Collapsible>
 
               {/* Xatolik haqida xabar berish */}
               <Collapsible open={openSection === "bug"} onOpenChange={() => toggleSection("bug")}>
-                <CollapsibleTrigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <Mail className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium text-foreground">{t.settings.reportBug}</span>
+                <CollapsibleTrigger className="w-full px-4 sm:px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors min-w-0">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Mail className="w-5 h-5 text-muted-foreground shrink-0" />
+                    <span className="font-medium text-foreground text-sm sm:text-base">{t.settings.reportBug}</span>
                   </div>
-                  <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${openSection === "bug" ? "rotate-90" : ""}`} />
+                  <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${openSection === "bug" ? "rotate-90" : ""}`} />
                 </CollapsibleTrigger>
-                <CollapsibleContent className="px-6 py-4 bg-muted/30">
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Xatolik haqida yozish uchun: <a href="mailto:support@bahorai.com?subject=Xatolik haqida" className="text-primary underline">support@bahorai.com</a>
+                <CollapsibleContent className="px-4 sm:px-6 py-4 bg-muted/30">
+                  <p className="text-sm text-muted-foreground leading-relaxed break-words">
+                    Xatolik haqida: <a href="mailto:support@bahorai.com?subject=Xatolik haqida" className="text-primary underline break-all">support@bahorai.com</a>
                   </p>
                 </CollapsibleContent>
               </Collapsible>
 
               {/* Foydalanish shartlari */}
               <Collapsible open={openSection === "terms"} onOpenChange={() => toggleSection("terms")}>
-                <CollapsibleTrigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <FileText className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium text-foreground">{t.settings.terms}</span>
+                <CollapsibleTrigger className="w-full px-4 sm:px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors min-w-0">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <FileText className="w-5 h-5 text-muted-foreground shrink-0" />
+                    <span className="font-medium text-foreground text-sm sm:text-base">{t.settings.terms}</span>
                   </div>
-                  <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${openSection === "terms" ? "rotate-90" : ""}`} />
+                  <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${openSection === "terms" ? "rotate-90" : ""}`} />
                 </CollapsibleTrigger>
-                <CollapsibleContent className="px-6 py-4 bg-muted/30">
+                <CollapsibleContent className="px-4 sm:px-6 py-4 bg-muted/30">
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Foydalanish shartlari sahifasi tayyorlanmoqda. Ilovani ishlatish orqali siz odob-axloq va qonuniylik qoidalariga rioya qilishingizga rozilik bildirasiz.
+                    Foydalanish shartlari sahifasi tayyorlanmoqda.
                   </p>
                 </CollapsibleContent>
               </Collapsible>
 
               {/* Maxfiylik siyosati */}
               <Collapsible open={openSection === "privacy"} onOpenChange={() => toggleSection("privacy")}>
-                <CollapsibleTrigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <FileText className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium text-foreground">{t.settings.privacy}</span>
+                <CollapsibleTrigger className="w-full px-4 sm:px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors min-w-0">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <FileText className="w-5 h-5 text-muted-foreground shrink-0" />
+                    <span className="font-medium text-foreground text-sm sm:text-base">{t.settings.privacy}</span>
                   </div>
-                  <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${openSection === "privacy" ? "rotate-90" : ""}`} />
+                  <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${openSection === "privacy" ? "rotate-90" : ""}`} />
                 </CollapsibleTrigger>
-                <CollapsibleContent className="px-6 py-4 bg-muted/30">
+                <CollapsibleContent className="px-4 sm:px-6 py-4 bg-muted/30">
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Maxfiylik siyosati tez kunda to'liq ko'rinishda qo'shiladi. Hozircha: biz foydalanuvchilarning ma'lumotlarini mas'uliyat bilan saqlashga va ularni uchinchi tomonlarga bermaslikka harakat qilamiz.
+                    Maxfiylik siyosati tez kunda qo'shiladi.
                   </p>
                 </CollapsibleContent>
               </Collapsible>
