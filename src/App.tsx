@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/hooks/useTheme";
 import { LanguageProvider } from "@/i18n/LanguageProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import Home from "./pages/Home";
 import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
@@ -21,46 +22,48 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <LanguageProvider>
-      <ThemeProvider>
-        <BrowserRouter>
-          <AuthProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <Routes>
-                <Route path="/" element={<Landing />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/auth/email" element={<AuthEmail />} />
-                <Route path="/auth/google" element={<AuthGoogle />} />
-                <Route path="/auth/phone" element={<AuthPhone />} />
-                <Route path="/auth/callback" element={<AuthCallback />} />
-                <Route path="/modes" element={<Home />} />
-                <Route 
-                  path="/chat/:mode" 
-                  element={
-                    <ProtectedRoute>
-                      <Chat />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/settings" 
-                  element={
-                    <ProtectedRoute>
-                      <Settings />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </TooltipProvider>
-          </AuthProvider>
-        </BrowserRouter>
-      </ThemeProvider>
-    </LanguageProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <LanguageProvider>
+        <ThemeProvider>
+          <BrowserRouter>
+            <AuthProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <Routes>
+                  <Route path="/" element={<Landing />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/auth/email" element={<AuthEmail />} />
+                  <Route path="/auth/google" element={<AuthGoogle />} />
+                  <Route path="/auth/phone" element={<AuthPhone />} />
+                  <Route path="/auth/callback" element={<AuthCallback />} />
+                  <Route path="/modes" element={<Home />} />
+                  <Route 
+                    path="/chat/:mode" 
+                    element={
+                      <ProtectedRoute>
+                        <Chat />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/settings" 
+                    element={
+                      <ProtectedRoute>
+                        <Settings />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </TooltipProvider>
+            </AuthProvider>
+          </BrowserRouter>
+        </ThemeProvider>
+      </LanguageProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
