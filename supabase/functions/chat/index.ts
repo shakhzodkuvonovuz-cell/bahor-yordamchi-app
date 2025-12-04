@@ -81,25 +81,42 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Supabase client with user's token
+    // Initialize Supabase admin client for server-side operations
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    // Create admin client for database operations
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Create user client for auth validation
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
     });
 
-    // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
+    // Get current user from token
+    const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
+    
+    if (userError) {
+      console.error('Auth error:', userError.message);
       return new Response(
         JSON.stringify({ error: "AUTH_REQUIRED", message: "Sessiya tugagan. Qaytadan kiring." }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    
+    if (!user) {
+      return new Response(
+        JSON.stringify({ error: "AUTH_REQUIRED", message: "Iltimos, tizimga kiring." }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    console.log(`User authenticated: ${user.id}`);
 
     // Check and increment daily usage (atomic operation)
     const today = new Date().toISOString().split('T')[0];
-    const { data: usageResult, error: usageError } = await supabase.rpc(
+    const { data: usageResult, error: usageError } = await supabaseAdmin.rpc(
       'increment_daily_usage',
       { p_user_id: user.id, p_today: today }
     );
