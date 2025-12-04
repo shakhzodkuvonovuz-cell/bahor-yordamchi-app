@@ -1,4 +1,4 @@
-import { MessageSquare, AlertCircle } from "lucide-react";
+import { MessageSquare, AlertCircle, Crown, Shield, Infinity } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageProvider";
 
 interface DailyUsageIndicatorProps {
@@ -6,15 +6,41 @@ interface DailyUsageIndicatorProps {
   limit: number;
   isNearLimit: boolean;
   hasReachedLimit: boolean;
+  isPremium?: boolean;
+  isDevBypass?: boolean;
 }
 
 export default function DailyUsageIndicator({ 
   used, 
   limit, 
   isNearLimit, 
-  hasReachedLimit 
+  hasReachedLimit,
+  isPremium = false,
+  isDevBypass = false,
 }: DailyUsageIndicatorProps) {
   const { t } = useTranslation();
+
+  // Premium or dev bypass users see "Cheksiz" (unlimited)
+  if (isPremium || isDevBypass) {
+    return (
+      <div className="flex justify-center py-2">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+          {isDevBypass ? (
+            <>
+              <Shield className="w-3.5 h-3.5" />
+              <span>Dev Unlimited</span>
+            </>
+          ) : (
+            <>
+              <Crown className="w-3.5 h-3.5" />
+              <span>Premium</span>
+              <Infinity className="w-3.5 h-3.5 ml-1" />
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="flex justify-center py-2">

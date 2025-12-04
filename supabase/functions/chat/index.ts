@@ -271,11 +271,33 @@ serve(async (req) => {
       );
     }
 
-    // Usage check
+    // ===========================================
+    // ENTITLEMENTS + DAILY LIMIT CHECK
+    // ===========================================
+    const userEmail = user.email?.toLowerCase() || '';
+    const devUnlimitedEmails = (Deno.env.get('DEV_UNLIMITED_EMAILS') || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+    const isDevBypass = devUnlimitedEmails.includes(userEmail);
+
+    // Get entitlement from database
+    let isPremium = isDevBypass;
+    let effectivePlan = isDevBypass ? 'premium' : 'free';
+    
+    if (!isDevBypass) {
+      const { data: entitlementData } = await supabaseAdmin.rpc('get_effective_entitlement', { p_user_id: user.id });
+      if (entitlementData?.isPremium) {
+        isPremium = true;
+        effectivePlan = 'premium';
+      }
+    }
+
+    // Determine daily limit: premium/dev = unlimited (-1), free = 5
+    const dailyLimit = isPremium ? -1 : 5;
     const today = new Date().toISOString().split('T')[0];
+
+    // Check and increment usage
     const { data: usageResult, error: usageError } = await supabaseAdmin.rpc(
-      'increment_daily_usage',
-      { p_user_id: user.id, p_today: today }
+      'check_and_increment_usage',
+      { p_user_id: user.id, p_date: today, p_limit: dailyLimit }
     );
 
     if (usageError) {
@@ -291,7 +313,7 @@ serve(async (req) => {
         JSON.stringify({ 
           error: "DAILY_LIMIT_REACHED", 
           message: "Bugungi limit tugadi. Ertaga yana davom eting yoki Premiumga o'ting.",
-          usage: usageResult
+          usage: { ...usageResult, plan: effectivePlan }
         }),
         { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -308,7 +330,7 @@ serve(async (req) => {
     // Build prompt
     const modeKey = mode || "general";
     const modePrompt = MODE_PROMPTS[modeKey] || MODE_PROMPTS.general;
-    const styleClamp = usageResult?.plan === 'free' ? STYLE_CLAMP.free : STYLE_CLAMP.premium;
+    const styleClamp = effectivePlan === 'free' ? STYLE_CLAMP.free : STYLE_CLAMP.premium;
     const recentMessages = messages.slice(-12);
 
     // Collect sources from web search
@@ -382,7 +404,7 @@ Agar yuqorida qidiruv natijalari bo'lsa, ularga suyanib javob ber va manbalarni 
       ...recentMessages,
     ];
 
-    console.log(`Chat: user=${user.id}, mode=${modeKey}, msgs=${recentMessages.length}, usage=${usageResult.used}/${usageResult.limit}`);
+    console.log(`Chat: user=${user.id}, email=${userEmail}, mode=${modeKey}, plan=${effectivePlan}, devBypass=${isDevBypass}, usage=${usageResult.used}/${usageResult.limit}`);
 
     // Call DeepSeek
     const response = await fetch("https://api.deepseek.com/chat/completions", {
@@ -446,7 +468,7 @@ Agar yuqorida qidiruv natijalari bo'lsa, ularga suyanib javob ber va manbalarni 
           type: "metadata",
           search_used: didSearch,
           search_urls: searchUrls,
-          usage: usageResult,
+          usage: { ...usageResult, plan: effectivePlan, isDevBypass, isPremium },
         };
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(metadata)}\n\n`));
         

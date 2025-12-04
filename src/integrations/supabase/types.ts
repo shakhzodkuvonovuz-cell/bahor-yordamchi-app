@@ -160,6 +160,24 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_usage: {
+        Row: {
+          date: string
+          messages_count: number
+          user_id: string
+        }
+        Insert: {
+          date: string
+          messages_count?: number
+          user_id: string
+        }
+        Update: {
+          date?: string
+          messages_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -217,11 +235,46 @@ export type Database = {
         }
         Relationships: []
       }
+      user_entitlements: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          flags: Json
+          note: string | null
+          plan: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          flags?: Json
+          note?: string | null
+          plan?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          flags?: Json
+          note?: string | null
+          plan?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      check_and_increment_usage: {
+        Args: { p_date: string; p_limit: number; p_user_id: string }
+        Returns: Json
+      }
+      get_effective_entitlement: { Args: { p_user_id: string }; Returns: Json }
       increment_daily_usage: {
         Args: { p_today: string; p_user_id: string }
         Returns: Json

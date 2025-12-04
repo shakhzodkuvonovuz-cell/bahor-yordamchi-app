@@ -17,6 +17,7 @@ import AuthGoogle from "./pages/AuthGoogle";
 import AuthPhone from "./pages/AuthPhone";
 import AuthCallback from "./pages/AuthCallback";
 import Landing from "./pages/Landing";
+import AdminEntitlements from "./pages/AdminEntitlements";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +53,14 @@ const App = () => (
                     element={
                       <ProtectedRoute>
                         <Settings />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/admin/entitlements" 
+                    element={
+                      <ProtectedRoute>
+                        <AdminEntitlements />
                       </ProtectedRoute>
                     } 
                   />
