@@ -152,7 +152,7 @@ export function TraceSheet({ open, onOpenChange, trace, language }: TraceSheetPr
 
   return (
     <Drawer open={open} onOpenChange={handleOpenChange}>
-      <DrawerContent className="max-h-[85vh] bg-background/95 backdrop-blur-xl border-t border-border/50">
+      <DrawerContent className="max-h-[55vh] bg-background/95 backdrop-blur-xl border-t border-border/50">
         <DrawerHeader className="border-b border-border/30 pb-4">
           <div className="flex items-center justify-between">
             <DrawerTitle className="text-base font-semibold text-foreground">
