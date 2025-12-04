@@ -32,18 +32,18 @@ export default function AuthCallback() {
         }
 
         if (code) {
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
           
-          if (error) {
+          if (exchangeError) {
             setError("Sessiya yaratishda xatolik yuz berdi. Qayta urinib ko'ring.");
           } else {
             navigate("/modes", { replace: true });
           }
         } else {
           // No code and no error, try to get session from hash fragment
-          const { data, error } = await supabase.auth.getSession();
+          const { data, error: sessionError } = await supabase.auth.getSession();
           
-          if (error) {
+          if (sessionError) {
             setError("Xatolik yuz berdi. Qayta urinib ko'ring.");
           } else if (data.session) {
             navigate("/modes", { replace: true });
@@ -60,8 +60,8 @@ export default function AuthCallback() {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 bg-gradient-to-b from-background to-muted/30">
-      <div className="w-full max-w-[420px] mx-auto">
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-b from-background via-background to-primary/5">
+      <div className="w-full max-w-[420px] mx-auto animate-fade-in">
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-8">
           <img 
@@ -69,15 +69,15 @@ export default function AuthCallback() {
             alt="Bahor AI" 
             className="w-12 h-12 object-contain"
           />
-          <h1 className="text-2xl font-bold text-foreground">Bahor AI</h1>
+          <h1 className="text-xl font-bold text-foreground">Bahor AI</h1>
         </div>
 
         {/* Card */}
-        <div className="bg-card rounded-2xl shadow-lg border border-border/50 p-6 sm:p-8 text-center">
+        <div className="bg-card rounded-[24px] shadow-xl border border-border/30 p-8 text-center animate-scale-in">
           {error ? (
             <>
-              <div className="w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <AlertCircle className="w-6 h-6 text-destructive" />
+              <div className="w-14 h-14 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="w-7 h-7 text-destructive" />
               </div>
               <h2 className="text-lg font-semibold text-foreground mb-2">
                 Xatolik
@@ -86,14 +86,14 @@ export default function AuthCallback() {
                 {error}
               </p>
               <Link to="/auth">
-                <Button className="w-full h-11 rounded-xl">
+                <Button className="w-full h-12 rounded-[14px] shadow-lg shadow-primary/20">
                   Orqaga
                 </Button>
               </Link>
             </>
           ) : (
             <>
-              <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto mb-4" />
+              <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
               <h2 className="text-lg font-semibold text-foreground mb-2">
                 Kutilmoqda...
               </h2>
