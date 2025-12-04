@@ -18,7 +18,7 @@ import ProfilePhotoUpload from "@/components/ProfilePhotoUpload";
 import PremiumUpgradeCard from "@/components/PremiumUpgradeCard";
 import UsageProgressBar from "@/components/UsageProgressBar";
 import SettingsProfileSkeleton from "@/components/SettingsProfileSkeleton";
-import ManageSubscriptionCard from "@/components/ManageSubscriptionCard";
+
 import { supabase } from "@/integrations/supabase/client";
 
 export default function Settings() {
@@ -229,13 +229,8 @@ export default function Settings() {
                 </section>
               )}
 
-              {/* Premium Upgrade Card for free users */}
-              {profile?.plan === 'free' && <PremiumUpgradeCard />}
-
-              {/* Manage Subscription for premium users */}
-              {profile && profile.plan !== 'free' && (
-                <ManageSubscriptionCard profile={profile} />
-              )}
+              {/* Premium Upgrade Card - always show, payment coming soon */}
+              <PremiumUpgradeCard />
             </>
           )}
 

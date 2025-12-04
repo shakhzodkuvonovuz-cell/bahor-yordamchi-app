@@ -8,15 +8,3 @@ verify_jwt = false
 
 [functions.summarize-thread]
 verify_jwt = false
-
-[functions.stripe-create-checkout]
-verify_jwt = false
-
-[functions.stripe-create-portal]
-verify_jwt = false
-
-[functions.stripe-webhook]
-verify_jwt = false
-
-[functions.check-subscription]
-verify_jwt = false
