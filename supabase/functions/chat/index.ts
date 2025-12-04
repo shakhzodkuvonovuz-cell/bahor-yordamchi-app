@@ -75,14 +75,19 @@ function isIdentityQuestion(msg: string): boolean {
 
 function shouldUseSearch(userMsg: string): boolean {
   const q = userMsg.toLowerCase();
-  return (
-    q.includes("yangilik") ||
-    q.includes("yangiliklar") ||
-    q.includes("qidir") ||
-    q.includes("search") ||
-    q.includes("news") ||
-    q.includes("oxirgi")
-  );
+  const searchTriggers = [
+    // Uzbek
+    "yangilik", "yangiliklar", "qidir", "qidirish", "oxirgi", "so'nggi",
+    "bugungi", "hozirgi", "joriy", "kim", "nima haqida", "qachon",
+    // English
+    "search", "news", "latest", "recent", "current", "find", "look up",
+    "what is", "who is", "when did",
+    // Russian
+    "новости", "поиск", "найти", "последние", "текущие",
+    // Questions that likely need fresh info
+    "narxi", "price", "цена", "kurs", "rate", "ob-havo", "weather", "погода"
+  ];
+  return searchTriggers.some(t => q.includes(t));
 }
 
 // ============================================
@@ -288,12 +293,20 @@ serve(async (req) => {
     // Check for search
     const lastUserMessage = recentMessages.filter((m: any) => m.role === "user").pop()?.content || "";
     let searchResults = "";
+    let searchUrls: string[] = [];
     
     if (shouldUseSearch(lastUserMessage)) {
+      console.log(`🔍 Search triggered for: "${lastUserMessage.substring(0, 50)}..."`);
       try {
         searchResults = await googleSearch(lastUserMessage);
+        // Extract URLs from results
+        if (searchResults) {
+          const urlMatches = searchResults.match(/https?:\/\/[^\s\n]+/g);
+          searchUrls = urlMatches ? urlMatches.slice(0, 5) : [];
+          console.log(`✅ Search found ${searchUrls.length} URLs`);
+        }
       } catch (err) {
-        console.log("Search failed, continuing:", err);
+        console.log("⚠️ Search failed, continuing without:", err);
       }
     }
 
@@ -355,7 +368,7 @@ Agar yuqorida qidiruv natijalari bo'lsa, ularga suyanib javob ber va manbalarni 
         const metadata = {
           type: "metadata",
           search_used: !!searchResults,
-          search_urls: [],
+          search_urls: searchUrls,
           usage: usageResult,
         };
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(metadata)}\n\n`));
