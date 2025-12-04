@@ -5,40 +5,40 @@ type Lang = 'uz' | 'en' | 'ru' | 'tr';
 
 const labels: Record<TraceStep, Record<Lang, string>> = {
   thinking: {
-    uz: "O'ylanmoqda",
+    uz: "Fikrlamoqda",
     en: "Thinking",
-    ru: "Размышление",
+    ru: "Размышляет",
     tr: "Düşünüyor",
   },
   analyzing_request: {
-    uz: "So'rov tahlil qilinmoqda",
-    en: "Analyzing request",
-    ru: "Анализ запроса",
-    tr: "İstek analiz ediliyor",
+    uz: "So'rovni tushunmoqda",
+    en: "Understanding request",
+    ru: "Анализирует запрос",
+    tr: "İsteği anlıyor",
   },
   image_analysis: {
-    uz: "Rasm tahlil qilinmoqda",
+    uz: "Rasmni tahlil qilmoqda",
     en: "Analyzing image",
-    ru: "Анализ изображения",
-    tr: "Görsel analiz ediliyor",
+    ru: "Анализирует изображение",
+    tr: "Görsel analiz ediyor",
   },
   web_search: {
-    uz: "Internetdan qidirilmoqda",
+    uz: "Internetdan qidirmoqda",
     en: "Searching the web",
-    ru: "Поиск в интернете",
-    tr: "Web'de aranıyor",
+    ru: "Ищет в интернете",
+    tr: "Web'de arıyor",
   },
   reading_files: {
-    uz: "Fayllar o'qilmoqda",
-    en: "Reading files",
-    ru: "Чтение файлов",
-    tr: "Dosyalar okunuyor",
+    uz: "Kontekstni tekshirmoqda",
+    en: "Checking context",
+    ru: "Проверяет контекст",
+    tr: "Bağlamı kontrol ediyor",
   },
   drafting_answer: {
-    uz: "Javob tayyorlanmoqda",
-    en: "Drafting answer",
-    ru: "Подготовка ответа",
-    tr: "Cevap hazırlanıyor",
+    uz: "Javobni yozmoqda",
+    en: "Writing answer",
+    ru: "Пишет ответ",
+    tr: "Cevap yazıyor",
   },
   safety_check: {
     uz: "Xavfsizlik tekshiruvi",
@@ -47,16 +47,16 @@ const labels: Record<TraceStep, Record<Lang, string>> = {
     tr: "Güvenlik kontrolü",
   },
   formatting: {
-    uz: "Formatlash",
-    en: "Formatting",
-    ru: "Форматирование",
-    tr: "Biçimlendirme",
+    uz: "Javobni tartiblayapti",
+    en: "Formatting response",
+    ru: "Форматирует ответ",
+    tr: "Yanıtı biçimlendiriyor",
   },
   saving: {
-    uz: "Saqlanmoqda",
-    en: "Saving",
-    ru: "Сохранение",
-    tr: "Kaydediliyor",
+    uz: "Yakunlamoqda",
+    en: "Finalizing",
+    ru: "Завершает",
+    tr: "Tamamlanıyor",
   },
 };
 
@@ -71,7 +71,7 @@ export function getTraceStepIcon(step: TraceStep): string {
     analyzing_request: '🔍',
     image_analysis: '📷',
     web_search: '🌐',
-    reading_files: '📄',
+    reading_files: '📚',
     drafting_answer: '✍️',
     safety_check: '🛡️',
     formatting: '✨',
@@ -84,47 +84,62 @@ export function getTraceStepIcon(step: TraceStep): string {
 export const traceUILabels: Record<Lang, {
   reasoned: string;
   reasoning: string;
+  generating: string;
+  doneIn: string;
   process: string;
   totalTime: string;
   sources: string;
   noSources: string;
   close: string;
+  timeline: string;
 }> = {
   uz: {
-    reasoned: "O'ylandi",
-    reasoning: "O'ylanmoqda",
+    reasoned: "Tayyor",
+    reasoning: "Ishlayapti",
+    generating: "Generatsiya",
+    doneIn: "Tayyor",
     process: "Jarayon",
     totalTime: "Umumiy vaqt",
     sources: "Manbalar",
     noSources: "Tashqi manbalar ishlatilmadi",
     close: "Yopish",
+    timeline: "Qadamlar",
   },
   en: {
-    reasoned: "Reasoned for",
-    reasoning: "Reasoning",
+    reasoned: "Done",
+    reasoning: "Working",
+    generating: "Generating",
+    doneIn: "Done in",
     process: "Process",
     totalTime: "Total time",
     sources: "Sources",
     noSources: "No external sources used",
     close: "Close",
+    timeline: "Steps",
   },
   ru: {
-    reasoned: "Размышлял",
-    reasoning: "Размышляю",
+    reasoned: "Готово",
+    reasoning: "Работает",
+    generating: "Генерация",
+    doneIn: "Готово за",
     process: "Процесс",
     totalTime: "Общее время",
     sources: "Источники",
     noSources: "Внешние источники не использовались",
     close: "Закрыть",
+    timeline: "Шаги",
   },
   tr: {
-    reasoned: "Düşündü",
-    reasoning: "Düşünüyor",
+    reasoned: "Tamamlandı",
+    reasoning: "Çalışıyor",
+    generating: "Oluşturuluyor",
+    doneIn: "Tamamlandı",
     process: "Süreç",
     totalTime: "Toplam süre",
     sources: "Kaynaklar",
     noSources: "Harici kaynak kullanılmadı",
     close: "Kapat",
+    timeline: "Adımlar",
   },
 };
 

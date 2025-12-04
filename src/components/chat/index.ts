@@ -10,4 +10,6 @@ export { default as BahorCard, parseMessageForCards, hasCardContent } from "./Ba
 export { default as ChatHeader } from "./ChatHeader";
 export { default as CollapsibleMessage } from "./CollapsibleMessage";
 export { ChatListSkeleton, ChatMessagesSkeleton } from "./ChatListSkeleton";
+export { ReasonedChip } from "./ReasonedChip";
+export { TraceSheet } from "./TraceSheet";
 export type { CardType, ParsedSection } from "./BahorCard";

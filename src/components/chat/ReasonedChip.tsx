@@ -1,40 +1,57 @@
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getUILabels } from "@/lib/traceLabels";
 import type { MessageTrace } from "@/types/trace";
+import { haptic } from "@/lib/haptics";
 
 interface ReasonedChipProps {
   trace: MessageTrace | null;
   isGenerating: boolean;
   language: string;
+  elapsedLive?: number; // Live elapsed time in ms while generating
   onClick: () => void;
 }
 
-export function ReasonedChip({ trace, isGenerating, language, onClick }: ReasonedChipProps) {
+export function ReasonedChip({ 
+  trace, 
+  isGenerating, 
+  language, 
+  elapsedLive,
+  onClick 
+}: ReasonedChipProps) {
   const labels = getUILabels(language);
   
-  // Don't render if no trace data and not generating
+  // Always render if generating OR if we have trace data
   if (!trace && !isGenerating) return null;
   
-  const elapsedSeconds = trace?.elapsedMs 
-    ? (trace.elapsedMs / 1000).toFixed(1) 
-    : null;
-  
   const isComplete = trace?.isComplete ?? false;
+  
+  // Use live elapsed time while generating, otherwise use final trace time
+  const elapsedMs = isComplete ? trace?.elapsedMs : elapsedLive;
+  const elapsedSeconds = elapsedMs 
+    ? (elapsedMs / 1000).toFixed(1) 
+    : "0.0";
+
+  const handleClick = () => {
+    if (isComplete || trace) {
+      haptic("selection");
+      onClick();
+    }
+  };
 
   return (
     <button
-      onClick={onClick}
+      onClick={handleClick}
       disabled={!isComplete && !trace}
       className={cn(
-        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full",
+        "inline-flex items-center gap-2 px-3 py-1.5 rounded-full",
         "text-xs font-medium transition-all duration-200",
         "backdrop-blur-md border",
-        "bg-white/5 dark:bg-white/5 border-white/10 dark:border-white/10",
-        "hover:bg-white/10 dark:hover:bg-white/10",
+        "bg-background/60 dark:bg-white/5",
+        "border-border/50 dark:border-white/10",
         "text-foreground/80",
         "focus:outline-none focus:ring-2 focus:ring-primary/20",
-        isComplete && "cursor-pointer",
+        isComplete && "cursor-pointer hover:bg-muted/80 dark:hover:bg-white/10",
         !isComplete && "cursor-default"
       )}
       style={{
@@ -44,20 +61,18 @@ export function ReasonedChip({ trace, isGenerating, language, onClick }: Reasone
     >
       {isGenerating && !isComplete ? (
         <>
-          <span className="flex gap-0.5">
-            <span className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: "0ms" }} />
-            <span className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: "150ms" }} />
-            <span className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: "300ms" }} />
+          <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
+          <span className="text-foreground/70">
+            {labels.generating}… <span className="font-mono">{elapsedSeconds}s</span>
           </span>
-          <span>{labels.reasoning}...</span>
         </>
       ) : (
         <>
-          <span className="text-primary">✓</span>
+          <Check className="w-3.5 h-3.5 text-primary" />
           <span>
-            {labels.reasoned} {elapsedSeconds}s
+            {labels.doneIn} <span className="font-mono">{elapsedSeconds}s</span>
           </span>
-          <ChevronDown className="w-3 h-3 text-foreground/50" />
+          <ChevronDown className="w-3.5 h-3.5 text-foreground/50 ml-0.5" />
         </>
       )}
     </button>
