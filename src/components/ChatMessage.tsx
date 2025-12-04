@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { Message } from "@/types/chat";
 import { ExternalLink, FileText, User } from "lucide-react";
 import { MessageActionsPopover } from "@/components/chat/MessageActions";
+import { MessageActionsBar, MessageActionsSheet, MessageVariant } from "@/components/chat/MessageActionsBar";
 import BahorCard, { parseMessageForCards, hasCardContent } from "@/components/chat/BahorCard";
 import { CollapsibleMessage } from "@/components/chat";
 import { formatAssistantText } from "@/lib/formatAssistant";
@@ -12,7 +13,14 @@ interface ChatMessageProps {
   onCopy?: (content: string) => void;
   onEdit?: (messageId: string, content: string) => void;
   onRegenerate?: (messageId: string) => void;
+  onReaction?: (messageId: string, reaction: "like" | "dislike" | null) => void;
+  onShare?: (content: string) => void;
+  onContinue?: (messageId: string) => void;
+  onVariant?: (messageId: string, variant: MessageVariant) => void;
   showActions?: boolean;
+  showActionBar?: boolean;
+  isStreaming?: boolean;
+  isActionLoading?: boolean;
   isMobile?: boolean;
   onLongPress?: (messageId: string) => void;
 }
@@ -22,13 +30,21 @@ export default function ChatMessage({
   onCopy,
   onEdit,
   onRegenerate,
+  onReaction,
+  onShare,
+  onContinue,
+  onVariant,
   showActions = true,
+  showActionBar = true,
+  isStreaming = false,
+  isActionLoading = false,
   isMobile = false,
   onLongPress,
 }: ChatMessageProps) {
   const isUser = message.role === "user";
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const [isPressed, setIsPressed] = useState(false);
+  const [showMobileSheet, setShowMobileSheet] = useState(false);
 
   // Parse message for Bahor Cards (only for AI messages)
   const hasCards = !isUser && hasCardContent(message.content);
@@ -39,6 +55,7 @@ export default function ChatMessage({
       setIsPressed(true);
       longPressTimer.current = setTimeout(() => {
         onLongPress(message.id);
+        setShowMobileSheet(true);
         setIsPressed(false);
       }, 500);
     }
@@ -62,6 +79,22 @@ export default function ChatMessage({
 
   const handleRegenerate = () => {
     onRegenerate?.(message.id);
+  };
+
+  const handleReaction = (reaction: "like" | "dislike" | null) => {
+    onReaction?.(message.id, reaction);
+  };
+
+  const handleShare = () => {
+    onShare?.(message.content);
+  };
+
+  const handleContinue = () => {
+    onContinue?.(message.id);
+  };
+
+  const handleVariant = (variant: MessageVariant) => {
+    onVariant?.(message.id, variant);
   };
 
   // Format and render content with Bahor Cards
@@ -120,125 +153,171 @@ export default function ChatMessage({
   };
 
   return (
-    <div
-      className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"} ${
-        isUser ? "chat-message-user" : "chat-message-ai"
-      } group animate-fade-in`}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      onTouchCancel={handleTouchEnd}
-    >
-      {/* AI Avatar */}
-      {!isUser && (
-        <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-card border border-border/40 flex items-center justify-center mt-0.5 shadow-[0_0_12px_rgba(45,212,191,0.3)]">
-          <img src={bahorLogo} alt="Bahor AI" className="w-8 h-8 object-contain" />
-        </div>
-      )}
-
-      <div className="relative max-w-[88%] sm:max-w-[80%] lg:max-w-[75%] min-w-0">
-        {/* Desktop actions button - appears on hover */}
-        {showActions && !isMobile && (
-          <div className={`absolute ${isUser ? "left-0 -translate-x-full pr-2" : "right-0 translate-x-full pl-2"} top-1`}>
-            <MessageActionsPopover
-              messageRole={message.role}
-              onCopy={handleCopy}
-              onEdit={isUser ? handleEdit : undefined}
-              onRegenerate={!isUser ? handleRegenerate : undefined}
-            />
+    <>
+      <div
+        className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"} ${
+          isUser ? "chat-message-user" : "chat-message-ai"
+        } group animate-fade-in`}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
+      >
+        {/* AI Avatar */}
+        {!isUser && (
+          <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-card border border-border/40 flex items-center justify-center mt-0.5 shadow-[0_0_12px_rgba(45,212,191,0.3)]">
+            <img src={bahorLogo} alt="Bahor AI" className="w-8 h-8 object-contain" />
           </div>
         )}
 
-        <div
-          className={`rounded-2xl transition-transform duration-150 ${
-            isPressed ? "scale-[0.98]" : ""
-          } ${
-            isUser
-              ? "bg-primary text-primary-foreground rounded-tr-md shadow-lg"
-              : "bg-card border border-border/40 rounded-tl-md shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.06)]"
-          }`}
-        >
-          <div className={isUser ? "px-5 py-4" : "px-5 py-4"}>
-            {/* Attachments */}
-            {message.attachments && message.attachments.length > 0 && (
-              <div className="mb-3 space-y-2">
-                {message.attachments.map((attachment) => (
-                  <div key={attachment.id} className="rounded-xl overflow-hidden">
-                    {attachment.type.startsWith("image/") && attachment.url ? (
-                      <a
-                        href={attachment.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block group/img"
-                      >
-                        <img
-                          src={attachment.url}
-                          alt={attachment.name}
-                          className="max-w-full max-h-64 rounded-xl group-hover/img:opacity-95 transition-opacity"
-                        />
-                      </a>
-                    ) : (
-                      <a
-                        href={attachment.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${
-                          isUser
-                            ? "bg-primary-foreground/10 hover:bg-primary-foreground/15"
-                            : "bg-secondary/60 hover:bg-secondary"
-                        }`}
-                      >
-                        <div
-                          className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                            isUser ? "bg-primary-foreground/10" : "bg-muted"
+        <div className="relative max-w-[88%] sm:max-w-[80%] lg:max-w-[75%] min-w-0">
+          {/* Desktop actions button - appears on hover */}
+          {showActions && !isMobile && isUser && (
+            <div className="absolute left-0 -translate-x-full pr-2 top-1">
+              <MessageActionsPopover
+                messageRole={message.role}
+                onCopy={handleCopy}
+                onEdit={handleEdit}
+              />
+            </div>
+          )}
+
+          <div
+            className={`rounded-2xl transition-transform duration-150 ${
+              isPressed ? "scale-[0.98]" : ""
+            } ${
+              isUser
+                ? "bg-primary text-primary-foreground rounded-tr-md shadow-lg"
+                : "bg-card border border-border/40 rounded-tl-md shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.06)]"
+            }`}
+          >
+            <div className={isUser ? "px-5 py-4" : "px-5 py-4"}>
+              {/* Attachments */}
+              {message.attachments && message.attachments.length > 0 && (
+                <div className="mb-3 space-y-2">
+                  {message.attachments.map((attachment) => (
+                    <div key={attachment.id} className="rounded-xl overflow-hidden">
+                      {attachment.type.startsWith("image/") && attachment.url ? (
+                        <a
+                          href={attachment.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block group/img"
+                        >
+                          <img
+                            src={attachment.url}
+                            alt={attachment.name}
+                            className="max-w-full max-h-64 rounded-xl group-hover/img:opacity-95 transition-opacity"
+                          />
+                        </a>
+                      ) : (
+                        <a
+                          href={attachment.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${
+                            isUser
+                              ? "bg-primary-foreground/10 hover:bg-primary-foreground/15"
+                              : "bg-secondary/60 hover:bg-secondary"
                           }`}
                         >
-                          <FileText className="w-5 h-5" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{attachment.name}</p>
-                          <p className={`text-xs ${isUser ? "opacity-70" : "text-muted-foreground"}`}>
-                            {(attachment.size / 1024).toFixed(1)} KB
-                          </p>
-                        </div>
-                        <ExternalLink
-                          className={`w-4 h-4 flex-shrink-0 ${
-                            isUser ? "opacity-60" : "text-muted-foreground"
-                          }`}
-                        />
-                      </a>
-                    )}
-                  </div>
-                ))}
+                          <div
+                            className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                              isUser ? "bg-primary-foreground/10" : "bg-muted"
+                            }`}
+                          >
+                            <FileText className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{attachment.name}</p>
+                            <p className={`text-xs ${isUser ? "opacity-70" : "text-muted-foreground"}`}>
+                              {(attachment.size / 1024).toFixed(1)} KB
+                            </p>
+                          </div>
+                          <ExternalLink
+                            className={`w-4 h-4 flex-shrink-0 ${
+                              isUser ? "opacity-60" : "text-muted-foreground"
+                            }`}
+                          />
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {message.content && renderContent()}
+            </div>
+
+            {/* Timestamp - only show for messages without cards (cards have their own timestamps) */}
+            {!hasCards && (
+              <div className="px-4 pb-2.5 -mt-1">
+                <span
+                  className={`text-[11px] ${
+                    isUser ? "text-primary-foreground/60" : "text-muted-foreground"
+                  }`}
+                >
+                  {new Date(message.timestamp).toLocaleTimeString("uz-UZ", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
               </div>
             )}
-
-            {message.content && renderContent()}
           </div>
 
-          {/* Timestamp - only show for messages without cards (cards have their own timestamps) */}
-          {!hasCards && (
-            <div className="px-4 pb-2.5 -mt-1">
-              <span
-                className={`text-[11px] ${
-                  isUser ? "text-primary-foreground/60" : "text-muted-foreground"
-                }`}
-              >
-                {new Date(message.timestamp).toLocaleTimeString("uz-UZ", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </span>
+          {/* Action bar for assistant messages (desktop only) */}
+          {!isUser && showActionBar && !isMobile && (
+            <MessageActionsBar
+              messageId={message.id}
+              messageContent={message.content}
+              reaction={message.reaction}
+              isStreaming={isStreaming}
+              isActionLoading={isActionLoading}
+              onReaction={handleReaction}
+              onCopy={handleCopy}
+              onShare={handleShare}
+              onContinue={handleContinue}
+              onRegenerate={handleRegenerate}
+              onVariant={handleVariant}
+            />
+          )}
+
+          {/* Variant label if this is a variant message */}
+          {!isUser && message.meta?.variant && (
+            <div className="mt-1.5 text-[10px] text-muted-foreground/60 uppercase tracking-wide">
+              {message.meta.variant === "regen" ? "Yangi javob" :
+               message.meta.variant === "continue" ? "Davomi" :
+               message.meta.variant === "shorter" ? "Qisqa versiya" :
+               message.meta.variant === "longer" ? "Kengaytirilgan" :
+               message.meta.variant === "simplify" ? "Soddalashtirilgan" :
+               message.meta.variant === "detailed" ? "Batafsil" : ""}
             </div>
           )}
         </div>
+
+        {/* User Avatar */}
+        {isUser && (
+          <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center mt-0.5 shadow-lg glow-primary-subtle">
+            <User className="w-4 h-4 text-primary-foreground" />
+          </div>
+        )}
       </div>
 
-      {/* User Avatar */}
-      {isUser && (
-        <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center mt-0.5 shadow-lg glow-primary-subtle">
-          <User className="w-4 h-4 text-primary-foreground" />
-        </div>
+      {/* Mobile action sheet for assistant messages */}
+      {!isUser && isMobile && (
+        <MessageActionsSheet
+          isOpen={showMobileSheet}
+          onClose={() => setShowMobileSheet(false)}
+          reaction={message.reaction}
+          isDisabled={isStreaming || isActionLoading}
+          onReaction={handleReaction}
+          onCopy={handleCopy}
+          onShare={handleShare}
+          onContinue={handleContinue}
+          onRegenerate={handleRegenerate}
+          onVariant={handleVariant}
+        />
       )}
-    </div>
+    </>
   );
 }

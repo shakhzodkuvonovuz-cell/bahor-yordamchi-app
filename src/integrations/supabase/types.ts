@@ -73,7 +73,9 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          meta: Json | null
           model: string | null
+          reaction: string | null
           role: string
           thread_id: string
           tokens_in: number | null
@@ -84,7 +86,9 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          meta?: Json | null
           model?: string | null
+          reaction?: string | null
           role: string
           thread_id: string
           tokens_in?: number | null
@@ -95,7 +99,9 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          meta?: Json | null
           model?: string | null
+          reaction?: string | null
           role?: string
           thread_id?: string
           tokens_in?: number | null

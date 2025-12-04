@@ -25,6 +25,12 @@ export interface ChatMessage {
   tokens_in?: number | null;
   tokens_out?: number | null;
   created_at: string;
+  reaction?: "like" | "dislike" | null;
+  meta?: {
+    variant?: "shorter" | "longer" | "simplify" | "detailed" | "regen" | "continue";
+    parentAssistantId?: string;
+    promptHints?: string;
+  } | null;
 }
 
 export interface ChatAttachmentRecord {
@@ -268,6 +274,60 @@ export async function deleteMessage(messageId: string): Promise<void> {
     console.error("Error deleting message:", error);
     throw error;
   }
+}
+
+// ============= Reaction Operations =============
+
+export async function setMessageReaction(
+  messageId: string,
+  reaction: "like" | "dislike" | null
+): Promise<void> {
+  const { error } = await supabase
+    .from("chat_messages")
+    .update({ reaction })
+    .eq("id", messageId);
+
+  if (error) {
+    console.error("Error setting reaction:", error);
+    throw error;
+  }
+}
+
+export async function addVariantMessage(
+  userId: string,
+  options: {
+    threadId: string;
+    role: "assistant";
+    content: string;
+    model?: string;
+    meta?: {
+      variant?: "shorter" | "longer" | "simplify" | "detailed" | "regen" | "continue";
+      parentAssistantId?: string;
+      promptHints?: string;
+    };
+  }
+): Promise<ChatMessage> {
+  const { data, error } = await supabase
+    .from("chat_messages")
+    .insert({
+      thread_id: options.threadId,
+      user_id: userId,
+      role: options.role,
+      content: options.content,
+      model: options.model,
+      meta: options.meta,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error adding variant message:", error);
+    throw error;
+  }
+
+  await touchThread(options.threadId).catch(console.error);
+
+  return data as ChatMessage;
 }
 
 // ============= Attachment Operations =============

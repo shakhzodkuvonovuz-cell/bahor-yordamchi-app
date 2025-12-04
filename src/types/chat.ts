@@ -15,6 +15,12 @@ export interface Message {
   content: string;
   timestamp: Date;
   attachments?: ChatAttachment[];
+  reaction?: "like" | "dislike" | null;
+  meta?: {
+    variant?: "shorter" | "longer" | "simplify" | "detailed" | "regen" | "continue";
+    parentAssistantId?: string;
+    promptHints?: string;
+  } | null;
 }
 
 export interface ModeInfo {

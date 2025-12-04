@@ -130,6 +130,8 @@ function dbMessageToUI(msg: chatStore.ChatMessage): Message {
     role: msg.role as "user" | "assistant",
     content: msg.content,
     timestamp: new Date(msg.created_at),
+    reaction: msg.reaction,
+    meta: msg.meta,
   };
 }
 
@@ -439,6 +441,260 @@ export default function Chat() {
     lightTap();
     setActiveActionMessageId(messageId);
     setShowMobileActions(true);
+  };
+
+  // Handle message reaction (like/dislike)
+  const handleReaction = async (messageId: string, reaction: "like" | "dislike" | null) => {
+    lightTap();
+    // Optimistic update
+    setMessages(prev => prev.map(m => 
+      m.id === messageId ? { ...m, reaction } : m
+    ));
+    
+    try {
+      await chatStore.setMessageReaction(messageId, reaction);
+      toast({
+        description: language === "uz" ? "Baholandi" : language === "en" ? "Rated" : language === "ru" ? "Оценено" : "Değerlendirildi",
+      });
+    } catch (error) {
+      // Revert on error
+      setMessages(prev => prev.map(m => 
+        m.id === messageId ? { ...m, reaction: undefined } : m
+      ));
+    }
+  };
+
+  // Handle share
+  const handleShare = async (content: string) => {
+    lightTap();
+    const shareData = {
+      title: "Bahor AI",
+      text: content,
+    };
+    
+    if (navigator.share && navigator.canShare?.(shareData)) {
+      try {
+        await navigator.share(shareData);
+        toast({
+          description: language === "uz" ? "Ulashildi" : "Shared",
+        });
+      } catch (err) {
+        // User cancelled or error
+        if ((err as Error).name !== "AbortError") {
+          handleCopyMessage(content);
+        }
+      }
+    } else {
+      // Fallback to copy
+      handleCopyMessage(content);
+      toast({
+        description: language === "uz" ? "Ko'chirildi (ulashish o'rniga)" : "Copied (share unavailable)",
+      });
+    }
+  };
+
+  // Handle continue - generate continuation of assistant message
+  const handleContinue = async (messageId: string) => {
+    if (isLoading || typing || !user || !currentThreadId) return;
+    
+    const message = messages.find(m => m.id === messageId);
+    if (!message || message.role !== "assistant") return;
+    
+    // Find the user message before this assistant message
+    const messageIndex = messages.findIndex(m => m.id === messageId);
+    let userMessageIndex = messageIndex - 1;
+    while (userMessageIndex >= 0 && messages[userMessageIndex].role !== "user") {
+      userMessageIndex--;
+    }
+    
+    const userMessage = userMessageIndex >= 0 ? messages[userMessageIndex] : null;
+    
+    // Build continuation prompt
+    const continuePrompt = userMessage 
+      ? `Continue your previous answer to: "${userMessage.content.substring(0, 200)}..." Start exactly where you left off without repeating anything.`
+      : "Continue from where you left off without repeating anything.";
+    
+    await handleVariantMessage(messageId, "continue", continuePrompt);
+  };
+
+  // Handle variant generation (shorter, longer, simplify, detailed, regen)
+  const handleVariant = async (messageId: string, variant: "shorter" | "longer" | "simplify" | "detailed" | "regen" | "continue") => {
+    if (variant === "continue") {
+      return handleContinue(messageId);
+    }
+    if (variant === "regen") {
+      return handleRegenerateMessage(messageId);
+    }
+    
+    const message = messages.find(m => m.id === messageId);
+    if (!message || message.role !== "assistant") return;
+    
+    // Find the user message before this assistant message
+    const messageIndex = messages.findIndex(m => m.id === messageId);
+    let userMessageIndex = messageIndex - 1;
+    while (userMessageIndex >= 0 && messages[userMessageIndex].role !== "user") {
+      userMessageIndex--;
+    }
+    
+    const userMessage = userMessageIndex >= 0 ? messages[userMessageIndex] : null;
+    
+    const variantPrompts: Record<string, string> = {
+      shorter: "Rewrite the previous answer more concisely, using bullet points if helpful. Keep the core meaning. Max 150 words.",
+      longer: "Expand the previous answer with more detail, examples, and deeper explanation. Target 800-1200 words. Keep the same structure.",
+      simplify: "Rewrite the previous answer in simpler language, as if explaining to a beginner. Avoid jargon. Use analogies.",
+      detailed: "Provide a more detailed version with step-by-step reasoning, examples, and thorough explanation.",
+    };
+    
+    const prompt = userMessage 
+      ? `Original question: "${userMessage.content.substring(0, 300)}"\n\n${variantPrompts[variant]}`
+      : variantPrompts[variant];
+    
+    await handleVariantMessage(messageId, variant, prompt);
+  };
+
+  // Shared logic for variant message generation
+  const handleVariantMessage = async (
+    parentMessageId: string,
+    variant: "shorter" | "longer" | "simplify" | "detailed" | "regen" | "continue",
+    instructionPrompt: string
+  ) => {
+    if (isLoading || typing || !user || !currentThreadId || !session?.access_token) return;
+    
+    lightTap();
+    setIsLoading(true);
+    setTyping(true);
+    
+    const parentMessage = messages.find(m => m.id === parentMessageId);
+    
+    setThinkingStatus({
+      phase: 'reasoning',
+      shortLabel: translate('thinking.reasoning'),
+      details: [translate('thinking.step.understanding'), translate('thinking.step.drafting')],
+    });
+    setThinkingMessageId(parentMessageId);
+    
+    const assistantId = crypto.randomUUID?.() ?? (Date.now() + 1).toString();
+    
+    try {
+      // Build context - use last 10 messages for context
+      const { messages: contextMessages } = await chatStore.getMessagesWithContext(currentThreadId, { recentLimit: 10 });
+      
+      const conversationMessages = contextMessages.map(msg => ({
+        role: msg.role,
+        content: msg.content,
+      }));
+      
+      // Add the variant instruction
+      conversationMessages.push({
+        role: "user",
+        content: instructionPrompt,
+      });
+      
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            messages: conversationMessages,
+            mode: mode || "general",
+            language,
+            isVariant: true,
+            variantType: variant,
+          }),
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+      
+      // Create optimistic assistant message
+      const newAssistantMessage: Message = {
+        id: assistantId,
+        role: "assistant",
+        content: "",
+        timestamp: new Date(),
+        meta: { variant, parentAssistantId: parentMessageId },
+      };
+      
+      // Insert after parent message
+      const parentIndex = messages.findIndex(m => m.id === parentMessageId);
+      setMessages(prev => {
+        const newMessages = [...prev];
+        newMessages.splice(parentIndex + 1, 0, newAssistantMessage);
+        return newMessages;
+      });
+      
+      let fullContent = "";
+      
+      await processStreamingResponse(response, {
+        onChunk: (chunk) => {
+          fullContent += chunk;
+          setMessages(prev => prev.map(m => 
+            m.id === assistantId ? { ...m, content: fullContent } : m
+          ));
+        },
+        onDone: async () => {
+          setTyping(false);
+          setIsLoading(false);
+          setThinkingStatus({ phase: 'idle', shortLabel: '', details: [] });
+          setThinkingMessageId(null);
+          
+          // Save to DB
+          if (fullContent.trim()) {
+            const savedMessage = await chatStore.addVariantMessage(user.id, {
+              threadId: currentThreadId,
+              role: "assistant",
+              content: fullContent.trim(),
+              meta: { variant, parentAssistantId: parentMessageId },
+            });
+            
+            setMessages(prev => prev.map(m => 
+              m.id === assistantId ? { ...m, id: savedMessage.id } : m
+            ));
+          }
+          
+          scrollToBottom();
+        },
+        onError: (error) => {
+          console.error("Variant stream error:", error);
+          setTyping(false);
+          setIsLoading(false);
+          setThinkingStatus({ phase: 'idle', shortLabel: '', details: [] });
+          
+          // Remove failed message
+          setMessages(prev => prev.filter(m => m.id !== assistantId));
+          
+          toast({
+            title: language === "uz" ? "Xatolik" : "Error",
+            description: language === "uz" ? "Javob yaratishda xatolik" : "Failed to generate response",
+            variant: "destructive",
+          });
+        },
+        onMetadata: (metadata) => {
+          if (metadata.search_used) {
+            setSearchUsed(true);
+            setSearchUrls(metadata.search_urls || []);
+          }
+        },
+      });
+      
+    } catch (error) {
+      console.error("Variant generation error:", error);
+      setTyping(false);
+      setIsLoading(false);
+      setThinkingStatus({ phase: 'idle', shortLabel: '', details: [] });
+      
+      toast({
+        title: language === "uz" ? "Xatolik" : "Error",
+        description: language === "uz" ? "Javob yaratishda xatolik" : "Failed to generate response",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1230,7 +1486,13 @@ export default function Chat() {
                     onCopy={handleCopyMessage}
                     onEdit={handleEditMessage}
                     onRegenerate={handleRegenerateMessage}
+                    onReaction={handleReaction}
+                    onShare={handleShare}
+                    onContinue={handleContinue}
+                    onVariant={handleVariant}
                     showActions={!isLoading && !typing}
+                    showActionBar={!isLoading && !typing}
+                    isStreaming={isLoading || typing}
                     isMobile={isMobile}
                     onLongPress={handleLongPress}
                   />
