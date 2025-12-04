@@ -117,7 +117,11 @@ export type Database = {
           created_at: string
           id: string
           is_archived: boolean
+          last_message_preview: string | null
+          message_count: number | null
           mode: string
+          summary: string | null
+          summary_updated_at: string | null
           title: string
           updated_at: string
           user_id: string
@@ -126,7 +130,11 @@ export type Database = {
           created_at?: string
           id?: string
           is_archived?: boolean
+          last_message_preview?: string | null
+          message_count?: number | null
           mode?: string
+          summary?: string | null
+          summary_updated_at?: string | null
           title?: string
           updated_at?: string
           user_id: string
@@ -135,7 +143,11 @@ export type Database = {
           created_at?: string
           id?: string
           is_archived?: boolean
+          last_message_preview?: string | null
+          message_count?: number | null
           mode?: string
+          summary?: string | null
+          summary_updated_at?: string | null
           title?: string
           updated_at?: string
           user_id?: string
@@ -207,6 +219,10 @@ export type Database = {
       increment_daily_usage: {
         Args: { p_today: string; p_user_id: string }
         Returns: Json
+      }
+      normalize_preview: {
+        Args: { content: string; max_length?: number }
+        Returns: string
       }
     }
     Enums: {
