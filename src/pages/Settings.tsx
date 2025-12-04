@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, User, Globe, Moon, Sun, Shield, HelpCircle, FileText, Mail, LogOut, ChevronRight, CreditCard, Bell, Zap, Edit, Crown, Lock, RotateCcw } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { ArrowLeft, User, Globe, Moon, Sun, Shield, HelpCircle, FileText, Mail, LogOut, ChevronRight, CreditCard, Bell, Zap, Edit, Crown, Lock, RotateCcw, Loader2 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useLanguage, Language } from "@/hooks/useLanguage";
 import { getTranslation } from "@/data/translations";
@@ -18,7 +18,8 @@ import ProfilePhotoUpload from "@/components/ProfilePhotoUpload";
 import PremiumUpgradeCard from "@/components/PremiumUpgradeCard";
 import UsageProgressBar from "@/components/UsageProgressBar";
 import SettingsProfileSkeleton from "@/components/SettingsProfileSkeleton";
-
+import ManageSubscriptionCard from "@/components/ManageSubscriptionCard";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -233,26 +234,7 @@ export default function Settings() {
 
               {/* Manage Subscription for premium users */}
               {profile && profile.plan !== 'free' && (
-                <section className="bg-card border border-border/40 rounded-2xl p-4 shadow-premium-sm w-full">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-foreground">
-                        {getPlanLabel()} reja
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {profile.plan === 'ultra' || profile.plan === 'yearly' ? 'Yillik obuna' : 'Oylik obuna'}
-                      </p>
-                    </div>
-                    <Button 
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setSubscriptionDrawerOpen(true)}
-                      className="shrink-0 min-h-[44px]"
-                    >
-                      Boshqarish
-                    </Button>
-                  </div>
-                </section>
+                <ManageSubscriptionCard profile={profile} />
               )}
             </>
           )}
