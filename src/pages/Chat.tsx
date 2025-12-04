@@ -35,6 +35,24 @@ import bahorLogo from "@/assets/bahor-logo.png";
 import { processAttachments } from "@/services/documentService";
 import { isVisionSupportedImage } from "@/services/visionService";
 
+// Helper to format relative time
+function formatRelativeTime(dateString: string, lang: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return lang === "uz" ? "hozir" : lang === "ru" ? "сейчас" : lang === "tr" ? "şimdi" : "now";
+  if (diffMins < 60) return `${diffMins}${lang === "uz" ? "d" : lang === "ru" ? "м" : lang === "tr" ? "dk" : "m"}`;
+  if (diffHours < 24) return `${diffHours}${lang === "uz" ? "s" : lang === "ru" ? "ч" : lang === "tr" ? "sa" : "h"}`;
+  if (diffDays === 1) return lang === "uz" ? "kecha" : lang === "ru" ? "вчера" : lang === "tr" ? "dün" : "yesterday";
+  if (diffDays < 7) return `${diffDays}${lang === "uz" ? "k" : lang === "ru" ? "д" : lang === "tr" ? "g" : "d"}`;
+  
+  return date.toLocaleDateString();
+}
+
 // Real streaming helper - processes SSE from DeepSeek API
 type StreamOptions = {
   onChunk: (chunk: string) => void;
@@ -663,12 +681,19 @@ export default function Chat() {
         }
       }
       
-      // Create conversation history for API
-      const recentMessages = messages.slice(-12);
-      const conversationMessages = recentMessages.map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-      }));
+      // Get thread context (summary + recent messages) for API
+      const { summary: threadSummary, messages: contextMessages } = await chatStore.getMessagesWithContext(
+        currentThreadId,
+        { recentLimit: 10 }
+      );
+      
+      // Build conversation messages from recent context (excluding the message we just added)
+      const conversationMessages = contextMessages
+        .filter(m => m.id !== savedUserMessage.id)
+        .map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+        }));
       
       let messageContent = content.trim();
       if (analysisContent) {
@@ -732,6 +757,7 @@ export default function Chat() {
             attachments: attachmentsToProcess,
             hasAnalysis: !!analysisContent,
             analysisType,
+            threadSummary: threadSummary || undefined,
           }),
         }
       );
@@ -854,6 +880,22 @@ export default function Chat() {
                 )
               );
               setLastAssistantMessageId(savedAssistant.id);
+              
+              // Trigger summary generation (debounced, non-blocking)
+              if (session?.access_token) {
+                chatStore.maybeGenerateSummary(currentThreadId, session.access_token)
+                  .then(result => {
+                    if (result.summary) {
+                      // Update local thread data with new summary
+                      setThreads(prev => prev.map(t => 
+                        t.id === currentThreadId 
+                          ? { ...t, summary: result.summary }
+                          : t
+                      ));
+                    }
+                  })
+                  .catch(() => {}); // Silently ignore errors
+              }
             } catch (err) {
               console.error("Error saving assistant message:", err);
             }
@@ -1063,7 +1105,7 @@ export default function Chat() {
                   <div
                     key={thread.id}
                     className={clsx(
-                      "flex items-center justify-between px-3 py-3 text-sm cursor-pointer rounded-xl my-1.5 transition-all",
+                      "flex items-start justify-between px-3 py-3 text-sm cursor-pointer rounded-xl my-1.5 transition-all group",
                       thread.id === currentThreadId
                         ? "bg-primary/10 border border-primary/20 text-foreground"
                         : "hover:bg-secondary/60 border border-transparent"
@@ -1071,22 +1113,35 @@ export default function Chat() {
                     onClick={() => handleSelectThread(thread.id)}
                   >
                     <div className="flex-1 pr-2 min-w-0">
-                      <div className="font-medium text-foreground truncate">
-                        {thread.title || t.chat.defaultChatTitle}
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium text-foreground truncate flex-1">
+                          {thread.title || t.chat.defaultChatTitle}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground/70 flex-shrink-0">
+                          {formatRelativeTime(thread.updated_at, language)}
+                        </span>
                       </div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        {new Date(thread.updated_at).toLocaleDateString()}
+                      <div className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                        {thread.summary 
+                          ? thread.summary.split('\n')[0].substring(0, 80) + (thread.summary.length > 80 ? '...' : '')
+                          : thread.last_message_preview || (language === "uz" ? "Yangi suhbat" : "New chat")
+                        }
                       </div>
+                      {thread.message_count && thread.message_count > 0 && (
+                        <div className="text-[10px] text-muted-foreground/50 mt-1">
+                          {thread.message_count} {language === "uz" ? "xabar" : language === "ru" ? "сообщ." : language === "tr" ? "mesaj" : "msg"}
+                        </div>
+                      )}
                     </div>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         setPendingDeleteThreadId(thread.id);
                       }}
-                      className="p-2 rounded-lg hover:bg-destructive/10 transition-colors"
+                      className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
                       aria-label="Delete chat"
                     >
-                      <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+                      <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
                     </button>
                   </div>
                 ))
