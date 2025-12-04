@@ -414,12 +414,6 @@ export default function VoiceModePanel({ isOpen, onClose, onTranscriptionComplet
           </button>
 
           <div className="flex items-center gap-2">
-            {/* Platform indicator for iOS */}
-            {capabilities.needsWhisperFallback && (
-              <span className="text-xs text-muted-foreground/50 hidden sm:inline">
-                iOS mode
-              </span>
-            )}
             
             <button
               onClick={() => setIsMuted(!isMuted)}

@@ -1,4 +1,4 @@
-// Cross-platform speech service with Web Speech API + Whisper fallback for iOS
+// Speech service using Web Speech API
 
 type SpeechRecognitionEvent = {
   results: SpeechRecognitionResultList;
@@ -8,22 +8,6 @@ type SpeechRecognitionEvent = {
 type SpeechRecognitionErrorEvent = {
   error: string;
   message?: string;
-};
-
-// Check platform capabilities
-export const getSpeechCapabilities = () => {
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-  const hasWebSpeechRecognition = 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window;
-  const hasSpeechSynthesis = 'speechSynthesis' in window;
-  
-  return {
-    isIOS,
-    isSafari,
-    hasNativeSTT: hasWebSpeechRecognition && !(isIOS && isSafari), // iOS Safari doesn't support STT
-    hasTTS: hasSpeechSynthesis,
-    needsWhisperFallback: isIOS && isSafari,
-  };
 };
 
 // Language mapping for speech APIs
@@ -37,6 +21,17 @@ const getLanguageCode = (lang: string): string => {
   return langMap[lang] || 'en-US';
 };
 
+// Check platform capabilities
+export const getSpeechCapabilities = () => {
+  const hasWebSpeechRecognition = 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window;
+  const hasSpeechSynthesis = 'speechSynthesis' in window;
+  
+  return {
+    hasSTT: hasWebSpeechRecognition,
+    hasTTS: hasSpeechSynthesis,
+  };
+};
+
 // ============================================
 // Speech-to-Text (STT) Service
 // ============================================
@@ -48,15 +43,15 @@ interface STTOptions {
   onEnd: () => void;
 }
 
-class WebSpeechRecognition {
+export class SpeechToText {
   private recognition: any = null;
   private isListening = false;
 
-  start(options: STTOptions) {
+  start(options: STTOptions): boolean {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     
     if (!SpeechRecognition) {
-      options.onError('Speech recognition not supported');
+      options.onError('Speech recognition not supported in this browser');
       return false;
     }
 
@@ -119,158 +114,6 @@ class WebSpeechRecognition {
     if (this.recognition) {
       this.recognition.abort();
       this.isListening = false;
-    }
-  }
-}
-
-// Whisper-based fallback for iOS Safari
-class WhisperFallbackRecognition {
-  private mediaRecorder: MediaRecorder | null = null;
-  private audioChunks: Blob[] = [];
-  private stream: MediaStream | null = null;
-  private isRecording = false;
-  private options: STTOptions | null = null;
-
-  async start(options: STTOptions): Promise<boolean> {
-    this.options = options;
-    
-    try {
-      this.stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          sampleRate: 16000,
-        } 
-      });
-
-      // Check for supported mime types
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
-        ? 'audio/webm;codecs=opus'
-        : MediaRecorder.isTypeSupported('audio/mp4')
-        ? 'audio/mp4'
-        : 'audio/wav';
-
-      this.mediaRecorder = new MediaRecorder(this.stream, { mimeType });
-      this.audioChunks = [];
-
-      this.mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          this.audioChunks.push(event.data);
-        }
-      };
-
-      this.mediaRecorder.onstop = async () => {
-        await this.processAudio();
-      };
-
-      this.mediaRecorder.start(1000); // Collect in 1-second chunks
-      this.isRecording = true;
-      return true;
-    } catch (error) {
-      console.error('Failed to start recording:', error);
-      options.onError('Microphone access denied');
-      return false;
-    }
-  }
-
-  private async processAudio() {
-    if (this.audioChunks.length === 0 || !this.options) {
-      this.options?.onEnd();
-      return;
-    }
-
-    const audioBlob = new Blob(this.audioChunks, { type: this.audioChunks[0].type });
-    
-    // Convert to base64
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const base64Audio = (reader.result as string).split(',')[1];
-      
-      try {
-        // Call Whisper edge function
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/speech-to-text`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            },
-            body: JSON.stringify({
-              audio: base64Audio,
-              language: this.options?.language || 'en',
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error('Transcription failed');
-        }
-
-        const data = await response.json();
-        if (data.text) {
-          this.options?.onResult(data.text, true);
-        }
-      } catch (error) {
-        console.error('Whisper transcription error:', error);
-        this.options?.onError('Transcription failed');
-      }
-
-      this.options?.onEnd();
-    };
-    
-    reader.readAsDataURL(audioBlob);
-  }
-
-  stop() {
-    if (this.mediaRecorder && this.isRecording) {
-      this.mediaRecorder.stop();
-      this.isRecording = false;
-    }
-    if (this.stream) {
-      this.stream.getTracks().forEach(track => track.stop());
-      this.stream = null;
-    }
-  }
-
-  abort() {
-    this.audioChunks = [];
-    this.stop();
-  }
-}
-
-// Unified STT interface
-export class SpeechToText {
-  private webSpeech = new WebSpeechRecognition();
-  private whisperFallback = new WhisperFallbackRecognition();
-  private usingFallback = false;
-
-  async start(options: STTOptions): Promise<boolean> {
-    const capabilities = getSpeechCapabilities();
-    
-    if (capabilities.hasNativeSTT) {
-      this.usingFallback = false;
-      return this.webSpeech.start(options);
-    } else {
-      console.log('Using Whisper fallback for STT');
-      this.usingFallback = true;
-      return this.whisperFallback.start(options);
-    }
-  }
-
-  stop() {
-    if (this.usingFallback) {
-      this.whisperFallback.stop();
-    } else {
-      this.webSpeech.stop();
-    }
-  }
-
-  abort() {
-    if (this.usingFallback) {
-      this.whisperFallback.abort();
-    } else {
-      this.webSpeech.abort();
     }
   }
 }
