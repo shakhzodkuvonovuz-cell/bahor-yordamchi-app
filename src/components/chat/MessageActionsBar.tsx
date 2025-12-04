@@ -13,6 +13,7 @@ import {
   MoreHorizontal,
   Check,
   X,
+  Edit3,
 } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { Button } from "@/components/ui/button";
@@ -241,23 +242,27 @@ export function MessageActionsSheet({
   onClose,
   reaction,
   isDisabled,
+  isUserMessage = false,
   onReaction,
   onCopy,
   onShare,
   onContinue,
   onRegenerate,
   onVariant,
+  onEdit,
 }: {
   isOpen: boolean;
   onClose: () => void;
   reaction?: "like" | "dislike" | null;
   isDisabled?: boolean;
+  isUserMessage?: boolean;
   onReaction: (reaction: "like" | "dislike" | null) => void;
   onCopy: () => void;
   onShare: () => void;
   onContinue: () => void;
   onRegenerate: () => void;
   onVariant: (variant: MessageVariant) => void;
+  onEdit?: () => void;
 }) {
   const { language } = useTranslation();
   const [copied, setCopied] = useState(false);
@@ -296,6 +301,7 @@ export function MessageActionsSheet({
     simplify: language === "uz" ? "Soddalash" : language === "ru" ? "Упростить" : language === "tr" ? "Basitleştir" : "Simplify",
     detailed: language === "uz" ? "Batafsil" : language === "ru" ? "Подробнее" : language === "tr" ? "Detaylı" : "More detailed",
     cancel: language === "uz" ? "Bekor qilish" : language === "ru" ? "Отмена" : language === "tr" ? "İptal" : "Cancel",
+    edit: language === "uz" ? "Tahrirlash" : language === "ru" ? "Редактировать" : language === "tr" ? "Düzenle" : "Edit",
   };
 
   const handleCopy = () => {
@@ -350,31 +356,33 @@ export function MessageActionsSheet({
             onClick={handleClose}
           />
 
-          {/* Quick reactions row */}
-          <div className="flex items-center justify-center gap-4 mb-4 pb-4 border-b border-border/40">
-            <button
-              onClick={() => handleReaction("like")}
-              disabled={isDisabled}
-              className={cn(
-                "flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors",
-                reaction === "like" ? "bg-primary/10 text-primary" : "text-muted-foreground"
-              )}
-            >
-              <ThumbsUp className={cn("w-6 h-6", reaction === "like" && "fill-current")} />
-              <span className="text-xs">{labels.like}</span>
-            </button>
-            <button
-              onClick={() => handleReaction("dislike")}
-              disabled={isDisabled}
-              className={cn(
-                "flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors",
-                reaction === "dislike" ? "bg-destructive/10 text-destructive" : "text-muted-foreground"
-              )}
-            >
-              <ThumbsDown className={cn("w-6 h-6", reaction === "dislike" && "fill-current")} />
-              <span className="text-xs">{labels.dislike}</span>
-            </button>
-          </div>
+          {/* Quick reactions row - only for assistant messages */}
+          {!isUserMessage && (
+            <div className="flex items-center justify-center gap-4 mb-4 pb-4 border-b border-border/40">
+              <button
+                onClick={() => handleReaction("like")}
+                disabled={isDisabled}
+                className={cn(
+                  "flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors",
+                  reaction === "like" ? "bg-primary/10 text-primary" : "text-muted-foreground"
+                )}
+              >
+                <ThumbsUp className={cn("w-6 h-6", reaction === "like" && "fill-current")} />
+                <span className="text-xs">{labels.like}</span>
+              </button>
+              <button
+                onClick={() => handleReaction("dislike")}
+                disabled={isDisabled}
+                className={cn(
+                  "flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors",
+                  reaction === "dislike" ? "bg-destructive/10 text-destructive" : "text-muted-foreground"
+                )}
+              >
+                <ThumbsDown className={cn("w-6 h-6", reaction === "dislike" && "fill-current")} />
+                <span className="text-xs">{labels.dislike}</span>
+              </button>
+            </div>
+          )}
 
           <div className="space-y-1">
             {/* Copy */}
@@ -387,6 +395,18 @@ export function MessageActionsSheet({
               <span className="text-[15px] font-medium">{copied ? labels.copied : labels.copy}</span>
             </button>
 
+            {/* Edit - only for user messages */}
+            {isUserMessage && onEdit && (
+              <button
+                onClick={() => { onEdit(); handleClose(); }}
+                disabled={isDisabled}
+                className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-secondary/60 active:bg-secondary transition-colors"
+              >
+                <Edit3 className="w-5 h-5 text-muted-foreground" />
+                <span className="text-[15px] font-medium">{labels.edit}</span>
+              </button>
+            )}
+
             {/* Share */}
             <button
               onClick={() => { onShare(); handleClose(); }}
@@ -397,64 +417,69 @@ export function MessageActionsSheet({
               <span className="text-[15px] font-medium">{labels.share}</span>
             </button>
 
-            {/* Continue */}
-            <button
-              onClick={() => { onContinue(); handleClose(); }}
-              disabled={isDisabled}
-              className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-secondary/60 active:bg-secondary transition-colors"
-            >
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
-              <span className="text-[15px] font-medium">{labels.continue}</span>
-            </button>
+            {/* Assistant-only actions */}
+            {!isUserMessage && (
+              <>
+                {/* Continue */}
+                <button
+                  onClick={() => { onContinue(); handleClose(); }}
+                  disabled={isDisabled}
+                  className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-secondary/60 active:bg-secondary transition-colors"
+                >
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-[15px] font-medium">{labels.continue}</span>
+                </button>
 
-            {/* Regenerate */}
-            <button
-              onClick={() => { onRegenerate(); handleClose(); }}
-              disabled={isDisabled}
-              className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-secondary/60 active:bg-secondary transition-colors"
-            >
-              <RefreshCw className="w-5 h-5 text-muted-foreground" />
-              <span className="text-[15px] font-medium">{labels.regenerate}</span>
-            </button>
+                {/* Regenerate */}
+                <button
+                  onClick={() => { onRegenerate(); handleClose(); }}
+                  disabled={isDisabled}
+                  className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-secondary/60 active:bg-secondary transition-colors"
+                >
+                  <RefreshCw className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-[15px] font-medium">{labels.regenerate}</span>
+                </button>
 
-            {/* Divider */}
-            <div className="h-px bg-border/40 my-2" />
+                {/* Divider */}
+                <div className="h-px bg-border/40 my-2" />
 
-            {/* Variants */}
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => { onVariant("shorter"); handleClose(); }}
-                disabled={isDisabled}
-                className="flex items-center gap-2 px-4 py-3 rounded-xl bg-secondary/40 hover:bg-secondary/60 transition-colors"
-              >
-                <Minimize2 className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm">{labels.shorter}</span>
-              </button>
-              <button
-                onClick={() => { onVariant("longer"); handleClose(); }}
-                disabled={isDisabled}
-                className="flex items-center gap-2 px-4 py-3 rounded-xl bg-secondary/40 hover:bg-secondary/60 transition-colors"
-              >
-                <Maximize2 className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm">{labels.longer}</span>
-              </button>
-              <button
-                onClick={() => { onVariant("simplify"); handleClose(); }}
-                disabled={isDisabled}
-                className="flex items-center gap-2 px-4 py-3 rounded-xl bg-secondary/40 hover:bg-secondary/60 transition-colors"
-              >
-                <Sparkles className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm">{labels.simplify}</span>
-              </button>
-              <button
-                onClick={() => { onVariant("detailed"); handleClose(); }}
-                disabled={isDisabled}
-                className="flex items-center gap-2 px-4 py-3 rounded-xl bg-secondary/40 hover:bg-secondary/60 transition-colors"
-              >
-                <FileText className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm">{labels.detailed}</span>
-              </button>
-            </div>
+                {/* Variants */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => { onVariant("shorter"); handleClose(); }}
+                    disabled={isDisabled}
+                    className="flex items-center gap-2 px-4 py-3 rounded-xl bg-secondary/40 hover:bg-secondary/60 transition-colors"
+                  >
+                    <Minimize2 className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm">{labels.shorter}</span>
+                  </button>
+                  <button
+                    onClick={() => { onVariant("longer"); handleClose(); }}
+                    disabled={isDisabled}
+                    className="flex items-center gap-2 px-4 py-3 rounded-xl bg-secondary/40 hover:bg-secondary/60 transition-colors"
+                  >
+                    <Maximize2 className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm">{labels.longer}</span>
+                  </button>
+                  <button
+                    onClick={() => { onVariant("simplify"); handleClose(); }}
+                    disabled={isDisabled}
+                    className="flex items-center gap-2 px-4 py-3 rounded-xl bg-secondary/40 hover:bg-secondary/60 transition-colors"
+                  >
+                    <Sparkles className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm">{labels.simplify}</span>
+                  </button>
+                  <button
+                    onClick={() => { onVariant("detailed"); handleClose(); }}
+                    disabled={isDisabled}
+                    className="flex items-center gap-2 px-4 py-3 rounded-xl bg-secondary/40 hover:bg-secondary/60 transition-colors"
+                  >
+                    <FileText className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm">{labels.detailed}</span>
+                  </button>
+                </div>
+              </>
+            )}
 
             {/* Cancel */}
             <button
