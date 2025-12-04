@@ -3,6 +3,8 @@ import { Message } from "@/types/chat";
 import { ExternalLink, FileText, User } from "lucide-react";
 import { MessageActionsPopover } from "@/components/chat/MessageActions";
 import BahorCard, { parseMessageForCards, hasCardContent } from "@/components/chat/BahorCard";
+import { CollapsibleMessage } from "@/components/chat";
+import { formatAssistantText } from "@/lib/formatAssistant";
 import bahorLogo from "@/assets/bahor-logo.png";
 
 interface ChatMessageProps {
@@ -62,18 +64,32 @@ export default function ChatMessage({
     onRegenerate?.(message.id);
   };
 
-  // Render content with Bahor Cards
+  // Format and render content with Bahor Cards
   const renderContent = () => {
+    // Apply formatter to assistant messages
+    const displayContent = isUser ? message.content : formatAssistantText(message.content, 'uz');
+    
     if (!parsedSections) {
-      return (
+      const contentElement = (
         <div
           className={`text-[15px] leading-[1.7] whitespace-pre-wrap break-words [&_pre]:mt-3 [&_pre]:rounded-xl [&_pre]:bg-secondary/80 [&_pre]:text-foreground [&_pre]:text-[13px] [&_pre]:p-4 [&_pre]:overflow-x-auto [&_code]:font-mono [&_code]:text-[13px] ${
             isUser ? "" : "text-card-foreground"
           }`}
         >
-          {message.content}
+          {displayContent}
         </div>
       );
+      
+      // Wrap long assistant messages in CollapsibleMessage
+      if (!isUser && displayContent.length > 800) {
+        return (
+          <CollapsibleMessage content={displayContent} maxLines={14}>
+            {contentElement}
+          </CollapsibleMessage>
+        );
+      }
+      
+      return contentElement;
     }
 
     return (
