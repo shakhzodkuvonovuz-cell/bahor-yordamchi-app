@@ -72,7 +72,7 @@ export default function ChatMessage({
     if (!parsedSections) {
       const contentElement = (
         <div
-          className={`text-[15px] leading-[1.7] whitespace-pre-wrap break-words [&_pre]:mt-3 [&_pre]:rounded-xl [&_pre]:bg-secondary/80 [&_pre]:text-foreground [&_pre]:text-[13px] [&_pre]:p-4 [&_pre]:overflow-x-auto [&_code]:font-mono [&_code]:text-[13px] ${
+          className={`text-[15px] leading-[1.75] whitespace-pre-wrap [overflow-wrap:anywhere] [word-break:break-word] [&_pre]:mt-3 [&_pre]:rounded-xl [&_pre]:bg-secondary/80 [&_pre]:text-foreground [&_pre]:text-[13px] [&_pre]:p-4 [&_pre]:overflow-x-auto [&_pre]:max-w-full [&_code]:font-mono [&_code]:text-[13px] [&_a]:text-primary [&_a]:underline [&_a]:break-all ${
             isUser ? "" : "text-card-foreground"
           }`}
         >
@@ -81,9 +81,9 @@ export default function ChatMessage({
       );
       
       // Wrap long assistant messages in CollapsibleMessage
-      if (!isUser && displayContent.length > 800) {
+      if (!isUser && displayContent.length > 900) {
         return (
-          <CollapsibleMessage content={displayContent} maxLines={14}>
+          <CollapsibleMessage content={displayContent} maxLines={12} maxChars={900}>
             {contentElement}
           </CollapsibleMessage>
         );
@@ -109,7 +109,7 @@ export default function ChatMessage({
           return (
             <div
               key={idx}
-              className="text-[15px] leading-[1.7] whitespace-pre-wrap break-words text-card-foreground"
+              className="text-[15px] leading-[1.75] whitespace-pre-wrap [overflow-wrap:anywhere] [word-break:break-word] text-card-foreground"
             >
               {section.content}
             </div>
@@ -135,7 +135,7 @@ export default function ChatMessage({
         </div>
       )}
 
-      <div className="relative max-w-[85%] sm:max-w-[75%]">
+      <div className="relative max-w-[88%] sm:max-w-[80%] lg:max-w-[75%] min-w-0">
         {/* Desktop actions button - appears on hover */}
         {showActions && !isMobile && (
           <div className={`absolute ${isUser ? "left-0 -translate-x-full pr-2" : "right-0 translate-x-full pl-2"} top-1`}>
@@ -153,8 +153,8 @@ export default function ChatMessage({
             isPressed ? "scale-[0.98]" : ""
           } ${
             isUser
-              ? "bg-primary text-primary-foreground rounded-tr-sm shadow-lg glow-primary-subtle"
-              : "bg-card border border-border/40 rounded-tl-sm shadow-md"
+              ? "bg-primary text-primary-foreground rounded-tr-md shadow-lg"
+              : "bg-card border border-border/40 rounded-tl-md shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.06)]"
           }`}
         >
           <div className={isUser ? "px-5 py-4" : "px-5 py-4"}>

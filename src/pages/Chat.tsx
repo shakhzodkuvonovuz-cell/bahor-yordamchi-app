@@ -991,69 +991,52 @@ export default function Chat() {
       )}
 
       {/* Main Chat Container */}
-      <div className="relative mx-auto w-full max-w-4xl lg:max-w-5xl flex flex-col h-screen">
-        {/* Header - Premium glass bar */}
-        <div className="sticky top-0 z-10 px-3 sm:px-6 pt-3 sm:pt-4">
-          <div className="glass-strong rounded-2xl border border-border/30 shadow-lg">
-            <div className="px-4 py-3 flex items-center justify-between gap-3">
-              {/* Left section */}
-              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+      <div className="relative mx-auto w-full max-w-4xl lg:max-w-5xl flex flex-col h-[100dvh]">
+        {/* Header - Compact glass bar */}
+        <div className="sticky top-0 z-10 px-3 sm:px-6 pt-2 sm:pt-3 pb-1">
+          <div className="glass-strong rounded-xl sm:rounded-2xl border border-border/30 shadow-md">
+            <div className="px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-2">
+              {/* Left section - Back + History */}
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <button
                   onClick={() => navigate("/")}
-                  className="w-10 h-10 rounded-xl bg-secondary/60 hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-[0.97] transition-all duration-200 flex-shrink-0"
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-secondary/60 hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-[0.97] transition-all duration-200 flex-shrink-0"
                   aria-label={t.chat.back}
                 >
-                  <ArrowLeft className="w-5 h-5" />
+                  <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
                 <button
                   onClick={() => setIsHistoryOpen(true)}
-                  className="w-10 h-10 rounded-xl bg-secondary/60 hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-[0.97] transition-all duration-200 flex-shrink-0"
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-secondary/60 hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-[0.97] transition-all duration-200 flex-shrink-0"
                   aria-label="Open chat history"
                 >
-                  <Menu className="w-5 h-5" />
+                  <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
-                <div className="min-w-0 ml-1">
-                  <h1 className="text-base sm:text-lg font-semibold text-foreground truncate">
-                    {modeTranslation?.title || modeInfo.title}
-                  </h1>
-                  <p className="text-xs text-muted-foreground truncate hidden sm:block">
-                    {modeTranslation?.subtitle || modeInfo.subtitle}
-                  </p>
-                </div>
               </div>
 
-              {/* Right section */}
-              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                {/* Daily limit - compact on mobile */}
-                <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary/60 text-xs text-muted-foreground">
-                  <span>{translate('usage.today')}:</span>
-                  <span className="font-semibold text-foreground">{usedToday}/{dailyLimit}</span>
-                </div>
-                
+              {/* Center - Mode title */}
+              <div className="flex-1 min-w-0 text-center">
+                <h1 className="text-sm sm:text-base font-semibold text-foreground truncate">
+                  {modeTranslation?.title || modeInfo.title}
+                </h1>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">
+                  {usedToday}/{dailyLimit} {translate('usage.requests')}
+                </p>
+              </div>
+
+              {/* Right section - Actions */}
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
                 {messages.length > 0 && (
                   <button
                     onClick={() => setShowDeleteModal(true)}
-                    className="w-10 h-10 rounded-xl hover:bg-secondary/60 flex items-center justify-center transition-all duration-200 active:scale-[0.97] flex-shrink-0"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl hover:bg-secondary/60 flex items-center justify-center transition-all duration-200 active:scale-[0.97]"
                     aria-label={t.chat.clearChat}
                     title={t.chat.clearChat}
                   >
-                    <Trash2 className="w-5 h-5 text-muted-foreground" />
+                    <Trash2 className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
                   </button>
                 )}
-                
                 <LanguageSwitcher variant="compact" />
-                
-                {/* Logo - clean without background */}
-                <img src={bahorLogo} alt="Bahor AI" className="w-9 h-9 object-contain" />
-              </div>
-            </div>
-            
-            {/* Mobile daily limit */}
-            <div className="sm:hidden px-4 pb-3 pt-1">
-              <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-                <span>{translate('usage.today')}:</span>
-                <span className="font-semibold text-foreground">{usedToday}/{dailyLimit}</span>
-                <span>{translate('usage.requests')}</span>
               </div>
             </div>
           </div>
@@ -1062,7 +1045,7 @@ export default function Chat() {
         {/* Messages Area */}
         <div 
           ref={messagesContainerRef}
-          className="flex-1 overflow-y-auto px-3 sm:px-6 pb-4 pt-6"
+          className="flex-1 overflow-y-auto px-3 sm:px-6 pb-4 pt-4 sm:pt-6"
         >
           {messages.length === 0 ? (
             <ChatEmptyState modeInfo={modeInfo} modeTranslation={modeTranslation} />
@@ -1123,17 +1106,17 @@ export default function Chat() {
           )}
         </div>
 
-        {/* Scroll to bottom button */}
+        {/* Scroll to bottom button - positioned inside container */}
         <ScrollToBottom 
           visible={showScrollButton} 
           onClick={() => scrollToBottom()} 
         />
 
-        {/* Input Area - Premium sticky bottom bar */}
-        <div className="sticky bottom-0 px-3 sm:px-6 pb-4 sm:pb-6 pt-2">
+        {/* Input Area - Premium sticky bottom bar with safe area */}
+        <div className="sticky bottom-0 px-3 sm:px-6 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-6 pt-2">
           {/* Quick Suggestions */}
           {modeSuggestions && modeSuggestions.length > 0 && messages.length === 0 && (
-            <div className="pb-4">
+            <div className="pb-3">
               <QuickSuggestions
                 suggestions={modeSuggestions}
                 onSelect={handleSendMessage}
