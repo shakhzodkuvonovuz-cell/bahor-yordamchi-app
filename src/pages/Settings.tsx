@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, User, Globe, Moon, Sun, Shield, HelpCircle, FileText, Mail, LogOut, ChevronRight, CreditCard, Bell, Zap, Edit, Crown, Lock, RotateCcw, Loader2 } from "lucide-react";
+import { ArrowLeft, User, Globe, Moon, Sun, Shield, HelpCircle, FileText, Mail, LogOut, ChevronRight, CreditCard, Bell, Zap, Edit, Crown, Lock, RotateCcw, Loader2, Infinity } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useLanguage, Language } from "@/hooks/useLanguage";
 import { getTranslation } from "@/data/translations";
@@ -18,6 +18,7 @@ import ProfilePhotoUpload from "@/components/ProfilePhotoUpload";
 import PremiumUpgradeCard from "@/components/PremiumUpgradeCard";
 import UsageProgressBar from "@/components/UsageProgressBar";
 import SettingsProfileSkeleton from "@/components/SettingsProfileSkeleton";
+import { useDailyUsageServer } from "@/hooks/useEntitlements";
 
 import { supabase } from "@/integrations/supabase/client";
 
@@ -26,6 +27,7 @@ export default function Settings() {
   const { theme, setTheme } = useTheme();
   const { language, setLanguage } = useLanguage();
   const { user, profile, profileLoading, signOut, refreshProfile } = useAuth();
+  const { usage, loading: usageLoading, isPremium, isDevBypass, hasReachedLimit } = useDailyUsageServer();
   const t = getTranslation(language);
   
   const [openSection, setOpenSection] = useState<string | null>(null);
@@ -91,6 +93,8 @@ export default function Settings() {
   };
 
   const getPlanLabel = () => {
+    if (isDevBypass) return 'Dev Unlimited';
+    if (isPremium) return 'Premium';
     switch (profile?.plan) {
       case 'free': return 'Bepul';
       case 'premium':
@@ -176,12 +180,14 @@ export default function Settings() {
                           {profile && (
                             <div className="mt-2">
                               <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                                profile.plan === 'free' 
-                                  ? 'bg-secondary text-secondary-foreground'
-                                  : 'bg-gradient-to-r from-primary/20 to-primary/10 text-primary border border-primary/30'
+                                (isDevBypass || isPremium)
+                                  ? 'bg-gradient-to-r from-primary/20 to-primary/10 text-primary border border-primary/30'
+                                  : 'bg-secondary text-secondary-foreground'
                               }`}>
-                                {profile.plan !== 'free' && <Crown className="w-3 h-3" />}
+                                {isDevBypass && <Shield className="w-3 h-3" />}
+                                {isPremium && !isDevBypass && <Crown className="w-3 h-3" />}
                                 {getPlanLabel()}
+                                {(isDevBypass || isPremium) && <Infinity className="w-3 h-3 ml-0.5" />}
                               </span>
                             </div>
                           )}
@@ -204,27 +210,26 @@ export default function Settings() {
               {/* Usage Progress Bar */}
               {profile && (
                 <section className="bg-card border border-border/40 rounded-2xl p-4 shadow-premium-sm w-full">
-                  <UsageProgressBar 
-                    used={profile.messages_today || 0}
-                    limit={profile.daily_limit || 5}
-                    plan={profile.plan || 'free'}
-                  />
-                  {/* Dev Reset Button - only in development */}
-                  {import.meta.env.DEV && (
-                    <button
-                      onClick={() => {
-                        const today = new Date().toISOString().split('T')[0];
-                        localStorage.removeItem(`bahorai_usage_${today}`);
-                        refreshProfile();
-                        toast({
-                          description: "Kunlik limit qayta o'rnatildi (test uchun)",
-                        });
-                      }}
-                      className="mt-3 w-full flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground py-2 px-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                    >
-                      <RotateCcw className="w-3 h-3" />
-                      <span>Limitni qayta o'rnatish (dev)</span>
-                    </button>
+                  {(isDevBypass || isPremium) ? (
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Bugungi foydalanish</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {isDevBypass ? 'Dev Unlimited' : 'Premium'} rejasi
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                        {isDevBypass ? <Shield className="w-4 h-4" /> : <Crown className="w-4 h-4" />}
+                        <span className="text-sm font-medium">Cheksiz</span>
+                        <Infinity className="w-4 h-4" />
+                      </div>
+                    </div>
+                  ) : (
+                    <UsageProgressBar 
+                      used={usage.used}
+                      limit={usage.limit}
+                      plan={profile.plan || 'free'}
+                    />
                   )}
                 </section>
               )}
