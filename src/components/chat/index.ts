@@ -1,4 +1,4 @@
-export { MessageActions, MessageActionsPopover } from "./MessageActions";
+export { MessageActionsPopover } from "./MessageActions";
 export { MessageActionsBar, MessageActionsSheet } from "./MessageActionsBar";
 export type { MessageVariant, MessageActionsBarProps } from "./MessageActionsBar";
 export { ScrollToBottom } from "./ScrollToBottom";

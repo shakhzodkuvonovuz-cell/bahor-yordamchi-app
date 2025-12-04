@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ThumbsUp,
   ThumbsDown,
@@ -235,7 +235,7 @@ export function MessageActionsBar({
   );
 }
 
-// Mobile bottom sheet for actions
+// Mobile bottom sheet for actions - Single source of truth for mobile actions
 export function MessageActionsSheet({
   isOpen,
   onClose,
@@ -261,6 +261,27 @@ export function MessageActionsSheet({
 }) {
   const { language } = useTranslation();
   const [copied, setCopied] = useState(false);
+
+  // Prevent body scroll when sheet is open
+  useEffect(() => {
+    if (isOpen) {
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.overflow = 'hidden';
+      
+      return () => {
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [isOpen]);
 
   const labels = {
     like: language === "uz" ? "Yoqdi" : language === "ru" ? "Нравится" : language === "tr" ? "Beğen" : "Like",
@@ -295,6 +316,10 @@ export function MessageActionsSheet({
     onClose();
   };
 
+  const handleClose = () => {
+    onClose();
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -302,12 +327,28 @@ export function MessageActionsSheet({
       {/* Overlay */}
       <div
         className="fixed inset-0 z-50 bg-background/60 backdrop-blur-sm animate-fade-in"
-        onClick={onClose}
+        onClick={handleClose}
+        onTouchEnd={(e) => {
+          e.preventDefault();
+          handleClose();
+        }}
       />
       {/* Bottom Sheet */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 animate-slide-up">
+      <div 
+        className="fixed bottom-0 left-0 right-0 z-50 animate-slide-up"
+        onTouchMove={(e) => {
+          // Allow swipe down to close
+          const touch = e.touches[0];
+          if (touch && touch.clientY > window.innerHeight - 100) {
+            handleClose();
+          }
+        }}
+      >
         <div className="bg-card border-t border-border/40 rounded-t-3xl shadow-2xl p-4 pb-8 safe-area-bottom">
-          <div className="w-12 h-1.5 bg-muted rounded-full mx-auto mb-4" />
+          <div 
+            className="w-12 h-1.5 bg-muted rounded-full mx-auto mb-4 cursor-pointer" 
+            onClick={handleClose}
+          />
 
           {/* Quick reactions row */}
           <div className="flex items-center justify-center gap-4 mb-4 pb-4 border-b border-border/40">
@@ -348,7 +389,7 @@ export function MessageActionsSheet({
 
             {/* Share */}
             <button
-              onClick={() => { onShare(); onClose(); }}
+              onClick={() => { onShare(); handleClose(); }}
               disabled={isDisabled}
               className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-secondary/60 active:bg-secondary transition-colors"
             >
@@ -358,7 +399,7 @@ export function MessageActionsSheet({
 
             {/* Continue */}
             <button
-              onClick={() => { onContinue(); onClose(); }}
+              onClick={() => { onContinue(); handleClose(); }}
               disabled={isDisabled}
               className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-secondary/60 active:bg-secondary transition-colors"
             >
@@ -368,7 +409,7 @@ export function MessageActionsSheet({
 
             {/* Regenerate */}
             <button
-              onClick={() => { onRegenerate(); onClose(); }}
+              onClick={() => { onRegenerate(); handleClose(); }}
               disabled={isDisabled}
               className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-secondary/60 active:bg-secondary transition-colors"
             >
@@ -382,7 +423,7 @@ export function MessageActionsSheet({
             {/* Variants */}
             <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={() => { onVariant("shorter"); onClose(); }}
+                onClick={() => { onVariant("shorter"); handleClose(); }}
                 disabled={isDisabled}
                 className="flex items-center gap-2 px-4 py-3 rounded-xl bg-secondary/40 hover:bg-secondary/60 transition-colors"
               >
@@ -390,7 +431,7 @@ export function MessageActionsSheet({
                 <span className="text-sm">{labels.shorter}</span>
               </button>
               <button
-                onClick={() => { onVariant("longer"); onClose(); }}
+                onClick={() => { onVariant("longer"); handleClose(); }}
                 disabled={isDisabled}
                 className="flex items-center gap-2 px-4 py-3 rounded-xl bg-secondary/40 hover:bg-secondary/60 transition-colors"
               >
@@ -398,7 +439,7 @@ export function MessageActionsSheet({
                 <span className="text-sm">{labels.longer}</span>
               </button>
               <button
-                onClick={() => { onVariant("simplify"); onClose(); }}
+                onClick={() => { onVariant("simplify"); handleClose(); }}
                 disabled={isDisabled}
                 className="flex items-center gap-2 px-4 py-3 rounded-xl bg-secondary/40 hover:bg-secondary/60 transition-colors"
               >
@@ -406,7 +447,7 @@ export function MessageActionsSheet({
                 <span className="text-sm">{labels.simplify}</span>
               </button>
               <button
-                onClick={() => { onVariant("detailed"); onClose(); }}
+                onClick={() => { onVariant("detailed"); handleClose(); }}
                 disabled={isDisabled}
                 className="flex items-center gap-2 px-4 py-3 rounded-xl bg-secondary/40 hover:bg-secondary/60 transition-colors"
               >
@@ -417,7 +458,7 @@ export function MessageActionsSheet({
 
             {/* Cancel */}
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="w-full flex items-center justify-center gap-2 px-4 py-3 mt-3 rounded-xl bg-secondary/60 hover:bg-secondary transition-colors"
             >
               <X className="w-4 h-4 text-muted-foreground" />

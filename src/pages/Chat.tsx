@@ -9,7 +9,6 @@ import LimitReachedCard from "@/components/LimitReachedCard";
 import ThinkingBar, { ThinkingStatus, ThinkingPhase } from "@/components/ThinkingBar";
 import { VoiceModeButton, VoiceModePanel } from "@/components/voice";
 import {
-  MessageActions,
   ScrollToBottom,
   FollowUpSuggestions,
   ChatEmptyState,
@@ -1647,23 +1646,6 @@ export default function Chat() {
         </div>
       </div>
 
-      {/* Mobile Message Actions */}
-      {isMobile && activeMessage && (
-        <MessageActions
-          messageId={activeMessage.id}
-          messageRole={activeMessage.role}
-          messageContent={activeMessage.content}
-          isOpen={showMobileActions}
-          onClose={() => {
-            setShowMobileActions(false);
-            setActiveActionMessageId(null);
-          }}
-          onCopy={() => handleCopyMessage(activeMessage.content)}
-          onEdit={activeMessage.role === "user" ? () => handleEditMessage(activeMessage.id, activeMessage.content) : undefined}
-          onRegenerate={activeMessage.role === "assistant" ? () => handleRegenerateMessage(activeMessage.id) : undefined}
-          isMobile={true}
-        />
-      )}
 
       {/* Delete Chat Modal */}
       <DeleteChatModal
