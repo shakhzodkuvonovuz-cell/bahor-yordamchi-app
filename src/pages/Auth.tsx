@@ -129,27 +129,27 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 bg-gradient-to-b from-background to-muted/30">
-      <div className="w-full max-w-[420px] mx-auto">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
+      <div className="w-full max-w-[400px] mx-auto">
         {/* Logo & Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
+        <div className="text-center mb-6">
+          <div className="flex items-center justify-center gap-3 mb-3">
             <img 
               src={bahorLogo} 
               alt="Bahor AI" 
-              className="w-12 h-12 object-contain"
+              className="w-10 h-10 object-contain"
             />
-            <h1 className="text-2xl font-bold text-foreground">Bahor AI</h1>
+            <h1 className="text-xl font-semibold text-foreground">Bahor AI</h1>
           </div>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-[13px]">
             Ma'lumotlaringiz xavfsiz saqlanadi.
           </p>
         </div>
 
         {/* Auth Card */}
-        <div className="bg-card rounded-2xl shadow-lg border border-border/50 p-6 sm:p-8">
+        <div className="bg-card rounded-2xl shadow-premium-md border border-border/40 p-6">
           {/* Card Header with OAuth Icons */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-5">
             <h2 className="text-lg font-semibold text-foreground">
               {isSignUp ? "Ro'yxatdan o'tish" : "Kirish"}
             </h2>
@@ -158,18 +158,18 @@ export default function Auth() {
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-9 w-9 rounded-xl hover:bg-primary/10 hover:border-primary/50 transition-all"
+                  className="min-h-[44px] min-w-[44px] rounded-xl hover:bg-primary/10 hover:border-primary/50 transition-all"
                 >
-                  <Chrome className="w-4 h-4" />
+                  <Chrome className="w-5 h-5" />
                 </Button>
               </Link>
               <Link to="/auth/phone">
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-9 w-9 rounded-xl hover:bg-primary/10 hover:border-primary/50 transition-all"
+                  className="min-h-[44px] min-w-[44px] rounded-xl hover:bg-primary/10 hover:border-primary/50 transition-all"
                 >
-                  <Phone className="w-4 h-4" />
+                  <Phone className="w-5 h-5" />
                 </Button>
               </Link>
             </div>
@@ -177,8 +177,8 @@ export default function Auth() {
 
           {/* Email Form */}
           <form onSubmit={handleEmailSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-[13px] font-medium">
                 Email
               </Label>
               <div className="relative">
@@ -189,15 +189,15 @@ export default function Auth() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="email@example.com"
-                  className="pl-10 h-11 rounded-xl border-border/60 focus:border-primary focus:ring-primary/20"
+                  className="pl-10 h-12 rounded-xl border-border/50 focus:border-primary text-[15px]"
                   required
                   disabled={loading}
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium">
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-[13px] font-medium">
                 Parol
               </Label>
               <Input
@@ -206,7 +206,7 @@ export default function Auth() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Kamida 8 ta belgi"
-                className="h-11 rounded-xl border-border/60 focus:border-primary focus:ring-primary/20"
+                className="h-12 rounded-xl border-border/50 focus:border-primary text-[15px]"
                 required
                 minLength={8}
                 disabled={loading}
@@ -218,7 +218,7 @@ export default function Auth() {
                 type="button"
                 onClick={handlePasswordReset}
                 disabled={resetLoading}
-                className="text-xs text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+                className="text-[13px] text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
               >
                 {resetLoading ? "Yuborilmoqda..." : "Parolni unutdingizmi?"}
               </button>
@@ -226,7 +226,7 @@ export default function Auth() {
 
             <Button 
               type="submit" 
-              className="w-full h-11 rounded-xl font-medium transition-all hover:scale-[0.99] active:scale-[0.97]" 
+              className="w-full h-12 rounded-xl font-medium text-[15px] transition-all active:scale-[0.98]" 
               disabled={loading}
             >
               {loading ? (
@@ -241,11 +241,11 @@ export default function Auth() {
           </form>
 
           {/* Toggle Sign Up / Sign In */}
-          <div className="mt-6 text-center">
+          <div className="mt-5 text-center">
             <button
               type="button"
               onClick={() => setIsSignUp(!isSignUp)}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="text-[13px] text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
             >
               {isSignUp 
                 ? "Allaqachon hisobingiz bormi? " 
@@ -258,7 +258,7 @@ export default function Auth() {
         </div>
 
         {/* Footer Consent */}
-        <p className="text-xs text-center text-muted-foreground mt-6 px-4 leading-relaxed">
+        <p className="text-[11px] text-center text-muted-foreground mt-5 px-4 leading-relaxed">
           Davom etish orqali siz{" "}
           <a href="#" className="text-primary hover:underline">
             Foydalanish shartlari
