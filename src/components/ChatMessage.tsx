@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { Message } from "@/types/chat";
 import { ExternalLink, FileText, User } from "lucide-react";
 import { MessageActionsPopover } from "@/components/chat/MessageActions";
+import BahorCard, { parseMessageForCards, hasCardContent } from "@/components/chat/BahorCard";
 import bahorLogo from "@/assets/bahor-logo.png";
 
 interface ChatMessageProps {
@@ -26,6 +27,10 @@ export default function ChatMessage({
   const isUser = message.role === "user";
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const [isPressed, setIsPressed] = useState(false);
+
+  // Parse message for Bahor Cards (only for AI messages)
+  const hasCards = !isUser && hasCardContent(message.content);
+  const parsedSections = hasCards ? parseMessageForCards(message.content) : null;
 
   const handleTouchStart = () => {
     if (isMobile && onLongPress) {
@@ -55,6 +60,47 @@ export default function ChatMessage({
 
   const handleRegenerate = () => {
     onRegenerate?.(message.id);
+  };
+
+  // Render content with Bahor Cards
+  const renderContent = () => {
+    if (!parsedSections) {
+      return (
+        <div
+          className={`text-[15px] leading-[1.7] whitespace-pre-wrap break-words [&_pre]:mt-3 [&_pre]:rounded-xl [&_pre]:bg-secondary/80 [&_pre]:text-foreground [&_pre]:text-[13px] [&_pre]:p-4 [&_pre]:overflow-x-auto [&_code]:font-mono [&_code]:text-[13px] ${
+            isUser ? "" : "text-card-foreground"
+          }`}
+        >
+          {message.content}
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-1">
+        {parsedSections.map((section, idx) => {
+          if (section.type === "card" && section.cardType) {
+            return (
+              <BahorCard
+                key={idx}
+                type={section.cardType}
+                title={section.title || ""}
+                content={section.content}
+                timestamp={message.timestamp}
+              />
+            );
+          }
+          return (
+            <div
+              key={idx}
+              className="text-[15px] leading-[1.7] whitespace-pre-wrap break-words text-card-foreground"
+            >
+              {section.content}
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   return (
@@ -150,30 +196,24 @@ export default function ChatMessage({
               </div>
             )}
 
-            {message.content && (
-              <div
-                className={`text-[15px] leading-[1.7] whitespace-pre-wrap break-words [&_pre]:mt-3 [&_pre]:rounded-xl [&_pre]:bg-secondary/80 [&_pre]:text-foreground [&_pre]:text-[13px] [&_pre]:p-4 [&_pre]:overflow-x-auto [&_code]:font-mono [&_code]:text-[13px] ${
-                  isUser ? "" : "text-card-foreground"
-                }`}
-              >
-                {message.content}
-              </div>
-            )}
+            {message.content && renderContent()}
           </div>
 
-          {/* Timestamp */}
-          <div className="px-4 pb-2.5 -mt-1">
-            <span
-              className={`text-[11px] ${
-                isUser ? "text-primary-foreground/60" : "text-muted-foreground"
-              }`}
-            >
-              {new Date(message.timestamp).toLocaleTimeString("uz-UZ", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </span>
-          </div>
+          {/* Timestamp - only show for messages without cards (cards have their own timestamps) */}
+          {!hasCards && (
+            <div className="px-4 pb-2.5 -mt-1">
+              <span
+                className={`text-[11px] ${
+                  isUser ? "text-primary-foreground/60" : "text-muted-foreground"
+                }`}
+              >
+                {new Date(message.timestamp).toLocaleTimeString("uz-UZ", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
