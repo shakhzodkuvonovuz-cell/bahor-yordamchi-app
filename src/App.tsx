@@ -11,6 +11,9 @@ import Home from "./pages/Home";
 import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
+import AuthGoogle from "./pages/AuthGoogle";
+import AuthPhone from "./pages/AuthPhone";
+import AuthCallback from "./pages/AuthCallback";
 import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
 
@@ -28,6 +31,9 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/auth/google" element={<AuthGoogle />} />
+                <Route path="/auth/phone" element={<AuthPhone />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="/modes" element={<Home />} />
                 <Route 
                   path="/chat/:mode" 
