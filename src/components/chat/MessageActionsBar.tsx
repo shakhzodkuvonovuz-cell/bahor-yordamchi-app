@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   ThumbsUp,
   ThumbsDown,
@@ -23,6 +23,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { haptic } from "@/lib/haptics";
+import { MicroToast } from "@/components/ui/MicroToast";
 
 export type MessageVariant = "shorter" | "longer" | "simplify" | "detailed" | "continue" | "regen";
 
@@ -266,6 +268,28 @@ export function MessageActionsSheet({
 }) {
   const { language } = useTranslation();
   const [copied, setCopied] = useState(false);
+  const [toast, setToast] = useState<{ msg: string; variant: "success" | "error" | "info"; visible: boolean }>({
+    msg: "",
+    variant: "success",
+    visible: false,
+  });
+  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const showToast = useCallback((msg: string, variant: "success" | "error" | "info" = "success") => {
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    setToast({ msg, variant, visible: true });
+    toastTimeoutRef.current = setTimeout(() => {
+      setToast(prev => ({ ...prev, visible: false }));
+    }, 1200);
+  }, []);
+
+  // Haptic on open
+  useEffect(() => {
+    if (isOpen) {
+      haptic("selection");
+    }
+  }, [isOpen]);
 
   // Prevent body scroll when sheet is open
   useEffect(() => {
@@ -288,36 +312,117 @@ export function MessageActionsSheet({
     }
   }, [isOpen]);
 
+  // Cleanup timeouts
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+    };
+  }, []);
+
   const labels = {
     like: language === "uz" ? "Yoqdi" : language === "ru" ? "Нравится" : language === "tr" ? "Beğen" : "Like",
     dislike: language === "uz" ? "Yoqmadi" : language === "ru" ? "Не нравится" : language === "tr" ? "Beğenme" : "Dislike",
     copy: language === "uz" ? "Nusxa olish" : language === "ru" ? "Копировать" : language === "tr" ? "Kopyala" : "Copy",
-    copied: language === "uz" ? "Nusxa olindi" : language === "ru" ? "Скопировано" : language === "tr" ? "Kopyalandı" : "Copied",
+    copied: language === "uz" ? "Nusxa olindi ✓" : language === "ru" ? "Скопировано ✓" : language === "tr" ? "Kopyalandı ✓" : "Copied ✓",
     share: language === "uz" ? "Ulashish" : language === "ru" ? "Поделиться" : language === "tr" ? "Paylaş" : "Share",
+    shareReady: language === "uz" ? "Ulashishga tayyor ✓" : language === "ru" ? "Готово к отправке ✓" : language === "tr" ? "Paylaşıma hazır ✓" : "Ready to share ✓",
+    shareUnavailable: language === "uz" ? "Nusxa olindi ✓" : language === "ru" ? "Скопировано ✓" : language === "tr" ? "Kopyalandı ✓" : "Copied ✓",
     continue: language === "uz" ? "Davom ettirish" : language === "ru" ? "Продолжить" : language === "tr" ? "Devam et" : "Continue",
+    continued: language === "uz" ? "Davom ettirildi ✓" : language === "ru" ? "Продолжено ✓" : language === "tr" ? "Devam edildi ✓" : "Continued ✓",
     regenerate: language === "uz" ? "Qayta yaratish" : language === "ru" ? "Перегенерировать" : language === "tr" ? "Yeniden oluştur" : "Regenerate",
+    regenerated: language === "uz" ? "Qayta yaratildi ✓" : language === "ru" ? "Перегенерировано ✓" : language === "tr" ? "Yeniden oluşturuldu ✓" : "Regenerated ✓",
     shorter: language === "uz" ? "Qisqaroq" : language === "ru" ? "Короче" : language === "tr" ? "Daha kısa" : "Shorter",
+    shortened: language === "uz" ? "Qisqartirildi ✓" : language === "ru" ? "Сокращено ✓" : language === "tr" ? "Kısaltıldı ✓" : "Shortened ✓",
     longer: language === "uz" ? "Uzunroq" : language === "ru" ? "Длиннее" : language === "tr" ? "Daha uzun" : "Longer",
+    lengthened: language === "uz" ? "Uzaytirildi ✓" : language === "ru" ? "Расширено ✓" : language === "tr" ? "Uzatıldı ✓" : "Lengthened ✓",
     simplify: language === "uz" ? "Soddalash" : language === "ru" ? "Упростить" : language === "tr" ? "Basitleştir" : "Simplify",
+    simplified: language === "uz" ? "Soddalashtirildi ✓" : language === "ru" ? "Упрощено ✓" : language === "tr" ? "Basitleştirildi ✓" : "Simplified ✓",
     detailed: language === "uz" ? "Batafsil" : language === "ru" ? "Подробнее" : language === "tr" ? "Detaylı" : "More detailed",
+    detailedDone: language === "uz" ? "Batafsil ✨" : language === "ru" ? "Подробно ✨" : language === "tr" ? "Detaylı ✨" : "Detailed ✨",
     cancel: language === "uz" ? "Bekor qilish" : language === "ru" ? "Отмена" : language === "tr" ? "İptal" : "Cancel",
     edit: language === "uz" ? "Tahrirlash" : language === "ru" ? "Редактировать" : language === "tr" ? "Düzenle" : "Edit",
+    liked: language === "uz" ? "Yoqdi ✓" : language === "ru" ? "Понравилось ✓" : language === "tr" ? "Beğenildi ✓" : "Liked ✓",
+    disliked: language === "uz" ? "Yoqmadi ✓" : language === "ru" ? "Не понравилось ✓" : language === "tr" ? "Beğenilmedi ✓" : "Disliked ✓",
+    error: language === "uz" ? "Xatolik yuz berdi" : language === "ru" ? "Произошла ошибка" : language === "tr" ? "Hata oluştu" : "Error occurred",
   };
 
-  const handleCopy = () => {
-    onCopy();
-    setCopied(true);
-    setTimeout(() => {
-      setCopied(false);
+  const closeWithDelay = useCallback(() => {
+    closeTimeoutRef.current = setTimeout(() => {
       onClose();
-    }, 800);
+    }, 300);
+  }, [onClose]);
+
+  const handleCopy = () => {
+    haptic("light");
+    try {
+      onCopy();
+      setCopied(true);
+      showToast(labels.copied, "success");
+      setTimeout(() => setCopied(false), 1500);
+      closeWithDelay();
+    } catch {
+      haptic("error");
+      showToast(labels.error, "error");
+    }
   };
 
   const handleReaction = (type: "like" | "dislike") => {
+    haptic("light");
     if (reaction === type) {
       onReaction(null);
     } else {
       onReaction(type);
+      showToast(type === "like" ? labels.liked : labels.disliked, "success");
+    }
+    closeWithDelay();
+  };
+
+  const handleShare = () => {
+    haptic("light");
+    try {
+      onShare();
+      showToast(labels.shareReady, "success");
+      closeWithDelay();
+    } catch {
+      haptic("error");
+      showToast(labels.error, "error");
+    }
+  };
+
+  const handleContinue = () => {
+    haptic("light");
+    onContinue();
+    showToast(labels.continued, "success");
+    closeWithDelay();
+  };
+
+  const handleRegenerate = () => {
+    haptic("light");
+    onRegenerate();
+    showToast(labels.regenerated, "success");
+    closeWithDelay();
+  };
+
+  const handleVariant = (variant: MessageVariant) => {
+    haptic("light");
+    onVariant(variant);
+    const toastMessages: Record<MessageVariant, string> = {
+      shorter: labels.shortened,
+      longer: labels.lengthened,
+      simplify: labels.simplified,
+      detailed: labels.detailedDone,
+      continue: labels.continued,
+      regen: labels.regenerated,
+    };
+    showToast(toastMessages[variant], "success");
+    closeWithDelay();
+  };
+
+  const handleEdit = () => {
+    haptic("light");
+    if (onEdit) {
+      onEdit();
     }
     onClose();
   };
@@ -343,7 +448,6 @@ export function MessageActionsSheet({
       <div 
         className="fixed bottom-0 left-0 right-0 z-50 animate-slide-up"
         onTouchMove={(e) => {
-          // Allow swipe down to close
           const touch = e.touches[0];
           if (touch && touch.clientY > window.innerHeight - 100) {
             handleClose();
@@ -352,9 +456,12 @@ export function MessageActionsSheet({
       >
         <div className="bg-card border-t border-border/40 rounded-t-3xl shadow-2xl p-4 pb-8 safe-area-bottom">
           <div 
-            className="w-12 h-1.5 bg-muted rounded-full mx-auto mb-4 cursor-pointer" 
+            className="w-12 h-1.5 bg-muted rounded-full mx-auto mb-3 cursor-pointer" 
             onClick={handleClose}
           />
+
+          {/* Micro Toast */}
+          <MicroToast message={toast.msg} variant={toast.variant} visible={toast.visible} />
 
           {/* Quick reactions row - only for assistant messages */}
           {!isUserMessage && (
@@ -398,7 +505,7 @@ export function MessageActionsSheet({
             {/* Edit - only for user messages */}
             {isUserMessage && onEdit && (
               <button
-                onClick={() => { onEdit(); handleClose(); }}
+                onClick={handleEdit}
                 disabled={isDisabled}
                 className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-secondary/60 active:bg-secondary transition-colors"
               >
@@ -409,7 +516,7 @@ export function MessageActionsSheet({
 
             {/* Share */}
             <button
-              onClick={() => { onShare(); handleClose(); }}
+              onClick={handleShare}
               disabled={isDisabled}
               className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-secondary/60 active:bg-secondary transition-colors"
             >
@@ -422,7 +529,7 @@ export function MessageActionsSheet({
               <>
                 {/* Continue */}
                 <button
-                  onClick={() => { onContinue(); handleClose(); }}
+                  onClick={handleContinue}
                   disabled={isDisabled}
                   className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-secondary/60 active:bg-secondary transition-colors"
                 >
@@ -432,7 +539,7 @@ export function MessageActionsSheet({
 
                 {/* Regenerate */}
                 <button
-                  onClick={() => { onRegenerate(); handleClose(); }}
+                  onClick={handleRegenerate}
                   disabled={isDisabled}
                   className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-secondary/60 active:bg-secondary transition-colors"
                 >
@@ -446,7 +553,7 @@ export function MessageActionsSheet({
                 {/* Variants */}
                 <div className="grid grid-cols-2 gap-2">
                   <button
-                    onClick={() => { onVariant("shorter"); handleClose(); }}
+                    onClick={() => handleVariant("shorter")}
                     disabled={isDisabled}
                     className="flex items-center gap-2 px-4 py-3 rounded-xl bg-secondary/40 hover:bg-secondary/60 transition-colors"
                   >
@@ -454,7 +561,7 @@ export function MessageActionsSheet({
                     <span className="text-sm">{labels.shorter}</span>
                   </button>
                   <button
-                    onClick={() => { onVariant("longer"); handleClose(); }}
+                    onClick={() => handleVariant("longer")}
                     disabled={isDisabled}
                     className="flex items-center gap-2 px-4 py-3 rounded-xl bg-secondary/40 hover:bg-secondary/60 transition-colors"
                   >
@@ -462,7 +569,7 @@ export function MessageActionsSheet({
                     <span className="text-sm">{labels.longer}</span>
                   </button>
                   <button
-                    onClick={() => { onVariant("simplify"); handleClose(); }}
+                    onClick={() => handleVariant("simplify")}
                     disabled={isDisabled}
                     className="flex items-center gap-2 px-4 py-3 rounded-xl bg-secondary/40 hover:bg-secondary/60 transition-colors"
                   >
@@ -470,7 +577,7 @@ export function MessageActionsSheet({
                     <span className="text-sm">{labels.simplify}</span>
                   </button>
                   <button
-                    onClick={() => { onVariant("detailed"); handleClose(); }}
+                    onClick={() => handleVariant("detailed")}
                     disabled={isDisabled}
                     className="flex items-center gap-2 px-4 py-3 rounded-xl bg-secondary/40 hover:bg-secondary/60 transition-colors"
                   >
