@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Send, Trash2, Menu, Paperclip, X, FileText } from "lucide-react";
 import ChatMessage from "@/components/ChatMessage";
@@ -8,6 +8,13 @@ import DailyUsageIndicator from "@/components/DailyUsageIndicator";
 import LimitReachedCard from "@/components/LimitReachedCard";
 import ThinkingBar, { ThinkingStatus, ThinkingPhase } from "@/components/ThinkingBar";
 import { VoiceModeButton, VoiceModePanel } from "@/components/voice";
+import {
+  MessageActions,
+  ScrollToBottom,
+  FollowUpSuggestions,
+  ChatEmptyState,
+  EditingIndicator,
+} from "@/components/chat";
 import { Message, ChatSession, ChatAttachment } from "@/types/chat";
 import { supabase } from "@/integrations/supabase/client";
 import { getModeInfo } from "@/data/modes";
@@ -18,6 +25,8 @@ import { loadChatsFromStorage, saveChatsToStorage, createNewSession } from "@/ut
 import { generateChatTitle } from "@/utils/generateChatTitle";
 import { useAuth } from "@/hooks/useAuth";
 import { useDailyUsage } from "@/hooks/useDailyUsage";
+import { useHaptics } from "@/hooks/useHaptics";
+import { useIsMobile } from "@/hooks/use-mobile";
 import clsx from "clsx";
 import { useToast } from "@/hooks/use-toast";
 import bahorLogo from "@/assets/bahor-logo.png";
@@ -101,6 +110,8 @@ export default function Chat() {
   const { language, t: translate } = useTranslation();
   const t = getTranslation(language);
   const { user } = useAuth();
+  const isMobile = useIsMobile();
+  const { lightTap } = useHaptics();
   
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
@@ -123,7 +134,17 @@ export default function Chat() {
   const [searchUsed, setSearchUsed] = useState(false);
   const [searchUrls, setSearchUrls] = useState<string[]>([]);
   const [thinkingMessageId, setThinkingMessageId] = useState<string | null>(null);
+  
+  // Chat UX polish states
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [showMobileActions, setShowMobileActions] = useState(false);
+  const [activeActionMessageId, setActiveActionMessageId] = useState<string | null>(null);
+  const [lastAssistantMessageId, setLastAssistantMessageId] = useState<string | null>(null);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -135,6 +156,38 @@ export default function Chat() {
   const modeInfo = getModeInfo(mode || "");
   const modeTranslation = t.modes[mode as keyof typeof t.modes];
   const modeSuggestions = [...(t.suggestions[mode as keyof typeof t.suggestions] || modeInfo?.quickSuggestions || [])];
+
+  // Scroll tracking
+  const handleScroll = useCallback(() => {
+    if (!messagesContainerRef.current) return;
+    
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+    const atBottom = distanceFromBottom < 100;
+    
+    setIsAtBottom(atBottom);
+    setShowScrollButton(!atBottom && messages.length > 0);
+  }, [messages.length]);
+
+  // Throttled scroll handler
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    
+    let ticking = false;
+    const onScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          handleScroll();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    
+    container.addEventListener("scroll", onScroll, { passive: true });
+    return () => container.removeEventListener("scroll", onScroll);
+  }, [handleScroll]);
 
   // Initialize sessions on mount
   useEffect(() => {
@@ -198,6 +251,12 @@ export default function Chat() {
     
     // Update sessions state to reflect new updatedAt
     setSessions([...storage[mode].sessions]);
+    
+    // Track last assistant message for follow-up suggestions
+    const lastAssistant = [...messages].reverse().find(m => m.role === "assistant");
+    if (lastAssistant) {
+      setLastAssistantMessageId(lastAssistant.id);
+    }
   }, [messages, currentSessionId, mode, t.chat.defaultChatTitle]);
 
   useEffect(() => {
@@ -207,8 +266,10 @@ export default function Chat() {
   }, [modeInfo, navigate]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, typing]);
+    if (isAtBottom) {
+      scrollToBottom();
+    }
+  }, [messages, typing, isAtBottom]);
 
   // Auto-focus input after AI finishes responding
   useEffect(() => {
@@ -231,8 +292,76 @@ export default function Chat() {
     }
   }, []);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const scrollToBottom = (smooth = true) => {
+    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
+  };
+
+  // Copy message content
+  const handleCopyMessage = (content: string) => {
+    try {
+      navigator.clipboard.writeText(content);
+      lightTap();
+      toast({
+        description: language === "uz" ? "Nusxa olindi" : language === "en" ? "Copied" : language === "ru" ? "Скопировано" : "Kopyalandı",
+      });
+    } catch {
+      toast({
+        description: language === "uz" ? "Xatolik. Qayta urinib ko'ring." : "Error. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Edit message - put content in composer
+  const handleEditMessage = (messageId: string, content: string) => {
+    setEditingMessageId(messageId);
+    setInputValue(content);
+    inputRef.current?.focus();
+    
+    // Auto-grow textarea
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.style.height = "auto";
+        const newHeight = Math.min(inputRef.current.scrollHeight, 140);
+        inputRef.current.style.height = `${newHeight}px`;
+      }
+    }, 0);
+  };
+
+  // Cancel editing
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setInputValue("");
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+    }
+  };
+
+  // Regenerate assistant response
+  const handleRegenerateMessage = async (messageId: string) => {
+    // Find the user message that preceded this assistant message
+    const messageIndex = messages.findIndex(m => m.id === messageId);
+    if (messageIndex <= 0) return;
+    
+    // Find the last user message before this assistant message
+    let userMessageIndex = messageIndex - 1;
+    while (userMessageIndex >= 0 && messages[userMessageIndex].role !== "user") {
+      userMessageIndex--;
+    }
+    
+    if (userMessageIndex < 0) return;
+    
+    const userMessage = messages[userMessageIndex];
+    
+    // Send the user message again (will append new response)
+    handleSendMessage(userMessage.content);
+  };
+
+  // Mobile long press handler
+  const handleLongPress = (messageId: string) => {
+    lightTap();
+    setActiveActionMessageId(messageId);
+    setShowMobileActions(true);
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -338,6 +467,14 @@ export default function Chat() {
   const handleSendMessage = async (content: string) => {
     if ((!content.trim() && pendingAttachments.length === 0) || isLoading || typing || !mode) return;
     
+    // Clear editing state if active
+    if (editingMessageId) {
+      setEditingMessageId(null);
+    }
+    
+    // Haptic feedback on send
+    lightTap();
+    
     // TODO: Backend integration - Check limit via backend API instead of local storage
     if (hasReachedLimit) {
       setShowLimitCard(true);
@@ -360,6 +497,11 @@ export default function Chat() {
     setPendingAttachments([]);
     setIsLoading(true);
     setTyping(true);
+    
+    // Reset textarea height
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+    }
     
     // Determine initial thinking phase based on attachments
     const hasImages = attachmentsToProcess.some(att => isVisionSupportedImage(att));
@@ -596,8 +738,8 @@ export default function Chat() {
       toast({
         title: language === "uz" ? "Xatolik" : "Error",
         description: language === "uz" 
-          ? "Hozircha serverda xatolik bo'ldi, birozdan so'ng qayta urinib ko'ring." 
-          : "Server error occurred. Please try again later.",
+          ? "Internetda muammo. Qayta urinib ko'ring." 
+          : "Network error. Please try again.",
         variant: "destructive",
       });
     }
@@ -709,6 +851,9 @@ export default function Chat() {
     const newHeight = Math.min(textarea.scrollHeight, 140); // Max ~6 lines
     textarea.style.height = `${newHeight}px`;
   };
+
+  // Get active message for mobile actions
+  const activeMessage = messages.find(m => m.id === activeActionMessageId);
 
   if (!modeInfo) return null;
 
@@ -866,32 +1011,25 @@ export default function Chat() {
         </div>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto px-3 sm:px-6 pb-4 pt-6">
+        <div 
+          ref={messagesContainerRef}
+          className="flex-1 overflow-y-auto px-3 sm:px-6 pb-4 pt-6"
+        >
           {messages.length === 0 ? (
-            <div className="flex items-center justify-center h-full min-h-[50vh]">
-              <div className="text-center max-w-md space-y-5 animate-fade-in px-4">
-                <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-5xl glow-primary-subtle">
-                  {modeInfo.icon}
-                </div>
-                <h2 className="text-2xl font-semibold text-foreground">
-                  {modeTranslation?.title || modeInfo.title}
-                </h2>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {modeTranslation?.subtitle || modeInfo.subtitle}
-                </p>
-                <p className="text-xs text-muted-foreground/70 pt-2">
-                  {language === "uz" ? "Savolingizni yozing yoki quyidagi tezkor takliflardan foydalaning" :
-                   language === "en" ? "Type your question or use quick suggestions below" :
-                   language === "ru" ? "Введите свой вопрос или используйте быстрые предложения ниже" :
-                   "Sorunuzu yazın veya aşağıdaki hızlı önerileri kullanın"}
-                </p>
-              </div>
-            </div>
+            <ChatEmptyState modeInfo={modeInfo} modeTranslation={modeTranslation} />
           ) : (
             <div className="space-y-5 max-w-3xl mx-auto">
               {messages.map((message, index) => (
                 <div key={message.id}>
-                  <ChatMessage message={message} />
+                  <ChatMessage
+                    message={message}
+                    onCopy={handleCopyMessage}
+                    onEdit={handleEditMessage}
+                    onRegenerate={handleRegenerateMessage}
+                    showActions={!isLoading && !typing}
+                    isMobile={isMobile}
+                    onLongPress={handleLongPress}
+                  />
                   
                   {/* Show ThinkingBar right after the user message that triggered it */}
                   {message.role === 'user' && 
@@ -911,6 +1049,18 @@ export default function Chat() {
                       />
                     </div>
                   )}
+                  
+                  {/* Follow-up suggestions after last assistant message */}
+                  {message.role === 'assistant' && 
+                   message.id === lastAssistantMessageId && 
+                   !isLoading && 
+                   !typing && (
+                    <FollowUpSuggestions
+                      onSelect={handleSendMessage}
+                      disabled={isLoading || typing}
+                      mode={mode}
+                    />
+                  )}
                 </div>
               ))}
               
@@ -923,6 +1073,12 @@ export default function Chat() {
             </div>
           )}
         </div>
+
+        {/* Scroll to bottom button */}
+        <ScrollToBottom 
+          visible={showScrollButton} 
+          onClick={() => scrollToBottom()} 
+        />
 
         {/* Input Area - Premium sticky bottom bar */}
         <div className="sticky bottom-0 px-3 sm:px-6 pb-4 sm:pb-6 pt-2">
@@ -939,6 +1095,11 @@ export default function Chat() {
 
           {/* Input Container */}
           <div className="glass-strong rounded-2xl border border-border/30 shadow-lg p-2">
+            {/* Editing indicator */}
+            {editingMessageId && (
+              <EditingIndicator onCancel={handleCancelEdit} />
+            )}
+            
             {/* Attachment Previews */}
             {pendingAttachments.length > 0 && (
               <div className="mb-2 px-2 flex flex-wrap gap-2">
@@ -1028,6 +1189,24 @@ export default function Chat() {
           </div>
         </div>
       </div>
+
+      {/* Mobile Message Actions */}
+      {isMobile && activeMessage && (
+        <MessageActions
+          messageId={activeMessage.id}
+          messageRole={activeMessage.role}
+          messageContent={activeMessage.content}
+          isOpen={showMobileActions}
+          onClose={() => {
+            setShowMobileActions(false);
+            setActiveActionMessageId(null);
+          }}
+          onCopy={() => handleCopyMessage(activeMessage.content)}
+          onEdit={activeMessage.role === "user" ? () => handleEditMessage(activeMessage.id, activeMessage.content) : undefined}
+          onRegenerate={activeMessage.role === "assistant" ? () => handleRegenerateMessage(activeMessage.id) : undefined}
+          isMobile={true}
+        />
+      )}
 
       {/* Delete Chat Modal */}
       <DeleteChatModal
