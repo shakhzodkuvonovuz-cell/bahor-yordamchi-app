@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, User, Globe, Moon, Sun, Shield, HelpCircle, FileText, Mail, LogOut, ChevronRight, CreditCard, Bell, Zap, Edit, Crown, Lock } from "lucide-react";
+import { ArrowLeft, User, Globe, Moon, Sun, Shield, HelpCircle, FileText, Mail, LogOut, ChevronRight, CreditCard, Bell, Zap, Edit, Crown, Lock, RotateCcw } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useLanguage, Language } from "@/hooks/useLanguage";
 import { getTranslation } from "@/data/translations";
@@ -208,6 +208,21 @@ export default function Settings() {
                     limit={profile.daily_limit || 5}
                     plan={profile.plan || 'free'}
                   />
+                  {/* Dev Reset Button */}
+                  <button
+                    onClick={() => {
+                      const today = new Date().toISOString().split('T')[0];
+                      localStorage.removeItem(`bahorai_usage_${today}`);
+                      refreshProfile();
+                      toast({
+                        description: "Kunlik limit qayta o'rnatildi (test uchun)",
+                      });
+                    }}
+                    className="mt-3 w-full flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground py-2 px-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Limitni qayta o'rnatish (dev)</span>
+                  </button>
                 </section>
               )}
 
