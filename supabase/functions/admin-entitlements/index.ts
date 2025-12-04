@@ -41,20 +41,60 @@ serve(async (req) => {
       );
     }
 
-    // Check if user is admin
     const adminEmails = getEmailList('ADMIN_EMAILS');
+    const devEmails = getEmailList('DEV_UNLIMITED_EMAILS');
     const userEmail = user.email?.toLowerCase() || '';
-    
-    if (!adminEmails.includes(userEmail)) {
+    const isAdmin = adminEmails.includes(userEmail);
+    const isDevBypass = devEmails.includes(userEmail);
+
+    const url = new URL(req.url);
+    const action = url.searchParams.get('action');
+
+    // GET: my-entitlement - any authenticated user can check their own status
+    if (req.method === 'GET' && action === 'my-entitlement') {
+      // Get entitlement from database
+      const { data: entitlement } = await supabaseAdmin
+        .from('user_entitlements')
+        .select('plan, expires_at, flags, note')
+        .eq('user_id', user.id)
+        .single();
+
+      const plan = entitlement?.plan || 'free';
+      const isPremium = isDevBypass || plan === 'premium';
+      
+      // Get daily usage
+      const today = new Date().toISOString().split('T')[0];
+      const { data: usageData } = await supabaseAdmin
+        .from('daily_usage')
+        .select('messages_count')
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .single();
+
+      const used = usageData?.messages_count || 0;
+      const limit = isPremium ? -1 : 5; // -1 = unlimited
+
+      return new Response(
+        JSON.stringify({
+          plan,
+          isPremium,
+          isDevBypass,
+          expiresAt: entitlement?.expires_at || null,
+          flags: entitlement?.flags || {},
+          usage: { date: today, used, limit },
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // All other actions require admin
+    if (!isAdmin) {
       console.log(`Admin access denied for: ${userEmail}`);
       return new Response(
         JSON.stringify({ error: 'FORBIDDEN', message: 'Admin access required' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    const url = new URL(req.url);
-    const action = url.searchParams.get('action');
 
     // GET: lookup entitlement by email
     if (req.method === 'GET' && action === 'lookup') {

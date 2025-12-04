@@ -27,6 +27,7 @@ import { getTranslation } from "@/data/translations";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { generateChatTitle } from "@/utils/generateChatTitle";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDailyUsageServer } from "@/hooks/useEntitlements";
 import * as chatStore from "@/lib/chatStore";
 
 import { useHaptics } from "@/hooks/useHaptics";
@@ -210,12 +211,10 @@ export default function Chat() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   
-  // Usage tracking from profile (backend-driven)
-  const usedToday = profile?.messages_today || 0;
-  const dailyLimit = profile?.daily_limit || 5;
-  const isPremium = profile?.plan === 'premium' || profile?.plan === 'monthly' || profile?.plan === 'yearly';
-  const hasReachedLimit = !isPremium && usedToday >= dailyLimit;
-  const isNearLimit = !isPremium && usedToday >= dailyLimit - 1;
+  // Usage tracking from server entitlements (includes devBypass)
+  const { usage, hasReachedLimit, isNearLimit, isPremium, isDevBypass, refresh: refreshUsage } = useDailyUsageServer();
+  const usedToday = usage.used;
+  const dailyLimit = usage.limit;
   const [showLimitCard, setShowLimitCard] = useState(false);
 
   const modeInfo = getModeInfo(mode || "");
