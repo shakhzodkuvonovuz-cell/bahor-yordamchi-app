@@ -22,7 +22,6 @@ interface ChatMessageProps {
   isStreaming?: boolean;
   isActionLoading?: boolean;
   isMobile?: boolean;
-  onLongPress?: (messageId: string) => void;
 }
 
 export default function ChatMessage({
@@ -39,7 +38,6 @@ export default function ChatMessage({
   isStreaming = false,
   isActionLoading = false,
   isMobile = false,
-  onLongPress,
 }: ChatMessageProps) {
   const isUser = message.role === "user";
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
@@ -51,13 +49,12 @@ export default function ChatMessage({
   const parsedSections = hasCards ? parseMessageForCards(message.content) : null;
 
   const handleTouchStart = () => {
-    if (isMobile && onLongPress) {
+    if (isMobile) {
       setIsPressed(true);
       longPressTimer.current = setTimeout(() => {
-        onLongPress(message.id);
         setShowMobileSheet(true);
         setIsPressed(false);
-      }, 500);
+      }, 400);
     }
   };
 
@@ -66,6 +63,23 @@ export default function ChatMessage({
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
+    }
+  };
+
+  const handleTouchMove = () => {
+    // Cancel long-press if user scrolls
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+      setIsPressed(false);
+    }
+  };
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isMobile) {
+      setShowMobileSheet(true);
     }
   };
 
@@ -157,10 +171,13 @@ export default function ChatMessage({
       <div
         className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"} ${
           isUser ? "chat-message-user" : "chat-message-ai"
-        } group animate-fade-in`}
+        } group animate-fade-in select-none`}
+        style={{ WebkitTouchCallout: 'none' }}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchEnd}
+        onTouchMove={handleTouchMove}
+        onContextMenu={handleContextMenu}
       >
         {/* AI Avatar */}
         {!isUser && (
@@ -303,19 +320,21 @@ export default function ChatMessage({
         )}
       </div>
 
-      {/* Mobile action sheet for assistant messages */}
-      {!isUser && isMobile && (
+      {/* Mobile action sheet - single source of truth for all messages */}
+      {isMobile && (
         <MessageActionsSheet
           isOpen={showMobileSheet}
           onClose={() => setShowMobileSheet(false)}
           reaction={message.reaction}
           isDisabled={isStreaming || isActionLoading}
+          isUserMessage={isUser}
           onReaction={handleReaction}
           onCopy={handleCopy}
           onShare={handleShare}
           onContinue={handleContinue}
           onRegenerate={handleRegenerate}
           onVariant={handleVariant}
+          onEdit={isUser ? handleEdit : undefined}
         />
       )}
     </>

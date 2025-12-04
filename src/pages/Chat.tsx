@@ -1493,7 +1493,6 @@ export default function Chat() {
                     showActionBar={!isLoading && !typing}
                     isStreaming={isLoading || typing}
                     isMobile={isMobile}
-                    onLongPress={handleLongPress}
                   />
                   
                   {message.role === 'user' && 
