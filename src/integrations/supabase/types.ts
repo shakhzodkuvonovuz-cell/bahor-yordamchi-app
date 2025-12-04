@@ -19,13 +19,17 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           daily_limit: number | null
+          email: string | null
           first_name: string | null
+          full_name: string | null
           id: string
+          language: string | null
           last_name: string | null
           last_reset_date: string | null
           messages_today: number | null
           phone: string | null
           plan: string | null
+          theme: string | null
           updated_at: string
           user_id: string
         }
@@ -33,13 +37,17 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           daily_limit?: number | null
+          email?: string | null
           first_name?: string | null
+          full_name?: string | null
           id?: string
+          language?: string | null
           last_name?: string | null
           last_reset_date?: string | null
           messages_today?: number | null
           phone?: string | null
           plan?: string | null
+          theme?: string | null
           updated_at?: string
           user_id: string
         }
@@ -47,13 +55,17 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           daily_limit?: number | null
+          email?: string | null
           first_name?: string | null
+          full_name?: string | null
           id?: string
+          language?: string | null
           last_name?: string | null
           last_reset_date?: string | null
           messages_today?: number | null
           phone?: string | null
           plan?: string | null
+          theme?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -64,7 +76,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_daily_usage: {
+        Args: { p_today: string; p_user_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
