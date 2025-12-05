@@ -642,7 +642,10 @@ Agar yuqorida qidiruv natijalari bo'lsa, ularga suyanib javob ber va manbalarni 
         try {
           while (true) {
             const { done, value } = await reader.read();
-            if (done) break;
+            if (done) {
+              console.log('[Stream] DeepSeek stream completed');
+              break;
+            }
             
             const chunk = decoder.decode(value, { stream: true });
             const sanitizedChunk = sanitizeOutput(chunk);
@@ -650,6 +653,7 @@ Agar yuqorida qidiruv natijalari bo'lsa, ularga suyanib javob ber va manbalarni 
             // Mark first real content
             if (!firstChunkSent && sanitizedChunk.includes('"content"')) {
               firstChunkSent = true;
+              console.log('[Stream] First content chunk received');
             }
             
             controller.enqueue(encoder.encode(sanitizedChunk));
@@ -662,7 +666,9 @@ Agar yuqorida qidiruv natijalari bo'lsa, ularga suyanib javob ber va manbalarni 
           controller.enqueue(encoder.encode(createTraceComplete(requestStartTime, collectedSources)));
           
           controller.close();
+          console.log('[Stream] Response stream closed successfully');
         } catch (err) {
+          console.error('[Stream] Error during streaming:', err);
           controller.error(err);
         }
       },

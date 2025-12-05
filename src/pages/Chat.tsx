@@ -1293,6 +1293,11 @@ export default function Chat() {
       });
     } catch (error) {
       console.error("Error getting AI response:", error);
+      console.error("Error details:", {
+        name: error instanceof Error ? error.name : 'unknown',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       
       setTyping(false);
       setIsLoading(false);
@@ -1305,6 +1310,7 @@ export default function Chat() {
       
       // Check if it was a timeout (AbortError)
       const isTimeout = error instanceof Error && error.name === 'AbortError';
+      const errorMessage = error instanceof Error ? error.message : '';
       
       toast({
         title: language === "uz" ? "Xatolik" : "Error",
@@ -1313,8 +1319,8 @@ export default function Chat() {
               ? "Ulanish cho'zildi. Qayta urinib ko'ring." 
               : "Connection timed out. Please try again.")
           : (language === "uz" 
-              ? "Internetda muammo. Qayta urinib ko'ring." 
-              : "Network error. Please try again."),
+              ? `Internetda muammo. Qayta urinib ko'ring.` 
+              : `Network error. Please try again.`),
         variant: "destructive",
       });
     }
