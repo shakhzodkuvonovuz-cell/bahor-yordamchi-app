@@ -380,11 +380,33 @@ serve(async (req) => {
         
         console.log("[doc-run] HTML content length:", fullHtml.length);
         
-        // Upload HTML directly with proper MIME type
+        // Upload HTML to public bucket for iLovePDF to access via URL
         const htmlBytes = new TextEncoder().encode(fullHtml);
-        const serverFilename = await iloveUpload(iloveToken, server, task, htmlBytes, "document.html", "text/html");
+        const tempHtmlPath = `temp/${user.id}/${crypto.randomUUID()}.html`;
         
-        console.log("[doc-run] HTML uploaded, server_filename:", serverFilename);
+        const { error: htmlUploadError } = await supabase.storage
+          .from("chat-attachments") // Public bucket
+          .upload(tempHtmlPath, htmlBytes, {
+            contentType: "text/html",
+            upsert: true,
+          });
+        
+        if (htmlUploadError) {
+          console.error("[doc-run] HTML temp upload failed:", htmlUploadError);
+          throw new Error("Failed to upload HTML for processing");
+        }
+        
+        // Get public URL
+        const { data: publicUrlData } = supabase.storage
+          .from("chat-attachments")
+          .getPublicUrl(tempHtmlPath);
+        
+        const htmlUrl = publicUrlData.publicUrl;
+        console.log("[doc-run] HTML public URL:", htmlUrl);
+        
+        // Use URL upload for htmlpdf
+        const serverFilename = await iloveUploadFromUrl(iloveToken, server, task, htmlUrl);
+        console.log("[doc-run] HTML uploaded via URL, server_filename:", serverFilename);
         
         await iloveProcess(iloveToken, server, task, tool, [
           { server_filename: serverFilename, filename: "document.html" },
@@ -396,6 +418,9 @@ serve(async (req) => {
         });
         
         outputBytes = await iloveDownload(iloveToken, server, task);
+        
+        // Clean up temp HTML file
+        await supabase.storage.from("chat-attachments").remove([tempHtmlPath]);
         
 
       } else if (tool === "imagepdf") {
