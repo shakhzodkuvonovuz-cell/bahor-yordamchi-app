@@ -26,6 +26,3 @@ verify_jwt = false
 
 [functions.speech-to-text]
 verify_jwt = false
-
-[functions.pdf-html]
-verify_jwt = false
