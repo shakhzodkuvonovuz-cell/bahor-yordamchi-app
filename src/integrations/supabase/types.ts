@@ -217,6 +217,56 @@ export type Database = {
         }
         Relationships: []
       }
+      doc_jobs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          ilove_server: string | null
+          ilove_task: string | null
+          input: Json
+          result_file_id: string | null
+          status: string
+          tool: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          ilove_server?: string | null
+          ilove_task?: string | null
+          input: Json
+          result_file_id?: string | null
+          status?: string
+          tool: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          ilove_server?: string | null
+          ilove_task?: string | null
+          input?: Json
+          result_file_id?: string | null
+          status?: string
+          tool?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doc_jobs_result_file_id_fkey"
+            columns: ["result_file_id"]
+            isOneToOne: false
+            referencedRelation: "user_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       global_usage_counters: {
         Row: {
           date: string
@@ -351,6 +401,54 @@ export type Database = {
           note?: string | null
           plan?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_files: {
+        Row: {
+          bucket: string
+          created_at: string
+          error_message: string | null
+          id: string
+          meta: Json
+          mime_type: string
+          path: string
+          size_bytes: number | null
+          source: string
+          status: string
+          title: string
+          tool: string
+          user_id: string
+        }
+        Insert: {
+          bucket?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          meta?: Json
+          mime_type?: string
+          path: string
+          size_bytes?: number | null
+          source?: string
+          status?: string
+          title: string
+          tool: string
+          user_id: string
+        }
+        Update: {
+          bucket?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          meta?: Json
+          mime_type?: string
+          path?: string
+          size_bytes?: number | null
+          source?: string
+          status?: string
+          title?: string
+          tool?: string
           user_id?: string
         }
         Relationships: []
