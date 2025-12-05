@@ -1,9 +1,14 @@
 import { supabase } from '@/integrations/supabase/client';
 
+// Three plan types: dev_unlimited, beta_premium, free
+export type PlanType = 'dev_unlimited' | 'beta_premium' | 'free';
+
 export interface Entitlement {
-  plan: 'free' | 'premium';
-  isPremium: boolean;
-  expiresAt: string | null;
+  plan: PlanType;
+  isPremium: boolean;  // true for dev_unlimited and beta_premium
+  isBetaActive: boolean;
+  betaExpiresAt: string | null;
+  daysRemaining: number;
   flags: Record<string, boolean>;
   note?: string | null;
   isDevBypass?: boolean;
@@ -12,9 +17,13 @@ export interface Entitlement {
 export interface DailyUsageData {
   date: string;
   used: number;
-  limit: number;
+  limit: number;  // -1 for unlimited
+  plan: PlanType;
   isPremium: boolean;
   isDevBypass: boolean;
+  isBetaActive: boolean;
+  betaExpiresAt: string | null;
+  daysRemaining: number;
 }
 
 interface EntitlementRpcResult {
@@ -30,8 +39,8 @@ interface EntitlementRpcResult {
  */
 export async function fetchUserEntitlement(userId: string): Promise<Entitlement> {
   try {
-    // Use the RPC function to get effective entitlement
-    const { data, error } = await supabase.rpc('get_effective_entitlement', {
+    // Use the RPC function to get trial status which includes all plan info
+    const { data, error } = await supabase.rpc('get_trial_status', {
       p_user_id: userId,
     });
 
@@ -40,27 +49,33 @@ export async function fetchUserEntitlement(userId: string): Promise<Entitlement>
       return {
         plan: 'free',
         isPremium: false,
-        expiresAt: null,
+        isBetaActive: false,
+        betaExpiresAt: null,
+        daysRemaining: 0,
         flags: {},
       };
     }
 
-    // Cast the JSON response
-    const result = data as EntitlementRpcResult | null;
+    const result = data as any;
+    const plan = (result?.plan || 'free') as PlanType;
 
     return {
-      plan: (result?.plan as 'free' | 'premium') || 'free',
-      isPremium: result?.isPremium || false,
-      expiresAt: result?.expiresAt || null,
-      flags: result?.flags || {},
-      note: result?.note,
+      plan,
+      isPremium: plan === 'dev_unlimited' || plan === 'beta_premium',
+      isBetaActive: result?.is_beta_active || false,
+      betaExpiresAt: result?.beta_expires_at || null,
+      daysRemaining: result?.days_remaining || 0,
+      flags: {},
+      note: null,
     };
   } catch (err) {
     console.error('Entitlement fetch failed:', err);
     return {
       plan: 'free',
       isPremium: false,
-      expiresAt: null,
+      isBetaActive: false,
+      betaExpiresAt: null,
+      daysRemaining: 0,
       flags: {},
     };
   }
@@ -71,12 +86,21 @@ export async function fetchUserEntitlement(userId: string): Promise<Entitlement>
  */
 export async function fetchDailyUsage(userId: string): Promise<DailyUsageData> {
   const today = new Date().toISOString().split('T')[0];
+  const defaultData: DailyUsageData = { 
+    date: today, 
+    used: 0, 
+    limit: 5, 
+    plan: 'free',
+    isPremium: false, 
+    isDevBypass: false,
+    isBetaActive: false,
+    betaExpiresAt: null,
+    daysRemaining: 0,
+  };
 
   try {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      return { date: today, used: 0, limit: 5, isPremium: false, isDevBypass: false };
-    }
+    if (!session) return defaultData;
 
     // Call edge function which has access to DEV_UNLIMITED_EMAILS
     const res = await fetch(
@@ -91,21 +115,30 @@ export async function fetchDailyUsage(userId: string): Promise<DailyUsageData> {
 
     if (!res.ok) {
       console.error('Failed to fetch entitlement:', res.status);
-      return { date: today, used: 0, limit: 5, isPremium: false, isDevBypass: false };
+      return defaultData;
     }
 
     const data = await res.json();
+    const plan = (data.plan || 'free') as PlanType;
+    const isDevBypass = data.isDevBypass || false;
+    
+    // Determine if premium features are enabled
+    const isPremium = isDevBypass || plan === 'dev_unlimited' || plan === 'beta_premium';
     
     return {
       date: data.usage?.date || today,
       used: data.usage?.used || 0,
-      limit: data.usage?.limit || 5,
-      isPremium: data.isPremium || false,
-      isDevBypass: data.isDevBypass || false,
+      limit: data.usage?.limit || (plan === 'free' ? 5 : plan === 'beta_premium' ? 10 : -1),
+      plan: isDevBypass ? 'dev_unlimited' : plan,
+      isPremium,
+      isDevBypass,
+      isBetaActive: data.isBetaActive || false,
+      betaExpiresAt: data.betaExpiresAt || null,
+      daysRemaining: data.daysRemaining || 0,
     };
   } catch (err) {
     console.error('Daily usage fetch failed:', err);
-    return { date: today, used: 0, limit: 5, isPremium: false, isDevBypass: false };
+    return defaultData;
   }
 }
 
@@ -172,7 +205,7 @@ export async function adminLookupUser(email: string) {
  */
 export async function adminSetEntitlement(params: {
   email: string;
-  plan: 'free' | 'premium';
+  plan: PlanType;
   expiresAt?: string | null;
   note?: string;
   flags?: Record<string, boolean>;

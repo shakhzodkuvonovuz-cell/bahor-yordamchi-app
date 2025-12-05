@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { checkAdminStatus, adminLookupUser, adminSetEntitlement, adminRevokeEntitlement } from '@/lib/entitlements';
+import { checkAdminStatus, adminLookupUser, adminSetEntitlement, adminRevokeEntitlement, type PlanType } from '@/lib/entitlements';
 
 interface LookupResult {
   user: {
@@ -36,7 +36,8 @@ export default function AdminEntitlements() {
   const [searching, setSearching] = useState(false);
   const [lookupResult, setLookupResult] = useState<LookupResult | null>(null);
   
-  const [selectedPlan, setSelectedPlan] = useState<'free' | 'premium'>('premium');
+  // Admin can set: free, beta_premium, dev_unlimited
+  const [selectedPlan, setSelectedPlan] = useState<PlanType>('beta_premium');
   const [expiryDate, setExpiryDate] = useState('');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
@@ -73,7 +74,8 @@ export default function AdminEntitlements() {
     try {
       const result = await adminLookupUser(searchEmail.trim());
       setLookupResult(result);
-      setSelectedPlan(result.entitlement?.plan === 'premium' ? 'premium' : 'free');
+      const plan = result.entitlement?.plan as PlanType || 'free';
+      setSelectedPlan(plan === 'dev_unlimited' || plan === 'beta_premium' ? plan : 'free');
       setExpiryDate(result.entitlement?.expires_at ? result.entitlement.expires_at.split('T')[0] : '');
       setNote(result.entitlement?.note || '');
     } catch (err: any) {
@@ -95,7 +97,8 @@ export default function AdminEntitlements() {
         note: note || undefined,
       });
       
-      toast.success(`${selectedPlan === 'premium' ? 'Premium berildi' : "Free ga o'zgartirildi"}`);
+      const planLabel = selectedPlan === 'dev_unlimited' ? 'Dev Unlimited' : selectedPlan === 'beta_premium' ? 'Beta Premium' : 'Free';
+      toast.success(`${planLabel} berildi`);
       
       // Refresh lookup
       const result = await adminLookupUser(lookupResult.user.email);
@@ -267,12 +270,21 @@ export default function AdminEntitlements() {
                     </Button>
                     <Button
                       type="button"
-                      variant={selectedPlan === 'premium' ? 'default' : 'outline'}
-                      onClick={() => setSelectedPlan('premium')}
+                      variant={selectedPlan === 'beta_premium' ? 'default' : 'outline'}
+                      onClick={() => setSelectedPlan('beta_premium')}
                       className="flex-1"
                     >
                       <Crown className="w-4 h-4 mr-2" />
-                      Premium
+                      Beta Premium
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={selectedPlan === 'dev_unlimited' ? 'default' : 'outline'}
+                      onClick={() => setSelectedPlan('dev_unlimited')}
+                      className="flex-1"
+                    >
+                      <Shield className="w-4 h-4 mr-2" />
+                      Dev
                     </Button>
                   </div>
                 </div>
@@ -317,10 +329,10 @@ export default function AdminEntitlements() {
                     ) : (
                       <Crown className="w-4 h-4 mr-2" />
                     )}
-                    {selectedPlan === 'premium' ? 'Premium berish' : "Free ga o'tkazish"}
+                    {selectedPlan === 'dev_unlimited' ? 'Dev berish' : selectedPlan === 'beta_premium' ? 'Beta Premium berish' : "Free ga o'tkazish"}
                   </Button>
                   
-                  {lookupResult.entitlement.plan === 'premium' && (
+                  {(lookupResult.entitlement.plan === 'beta_premium' || lookupResult.entitlement.plan === 'dev_unlimited') && (
                     <Button 
                       onClick={handleRevoke} 
                       disabled={saving}

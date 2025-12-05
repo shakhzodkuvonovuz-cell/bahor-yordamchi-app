@@ -1,17 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import type { PlanType } from '@/lib/entitlements';
 
 export interface TrialStatus {
-  plan: string;
-  isTrialActive: boolean;
-  isPremium: boolean;
+  plan: PlanType;
+  isBetaActive: boolean;
+  isPremium: boolean;  // true for dev_unlimited and beta_premium
   isDevBypass: boolean;
-  trialStartedAt: string | null;
-  trialExpiresAt: string | null;
+  betaExpiresAt: string | null;
   daysRemaining: number;
   limits: {
-    messages: number;
+    messages: number;  // -1 for unlimited
     searches: number;
     vision: number;
     files: number;
@@ -23,7 +23,7 @@ export interface TrialStatus {
     files: number;
   };
   remaining: {
-    messages: number;
+    messages: number;  // -1 for unlimited
     searches: number;
     vision: number;
     files: number;
@@ -33,11 +33,10 @@ export interface TrialStatus {
 
 const defaultStatus: TrialStatus = {
   plan: 'free',
-  isTrialActive: false,
+  isBetaActive: false,
   isPremium: false,
   isDevBypass: false,
-  trialStartedAt: null,
-  trialExpiresAt: null,
+  betaExpiresAt: null,
   daysRemaining: 0,
   limits: { messages: 5, searches: 0, vision: 0, files: 0 },
   used: { messages: 0, searches: 0, vision: 0, files: 0 },
@@ -58,10 +57,10 @@ export function useTrialStatus() {
     }
 
     try {
-      // First ensure trial is initialized
-      await supabase.rpc('get_or_create_trial', { p_user_id: user.id, p_trial_days: 7 });
+      // Initialize trial for user (14 days by default)
+      await supabase.rpc('get_or_create_trial', { p_user_id: user.id, p_trial_days: 14 });
       
-      // Then get full status
+      // Get full status
       const { data, error } = await supabase.rpc('get_trial_status', { p_user_id: user.id });
       
       if (error) {
@@ -70,7 +69,7 @@ export function useTrialStatus() {
         return;
       }
 
-      // Also check if user is dev bypass via edge function
+      // Check if user is dev bypass via edge function
       const { data: { session } } = await supabase.auth.getSession();
       let isDevBypass = false;
       
@@ -95,20 +94,22 @@ export function useTrialStatus() {
       }
 
       const trialData = data as any;
+      const plan = (isDevBypass ? 'dev_unlimited' : trialData?.plan || 'free') as PlanType;
+      const isBetaActive = trialData?.is_beta_active || false;
+      const isPremium = isDevBypass || plan === 'dev_unlimited' || plan === 'beta_premium';
       
       setStatus({
-        plan: trialData?.plan || 'free',
-        isTrialActive: trialData?.is_trial_active || false,
-        isPremium: trialData?.is_premium || false,
+        plan,
+        isBetaActive,
+        isPremium,
         isDevBypass,
-        trialStartedAt: trialData?.trial_started_at || null,
-        trialExpiresAt: trialData?.trial_expires_at || null,
+        betaExpiresAt: trialData?.beta_expires_at || null,
         daysRemaining: trialData?.days_remaining || 0,
         limits: {
-          messages: trialData?.limits?.messages || 5,
-          searches: trialData?.limits?.searches || 0,
-          vision: trialData?.limits?.vision || 0,
-          files: trialData?.limits?.files || 0,
+          messages: trialData?.limits?.messages ?? (plan === 'free' ? 5 : plan === 'beta_premium' ? 10 : -1),
+          searches: trialData?.limits?.searches ?? 0,
+          vision: trialData?.limits?.vision ?? 0,
+          files: trialData?.limits?.files ?? 0,
         },
         used: {
           messages: trialData?.used?.messages || 0,
@@ -117,10 +118,10 @@ export function useTrialStatus() {
           files: trialData?.used?.files || 0,
         },
         remaining: {
-          messages: trialData?.remaining?.messages || 5,
-          searches: trialData?.remaining?.searches || 0,
-          vision: trialData?.remaining?.vision || 0,
-          files: trialData?.remaining?.files || 0,
+          messages: trialData?.remaining?.messages ?? 5,
+          searches: trialData?.remaining?.searches ?? 0,
+          vision: trialData?.remaining?.vision ?? 0,
+          files: trialData?.remaining?.files ?? 0,
         },
         resetsAt: trialData?.resets_at || new Date().toISOString().split('T')[0],
       });
