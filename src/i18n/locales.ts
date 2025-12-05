@@ -245,6 +245,95 @@ export const translations: Record<Lang, Record<string, string>> = {
     'voice.state.thinking.sub': "Savolingizni tahlil qilyapman.",
     'voice.state.speaking': "Javob beryapman...",
     'voice.state.speaking.sub': "Iltimos kuting.",
+    
+    // Settings Page
+    'settings.title': 'Sozlamalar',
+    'settings.back': 'Orqaga',
+    'settings.edit': 'Tahrirlash',
+    'settings.logout': 'Chiqish',
+    'settings.notifications': 'Bildirishnomalar',
+    'settings.news': 'Yangiliklar',
+    'settings.newsDesc': 'Yangi funksiyalar',
+    'settings.tips': 'Maslahatlar',
+    'settings.tipsDesc': "Foydali g'oyalar",
+    'settings.discounts': 'Chegirmalar',
+    'settings.discountsDesc': 'Maxsus takliflar',
+    'settings.experience': 'Bahor AI tajribasi',
+    'settings.animations': 'Animatsiyalar',
+    'settings.animationsDesc': 'Interfeys effektlari',
+    'settings.smartSuggestions': 'Aqlli takliflar',
+    'settings.smartSuggestionsDesc': 'Tavsiya etilgan savollar',
+    'settings.security': 'Xavfsizlik',
+    'settings.changePassword': "Parolni o'zgartirish",
+    'settings.logoutAllDevices': 'Barcha qurilmalardan chiqish',
+    'settings.appSettings': 'Ilova sozlamalari',
+    'settings.language': 'Til',
+    'settings.theme': 'Mavzu',
+    'settings.themeLight': "Yorug'",
+    'settings.themeDark': "Qorong'i",
+    'settings.subscription': 'Obuna holati',
+    'settings.helpLegal': 'Yordam va huquqiy',
+    'settings.helpCenter': 'Yordam markazi',
+    'settings.reportBug': 'Xatolik haqida xabar berish',
+    'settings.terms': 'Foydalanish shartlari',
+    'settings.privacy': 'Maxfiylik siyosati',
+    'settings.viewAllPlans': "Barcha rejalar va narxlarni ko'rish →",
+    'settings.usageToday': 'Bugungi foydalanish',
+    'settings.plan': 'rejasi',
+    'settings.unlimited': 'Cheksiz',
+    'settings.comingSoon': "Bu funksiya tez orada qo'shiladi",
+    'settings.logoutSuccess': 'Barcha qurilmalardan chiqdingiz',
+    'settings.error': 'Xatolik yuz berdi',
+    'settings.logoutError': 'Chiqishda xatolik yuz berdi',
+    'settings.user': 'Foydalanuvchi',
+    'settings.free': 'Bepul',
+    'settings.premium': 'Premium',
+    'settings.ultra': 'Ultra',
+    'settings.devUnlimited': 'Dev Unlimited',
+    
+    // Modes Page
+    'modes.title': 'Bahor AI',
+    'modes.question': 'Bugun nimaga yordam kerak?',
+    'modes.subtitle': 'Bahor AI sizga turli sohalarda yordam beradi',
+    'modes.primary': 'Asosiy imkoniyatlar',
+    'modes.learning': "O'qish va rivojlanish",
+    
+    // Feedback Page
+    'feedback.title': 'Fikr bildirish',
+    'feedback.type': 'Turi',
+    'feedback.bug': 'Xatolik',
+    'feedback.idea': 'Taklif',
+    'feedback.other': 'Boshqa',
+    'feedback.message': 'Xabar',
+    'feedback.messagePlaceholder.bug': 'Qanday xatolik yuz berdi? Qadam-baqadam tushuntiring...',
+    'feedback.messagePlaceholder.idea': 'Taklifingizni batafsil yozing...',
+    'feedback.messagePlaceholder.other': 'Xabaringizni yozing...',
+    'feedback.screenshot': 'Skrinshot (ixtiyoriy)',
+    'feedback.addImage': "Rasm qo'shish",
+    'feedback.submit': 'Yuborish',
+    'feedback.thanks': 'Sizning fikringiz Bahor AI ni yaxshilashga yordam beradi. Rahmat!',
+    'feedback.success': 'Yuborildi, rahmat! 🙏',
+    'feedback.error': 'Xatolik yuz berdi. Qayta urinib ko\'ring.',
+    'feedback.emptyMessage': 'Iltimos, xabaringizni yozing',
+    'feedback.imageTooLarge': "Rasm 5MB dan kichik bo'lishi kerak",
+    
+    // Beta Banner
+    'beta.title': 'Beta versiya',
+    'beta.description': "Xatolar bo'lishi mumkin. Feedback juda kerak —",
+    'beta.report': 'xabar bering',
+    
+    // Support Page
+    'support.title': 'Yordam markazi',
+    'support.contact': 'Bog\'lanish',
+    'support.email': 'Elektron pochta',
+    'support.reportBug': 'Xatolik haqida xabar berish',
+    'support.reportBugDesc': 'Ilovadagi muammolarni bizga xabar qiling',
+    
+    // Terms Page
+    'terms.title': 'Foydalanish shartlari',
+    
+    // Privacy Page
+    'privacy.title': 'Maxfiylik siyosati',
   },
 
   en: {
@@ -491,6 +580,95 @@ export const translations: Record<Lang, Record<string, string>> = {
     'voice.state.thinking.sub': "Analyzing your question.",
     'voice.state.speaking': "Answering...",
     'voice.state.speaking.sub': "Please wait.",
+    
+    // Settings Page
+    'settings.title': 'Settings',
+    'settings.back': 'Back',
+    'settings.edit': 'Edit',
+    'settings.logout': 'Logout',
+    'settings.notifications': 'Notifications',
+    'settings.news': 'News',
+    'settings.newsDesc': 'New features',
+    'settings.tips': 'Tips',
+    'settings.tipsDesc': 'Useful ideas',
+    'settings.discounts': 'Discounts',
+    'settings.discountsDesc': 'Special offers',
+    'settings.experience': 'Bahor AI Experience',
+    'settings.animations': 'Animations',
+    'settings.animationsDesc': 'Interface effects',
+    'settings.smartSuggestions': 'Smart suggestions',
+    'settings.smartSuggestionsDesc': 'Recommended questions',
+    'settings.security': 'Security',
+    'settings.changePassword': 'Change password',
+    'settings.logoutAllDevices': 'Logout from all devices',
+    'settings.appSettings': 'App settings',
+    'settings.language': 'Language',
+    'settings.theme': 'Theme',
+    'settings.themeLight': 'Light',
+    'settings.themeDark': 'Dark',
+    'settings.subscription': 'Subscription status',
+    'settings.helpLegal': 'Help & Legal',
+    'settings.helpCenter': 'Help center',
+    'settings.reportBug': 'Report a bug',
+    'settings.terms': 'Terms of use',
+    'settings.privacy': 'Privacy policy',
+    'settings.viewAllPlans': 'View all plans and pricing →',
+    'settings.usageToday': "Today's usage",
+    'settings.plan': 'plan',
+    'settings.unlimited': 'Unlimited',
+    'settings.comingSoon': 'This feature is coming soon',
+    'settings.logoutSuccess': 'Logged out from all devices',
+    'settings.error': 'An error occurred',
+    'settings.logoutError': 'Error while logging out',
+    'settings.user': 'User',
+    'settings.free': 'Free',
+    'settings.premium': 'Premium',
+    'settings.ultra': 'Ultra',
+    'settings.devUnlimited': 'Dev Unlimited',
+    
+    // Modes Page
+    'modes.title': 'Bahor AI',
+    'modes.question': 'What do you need help with today?',
+    'modes.subtitle': 'Bahor AI helps you in various areas',
+    'modes.primary': 'Main features',
+    'modes.learning': 'Learning & Development',
+    
+    // Feedback Page
+    'feedback.title': 'Send Feedback',
+    'feedback.type': 'Type',
+    'feedback.bug': 'Bug',
+    'feedback.idea': 'Suggestion',
+    'feedback.other': 'Other',
+    'feedback.message': 'Message',
+    'feedback.messagePlaceholder.bug': 'What error occurred? Explain step by step...',
+    'feedback.messagePlaceholder.idea': 'Describe your suggestion in detail...',
+    'feedback.messagePlaceholder.other': 'Write your message...',
+    'feedback.screenshot': 'Screenshot (optional)',
+    'feedback.addImage': 'Add image',
+    'feedback.submit': 'Submit',
+    'feedback.thanks': 'Your feedback helps improve Bahor AI. Thank you!',
+    'feedback.success': 'Sent successfully, thank you! 🙏',
+    'feedback.error': 'An error occurred. Please try again.',
+    'feedback.emptyMessage': 'Please write your message',
+    'feedback.imageTooLarge': 'Image must be smaller than 5MB',
+    
+    // Beta Banner
+    'beta.title': 'Beta version',
+    'beta.description': 'Errors may occur. Your feedback is very important —',
+    'beta.report': 'report here',
+    
+    // Support Page
+    'support.title': 'Help Center',
+    'support.contact': 'Contact',
+    'support.email': 'Email',
+    'support.reportBug': 'Report a bug',
+    'support.reportBugDesc': 'Let us know about issues in the app',
+    
+    // Terms Page
+    'terms.title': 'Terms of Use',
+    
+    // Privacy Page
+    'privacy.title': 'Privacy Policy',
   },
 
   ru: {
@@ -737,6 +915,95 @@ export const translations: Record<Lang, Record<string, string>> = {
     'voice.state.thinking.sub': "Анализирую ваш вопрос.",
     'voice.state.speaking': "Отвечаю...",
     'voice.state.speaking.sub': "Пожалуйста, подождите.",
+    
+    // Settings Page
+    'settings.title': 'Настройки',
+    'settings.back': 'Назад',
+    'settings.edit': 'Редактировать',
+    'settings.logout': 'Выйти',
+    'settings.notifications': 'Уведомления',
+    'settings.news': 'Новости',
+    'settings.newsDesc': 'Новые функции',
+    'settings.tips': 'Советы',
+    'settings.tipsDesc': 'Полезные идеи',
+    'settings.discounts': 'Скидки',
+    'settings.discountsDesc': 'Специальные предложения',
+    'settings.experience': 'Опыт Bahor AI',
+    'settings.animations': 'Анимации',
+    'settings.animationsDesc': 'Эффекты интерфейса',
+    'settings.smartSuggestions': 'Умные подсказки',
+    'settings.smartSuggestionsDesc': 'Рекомендуемые вопросы',
+    'settings.security': 'Безопасность',
+    'settings.changePassword': 'Изменить пароль',
+    'settings.logoutAllDevices': 'Выйти со всех устройств',
+    'settings.appSettings': 'Настройки приложения',
+    'settings.language': 'Язык',
+    'settings.theme': 'Тема',
+    'settings.themeLight': 'Светлая',
+    'settings.themeDark': 'Тёмная',
+    'settings.subscription': 'Статус подписки',
+    'settings.helpLegal': 'Помощь и правовая информация',
+    'settings.helpCenter': 'Центр помощи',
+    'settings.reportBug': 'Сообщить об ошибке',
+    'settings.terms': 'Условия использования',
+    'settings.privacy': 'Политика конфиденциальности',
+    'settings.viewAllPlans': 'Посмотреть все планы и цены →',
+    'settings.usageToday': 'Использование сегодня',
+    'settings.plan': 'план',
+    'settings.unlimited': 'Безлимитно',
+    'settings.comingSoon': 'Эта функция скоро появится',
+    'settings.logoutSuccess': 'Вы вышли со всех устройств',
+    'settings.error': 'Произошла ошибка',
+    'settings.logoutError': 'Ошибка при выходе',
+    'settings.user': 'Пользователь',
+    'settings.free': 'Бесплатно',
+    'settings.premium': 'Премиум',
+    'settings.ultra': 'Ультра',
+    'settings.devUnlimited': 'Dev Unlimited',
+    
+    // Modes Page
+    'modes.title': 'Bahor AI',
+    'modes.question': 'Чем вам помочь сегодня?',
+    'modes.subtitle': 'Bahor AI помогает в различных областях',
+    'modes.primary': 'Основные возможности',
+    'modes.learning': 'Обучение и развитие',
+    
+    // Feedback Page
+    'feedback.title': 'Отправить отзыв',
+    'feedback.type': 'Тип',
+    'feedback.bug': 'Ошибка',
+    'feedback.idea': 'Предложение',
+    'feedback.other': 'Другое',
+    'feedback.message': 'Сообщение',
+    'feedback.messagePlaceholder.bug': 'Какая ошибка произошла? Объясните по шагам...',
+    'feedback.messagePlaceholder.idea': 'Опишите ваше предложение подробно...',
+    'feedback.messagePlaceholder.other': 'Напишите ваше сообщение...',
+    'feedback.screenshot': 'Скриншот (необязательно)',
+    'feedback.addImage': 'Добавить изображение',
+    'feedback.submit': 'Отправить',
+    'feedback.thanks': 'Ваш отзыв помогает улучшить Bahor AI. Спасибо!',
+    'feedback.success': 'Отправлено, спасибо! 🙏',
+    'feedback.error': 'Произошла ошибка. Попробуйте ещё раз.',
+    'feedback.emptyMessage': 'Пожалуйста, напишите сообщение',
+    'feedback.imageTooLarge': 'Изображение должно быть меньше 5МБ',
+    
+    // Beta Banner
+    'beta.title': 'Бета-версия',
+    'beta.description': 'Возможны ошибки. Ваш отзыв очень важен —',
+    'beta.report': 'сообщите здесь',
+    
+    // Support Page
+    'support.title': 'Центр помощи',
+    'support.contact': 'Контакты',
+    'support.email': 'Эл. почта',
+    'support.reportBug': 'Сообщить об ошибке',
+    'support.reportBugDesc': 'Сообщите нам о проблемах в приложении',
+    
+    // Terms Page
+    'terms.title': 'Условия использования',
+    
+    // Privacy Page
+    'privacy.title': 'Политика конфиденциальности',
   },
 
   tr: {
@@ -983,12 +1250,109 @@ export const translations: Record<Lang, Record<string, string>> = {
     'voice.state.thinking.sub': "Sorunuzu analiz ediyorum.",
     'voice.state.speaking': "Cevaplıyorum...",
     'voice.state.speaking.sub': "Lütfen bekleyin.",
+    
+    // Settings Page
+    'settings.title': 'Ayarlar',
+    'settings.back': 'Geri',
+    'settings.edit': 'Düzenle',
+    'settings.logout': 'Çıkış',
+    'settings.notifications': 'Bildirimler',
+    'settings.news': 'Haberler',
+    'settings.newsDesc': 'Yeni özellikler',
+    'settings.tips': 'İpuçları',
+    'settings.tipsDesc': 'Faydalı fikirler',
+    'settings.discounts': 'İndirimler',
+    'settings.discountsDesc': 'Özel teklifler',
+    'settings.experience': 'Bahor AI Deneyimi',
+    'settings.animations': 'Animasyonlar',
+    'settings.animationsDesc': 'Arayüz efektleri',
+    'settings.smartSuggestions': 'Akıllı öneriler',
+    'settings.smartSuggestionsDesc': 'Önerilen sorular',
+    'settings.security': 'Güvenlik',
+    'settings.changePassword': 'Şifre değiştir',
+    'settings.logoutAllDevices': 'Tüm cihazlardan çıkış',
+    'settings.appSettings': 'Uygulama ayarları',
+    'settings.language': 'Dil',
+    'settings.theme': 'Tema',
+    'settings.themeLight': 'Açık',
+    'settings.themeDark': 'Koyu',
+    'settings.subscription': 'Abonelik durumu',
+    'settings.helpLegal': 'Yardım ve Yasal',
+    'settings.helpCenter': 'Yardım merkezi',
+    'settings.reportBug': 'Hata bildir',
+    'settings.terms': 'Kullanım şartları',
+    'settings.privacy': 'Gizlilik politikası',
+    'settings.viewAllPlans': 'Tüm planları ve fiyatları görüntüle →',
+    'settings.usageToday': 'Bugünkü kullanım',
+    'settings.plan': 'plan',
+    'settings.unlimited': 'Sınırsız',
+    'settings.comingSoon': 'Bu özellik yakında gelecek',
+    'settings.logoutSuccess': 'Tüm cihazlardan çıkış yapıldı',
+    'settings.error': 'Bir hata oluştu',
+    'settings.logoutError': 'Çıkış sırasında hata',
+    'settings.user': 'Kullanıcı',
+    'settings.free': 'Ücretsiz',
+    'settings.premium': 'Premium',
+    'settings.ultra': 'Ultra',
+    'settings.devUnlimited': 'Dev Unlimited',
+    
+    // Modes Page
+    'modes.title': 'Bahor AI',
+    'modes.question': 'Bugün size nasıl yardımcı olabilirim?',
+    'modes.subtitle': 'Bahor AI çeşitli alanlarda size yardımcı olur',
+    'modes.primary': 'Ana özellikler',
+    'modes.learning': 'Öğrenme ve Gelişim',
+    
+    // Feedback Page
+    'feedback.title': 'Geri Bildirim Gönder',
+    'feedback.type': 'Tür',
+    'feedback.bug': 'Hata',
+    'feedback.idea': 'Öneri',
+    'feedback.other': 'Diğer',
+    'feedback.message': 'Mesaj',
+    'feedback.messagePlaceholder.bug': 'Ne gibi bir hata oluştu? Adım adım açıklayın...',
+    'feedback.messagePlaceholder.idea': 'Önerinizi detaylı açıklayın...',
+    'feedback.messagePlaceholder.other': 'Mesajınızı yazın...',
+    'feedback.screenshot': 'Ekran görüntüsü (isteğe bağlı)',
+    'feedback.addImage': 'Resim ekle',
+    'feedback.submit': 'Gönder',
+    'feedback.thanks': 'Geri bildiriminiz Bahor AI\'ı geliştirmemize yardımcı olur. Teşekkürler!',
+    'feedback.success': 'Gönderildi, teşekkürler! 🙏',
+    'feedback.error': 'Bir hata oluştu. Lütfen tekrar deneyin.',
+    'feedback.emptyMessage': 'Lütfen mesajınızı yazın',
+    'feedback.imageTooLarge': "Resim 5MB'dan küçük olmalıdır",
+    
+    // Beta Banner
+    'beta.title': 'Beta sürümü',
+    'beta.description': 'Hatalar olabilir. Geri bildiriminiz çok önemli —',
+    'beta.report': 'buradan bildirin',
+    
+    // Support Page
+    'support.title': 'Yardım Merkezi',
+    'support.contact': 'İletişim',
+    'support.email': 'E-posta',
+    'support.reportBug': 'Hata bildir',
+    'support.reportBugDesc': 'Uygulamadaki sorunları bize bildirin',
+    
+    // Terms Page
+    'terms.title': 'Kullanım Şartları',
+    
+    // Privacy Page
+    'privacy.title': 'Gizlilik Politikası',
   },
 };
 
 // Helper function to get translation with parameter replacement
 export function translate(language: Lang, key: string, params?: Record<string, string | number>): string {
-  const value = translations[language]?.[key] || translations['uz']?.[key] || key;
+  const value = translations[language]?.[key];
+  
+  // Return [[MISSING:key]] if not found to make untranslated strings obvious
+  if (!value) {
+    if (import.meta.env.DEV) {
+      console.warn(`Missing translation: ${key} for language: ${language}`);
+    }
+    return `[[MISSING:${key}]]`;
+  }
   
   if (!params) return value;
   
