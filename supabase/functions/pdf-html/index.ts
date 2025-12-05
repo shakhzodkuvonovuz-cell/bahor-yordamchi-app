@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 /**
- * PDF-HTML Edge Function
+ * PDF-HTML Edge Function (tmp-html)
  * 
  * Serves temporary HTML content for iLoveAPI htmlpdf conversion.
  * This is a PUBLIC endpoint (no auth required) because iLoveAPI needs to fetch the HTML.
@@ -10,17 +10,34 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
  * - Short-lived tokens (10 minutes)
  * - One-time use (marked as used after access)
  * - Random UUIDs for IDs
+ * - Token hashing for storage security
  */
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// Hash token using SHA-256
+async function hashToken(token: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(token);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
 
 serve(async (req) => {
-  // Handle CORS preflight
+  // Handle CORS preflight - minimal response
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { 
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, OPTIONS",
+        "Access-Control-Allow-Headers": "*",
+      }
+    });
+  }
+
+  // Only allow GET requests
+  if (req.method !== "GET") {
+    return new Response("Method Not Allowed", { status: 405 });
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -55,8 +72,10 @@ serve(async (req) => {
       return new Response("Not Found", { status: 404 });
     }
 
-    // Verify token
-    if (doc.token !== token) {
+    // Verify token - compare hash
+    const providedTokenHash = await hashToken(token);
+    if (doc.token !== providedTokenHash && doc.token !== token) {
+      // Support both hashed and unhashed tokens during transition
       console.log("[pdf-html] Invalid token for:", id);
       return new Response("Not Found", { status: 404 });
     }
@@ -75,22 +94,23 @@ serve(async (req) => {
       return new Response("Not Found", { status: 404 });
     }
 
-    // Mark as used (don't await, let it happen async)
-    supabase
+    // Mark as used immediately (await to ensure it's done)
+    await supabase
       .from("temp_html_docs")
       .update({ used: true })
-      .eq("id", id)
-      .then(() => console.log("[pdf-html] Marked as used:", id));
-
+      .eq("id", id);
+    
     console.log("[pdf-html] Serving HTML for:", id, "length:", doc.html.length);
 
-    // Return the HTML content
+    // Return the HTML content with proper headers for rendering
+    // CRITICAL: No Content-Disposition header - must render in browser
     return new Response(doc.html, {
       status: 200,
       headers: {
         "Content-Type": "text/html; charset=utf-8",
-        "Cache-Control": "no-store, no-cache, must-revalidate",
-        ...corsHeaders,
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        "X-Robots-Tag": "noindex, nofollow",
+        "Access-Control-Allow-Origin": "*",
       },
     });
 
