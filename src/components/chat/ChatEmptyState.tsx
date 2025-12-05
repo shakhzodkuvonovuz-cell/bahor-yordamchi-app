@@ -1,12 +1,14 @@
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { ModeInfo } from "@/types/chat";
+import StarterCards from "./StarterCards";
 
 interface ChatEmptyStateProps {
   modeInfo: ModeInfo;
   modeTranslation?: { title: string; subtitle: string };
+  onStarterSelect?: (prompt: string) => void;
 }
 
-export function ChatEmptyState({ modeInfo, modeTranslation }: ChatEmptyStateProps) {
+export function ChatEmptyState({ modeInfo, modeTranslation, onStarterSelect }: ChatEmptyStateProps) {
   const { language } = useTranslation();
 
   const greeting = language === "uz" 
@@ -26,7 +28,7 @@ export function ChatEmptyState({ modeInfo, modeTranslation }: ChatEmptyStateProp
     : "Sorunuzu yazın veya aşağıdaki hızlı önerileri kullanın";
 
   return (
-    <div className="flex items-center justify-center h-full min-h-[50vh]">
+    <div className="flex flex-col items-center justify-center h-full min-h-[50vh] gap-8">
       <div className="text-center max-w-md space-y-5 animate-fade-in px-4">
         <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-5xl glow-primary-subtle">
           {modeInfo.icon}
@@ -42,6 +44,11 @@ export function ChatEmptyState({ modeInfo, modeTranslation }: ChatEmptyStateProp
         </p>
         <p className="text-xs text-muted-foreground/70 pt-2">{hint}</p>
       </div>
+      
+      {/* Starter Cards */}
+      {onStarterSelect && (
+        <StarterCards onSelect={onStarterSelect} />
+      )}
     </div>
   );
 }

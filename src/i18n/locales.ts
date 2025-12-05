@@ -398,6 +398,42 @@ export const translations: Record<Lang, Record<string, string>> = {
     'beta.bannerDesc': 'Sizda 14 kun davomida kuniga 10 ta xabar va barcha premium imkoniyatlar mavjud. {days} kun qoldi.',
     
     'common.ok': 'OK',
+    'common.cancel': 'Bekor qilish',
+    'common.loading': 'Yuklanmoqda...',
+    
+    // Citations
+    'citations.title': 'Manbalar',
+    
+    // Safety disclaimers
+    'safety.medical': "Bu tibbiy maslahat emas. Jiddiy muammolarda shifokorga murojaat qiling.",
+    'safety.legal': "Bu huquqiy maslahat emas. Professional advokatga murojaat qilishni tavsiya etamiz.",
+    'safety.financial': "Bu moliyaviy maslahat emas. Muhim qarorlar uchun mutaxassisga murojaat qiling.",
+    
+    // Report answer
+    'report.title': "Javobni bildirish",
+    'report.reason': "Sabab",
+    'report.incorrect': "Noto'g'ri ma'lumot",
+    'report.harmful': "Zararli kontent",
+    'report.offensive': "Haqoratli",
+    'report.other': "Boshqa",
+    'report.note': "Qo'shimcha izoh (ixtiyoriy)",
+    'report.notePlaceholder': "Batafsil yozing...",
+    'report.submit': "Yuborish",
+    'report.selectReason': "Sababni tanlang",
+    'report.success': "Xabar yuborildi. Rahmat!",
+    'report.error': "Xatolik yuz berdi",
+    
+    // Starter cards
+    'starter.title': "Boshlash kartalari",
+    'starter.ielts': "IELTS Task 2 reja",
+    'starter.english': "Inglizcha tekshirish",
+    'starter.homework': "Mavzuni tushuntirish",
+    'starter.daily': "Kundalik maslahat",
+    'starter.cv': "Rezyume yozish",
+    'starter.coding': "Kod yordam",
+    
+    // Modes
+    'modes.recommended': "Tavsiya",
   },
 
   en: {
@@ -797,6 +833,42 @@ export const translations: Record<Lang, Record<string, string>> = {
     'beta.bannerDesc': 'You have 10 messages per day and all premium features for 14 days. {days} days remaining.',
     
     'common.ok': 'OK',
+    'common.cancel': 'Cancel',
+    'common.loading': 'Loading...',
+    
+    // Citations
+    'citations.title': 'Sources',
+    
+    // Safety disclaimers
+    'safety.medical': "This is not medical advice. Consult a doctor for serious issues.",
+    'safety.legal': "This is not legal advice. We recommend consulting a professional lawyer.",
+    'safety.financial': "This is not financial advice. Consult an expert for important decisions.",
+    
+    // Report answer
+    'report.title': "Report this answer",
+    'report.reason': "Reason",
+    'report.incorrect': "Incorrect information",
+    'report.harmful': "Harmful content",
+    'report.offensive': "Offensive",
+    'report.other': "Other",
+    'report.note': "Additional note (optional)",
+    'report.notePlaceholder': "Write details...",
+    'report.submit': "Submit",
+    'report.selectReason': "Select a reason",
+    'report.success': "Report submitted. Thank you!",
+    'report.error': "An error occurred",
+    
+    // Starter cards
+    'starter.title': "Starter cards",
+    'starter.ielts': "IELTS Task 2 plan",
+    'starter.english': "English correction",
+    'starter.homework': "Explain topic",
+    'starter.daily': "Daily advice",
+    'starter.cv': "Write resume",
+    'starter.coding': "Coding help",
+    
+    // Modes
+    'modes.recommended': "Recommended",
   },
 
   ru: {
@@ -1193,6 +1265,42 @@ export const translations: Record<Lang, Record<string, string>> = {
     'beta.bannerDesc': 'У вас 10 сообщений в день и все премиум-функции на 14 дней. Осталось {days} дней.',
     
     'common.ok': 'OK',
+    'common.cancel': 'Отмена',
+    'common.loading': 'Загрузка...',
+    
+    // Citations
+    'citations.title': 'Источники',
+    
+    // Safety disclaimers
+    'safety.medical': "Это не медицинский совет. При серьёзных проблемах обратитесь к врачу.",
+    'safety.legal': "Это не юридический совет. Рекомендуем обратиться к профессиональному юристу.",
+    'safety.financial': "Это не финансовый совет. Для важных решений обратитесь к специалисту.",
+    
+    // Report answer
+    'report.title': "Сообщить об ответе",
+    'report.reason': "Причина",
+    'report.incorrect': "Неверная информация",
+    'report.harmful': "Вредный контент",
+    'report.offensive': "Оскорбительный",
+    'report.other': "Другое",
+    'report.note': "Дополнительная заметка (необязательно)",
+    'report.notePlaceholder': "Напишите подробнее...",
+    'report.submit': "Отправить",
+    'report.selectReason': "Выберите причину",
+    'report.success': "Сообщение отправлено. Спасибо!",
+    'report.error': "Произошла ошибка",
+    
+    // Starter cards
+    'starter.title': "Стартовые карточки",
+    'starter.ielts': "План IELTS Task 2",
+    'starter.english': "Проверка английского",
+    'starter.homework': "Объяснить тему",
+    'starter.daily': "Ежедневный совет",
+    'starter.cv': "Написать резюме",
+    'starter.coding': "Помощь с кодом",
+    
+    // Modes
+    'modes.recommended': "Рекомендуемый",
   },
 
   tr: {
@@ -1589,6 +1697,42 @@ export const translations: Record<Lang, Record<string, string>> = {
     'beta.bannerDesc': '14 gün boyunca günde 10 mesaj ve tüm premium özelliklere sahipsiniz. {days} gün kaldı.',
     
     'common.ok': 'OK',
+    'common.cancel': 'İptal',
+    'common.loading': 'Yükleniyor...',
+    
+    // Citations
+    'citations.title': 'Kaynaklar',
+    
+    // Safety disclaimers
+    'safety.medical': "Bu tıbbi tavsiye değildir. Ciddi sorunlar için doktora başvurun.",
+    'safety.legal': "Bu hukuki tavsiye değildir. Profesyonel bir avukata danışmanızı öneririz.",
+    'safety.financial': "Bu finansal tavsiye değildir. Önemli kararlar için uzmana danışın.",
+    
+    // Report answer
+    'report.title': "Cevabı bildir",
+    'report.reason': "Sebep",
+    'report.incorrect': "Yanlış bilgi",
+    'report.harmful': "Zararlı içerik",
+    'report.offensive': "Saldırgan",
+    'report.other': "Diğer",
+    'report.note': "Ek not (isteğe bağlı)",
+    'report.notePlaceholder': "Detaylı yazın...",
+    'report.submit': "Gönder",
+    'report.selectReason': "Bir sebep seçin",
+    'report.success': "Rapor gönderildi. Teşekkürler!",
+    'report.error': "Bir hata oluştu",
+    
+    // Starter cards
+    'starter.title': "Başlangıç kartları",
+    'starter.ielts': "IELTS Task 2 planı",
+    'starter.english': "İngilizce düzeltme",
+    'starter.homework': "Konu açıklama",
+    'starter.daily': "Günlük tavsiye",
+    'starter.cv': "CV yazma",
+    'starter.coding': "Kod yardımı",
+    
+    // Modes
+    'modes.recommended': "Önerilen",
   },
 };
 

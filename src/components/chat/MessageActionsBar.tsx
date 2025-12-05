@@ -14,6 +14,7 @@ import {
   Check,
   X,
   Edit3,
+  Flag,
 } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { Button } from "@/components/ui/button";
@@ -252,6 +253,7 @@ export function MessageActionsSheet({
   onRegenerate,
   onVariant,
   onEdit,
+  onReport,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -265,6 +267,7 @@ export function MessageActionsSheet({
   onRegenerate: () => void;
   onVariant: (variant: MessageVariant) => void;
   onEdit?: () => void;
+  onReport?: () => void;
 }) {
   const { language } = useTranslation();
   const [copied, setCopied] = useState(false);
@@ -345,6 +348,7 @@ export function MessageActionsSheet({
     liked: language === "uz" ? "Yoqdi ✓" : language === "ru" ? "Понравилось ✓" : language === "tr" ? "Beğenildi ✓" : "Liked ✓",
     disliked: language === "uz" ? "Yoqmadi ✓" : language === "ru" ? "Не понравилось ✓" : language === "tr" ? "Beğenilmedi ✓" : "Disliked ✓",
     error: language === "uz" ? "Xatolik yuz berdi" : language === "ru" ? "Произошла ошибка" : language === "tr" ? "Hata oluştu" : "Error occurred",
+    report: language === "uz" ? "Noto'g'ri javobni bildirish" : language === "ru" ? "Сообщить о неверном ответе" : language === "tr" ? "Yanlış cevabı bildir" : "Report incorrect answer",
   };
 
   const closeWithDelay = useCallback(() => {
@@ -585,6 +589,20 @@ export function MessageActionsSheet({
                     <span className="text-sm">{labels.detailed}</span>
                   </button>
                 </div>
+
+                {/* Report Button */}
+                <div className="h-px bg-border/40 my-2" />
+                <button
+                  onClick={() => {
+                    haptic("light");
+                    if (onReport) onReport();
+                    onClose();
+                  }}
+                  className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-destructive/10 active:bg-destructive/15 transition-colors text-muted-foreground hover:text-destructive"
+                >
+                  <Flag className="w-5 h-5" />
+                  <span className="text-[15px] font-medium">{labels.report || "Noto'g'ri javobni bildirish"}</span>
+                </button>
               </>
             )}
 
