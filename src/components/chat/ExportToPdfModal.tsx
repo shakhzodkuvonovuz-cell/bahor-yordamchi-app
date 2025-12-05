@@ -105,49 +105,6 @@ export function ExportToPdfModal({
     return labels[language]?.[key] || labels.en[key] || key;
   };
 
-  // Escape HTML entities
-  const escapeHtml = (str: string): string => {
-    return str
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  };
-
-  // Convert markdown to HTML
-  const markdownToHtml = (md: string): string => {
-    const codeBlocks: string[] = [];
-    let html = md.replace(/```([\s\S]*?)```/g, (_, code) => {
-      codeBlocks.push(escapeHtml(code.replace(/^\w*\n?/, "")));
-      return `__CODEBLOCK_${codeBlocks.length - 1}__`;
-    });
-
-    html = html
-      .replace(/^### (.+)$/gm, "<h3>$1</h3>")
-      .replace(/^## (.+)$/gm, "<h2>$1</h2>")
-      .replace(/^# (.+)$/gm, "<h1>$1</h1>")
-      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-      .replace(/\*(.+?)\*/g, "<em>$1</em>")
-      .replace(/`([^`]+)`/g, "<code>$1</code>")
-      .replace(/^- (.+)$/gm, "<li>$1</li>")
-      .replace(/^(\d+)\. (.+)$/gm, "<li>$2</li>")
-      .replace(/\n\n/g, "</p><p>")
-      .replace(/\n/g, "<br>");
-
-    html = `<p>${html}</p>`;
-    html = html.replace(/(<li>.*?<\/li>)+/g, (match) => `<ul>${match}</ul>`);
-
-    codeBlocks.forEach((code, i) => {
-      html = html.replace(
-        `__CODEBLOCK_${i}__`,
-        `<pre><code>${code}</code></pre>`
-      );
-    });
-
-    return html;
-  };
-
   const handleExport = async () => {
     if (!messageContent.trim()) {
       toast({ title: t("error"), description: "No content to export", variant: "destructive" });
@@ -157,127 +114,93 @@ export function ExportToPdfModal({
     setLoading(true);
 
     try {
-      const html2pdfModule = await import("html2pdf.js");
-      const html2pdf = html2pdfModule.default;
+      // Dynamic imports for jsPDF and markdown renderer
+      const { jsPDF } = await import("jspdf");
+      const { MdTextRender } = await import("jspdf-md-renderer");
 
-      // Build HTML content
-      let content = markdownToHtml(messageContent);
+      // Prepare markdown content with title
+      let mdContent = `# ${title}\n\n${messageContent}`;
+      
+      // Add citations if included
       if (includeCitations && citations.length > 0) {
-        content += `
-          <div class="citations">
-            <h3>Manbalar</h3>
-            <ul>
-              ${citations.map((c) => `<li><a href="${escapeHtml(c.url)}">${escapeHtml(c.title)}</a></li>`).join("")}
-            </ul>
-          </div>
-        `;
+        mdContent += `\n\n---\n\n## ${language === 'uz' ? 'Manbalar' : language === 'ru' ? 'Источники' : language === 'tr' ? 'Kaynaklar' : 'Sources'}\n\n`;
+        citations.forEach((c, i) => {
+          mdContent += `${i + 1}. [${c.title}](${c.url})\n`;
+        });
       }
 
-      // Create container element
-      const container = document.createElement("div");
-      container.className = `pdf-template pdf-template-${template}`;
-      container.innerHTML = `<h1 class="pdf-title">${escapeHtml(title)}</h1>${content}`;
-      
-      // Style container - MUST be visible and rendered for html2canvas
-      // Using clip-path to hide visually while keeping it rendered
-      container.style.cssText = `
-        position: fixed;
-        left: 0;
-        top: 0;
-        width: 794px;
-        background: #ffffff;
-        padding: 40px;
-        box-sizing: border-box;
-        z-index: 99999;
-        font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
-        font-size: 12pt;
-        line-height: 1.6;
-        color: #1a1a1a;
-      `;
-
-      // Inject styles
-      const styleEl = document.createElement("style");
-      styleEl.textContent = `
-        .pdf-template .pdf-title {
-          font-size: 22pt !important;
-          font-weight: 700 !important;
-          margin: 0 0 24px 0 !important;
-          color: #111 !important;
-        }
-        .pdf-template h1 { font-size: 18pt !important; font-weight: 600 !important; margin: 20px 0 12px 0 !important; }
-        .pdf-template h2 { font-size: 16pt !important; font-weight: 600 !important; margin: 18px 0 10px 0 !important; }
-        .pdf-template h3 { font-size: 14pt !important; font-weight: 600 !important; margin: 16px 0 8px 0 !important; }
-        .pdf-template p { margin: 10px 0 !important; }
-        .pdf-template ul, .pdf-template ol { margin: 10px 0 !important; padding-left: 24px !important; list-style-type: disc !important; }
-        .pdf-template li { margin: 4px 0 !important; display: list-item !important; }
-        .pdf-template code { 
-          background: #f5f5f5 !important; 
-          padding: 2px 6px !important; 
-          border-radius: 4px !important; 
-          font-family: Consolas, Monaco, monospace !important;
-          font-size: 11pt !important;
-        }
-        .pdf-template pre {
-          background: #f5f5f5 !important;
-          padding: 12px !important;
-          border-radius: 6px !important;
-          overflow-x: auto !important;
-          margin: 12px 0 !important;
-          white-space: pre-wrap !important;
-          word-break: break-word !important;
-        }
-        .pdf-template pre code { background: transparent !important; padding: 0 !important; }
-        .pdf-template strong { font-weight: 600 !important; }
-        .pdf-template em { font-style: italic !important; }
-        .pdf-template .citations { margin-top: 32px !important; padding-top: 16px !important; border-top: 1px solid #e5e5e5 !important; }
-        .pdf-template .citations h3 { font-size: 14pt !important; margin-bottom: 12px !important; }
-        .pdf-template .citations a { color: #10b981 !important; text-decoration: underline !important; }
-        .pdf-template-assignment .pdf-title { padding-bottom: 12px !important; border-bottom: 2px solid #10b981 !important; }
-        .pdf-template-report .pdf-title { text-align: center !important; }
-        .pdf-template-report h2 { border-bottom: 1px solid #ddd !important; padding-bottom: 6px !important; }
-      `;
-      document.head.appendChild(styleEl);
-      document.body.appendChild(container);
-
-      // Wait for browser to render
-      await new Promise<void>(resolve => {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            setTimeout(resolve, 200);
-          });
-        });
+      // Create PDF document
+      const doc = new jsPDF({
+        unit: 'mm',
+        format: 'a4',
+        orientation: 'portrait',
       });
 
-      console.log("[PDF Export] Container size:", container.offsetWidth, "x", container.offsetHeight);
+      // Configure render options based on template
+      const getOptions = () => {
+        const baseOptions = {
+          cursor: { x: 15, y: 20 },
+          page: {
+            format: 'a4' as const,
+            unit: 'mm' as const,
+            orientation: 'portrait' as const,
+            maxContentWidth: 180,
+            maxContentHeight: 260,
+            lineSpace: 1.5,
+            defaultLineHeightFactor: 1.25,
+            defaultFontSize: 11,
+            defaultTitleFontSize: 14,
+            topmargin: 20,
+            xpading: 15,
+            xmargin: 15,
+            indent: 8,
+          },
+          font: {
+            bold: { name: 'helvetica', style: 'bold' as const },
+            regular: { name: 'helvetica', style: 'normal' as const },
+            light: { name: 'helvetica', style: 'normal' as const },
+          },
+          endCursorYHandler: () => {}, // Required callback
+        };
 
+        // Template-specific adjustments
+        if (template === 'assignment') {
+          baseOptions.page.topmargin = 25;
+          baseOptions.page.defaultTitleFontSize = 16;
+        } else if (template === 'report') {
+          baseOptions.page.defaultFontSize = 10;
+          baseOptions.page.lineSpace = 1.4;
+        }
+
+        return baseOptions;
+      };
+
+      // Render markdown to PDF
+      await MdTextRender(doc, mdContent, getOptions());
+
+      // Add template-specific styling
+      if (template === 'assignment') {
+        // Add a header line on first page
+        doc.setPage(1);
+        doc.setDrawColor(16, 185, 129); // Emerald color
+        doc.setLineWidth(0.5);
+        doc.line(15, 28, 195, 28);
+      } else if (template === 'report') {
+        // Add page numbers for report
+        const pageCount = doc.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+          doc.setPage(i);
+          doc.setFontSize(9);
+          doc.setTextColor(128);
+          doc.text(`${i} / ${pageCount}`, 105, 290, { align: 'center' });
+        }
+      }
+
+      // Generate filename
       const filename = `${title.replace(/[^a-zA-Z0-9\u0400-\u04FF\-_\s]/g, "").trim() || "document"}.pdf`;
-
-      await html2pdf()
-        .set({
-          margin: [10, 10, 10, 10],
-          filename,
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: "#ffffff",
-            logging: true, // Enable logging for debugging
-            width: 794,
-            windowWidth: 794,
-          },
-          jsPDF: {
-            unit: "mm",
-            format: "a4",
-            orientation: "portrait",
-          },
-          pagebreak: { mode: ["avoid-all", "css", "legacy"] },
-        })
-        .from(container)
-        .save();
-
-      // Cleanup
-      document.body.removeChild(container);
-      document.head.removeChild(styleEl);
+      
+      // Save the PDF
+      doc.save(filename);
 
       toast({ title: t("success") });
       onOpenChange(false);
