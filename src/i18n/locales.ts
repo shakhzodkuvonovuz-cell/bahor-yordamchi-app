@@ -367,6 +367,25 @@ export const translations: Record<Lang, Record<string, string>> = {
     
     // Chat
     'chat.moreOptions': 'Qo\'shimcha',
+    
+    // Trial / Beta
+    'trial.betaPremiumTrial': 'Beta Premium Trial',
+    'trial.daysLeft': 'kun qoldi',
+    'trial.messages': 'Xabarlar',
+    'trial.messagesPerDay': 'xabar/kun',
+    'trial.freePlan': 'Bepul reja',
+    'trial.upgradeForMore': 'Ko\'proq imkoniyatlar uchun Premiumga o\'ting.',
+    'trial.devUnlimited': 'Dev Unlimited',
+    'trial.noLimits': 'Cheksiz foydalanish',
+    'trial.premiumActive': 'Premium faol',
+    'trial.limitReached': 'Limit tugadi',
+    'trial.systemBusy': 'Tizim band',
+    'trial.resetsIn': 'Qayta tiklanadi',
+    'trial.tomorrow': 'Ertaga',
+    'trial.hours': 'soat',
+    'trial.canStillChat': 'Siz hali ham {count} ta oddiy xabar yozishingiz mumkin.',
+    'trial.upgradeSoon': 'Premium (tez kunda)',
+    'common.ok': 'OK',
   },
 
   en: {
@@ -735,6 +754,25 @@ export const translations: Record<Lang, Record<string, string>> = {
     
     // Chat
     'chat.moreOptions': 'More options',
+    
+    // Trial / Beta
+    'trial.betaPremiumTrial': 'Beta Premium Trial',
+    'trial.daysLeft': 'days left',
+    'trial.messages': 'Messages',
+    'trial.messagesPerDay': 'messages/day',
+    'trial.freePlan': 'Free plan',
+    'trial.upgradeForMore': 'Upgrade to Premium for more features.',
+    'trial.devUnlimited': 'Dev Unlimited',
+    'trial.noLimits': 'Unlimited access',
+    'trial.premiumActive': 'Premium active',
+    'trial.limitReached': 'Limit reached',
+    'trial.systemBusy': 'System busy',
+    'trial.resetsIn': 'Resets in',
+    'trial.tomorrow': 'Tomorrow',
+    'trial.hours': 'hours',
+    'trial.canStillChat': 'You can still send {count} regular messages.',
+    'trial.upgradeSoon': 'Premium (coming soon)',
+    'common.ok': 'OK',
   },
 
   ru: {
@@ -1100,6 +1138,25 @@ export const translations: Record<Lang, Record<string, string>> = {
     
     // Chat
     'chat.moreOptions': 'Ещё',
+    
+    // Trial / Beta
+    'trial.betaPremiumTrial': 'Beta Premium Trial',
+    'trial.daysLeft': 'дней осталось',
+    'trial.messages': 'Сообщения',
+    'trial.messagesPerDay': 'сообщений/день',
+    'trial.freePlan': 'Бесплатный план',
+    'trial.upgradeForMore': 'Перейдите на Premium для большего.',
+    'trial.devUnlimited': 'Dev Unlimited',
+    'trial.noLimits': 'Безлимитный доступ',
+    'trial.premiumActive': 'Premium активен',
+    'trial.limitReached': 'Лимит исчерпан',
+    'trial.systemBusy': 'Система занята',
+    'trial.resetsIn': 'Сбросится через',
+    'trial.tomorrow': 'Завтра',
+    'trial.hours': 'часов',
+    'trial.canStillChat': 'Вы можете отправить ещё {count} обычных сообщений.',
+    'trial.upgradeSoon': 'Premium (скоро)',
+    'common.ok': 'OK',
   },
 
   tr: {
@@ -1465,6 +1522,25 @@ export const translations: Record<Lang, Record<string, string>> = {
     
     // Chat
     'chat.moreOptions': 'Daha fazla',
+    
+    // Trial / Beta
+    'trial.betaPremiumTrial': 'Beta Premium Trial',
+    'trial.daysLeft': 'gün kaldı',
+    'trial.messages': 'Mesajlar',
+    'trial.messagesPerDay': 'mesaj/gün',
+    'trial.freePlan': 'Ücretsiz plan',
+    'trial.upgradeForMore': 'Daha fazla özellik için Premium\'a geçin.',
+    'trial.devUnlimited': 'Dev Unlimited',
+    'trial.noLimits': 'Sınırsız erişim',
+    'trial.premiumActive': 'Premium aktif',
+    'trial.limitReached': 'Limit doldu',
+    'trial.systemBusy': 'Sistem meşgul',
+    'trial.resetsIn': 'Yenilenir',
+    'trial.tomorrow': 'Yarın',
+    'trial.hours': 'saat',
+    'trial.canStillChat': 'Hâlâ {count} normal mesaj gönderebilirsiniz.',
+    'trial.upgradeSoon': 'Premium (yakında)',
+    'common.ok': 'OK',
   },
 };
 

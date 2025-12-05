@@ -274,40 +274,52 @@ serve(async (req) => {
     }
 
     // ===========================================
-    // ENTITLEMENTS + DAILY LIMIT CHECK
+    // BETA TRIAL + QUOTA ENFORCEMENT
     // ===========================================
     const userEmail = user.email?.toLowerCase() || '';
     const devUnlimitedRaw = Deno.env.get('DEV_UNLIMITED_EMAILS') || '';
+    const adminEmailsRaw = Deno.env.get('ADMIN_EMAILS') || '';
     const devUnlimitedEmails = devUnlimitedRaw.split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
-    const isDevBypass = devUnlimitedEmails.includes(userEmail);
+    const adminEmails = adminEmailsRaw.split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+    const isDevBypass = devUnlimitedEmails.includes(userEmail) || adminEmails.includes(userEmail);
     
-    console.log('[Entitlement Check]', { 
-      userEmail, 
-      devUnlimitedRaw: devUnlimitedRaw.substring(0, 50), // partial for privacy
-      devUnlimitedEmails, 
-      isDevBypass 
-    });
-
-    // Get entitlement from database
-    let isPremium = isDevBypass;
-    let effectivePlan = isDevBypass ? 'premium' : 'free';
-    
+    // Ensure trial is initialized for the user (configurable TRIAL_DAYS)
+    const TRIAL_DAYS = 7; // Easy to change to 14
     if (!isDevBypass) {
-      const { data: entitlementData } = await supabaseAdmin.rpc('get_effective_entitlement', { p_user_id: user.id });
-      if (entitlementData?.isPremium) {
-        isPremium = true;
-        effectivePlan = 'premium';
-      }
+      await supabaseAdmin.rpc('get_or_create_trial', { p_user_id: user.id, p_trial_days: TRIAL_DAYS });
     }
 
-    // Determine daily limit: premium/dev = unlimited (-1), free = 5
-    const dailyLimit = isPremium ? -1 : 5;
-    const today = new Date().toISOString().split('T')[0];
+    // Determine feature usage flags from request
+    const hasAttachments = messages.some((m: any) => m.attachments && m.attachments.length > 0);
+    const hasImageAttachment = messages.some((m: any) => 
+      m.attachments?.some((a: any) => a.mime_type?.startsWith('image/'))
+    );
+    const hasFileAttachment = messages.some((m: any) => 
+      m.attachments?.some((a: any) => !a.mime_type?.startsWith('image/'))
+    );
+    const userMsgForSearch = messages.filter((m: any) => m.role === "user").pop()?.content || "";
+    const wantsSearch = shouldUseSearch(userMsgForSearch);
+    const wantsVision = hasImageAttachment || hasAnalysis;
+    const wantsFile = hasFileAttachment;
 
-    // Check and increment usage
+    console.log('[Quota Check]', { 
+      userEmail, 
+      isDevBypass,
+      wantsSearch,
+      wantsVision,
+      wantsFile,
+    });
+
+    // Check and increment usage with all feature quotas
     const { data: usageResult, error: usageError } = await supabaseAdmin.rpc(
       'check_and_increment_usage',
-      { p_user_id: user.id, p_date: today, p_limit: dailyLimit }
+      { 
+        p_user_id: user.id, 
+        p_wants_search: wantsSearch,
+        p_wants_vision: wantsVision,
+        p_wants_file: wantsFile,
+        p_is_bypass: isDevBypass,
+      }
     );
 
     if (usageError) {
@@ -318,16 +330,72 @@ serve(async (req) => {
       );
     }
 
+    // Build localized error messages
+    const limitMessages: Record<string, Record<string, string>> = {
+      daily_limit_reached: {
+        uz: "Bugungi limit tugadi. Ertaga davom eting yoki Premiumga o'ting.",
+        en: "Daily limit reached. Continue tomorrow or upgrade to Premium.",
+        ru: "Дневной лимит исчерпан. Продолжите завтра или перейдите на Премиум.",
+        tr: "Günlük limit doldu. Yarın devam edin veya Premium'a geçin.",
+      },
+      search_limit_reached: {
+        uz: "Bugungi web qidiruv limiti tugadi. Oddiy savollar bilan davom etishingiz mumkin.",
+        en: "Daily web search limit reached. You can continue with regular questions.",
+        ru: "Дневной лимит поиска исчерпан. Вы можете продолжить с обычными вопросами.",
+        tr: "Günlük web arama limiti doldu. Normal sorularla devam edebilirsiniz.",
+      },
+      vision_limit_reached: {
+        uz: "Bugungi rasm tahlil limiti tugadi. Oddiy savollar bilan davom etishingiz mumkin.",
+        en: "Daily image analysis limit reached. You can continue with regular questions.",
+        ru: "Дневной лимит анализа изображений исчерпан. Вы можете продолжить с обычными вопросами.",
+        tr: "Günlük görsel analiz limiti doldu. Normal sorularla devam edebilirsiniz.",
+      },
+      file_limit_reached: {
+        uz: "Bugungi fayl tahlil limiti tugadi. Oddiy savollar bilan davom etishingiz mumkin.",
+        en: "Daily file analysis limit reached. You can continue with regular questions.",
+        ru: "Дневной лимит анализа файлов исчерпан. Вы можете продолжить с обычными вопросами.",
+        tr: "Günlük dosya analiz limiti doldu. Normal sorularla devam edebilirsiniz.",
+      },
+      global_search_limit_reached: {
+        uz: "Tizimda vaqtincha web qidiruv band. Keyinroq urinib ko'ring.",
+        en: "Web search temporarily unavailable. Please try again later.",
+        ru: "Поиск временно недоступен. Попробуйте позже.",
+        tr: "Web arama geçici olarak kullanılamıyor. Daha sonra tekrar deneyin.",
+      },
+      global_vision_limit_reached: {
+        uz: "Tizimda vaqtincha rasm tahlili band. Keyinroq urinib ko'ring.",
+        en: "Image analysis temporarily unavailable. Please try again later.",
+        ru: "Анализ изображений временно недоступен. Попробуйте позже.",
+        tr: "Görsel analiz geçici olarak kullanılamıyor. Daha sonra tekrar deneyin.",
+      },
+    };
+
     if (!usageResult?.allowed) {
+      const reason = usageResult?.reason || 'daily_limit_reached';
+      const lang = ui_language || 'uz';
+      const messages_i18n = limitMessages[reason] || limitMessages.daily_limit_reached;
+      
       return new Response(
         JSON.stringify({ 
-          error: "DAILY_LIMIT_REACHED", 
-          message: "Bugungi limit tugadi. Ertaga yana davom eting yoki Premiumga o'ting.",
-          usage: { ...usageResult, plan: effectivePlan }
+          error: "LIMIT_REACHED", 
+          reason,
+          message: messages_i18n[lang] || messages_i18n.uz,
+          message_uz: messages_i18n.uz,
+          message_en: messages_i18n.en,
+          message_ru: messages_i18n.ru,
+          message_tr: messages_i18n.tr,
+          limits: usageResult?.limits,
+          used: usageResult?.used,
+          remaining: usageResult?.remaining,
+          resets_at: usageResult?.resets_at,
         }),
         { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const isPremium = usageResult?.is_premium || isDevBypass;
+    const isTrialActive = usageResult?.is_trial_active || false;
+    const effectivePlan = isPremium ? 'premium' : (isTrialActive ? 'trial' : 'free');
 
     const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
     if (!deepseekApiKey) {

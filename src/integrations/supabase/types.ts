@@ -217,6 +217,24 @@ export type Database = {
         }
         Relationships: []
       }
+      global_usage_counters: {
+        Row: {
+          date: string
+          searches_used: number
+          vision_used: number
+        }
+        Insert: {
+          date: string
+          searches_used?: number
+          vision_used?: number
+        }
+        Update: {
+          date?: string
+          searches_used?: number
+          vision_used?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -233,6 +251,8 @@ export type Database = {
           phone: string | null
           plan: string | null
           theme: string | null
+          trial_expires_at: string | null
+          trial_started_at: string | null
           updated_at: string
           user_id: string
         }
@@ -251,6 +271,8 @@ export type Database = {
           phone?: string | null
           plan?: string | null
           theme?: string | null
+          trial_expires_at?: string | null
+          trial_started_at?: string | null
           updated_at?: string
           user_id: string
         }
@@ -269,8 +291,37 @@ export type Database = {
           phone?: string | null
           plan?: string | null
           theme?: string | null
+          trial_expires_at?: string | null
+          trial_started_at?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      usage_counters: {
+        Row: {
+          date: string
+          files_used: number
+          messages_used: number
+          searches_used: number
+          user_id: string
+          vision_used: number
+        }
+        Insert: {
+          date: string
+          files_used?: number
+          messages_used?: number
+          searches_used?: number
+          user_id: string
+          vision_used?: number
+        }
+        Update: {
+          date?: string
+          files_used?: number
+          messages_used?: number
+          searches_used?: number
+          user_id?: string
+          vision_used?: number
         }
         Relationships: []
       }
@@ -309,11 +360,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      check_and_increment_usage: {
-        Args: { p_date: string; p_limit: number; p_user_id: string }
+      check_and_increment_usage:
+        | {
+            Args: {
+              p_is_bypass?: boolean
+              p_user_id: string
+              p_wants_file?: boolean
+              p_wants_search?: boolean
+              p_wants_vision?: boolean
+            }
+            Returns: Json
+          }
+        | {
+            Args: { p_date: string; p_limit: number; p_user_id: string }
+            Returns: Json
+          }
+      get_effective_entitlement: { Args: { p_user_id: string }; Returns: Json }
+      get_or_create_trial: {
+        Args: { p_trial_days?: number; p_user_id: string }
         Returns: Json
       }
-      get_effective_entitlement: { Args: { p_user_id: string }; Returns: Json }
+      get_trial_status: { Args: { p_user_id: string }; Returns: Json }
       increment_daily_usage: {
         Args: { p_today: string; p_user_id: string }
         Returns: Json
