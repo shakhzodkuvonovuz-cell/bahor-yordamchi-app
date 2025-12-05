@@ -99,26 +99,56 @@ Deno.serve(async (req) => {
       const body = await req.json();
       const { firstName, lastName, phone } = body;
 
-      // Validate input
-      if (firstName && typeof firstName !== 'string') {
-        return new Response(
-          JSON.stringify({ error: 'Invalid firstName' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+      // Input validation constants
+      const MAX_NAME_LENGTH = 100;
+      const MAX_PHONE_LENGTH = 20;
+
+      // Validate firstName - type and length
+      if (firstName !== undefined && firstName !== null) {
+        if (typeof firstName !== 'string') {
+          return new Response(
+            JSON.stringify({ error: 'Invalid firstName type' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        if (firstName.length > MAX_NAME_LENGTH) {
+          return new Response(
+            JSON.stringify({ error: `firstName must be under ${MAX_NAME_LENGTH} characters` }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
       }
 
-      if (lastName && typeof lastName !== 'string') {
-        return new Response(
-          JSON.stringify({ error: 'Invalid lastName' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+      // Validate lastName - type and length
+      if (lastName !== undefined && lastName !== null) {
+        if (typeof lastName !== 'string') {
+          return new Response(
+            JSON.stringify({ error: 'Invalid lastName type' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        if (lastName.length > MAX_NAME_LENGTH) {
+          return new Response(
+            JSON.stringify({ error: `lastName must be under ${MAX_NAME_LENGTH} characters` }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
       }
 
-      if (phone && typeof phone !== 'string') {
-        return new Response(
-          JSON.stringify({ error: 'Invalid phone' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+      // Validate phone - type and length
+      if (phone !== undefined && phone !== null) {
+        if (typeof phone !== 'string') {
+          return new Response(
+            JSON.stringify({ error: 'Invalid phone type' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        if (phone.length > MAX_PHONE_LENGTH) {
+          return new Response(
+            JSON.stringify({ error: `phone must be under ${MAX_PHONE_LENGTH} characters` }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
       }
 
       // Update profile
