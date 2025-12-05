@@ -35,34 +35,31 @@ export default function ProfileEditModal({ open, onOpenChange, profile, onProfil
   const handleSave = async () => {
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("No session found");
+      // Get current user directly from Supabase client
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        throw new Error("Foydalanuvchi topilmadi");
+      }
 
-      // Call edge function to update profile
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/profile`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            firstName: firstName.trim() || null,
-            lastName: lastName.trim() || null,
-            phone: phone.trim() || null,
-          }),
-        }
-      );
+      // Update profile directly using Supabase client (bypasses service worker issues)
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          first_name: firstName.trim() || null,
+          last_name: lastName.trim() || null,
+          phone: phone.trim() || null,
+        })
+        .eq('user_id', user.id);
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Update failed");
+      if (updateError) {
+        console.error('Profile update error:', updateError);
+        throw new Error(updateError.message);
       }
 
       toast({
         title: "✅ Muvaffaqiyatli!",
-        description: "Profil ma'lumotlari yangilandi",
+        description: "Profil saqlandi",
       });
 
       onProfileUpdated();

@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { Camera, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ProfilePhotoUploadProps {
   currentAvatarUrl: string | null;
@@ -16,76 +17,108 @@ export default function ProfilePhotoUpload({ currentAvatarUrl, onPhotoUpdated }:
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file size (max 3MB)
-    if (file.size > 3 * 1024 * 1024) {
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
       toast({
         title: "Xatolik",
-        description: "Rasm hajmi 3MB dan kichik bo'lishi kerak",
+        description: "Rasm hajmi 5MB dan kichik bo'lishi kerak",
         variant: "destructive",
       });
       return;
     }
 
     // Validate file type
-    if (!file.type.startsWith("image/")) {
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
       toast({
         title: "Xatolik",
-        description: "Faqat rasm yuklash mumkin",
+        description: "Faqat JPEG, PNG, yoki WebP rasm yuklash mumkin",
         variant: "destructive",
       });
       return;
     }
 
-    uploadPhoto(file);
+    await uploadPhoto(file);
   };
 
-  const uploadPhoto = (file: File) => {
+  const uploadPhoto = async (file: File) => {
     setUploading(true);
     
-    const reader = new FileReader();
-    
-    reader.onload = (e) => {
-      try {
-        const dataUrl = e.target?.result as string;
-        
-        // Save to localStorage
-        localStorage.setItem("bahorai_user_avatar", dataUrl);
-        
-        toast({
-          title: "✅ Muvaffaqiyatli!",
-          description: "Profil rasmi yangilandi",
-        });
-        
-        // Trigger parent refresh
-        onPhotoUpdated();
-      } catch (error: any) {
-        console.error("Error saving avatar:", error);
-        toast({
-          title: "Xatolik",
-          description: "Rasm saqlanmadi",
-          variant: "destructive",
-        });
-      } finally {
-        setUploading(false);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = "";
+    try {
+      // Get current user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        throw new Error("Foydalanuvchi topilmadi");
+      }
+
+      // Generate unique file path
+      const fileExt = file.name.split('.').pop() || 'jpg';
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      // Delete old avatar if exists
+      if (currentAvatarUrl && currentAvatarUrl.includes('/avatars/')) {
+        try {
+          const oldPath = currentAvatarUrl.split('/avatars/')[1];
+          if (oldPath) {
+            await supabase.storage.from('avatars').remove([oldPath]);
+          }
+        } catch (e) {
+          console.warn('Could not delete old avatar:', e);
         }
       }
-    };
-    
-    reader.onerror = () => {
+
+      // Upload new avatar
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, {
+          contentType: file.type,
+          upsert: true,
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw new Error(uploadError.message);
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Update profile with new avatar URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('user_id', user.id);
+
+      if (updateError) {
+        console.error('Profile update error:', updateError);
+        throw new Error(updateError.message);
+      }
+
+      toast({
+        title: "✅ Muvaffaqiyatli!",
+        description: "Rasm yangilandi",
+      });
+      
+      // Trigger parent refresh
+      onPhotoUpdated();
+
+    } catch (error: any) {
+      console.error("Error uploading avatar:", error);
       toast({
         title: "Xatolik",
-        description: "Rasm o'qilmadi",
+        description: error.message || "Rasm yuklanmadi",
         variant: "destructive",
       });
+    } finally {
       setUploading(false);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
-    };
-    
-    reader.readAsDataURL(file);
+    }
   };
 
   return (
@@ -93,7 +126,7 @@ export default function ProfilePhotoUpload({ currentAvatarUrl, onPhotoUpdated }:
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/jpg,image/png"
+        accept="image/jpeg,image/jpg,image/png,image/webp"
         className="hidden"
         onChange={handleFileSelect}
         disabled={uploading}
