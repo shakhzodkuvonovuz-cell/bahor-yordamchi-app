@@ -14,3 +14,10 @@ export { ReasonedChip } from "./ReasonedChip";
 export { TraceSheet } from "./TraceSheet";
 export { default as UsageBadge } from "./UsageBadge";
 export type { CardType, ParsedSection } from "./BahorCard";
+
+// New features 6-10
+export { default as CitationsSection } from "./CitationsSection";
+export { default as SafetyDisclaimer, detectSafetyCategory } from "./SafetyDisclaimer";
+export { default as ReportAnswerModal } from "./ReportAnswerModal";
+export { default as StarterCards } from "./StarterCards";
+export { ModesSkeleton, HomeSkeleton } from "./ModesSkeleton";
