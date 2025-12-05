@@ -386,36 +386,33 @@ serve(async (req) => {
         
         console.log("[doc-run] HTML content length:", fullHtml.length);
         
-        // Upload HTML to user-files bucket (allows any file type) and use signed URL
-        const htmlBytes = new TextEncoder().encode(fullHtml);
-        const tempHtmlPath = `${user.id}/temp-${crypto.randomUUID()}.html`;
+        // Create a temporary HTML document with a secure token
+        const tempToken = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
         
-        const { error: htmlUploadError } = await supabase.storage
-          .from("user-files")
-          .upload(tempHtmlPath, htmlBytes, {
-            contentType: "text/html",
-            upsert: true,
-          });
+        const { data: tempDoc, error: tempInsertError } = await supabase
+          .from("temp_html_docs")
+          .insert({
+            user_id: user.id,
+            token: tempToken,
+            html: fullHtml,
+            expires_at: expiresAt.toISOString(),
+          })
+          .select()
+          .single();
         
-        if (htmlUploadError) {
-          console.error("[doc-run] HTML temp upload failed:", htmlUploadError);
-          throw new Error("Failed to upload HTML for processing");
+        if (tempInsertError || !tempDoc) {
+          console.error("[doc-run] Failed to create temp HTML doc:", tempInsertError);
+          throw new Error("Failed to prepare HTML for processing");
         }
         
-        // Get signed URL for iLovePDF to access (5 minutes expiry)
-        const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-          .from("user-files")
-          .createSignedUrl(tempHtmlPath, 300);
+        // Construct the URL that iLoveAPI will fetch
+        // This points to our pdf-html edge function which serves the HTML
+        const functionsUrl = Deno.env.get("SUPABASE_URL")!.replace(".supabase.co", ".supabase.co/functions/v1");
+        const htmlUrl = `${functionsUrl}/pdf-html?id=${tempDoc.id}&token=${tempToken}`;
+        console.log("[doc-run] HTML URL created for iLoveAPI");
         
-        if (signedUrlError || !signedUrlData?.signedUrl) {
-          console.error("[doc-run] Signed URL creation failed:", signedUrlError);
-          throw new Error("Failed to create signed URL for HTML");
-        }
-        
-        const htmlUrl = signedUrlData.signedUrl;
-        console.log("[doc-run] HTML signed URL created");
-        
-        // Use URL upload for htmlpdf
+        // Use URL upload for htmlpdf - iLoveAPI will fetch and RENDER this URL
         const serverFilename = await iloveUploadFromUrl(iloveToken, server, task, htmlUrl);
         console.log("[doc-run] HTML uploaded via URL, server_filename:", serverFilename);
         
@@ -430,8 +427,8 @@ serve(async (req) => {
         
         outputBytes = await iloveDownload(iloveToken, server, task);
         
-        // Clean up temp HTML file
-        await supabase.storage.from("user-files").remove([tempHtmlPath]);
+        // Clean up temp HTML doc
+        await supabase.from("temp_html_docs").delete().eq("id", tempDoc.id);
         
 
       } else if (tool === "imagepdf") {
