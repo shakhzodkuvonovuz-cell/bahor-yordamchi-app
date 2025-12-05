@@ -4,6 +4,7 @@ import bahorLogo from "@/assets/bahor-logo.png";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { trackSignupStarted } from "@/lib/analytics";
 
 export default function AuthGoogle() {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ export default function AuthGoogle() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError(null);
+    trackSignupStarted("google");
     
     try {
       const { error: oauthError } = await supabase.auth.signInWithOAuth({

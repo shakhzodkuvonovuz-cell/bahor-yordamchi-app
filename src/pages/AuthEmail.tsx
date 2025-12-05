@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, ArrowLeft, Mail, AlertCircle, CheckCircle, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { trackSignupStarted, trackSignupCompleted, trackLoginCompleted } from "@/lib/analytics";
 
 export default function AuthEmail() {
   const navigate = useNavigate();
@@ -83,6 +84,7 @@ export default function AuthEmail() {
     
     try {
       if (isSignUp) {
+        trackSignupStarted("email");
         const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
@@ -94,6 +96,7 @@ export default function AuthEmail() {
         if (signUpError) {
           setError(mapSupabaseError(signUpError));
         } else {
+          trackSignupCompleted("email");
           navigate(redirectTo);
         }
       } else {
@@ -105,6 +108,7 @@ export default function AuthEmail() {
         if (signInError) {
           setError(mapSupabaseError(signInError));
         } else {
+          trackLoginCompleted("email");
           navigate(redirectTo);
         }
       }

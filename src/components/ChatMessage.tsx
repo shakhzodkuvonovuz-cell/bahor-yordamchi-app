@@ -4,9 +4,10 @@ import { ExternalLink, FileText, User } from "lucide-react";
 import { MessageActionsPopover } from "@/components/chat/MessageActions";
 import { MessageActionsBar, MessageActionsSheet, MessageVariant } from "@/components/chat/MessageActionsBar";
 import BahorCard, { parseMessageForCards, hasCardContent } from "@/components/chat/BahorCard";
-import { CollapsibleMessage } from "@/components/chat";
+import { CollapsibleMessage, OutputFormatButtons } from "@/components/chat";
 import { formatAssistantText } from "@/lib/formatAssistant";
 import bahorLogo from "@/assets/bahor-logo.png";
+import { track } from "@/lib/analytics";
 
 interface ChatMessageProps {
   message: Message;
@@ -17,6 +18,7 @@ interface ChatMessageProps {
   onShare?: (content: string) => void;
   onContinue?: (messageId: string) => void;
   onVariant?: (messageId: string, variant: MessageVariant) => void;
+  onFormatRequest?: (prompt: string) => void;
   showActions?: boolean;
   showActionBar?: boolean;
   isStreaming?: boolean;
@@ -33,6 +35,7 @@ export default function ChatMessage({
   onShare,
   onContinue,
   onVariant,
+  onFormatRequest,
   showActions = true,
   showActionBar = true,
   isStreaming = false,
@@ -109,6 +112,11 @@ export default function ChatMessage({
 
   const handleVariant = (variant: MessageVariant) => {
     onVariant?.(message.id, variant);
+  };
+
+  const handleFormatRequest = (prompt: string) => {
+    track("format_button_clicked", { format: prompt.split(" ")[2] });
+    onFormatRequest?.(prompt);
   };
 
   // Format and render content with Bahor Cards
@@ -295,6 +303,14 @@ export default function ChatMessage({
               onContinue={handleContinue}
               onRegenerate={handleRegenerate}
               onVariant={handleVariant}
+            />
+          )}
+
+          {/* Output Format Buttons for assistant messages */}
+          {!isUser && showActionBar && !isStreaming && onFormatRequest && (
+            <OutputFormatButtons
+              onFormatRequest={handleFormatRequest}
+              disabled={isActionLoading}
             />
           )}
 

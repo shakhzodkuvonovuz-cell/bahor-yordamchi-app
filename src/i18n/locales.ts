@@ -293,7 +293,57 @@ export const translations: Record<Lang, Record<string, string>> = {
     'settings.premium': 'Premium',
     'settings.ultra': 'Ultra',
     'settings.devUnlimited': 'Dev Unlimited',
+    'settings.preferencesSaved': 'Sozlamalar saqlandi',
+    'settings.personalPreferences': 'Shaxsiy sozlamalar',
+    'settings.responseTone': 'Javob uslubi',
+    'settings.toneFriendly': "Do'stona",
+    'settings.toneFormal': 'Rasmiy',
+    'settings.toneConcise': 'Qisqa',
+    'settings.ieltsLevel': 'IELTS darajasi',
+    'settings.ieltsLevelPlaceholder': 'Masalan: 6.5, Band 7 target',
+    'settings.profession': 'Kasb',
+    'settings.professionPlaceholder': 'Masalan: Dasturchi, Talaba, Biznesmen',
     
+    // Output Format Buttons
+    'chat.formatShort': 'Qisqa',
+    'chat.formatFormal': 'Rasmiy',
+    'chat.formatList': "Ro'yxat",
+    'chat.formatPlan': 'Reja',
+    'chat.formatTable': 'Jadval',
+    
+    // Citations
+    'chat.citations': 'Manbalar',
+    
+    // Safety Disclaimer
+    'chat.safetyDisclaimer.medical': "Bu tibbiy maslahat emas. Professional shifokorga murojaat qiling.",
+    'chat.safetyDisclaimer.legal': "Bu yuridik maslahat emas. Professional huquqshunos bilan maslahatlashing.",
+    'chat.safetyDisclaimer.financial': "Bu moliyaviy maslahat emas. Moliyaviy mutaxassis bilan maslahatlashing.",
+    
+    // Report Answer
+    'chat.reportAnswer': "Noto'g'ri javobni bildirish",
+    'chat.reportReason': 'Sabab',
+    'chat.reportReasonIncorrect': "Noto'g'ri ma'lumot",
+    'chat.reportReasonOffensive': 'Nomaqbul kontent',
+    'chat.reportReasonHarmful': 'Zararli maslahat',
+    'chat.reportReasonOther': 'Boshqa',
+    'chat.reportNote': "Qo'shimcha izoh",
+    'chat.reportNotePlaceholder': 'Ixtiyoriy: batafsil tushuntiring...',
+    'chat.reportSubmit': 'Yuborish',
+    'chat.reportSuccess': 'Xabar yuborildi. Rahmat!',
+    'chat.reportError': 'Xatolik yuz berdi',
+    
+    // Starter Cards
+    'chat.starterCards.ielts': 'IELTS Task 2 reja',
+    'chat.starterCards.english': 'Inglizcha matn tekshirish',
+    'chat.starterCards.homework': 'Mavzuni tushuntirish',
+    'chat.starterCards.daily': 'Kundalik maslahat',
+    'chat.starterCards.cv': 'CV/Rezume yordam',
+    'chat.starterCards.coding': 'Kod yozishda yordam',
+    
+    // Recommended
+    'modes.recommended': 'Tavsiya',
+    
+
     // Modes Page
     'modes.title': 'Bahor AI',
     'modes.question': 'Bugun nimaga yordam kerak?',
@@ -431,9 +481,6 @@ export const translations: Record<Lang, Record<string, string>> = {
     'starter.daily': "Kundalik maslahat",
     'starter.cv': "Rezyume yozish",
     'starter.coding': "Kod yordam",
-    
-    // Modes
-    'modes.recommended': "Tavsiya",
   },
 
   en: {
@@ -728,6 +775,55 @@ export const translations: Record<Lang, Record<string, string>> = {
     'settings.premium': 'Premium',
     'settings.ultra': 'Ultra',
     'settings.devUnlimited': 'Dev Unlimited',
+    'settings.preferencesSaved': 'Preferences saved',
+    'settings.personalPreferences': 'Personal preferences',
+    'settings.responseTone': 'Response tone',
+    'settings.toneFriendly': 'Friendly',
+    'settings.toneFormal': 'Formal',
+    'settings.toneConcise': 'Concise',
+    'settings.ieltsLevel': 'IELTS level',
+    'settings.ieltsLevelPlaceholder': 'e.g.: 6.5, Band 7 target',
+    'settings.profession': 'Profession',
+    'settings.professionPlaceholder': 'e.g.: Developer, Student, Businessman',
+    
+    // Output Format Buttons
+    'chat.formatShort': 'Shorter',
+    'chat.formatFormal': 'Formal',
+    'chat.formatList': 'List',
+    'chat.formatPlan': 'Plan',
+    'chat.formatTable': 'Table',
+    
+    // Citations
+    'chat.citations': 'Sources',
+    
+    // Safety Disclaimer
+    'chat.safetyDisclaimer.medical': 'This is not medical advice. Please consult a professional doctor.',
+    'chat.safetyDisclaimer.legal': 'This is not legal advice. Please consult a professional lawyer.',
+    'chat.safetyDisclaimer.financial': 'This is not financial advice. Please consult a financial expert.',
+    
+    // Report Answer
+    'chat.reportAnswer': 'Report incorrect answer',
+    'chat.reportReason': 'Reason',
+    'chat.reportReasonIncorrect': 'Incorrect information',
+    'chat.reportReasonOffensive': 'Offensive content',
+    'chat.reportReasonHarmful': 'Harmful advice',
+    'chat.reportReasonOther': 'Other',
+    'chat.reportNote': 'Additional note',
+    'chat.reportNotePlaceholder': 'Optional: explain in detail...',
+    'chat.reportSubmit': 'Submit',
+    'chat.reportSuccess': 'Report sent. Thank you!',
+    'chat.reportError': 'An error occurred',
+    
+    // Starter Cards
+    'chat.starterCards.ielts': 'IELTS Task 2 outline',
+    'chat.starterCards.english': 'Check English text',
+    'chat.starterCards.homework': 'Explain topic',
+    'chat.starterCards.daily': 'Daily advice',
+    'chat.starterCards.cv': 'CV/Resume help',
+    'chat.starterCards.coding': 'Coding help',
+    
+    // Recommended
+    'modes.recommended': 'Recommended',
     
     // Modes Page
     'modes.title': 'Bahor AI',
@@ -866,9 +962,6 @@ export const translations: Record<Lang, Record<string, string>> = {
     'starter.daily': "Daily advice",
     'starter.cv': "Write resume",
     'starter.coding': "Coding help",
-    
-    // Modes
-    'modes.recommended': "Recommended",
   },
 
   ru: {
@@ -1160,6 +1253,55 @@ export const translations: Record<Lang, Record<string, string>> = {
     'settings.premium': 'Премиум',
     'settings.ultra': 'Ультра',
     'settings.devUnlimited': 'Dev Unlimited',
+    'settings.preferencesSaved': 'Настройки сохранены',
+    'settings.personalPreferences': 'Личные настройки',
+    'settings.responseTone': 'Тон ответа',
+    'settings.toneFriendly': 'Дружелюбный',
+    'settings.toneFormal': 'Формальный',
+    'settings.toneConcise': 'Краткий',
+    'settings.ieltsLevel': 'Уровень IELTS',
+    'settings.ieltsLevelPlaceholder': 'Например: 6.5, Band 7 цель',
+    'settings.profession': 'Профессия',
+    'settings.professionPlaceholder': 'Например: Разработчик, Студент, Бизнесмен',
+    
+    // Output Format Buttons
+    'chat.formatShort': 'Короче',
+    'chat.formatFormal': 'Формально',
+    'chat.formatList': 'Список',
+    'chat.formatPlan': 'План',
+    'chat.formatTable': 'Таблица',
+    
+    // Citations
+    'chat.citations': 'Источники',
+    
+    // Safety Disclaimer
+    'chat.safetyDisclaimer.medical': 'Это не медицинский совет. Обратитесь к профессиональному врачу.',
+    'chat.safetyDisclaimer.legal': 'Это не юридический совет. Обратитесь к профессиональному юристу.',
+    'chat.safetyDisclaimer.financial': 'Это не финансовый совет. Обратитесь к финансовому эксперту.',
+    
+    // Report Answer
+    'chat.reportAnswer': 'Сообщить о неправильном ответе',
+    'chat.reportReason': 'Причина',
+    'chat.reportReasonIncorrect': 'Неверная информация',
+    'chat.reportReasonOffensive': 'Оскорбительный контент',
+    'chat.reportReasonHarmful': 'Вредный совет',
+    'chat.reportReasonOther': 'Другое',
+    'chat.reportNote': 'Дополнительное примечание',
+    'chat.reportNotePlaceholder': 'По желанию: объясните подробнее...',
+    'chat.reportSubmit': 'Отправить',
+    'chat.reportSuccess': 'Жалоба отправлена. Спасибо!',
+    'chat.reportError': 'Произошла ошибка',
+    
+    // Starter Cards
+    'chat.starterCards.ielts': 'План IELTS Task 2',
+    'chat.starterCards.english': 'Проверить английский текст',
+    'chat.starterCards.homework': 'Объяснить тему',
+    'chat.starterCards.daily': 'Ежедневный совет',
+    'chat.starterCards.cv': 'Помощь с резюме',
+    'chat.starterCards.coding': 'Помощь с кодом',
+    
+    // Recommended
+    'modes.recommended': 'Рекомендуется',
     
     // Modes Page
     'modes.title': 'Bahor AI',
@@ -1298,9 +1440,6 @@ export const translations: Record<Lang, Record<string, string>> = {
     'starter.daily': "Ежедневный совет",
     'starter.cv': "Написать резюме",
     'starter.coding': "Помощь с кодом",
-    
-    // Modes
-    'modes.recommended': "Рекомендуемый",
   },
 
   tr: {
@@ -1592,6 +1731,55 @@ export const translations: Record<Lang, Record<string, string>> = {
     'settings.premium': 'Premium',
     'settings.ultra': 'Ultra',
     'settings.devUnlimited': 'Dev Unlimited',
+    'settings.preferencesSaved': 'Ayarlar kaydedildi',
+    'settings.personalPreferences': 'Kişisel tercihler',
+    'settings.responseTone': 'Yanıt tonu',
+    'settings.toneFriendly': 'Arkadaşça',
+    'settings.toneFormal': 'Resmi',
+    'settings.toneConcise': 'Kısa',
+    'settings.ieltsLevel': 'IELTS seviyesi',
+    'settings.ieltsLevelPlaceholder': 'Örn: 6.5, Band 7 hedef',
+    'settings.profession': 'Meslek',
+    'settings.professionPlaceholder': 'Örn: Geliştirici, Öğrenci, İş adamı',
+    
+    // Output Format Buttons
+    'chat.formatShort': 'Kısa',
+    'chat.formatFormal': 'Resmi',
+    'chat.formatList': 'Liste',
+    'chat.formatPlan': 'Plan',
+    'chat.formatTable': 'Tablo',
+    
+    // Citations
+    'chat.citations': 'Kaynaklar',
+    
+    // Safety Disclaimer
+    'chat.safetyDisclaimer.medical': 'Bu tıbbi tavsiye değildir. Lütfen profesyonel bir doktora danışın.',
+    'chat.safetyDisclaimer.legal': 'Bu hukuki tavsiye değildir. Lütfen profesyonel bir avukata danışın.',
+    'chat.safetyDisclaimer.financial': 'Bu finansal tavsiye değildir. Lütfen bir finans uzmanına danışın.',
+    
+    // Report Answer
+    'chat.reportAnswer': 'Yanlış yanıtı bildir',
+    'chat.reportReason': 'Sebep',
+    'chat.reportReasonIncorrect': 'Yanlış bilgi',
+    'chat.reportReasonOffensive': 'Saldırgan içerik',
+    'chat.reportReasonHarmful': 'Zararlı tavsiye',
+    'chat.reportReasonOther': 'Diğer',
+    'chat.reportNote': 'Ek not',
+    'chat.reportNotePlaceholder': 'İsteğe bağlı: ayrıntılı açıklayın...',
+    'chat.reportSubmit': 'Gönder',
+    'chat.reportSuccess': 'Rapor gönderildi. Teşekkürler!',
+    'chat.reportError': 'Bir hata oluştu',
+    
+    // Starter Cards
+    'chat.starterCards.ielts': 'IELTS Task 2 planı',
+    'chat.starterCards.english': 'İngilizce metin kontrolü',
+    'chat.starterCards.homework': 'Konuyu açıkla',
+    'chat.starterCards.daily': 'Günlük tavsiye',
+    'chat.starterCards.cv': 'CV/Özgeçmiş yardımı',
+    'chat.starterCards.coding': 'Kod yardımı',
+    
+    // Recommended
+    'modes.recommended': 'Tavsiye edilen',
     
     // Modes Page
     'modes.title': 'Bahor AI',
@@ -1730,9 +1918,6 @@ export const translations: Record<Lang, Record<string, string>> = {
     'starter.daily': "Günlük tavsiye",
     'starter.cv': "CV yazma",
     'starter.coding': "Kod yardımı",
-    
-    // Modes
-    'modes.recommended': "Önerilen",
   },
 };
 
