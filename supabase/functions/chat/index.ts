@@ -241,7 +241,7 @@ serve(async (req) => {
   const requestStartTime = Date.now();
 
   try {
-    const { messages, mode, threadSummary, hasAnalysis, analysisType, reply_language, ui_language } = await req.json();
+    const { messages, mode, threadSummary, hasAnalysis, analysisType, reply_language, ui_language, attachments } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(
@@ -481,6 +481,35 @@ REPLY LANGUAGE (MANDATORY)
 This is determined by the user's message language. Follow it strictly unless the user explicitly asks for a different language.
 `;
 
+    // Build attached file content blocks from extractedText
+    let fileContentBlocks = "";
+    if (attachments && Array.isArray(attachments)) {
+      const filesWithText = attachments.filter((att: any) => att.extractedText);
+      if (filesWithText.length > 0) {
+        const blocks = filesWithText.map((att: any) => 
+          `--- ATTACHED FILE: ${att.name} ---\n${att.extractedText}\n--- END FILE ---`
+        ).join('\n\n');
+        fileContentBlocks = `
+═══════════════════════════════════════════════════════════════════
+ATTACHED FILES (User uploaded these files - prioritize answering based on their content)
+═══════════════════════════════════════════════════════════════════
+
+${blocks}
+
+If an attached file is provided above, prioritize answering based on its content. If the user asks to summarize, analyze, or explain the file, do so based on the content above.
+`;
+      }
+      
+      // Check for unsupported files that need acknowledgment
+      const unsupportedFiles = attachments.filter((att: any) => att.readStatus === 'unsupported');
+      if (unsupportedFiles.length > 0) {
+        const names = unsupportedFiles.map((att: any) => att.name).join(', ');
+        fileContentBlocks += `
+Note: The user attached file(s) that could not be read: ${names}. If they ask about these files, politely explain that PDF/DOC file reading is coming soon in beta, and suggest they paste the text content directly or use a TXT/JSON file instead.
+`;
+      }
+    }
+
     const systemPrompt = `${BRAND_SYSTEM_PROMPT}
 ${languageDirective}
 ${styleClamp}
@@ -488,6 +517,7 @@ ${styleClamp}
 MODE: ${modeKey.toUpperCase()}
 ${modePrompt}
 ${summaryContext}
+${fileContentBlocks}
 ${searchResults ? `
 QIDIRUV NATIJALARI:
 ${searchResults}
@@ -500,7 +530,10 @@ Agar yuqorida qidiruv natijalari bo'lsa, ularga suyanib javob ber va manbalarni 
       ...recentMessages,
     ];
 
-    console.log(`Chat: user=${user.id}, email=${userEmail}, mode=${modeKey}, plan=${effectivePlan}, devBypass=${isDevBypass}, usage=${usageResult.used}/${usageResult.limit}`);
+    // Log request info including attachments
+    const textFilesCount = attachments?.filter((att: any) => att.extractedText)?.length || 0;
+    const unsupportedCount = attachments?.filter((att: any) => att.readStatus === 'unsupported')?.length || 0;
+    console.log(`Chat: user=${user.id}, email=${userEmail}, mode=${modeKey}, plan=${effectivePlan}, devBypass=${isDevBypass}, usage=${usageResult.used}/${usageResult.limit}, textFiles=${textFilesCount}, unsupported=${unsupportedCount}`);
 
     // Call DeepSeek
     const response = await fetch("https://api.deepseek.com/chat/completions", {
@@ -546,6 +579,15 @@ Agar yuqorida qidiruv natijalari bo'lsa, ularga suyanib javob ber va manbalarni 
           controller.enqueue(encoder.encode(
             createTraceEvent(analysisType === 'vision' ? 'image_analysis' : 'reading_files', 'end', requestStartTime)
           ));
+          controller.enqueue(encoder.encode(createTraceEvent('thinking', 'start', requestStartTime)));
+        }
+        
+        // If text files were attached and read, emit reading trace
+        const hasTextFileContent = attachments?.some((att: any) => att.extractedText);
+        if (hasTextFileContent && !hasAnalysis) {
+          controller.enqueue(encoder.encode(createTraceEvent('thinking', 'end', requestStartTime)));
+          controller.enqueue(encoder.encode(createTraceEvent('reading_files', 'start', requestStartTime)));
+          controller.enqueue(encoder.encode(createTraceEvent('reading_files', 'end', requestStartTime)));
           controller.enqueue(encoder.encode(createTraceEvent('thinking', 'start', requestStartTime)));
         }
         
