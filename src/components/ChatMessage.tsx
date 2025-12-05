@@ -119,9 +119,17 @@ export default function ChatMessage({
     if (!parsedSections) {
       const contentElement = (
         <div
-          className={`text-[15px] leading-[1.75] whitespace-pre-wrap [overflow-wrap:anywhere] [word-break:break-word] [&_pre]:mt-3 [&_pre]:rounded-xl [&_pre]:bg-secondary/80 [&_pre]:text-foreground [&_pre]:text-[13px] [&_pre]:p-4 [&_pre]:overflow-x-auto [&_pre]:max-w-full [&_code]:font-mono [&_code]:text-[13px] [&_a]:text-primary [&_a]:underline [&_a]:break-all ${
-            isUser ? "" : "text-card-foreground"
-          }`}
+          className={`text-[15px] leading-[1.75] whitespace-pre-wrap [overflow-wrap:anywhere] [word-break:break-word] 
+            [&_pre]:mt-3 [&_pre]:rounded-xl [&_pre]:bg-black/30 [&_pre]:border [&_pre]:border-white/10 [&_pre]:text-foreground [&_pre]:text-[13px] [&_pre]:p-4 [&_pre]:overflow-x-auto [&_pre]:max-w-full 
+            [&_code]:font-mono [&_code]:text-[13px] [&_code]:bg-black/20 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded
+            [&_a]:text-primary [&_a]:underline [&_a]:break-all
+            [&_h1]:text-lg [&_h1]:font-semibold [&_h1]:mt-4 [&_h1]:mb-2
+            [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-3 [&_h2]:mb-1.5
+            [&_h3]:text-sm [&_h3]:font-medium [&_h3]:mt-2 [&_h3]:mb-1
+            [&_ul]:my-2 [&_ul]:pl-4 [&_ul]:list-disc
+            [&_ol]:my-2 [&_ol]:pl-4 [&_ol]:list-decimal
+            [&_li]:my-0.5
+            ${isUser ? "text-white/95" : "text-foreground/90"}`}
         >
           {displayContent}
         </div>
@@ -171,7 +179,7 @@ export default function ChatMessage({
       <div
         className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"} ${
           isUser ? "chat-message-user" : "chat-message-ai"
-        } group animate-fade-in select-none`}
+        } group select-none`}
         style={{ WebkitTouchCallout: 'none' }}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
@@ -179,14 +187,14 @@ export default function ChatMessage({
         onTouchMove={handleTouchMove}
         onContextMenu={handleContextMenu}
       >
-        {/* AI Avatar */}
+        {/* AI Avatar - Premium glow */}
         {!isUser && (
-          <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-card border border-border/40 flex items-center justify-center mt-0.5 shadow-[0_0_12px_rgba(45,212,191,0.3)]">
-            <img src={bahorLogo} alt="Bahor AI" className="w-8 h-8 object-contain" />
+          <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-card to-secondary border border-white/[0.08] flex items-center justify-center mt-0.5 shadow-[0_0_20px_rgba(45,212,191,0.25)]">
+            <img src={bahorLogo} alt="Bahor AI" className="w-7 h-7 object-contain" />
           </div>
         )}
 
-        <div className="relative max-w-[88%] sm:max-w-[80%] lg:max-w-[75%] min-w-0">
+        <div className={`relative min-w-0 ${isUser ? "max-w-[85%] sm:max-w-[70%]" : "max-w-[85%] sm:max-w-[75%]"}`}>
           {/* Desktop actions button - appears on hover */}
           {showActions && !isMobile && isUser && (
             <div className="absolute left-0 -translate-x-full pr-2 top-1">
@@ -199,15 +207,15 @@ export default function ChatMessage({
           )}
 
           <div
-            className={`rounded-2xl transition-transform duration-150 ${
+            className={`transition-all duration-150 ${
               isPressed ? "scale-[0.98]" : ""
             } ${
               isUser
-                ? "bg-primary text-primary-foreground rounded-tr-md shadow-lg"
-                : "bg-card border border-border/40 rounded-tl-md shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.06)]"
+                ? "bubble-user rounded-2xl rounded-tr-md text-white"
+                : "bubble-assistant rounded-2xl rounded-tl-md"
             }`}
           >
-            <div className={isUser ? "px-5 py-4" : "px-5 py-4"}>
+            <div className="px-4 py-3.5 sm:px-5 sm:py-4">
               {/* Attachments */}
               {message.attachments && message.attachments.length > 0 && (
                 <div className="mb-3 space-y-2">
@@ -265,12 +273,12 @@ export default function ChatMessage({
               {message.content && renderContent()}
             </div>
 
-            {/* Timestamp - only show for messages without cards (cards have their own timestamps) */}
+            {/* Timestamp - smaller, lower contrast */}
             {!hasCards && (
-              <div className="px-4 pb-2.5 -mt-1">
+              <div className="px-4 sm:px-5 pb-2.5 -mt-1">
                 <span
-                  className={`text-[11px] ${
-                    isUser ? "text-primary-foreground/60" : "text-muted-foreground"
+                  className={`text-[10px] ${
+                    isUser ? "text-white/40" : "text-muted-foreground/50"
                   }`}
                 >
                   {new Date(message.timestamp).toLocaleTimeString("uz-UZ", {
@@ -312,10 +320,10 @@ export default function ChatMessage({
           )}
         </div>
 
-        {/* User Avatar */}
+        {/* User Avatar - Premium */}
         {isUser && (
-          <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center mt-0.5 shadow-lg glow-primary-subtle">
-            <User className="w-4 h-4 text-primary-foreground" />
+          <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center mt-0.5 shadow-[0_4px_12px_-2px_hsl(175_60%_48%/0.4)]">
+            <User className="w-3.5 h-3.5 text-primary-foreground" />
           </div>
         )}
       </div>
