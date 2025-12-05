@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, FileText, Images, Merge, Split, Minimize2, Droplet, Hash, ScanText, Download, RefreshCw, Loader2, File, X, Plus, FileUp, Image, RotateCw, Lock, Unlock, Wrench } from "lucide-react";
+import { ArrowLeft, FileText, Images, Merge, Split, Minimize2, Droplet, Hash, ScanText, Download, RefreshCw, Loader2, File, X, Plus, FileUp, Image, RotateCw, Lock, Unlock, Wrench, Eye, Trash2, MoreVertical } from "lucide-react";
+import { FileActionsSheet } from "@/components/documents/FileActionsSheet";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,8 @@ interface UserFile {
   size_bytes: number | null;
   created_at: string;
   signed_url?: string;
+  bucket?: string;
+  path?: string;
 }
 
 const TOOLS = [
@@ -116,6 +119,8 @@ export default function DocumentTools() {
   const [loading, setLoading] = useState(false);
   const [files, setFiles] = useState<UserFile[]>([]);
   const [filesLoading, setFilesLoading] = useState(true);
+  const [activeFile, setActiveFile] = useState<UserFile | null>(null);
+  const [showFileActions, setShowFileActions] = useState(false);
   
   // Form states
   const [title, setTitle] = useState("");
@@ -965,7 +970,13 @@ export default function DocumentTools() {
                 {files.map((file) => (
                   <Card key={file.id}>
                     <CardContent className="p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div 
+                        className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer"
+                        onClick={() => {
+                          setActiveFile(file);
+                          setShowFileActions(true);
+                        }}
+                      >
                         <div className="bg-red-500/10 p-2 rounded-lg">
                           <FileText className="h-5 w-5 text-red-500" />
                         </div>
@@ -979,18 +990,25 @@ export default function DocumentTools() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        asChild
-                        disabled={!file.signed_url}
+                        onClick={() => {
+                          setActiveFile(file);
+                          setShowFileActions(true);
+                        }}
                       >
-                        <a href={file.signed_url} target="_blank" rel="noopener noreferrer" download>
-                          <Download className="h-5 w-5" />
-                        </a>
+                        <MoreVertical className="h-5 w-5" />
                       </Button>
                     </CardContent>
                   </Card>
                 ))}
               </div>
             )}
+
+            <FileActionsSheet
+              file={activeFile}
+              open={showFileActions}
+              onOpenChange={setShowFileActions}
+              onDeleted={loadFiles}
+            />
           </TabsContent>
         </Tabs>
       </main>
