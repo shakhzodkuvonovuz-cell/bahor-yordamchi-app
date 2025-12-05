@@ -9,6 +9,8 @@ export interface ChatAttachment {
   type: string;
   url?: string;
   previewUrl?: string;
+  extractedText?: string;
+  readStatus?: 'ready' | 'unsupported' | 'error';
 }
 
 export interface Message {

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Send, Trash2, Menu, Paperclip, X, FileText, RefreshCw } from "lucide-react";
+import { ArrowLeft, Send, Trash2, Menu, Paperclip, X, FileText, RefreshCw, CheckCircle, AlertCircle } from "lucide-react";
 import ChatMessage from "@/components/ChatMessage";
 import QuickSuggestions from "@/components/QuickSuggestions";
 import { DeleteChatModal } from "@/components/DeleteChatModal";
@@ -39,6 +39,7 @@ import bahorLogo from "@/assets/bahor-logo.png";
 import { processAttachments } from "@/services/documentService";
 import { isVisionSupportedImage } from "@/services/visionService";
 import { detectReplyLanguage } from "@/lib/languageDetect";
+import { extractTextFromFile, isImageFile, isPdfFile, getFileReadStatusLabel } from "@/lib/fileTextExtractor";
 
 // Helper to format relative time
 function formatRelativeTime(dateString: string, lang: string): string {
@@ -730,18 +731,10 @@ export default function Chat() {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         
-        const isImage = file.type.startsWith("image/");
-        const isPDF = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+        const isImage = isImageFile(file);
+        const isPDF = isPdfFile(file);
         
-        if (!isImage && !isPDF) {
-          toast({
-            title: language === "uz" ? "Xatolik" : "Error",
-            description: language === "uz" ? `${file.name}: Faqat rasm va PDF fayllar qo'llab-quvvatlanadi` : `${file.name}: Only image and PDF files are supported`,
-            variant: "destructive",
-          });
-          continue;
-        }
-
+        // File size check
         if (file.size > 10 * 1024 * 1024) {
           toast({
             title: language === "uz" ? "Xatolik" : "Error",
@@ -749,6 +742,27 @@ export default function Chat() {
             variant: "destructive",
           });
           continue;
+        }
+
+        // Try to extract text from file (for text-like files)
+        let extractedText: string | undefined;
+        let readStatus: ChatAttachment['readStatus'] = undefined;
+        
+        if (!isImage && !isPDF) {
+          // Attempt text extraction for non-image/PDF files
+          const extraction = await extractTextFromFile(file);
+          if (extraction.status === 'ready' && extraction.text) {
+            extractedText = extraction.text;
+            readStatus = 'ready';
+          } else if (extraction.status === 'unsupported') {
+            readStatus = 'unsupported';
+          } else if (extraction.status === 'error') {
+            readStatus = 'error';
+            toast({
+              title: language === "uz" ? "Ogohlantirish" : "Warning",
+              description: language === "uz" ? `${file.name}: O'qib bo'lmadi` : `${file.name}: Could not read file`,
+            });
+          }
         }
 
         const previewUrl = URL.createObjectURL(file);
@@ -781,6 +795,8 @@ export default function Chat() {
           type: file.type,
           url: publicUrl,
           previewUrl,
+          extractedText,
+          readStatus,
         };
 
         newAttachments.push(attachment);
@@ -1007,10 +1023,16 @@ export default function Chat() {
               "Content-Type": "application/json",
               Authorization: `Bearer ${accessToken}`,
             },
-            body: JSON.stringify({
+    body: JSON.stringify({
               messages: conversationMessages,
               mode: mode || "general",
-              attachments: attachmentsToProcess,
+              attachments: attachmentsToProcess.map(att => ({
+                name: att.name,
+                type: att.type,
+                url: att.url,
+                extractedText: att.extractedText,
+                readStatus: att.readStatus,
+              })),
               hasAnalysis: !!analysisContent,
               analysisType,
               threadSummary: threadSummary || undefined,
@@ -1645,13 +1667,26 @@ export default function Chat() {
                         <FileText className="w-5 h-5 text-muted-foreground" />
                       </div>
                     )}
-                    <div className="flex-1 min-w-0 max-w-[100px]">
+                    <div className="flex-1 min-w-0 max-w-[120px]">
                       <p className="text-xs font-medium text-foreground truncate">
                         {attachment.name}
                       </p>
                       <p className="text-[10px] text-muted-foreground">
                         {(attachment.size / 1024).toFixed(1)} KB
                       </p>
+                      {/* Read status indicator for text files */}
+                      {attachment.readStatus && (
+                        <p className={clsx(
+                          "text-[9px] flex items-center gap-0.5 mt-0.5",
+                          attachment.readStatus === 'ready' && "text-emerald-600 dark:text-emerald-400",
+                          attachment.readStatus === 'unsupported' && "text-amber-600 dark:text-amber-400",
+                          attachment.readStatus === 'error' && "text-destructive"
+                        )}>
+                          {attachment.readStatus === 'ready' && <CheckCircle className="w-2.5 h-2.5" />}
+                          {attachment.readStatus === 'unsupported' && <AlertCircle className="w-2.5 h-2.5" />}
+                          {getFileReadStatusLabel(attachment.readStatus, language)}
+                        </p>
+                      )}
                     </div>
                     <button
                       type="button"
@@ -1686,7 +1721,7 @@ export default function Chat() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*,.pdf,application/pdf"
+                accept="image/*,.pdf,application/pdf,.txt,.md,.json,.csv,.xml,.yaml,.yml,.js,.ts,.jsx,.tsx,.py,.java,.c,.cpp,.h,.css,.sql,.sh,.html"
                 multiple
                 onChange={handleFileSelect}
                 className="hidden"
