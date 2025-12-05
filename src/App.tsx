@@ -9,6 +9,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PublicRoute } from "@/components/PublicRoute";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import OfflineBanner from "@/components/OfflineBanner";
 import Home from "./pages/Home";
 import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
@@ -35,6 +36,7 @@ const App = () => (
           <BrowserRouter>
             <AuthProvider>
               <TooltipProvider>
+                <OfflineBanner />
                 <Toaster />
                 <Sonner />
                 <Routes>

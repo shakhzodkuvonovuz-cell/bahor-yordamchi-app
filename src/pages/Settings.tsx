@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, User, Globe, Moon, Sun, Shield, HelpCircle, FileText, Mail, LogOut, ChevronRight, CreditCard, Bell, Zap, Edit, Crown, Lock, RotateCcw, Loader2, Infinity } from "lucide-react";
+import { ArrowLeft, User, Globe, Moon, Sun, Shield, HelpCircle, FileText, Mail, LogOut, ChevronRight, CreditCard, Bell, Zap, Edit, Crown, Lock, RotateCcw, Loader2, Infinity, Download, Trash2 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,6 +17,8 @@ import ProfilePhotoUpload from "@/components/ProfilePhotoUpload";
 import PremiumUpgradeCard from "@/components/PremiumUpgradeCard";
 import UsageProgressBar from "@/components/UsageProgressBar";
 import SettingsProfileSkeleton from "@/components/SettingsProfileSkeleton";
+import ProfileCompletionCard from "@/components/ProfileCompletionCard";
+import DataManagementModal from "@/components/DataManagementModal";
 import { useDailyUsageServer } from "@/hooks/useEntitlements";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -31,6 +33,7 @@ export default function Settings() {
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [subscriptionDrawerOpen, setSubscriptionDrawerOpen] = useState(false);
   const [profileEditOpen, setProfileEditOpen] = useState(false);
+  const [dataManagementOpen, setDataManagementOpen] = useState(false);
   
   // Load preferences from localStorage
   const loadPreferences = () => {
@@ -228,6 +231,19 @@ export default function Settings() {
                 </section>
               )}
 
+              {/* Profile Completion Card */}
+              {profile && (
+                <ProfileCompletionCard
+                  firstName={profile.first_name}
+                  lastName={profile.last_name}
+                  phone={profile.phone}
+                  avatarUrl={profile.avatar_url}
+                  onBonusAwarded={() => {
+                    toast({ description: language === "uz" ? "Profil to'liq! Bonus berildi!" : "Profile complete! Bonus awarded!" });
+                  }}
+                />
+              )}
+
               {/* Premium Upgrade Card - always show, payment coming soon */}
               <PremiumUpgradeCard />
             </>
@@ -358,6 +374,20 @@ export default function Settings() {
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <Shield className="w-5 h-5 text-muted-foreground shrink-0" />
                   <span className="font-medium text-foreground text-[15px]">{t('settings.logoutAllDevices')}</span>
+                </div>
+                <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+              </button>
+
+              {/* Data Management */}
+              <button
+                onClick={() => setDataManagementOpen(true)}
+                className="w-full px-4 min-h-[56px] flex items-center justify-between hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <Download className="w-5 h-5 text-muted-foreground shrink-0" />
+                  <span className="font-medium text-foreground text-[15px]">
+                    {language === "uz" ? "Ma'lumotlarni boshqarish" : "Data Management"}
+                  </span>
                 </div>
                 <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
               </button>
@@ -551,6 +581,12 @@ export default function Settings() {
           onProfileUpdated={refreshProfile}
         />
       )}
+
+      {/* Data Management Modal */}
+      <DataManagementModal
+        open={dataManagementOpen}
+        onOpenChange={setDataManagementOpen}
+      />
     </div>
   );
 }
