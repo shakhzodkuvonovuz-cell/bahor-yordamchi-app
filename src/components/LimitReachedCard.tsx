@@ -1,4 +1,4 @@
-import { Crown, Clock } from "lucide-react";
+import { Crown, Clock, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/i18n/LanguageProvider";
@@ -20,29 +20,30 @@ export default function LimitReachedCard({ onDismiss }: LimitReachedCardProps) {
           </div>
           <div className="flex-1">
             <h3 className="text-lg font-bold text-foreground mb-1">
-              {t('usage.limitReached')}
+              Bugungi limit tugadi
             </h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              {t('usage.limitReached.desc')}
+              Ertaga yana 5 ta savol berishingiz mumkin.
             </p>
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-col gap-2">
           <Button
-            className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-            onClick={() => navigate("/settings")}
+            variant="outline"
+            className="w-full"
+            onClick={() => navigate("/feedback")}
           >
-            <Crown className="w-4 h-4 mr-2" />
-            {t('usage.upgradeToPremium')}
+            <MessageSquare className="w-4 h-4 mr-2" />
+            Feedback yuborish
           </Button>
           <Button
             variant="ghost"
-            className="flex-1"
+            className="w-full"
             onClick={onDismiss}
           >
             <Clock className="w-4 h-4 mr-2" />
-            {t('usage.continueTomorrow')}
+            Yopish
           </Button>
         </div>
       </div>

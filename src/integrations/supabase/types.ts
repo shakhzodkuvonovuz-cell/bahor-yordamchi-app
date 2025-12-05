@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      beta_feedback: {
+        Row: {
+          app_version: string | null
+          category: string
+          created_at: string
+          email: string | null
+          id: string
+          message: string
+          route: string | null
+          screenshot_url: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          app_version?: string | null
+          category: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          message: string
+          route?: string | null
+          screenshot_url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          app_version?: string | null
+          category?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          message?: string
+          route?: string | null
+          screenshot_url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       chat_attachments: {
         Row: {
           bucket: string
