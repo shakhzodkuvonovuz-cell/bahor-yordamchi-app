@@ -391,39 +391,13 @@ serve(async (req) => {
         console.log("[doc-run] HTML content length:", fullHtml.length);
         console.log("[doc-run] HTML preview:", fullHtml.substring(0, 200));
         
-        // Create a temporary HTML document with a secure token
-        // Generate random token for URL validation
-        const tempToken = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+        // Upload HTML directly as a file to iLoveAPI
+        // The htmlpdf tool expects an HTML file upload, not a URL
+        const htmlBytes = new TextEncoder().encode(fullHtml);
+        const serverFilename = await iloveUpload(iloveToken, server, task, htmlBytes, "document.html", "text/html");
+        console.log("[doc-run] HTML uploaded as file, server_filename:", serverFilename);
         
-        // Store the HTML document with the raw token (pdf-html will verify it)
-        const { data: tempDoc, error: tempInsertError } = await supabase
-          .from("temp_html_docs")
-          .insert({
-            user_id: user.id,
-            token: tempToken, // Store raw token for now (pdf-html supports both)
-            html: fullHtml,
-            expires_at: expiresAt.toISOString(),
-          })
-          .select()
-          .single();
-        
-        if (tempInsertError || !tempDoc) {
-          console.error("[doc-run] Failed to create temp HTML doc:", tempInsertError);
-          throw new Error("Failed to prepare HTML for processing");
-        }
-        
-        // Construct the public URL that iLoveAPI will fetch
-        // This must be the full URL to our pdf-html edge function
-        const supabaseProjectUrl = Deno.env.get("SUPABASE_URL")!;
-        const htmlUrl = `${supabaseProjectUrl}/functions/v1/pdf-html?id=${tempDoc.id}&token=${tempToken}`;
-        console.log("[doc-run] HTML URL for iLoveAPI:", htmlUrl);
-        
-        // Use URL upload for htmlpdf - iLoveAPI will fetch and RENDER this URL as HTML
-        const serverFilename = await iloveUploadFromUrl(iloveToken, server, task, htmlUrl);
-        console.log("[doc-run] HTML uploaded via URL, server_filename:", serverFilename);
-        
-        // Process with htmlpdf tool - this converts the HTML webpage to PDF
+        // Process with htmlpdf tool - this converts the HTML file to PDF
         await iloveProcess(iloveToken, server, task, tool, [
           { server_filename: serverFilename, filename: "document.html" },
         ], {
@@ -435,10 +409,6 @@ serve(async (req) => {
         
         outputBytes = await iloveDownload(iloveToken, server, task);
         console.log("[doc-run] PDF downloaded, size:", outputBytes.length, "bytes");
-        
-        // Clean up temp HTML doc
-        await supabase.from("temp_html_docs").delete().eq("id", tempDoc.id);
-        console.log("[doc-run] Cleaned up temp HTML doc:", tempDoc.id);
 
         
 
