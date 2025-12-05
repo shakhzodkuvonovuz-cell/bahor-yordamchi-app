@@ -82,58 +82,77 @@ export function isWordFile(file: File): boolean {
 
 /**
  * Extract text from PDF using pdf.js
+ * Includes timeout and graceful error handling
  */
 async function extractTextFromPdf(file: File): Promise<TextExtractionResult> {
-  try {
-    const pdfjsLib = await import('pdfjs-dist');
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-    
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    
-    const maxPages = Math.min(pdf.numPages, 10); // Limit to first 10 pages
-    const extractedTexts: string[] = [];
-    
-    for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
-      const page = await pdf.getPage(pageNum);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items
-        .map((item: any) => item.str)
-        .join(' ')
-        .trim();
+  // Add timeout to prevent hanging
+  const timeoutPromise = new Promise<TextExtractionResult>((_, reject) => {
+    setTimeout(() => reject(new Error('PDF extraction timeout')), 15000);
+  });
+  
+  const extractionPromise = (async (): Promise<TextExtractionResult> => {
+    try {
+      const pdfjsLib = await import('pdfjs-dist');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
       
-      if (pageText) {
-        extractedTexts.push(`--- Page ${pageNum} ---\n${pageText}`);
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      
+      const maxPages = Math.min(pdf.numPages, 10); // Limit to first 10 pages
+      const extractedTexts: string[] = [];
+      
+      for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
+        try {
+          const page = await pdf.getPage(pageNum);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items
+            .map((item: any) => item.str)
+            .join(' ')
+            .trim();
+          
+          if (pageText) {
+            extractedTexts.push(`--- Page ${pageNum} ---\n${pageText}`);
+          }
+        } catch (pageError) {
+          console.warn(`Failed to extract page ${pageNum}:`, pageError);
+        }
       }
-    }
-    
-    if (extractedTexts.length === 0) {
-      // PDF might be image-based (scanned), not supported for text extraction in beta
-      return { 
-        text: null, 
-        status: 'unsupported', 
-        truncated: false 
+      
+      if (extractedTexts.length === 0) {
+        // PDF might be image-based (scanned), not supported for text extraction in beta
+        return { 
+          text: null, 
+          status: 'unsupported', 
+          truncated: false 
+        };
+      }
+      
+      let fullText = extractedTexts.join('\n\n');
+      const truncated = fullText.length > MAX_TEXT_LENGTH;
+      if (truncated) {
+        fullText = fullText.slice(0, MAX_TEXT_LENGTH) + '\n\n[... truncated ...]';
+      }
+      
+      if (pdf.numPages > maxPages) {
+        fullText += `\n\n[Note: Only first ${maxPages} of ${pdf.numPages} pages extracted]`;
+      }
+      
+      return {
+        text: fullText,
+        status: 'ready',
+        truncated,
       };
+    } catch (error) {
+      console.error('PDF extraction error:', error);
+      return { text: null, status: 'unsupported', truncated: false };
     }
-    
-    let fullText = extractedTexts.join('\n\n');
-    const truncated = fullText.length > MAX_TEXT_LENGTH;
-    if (truncated) {
-      fullText = fullText.slice(0, MAX_TEXT_LENGTH) + '\n\n[... truncated ...]';
-    }
-    
-    if (pdf.numPages > maxPages) {
-      fullText += `\n\n[Note: Only first ${maxPages} of ${pdf.numPages} pages extracted]`;
-    }
-    
-    return {
-      text: fullText,
-      status: 'ready',
-      truncated,
-    };
+  })();
+  
+  try {
+    return await Promise.race([extractionPromise, timeoutPromise]);
   } catch (error) {
-    console.error('PDF extraction error:', error);
-    return { text: null, status: 'error', truncated: false };
+    console.error('PDF extraction failed or timed out:', error);
+    return { text: null, status: 'unsupported', truncated: false };
   }
 }
 
