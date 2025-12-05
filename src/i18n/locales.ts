@@ -135,13 +135,16 @@ export const translations: Record<Lang, Record<string, string>> = {
     'chat.typing': 'Bahor AI yozmoqda...',
     'chat.send': 'Yuborish',
     
-    // Daily Usage
+    // Usage
     'usage.today': "Bugungi limit",
     'usage.requests': "so'rov",
     'usage.limitReached': "Bugungi bepul limit tugadi",
     'usage.limitReached.desc': "Bahor AI'ni to'liq ishlatish uchun Premium rejaga o'ting. Cheksiz suhbat, fayl va rasm tahlili, maxsus rejimlar va tezkor javoblar siz uchun ochiladi.",
     'usage.upgradeToPremium': "Premiumga o'tish",
     'usage.continueTomorrow': 'Ertaga davom ettiraman',
+    'usage.remaining': '{count} ta qoldi',
+    'usage.limitReachedMessage': "Bugungi limitingiz tugadi. Ertaga qaytadan urinib ko'ring yoki Premiumga o'ting.",
+    'usage.nearLimit': "Limitga yaqinlashyapsiz. Cheksiz so'rovlar uchun Premiumga o'ting.",
     
     // Delete Modal
     'delete.title': "Suhbat o'chirilsinmi?",
@@ -347,6 +350,23 @@ export const translations: Record<Lang, Record<string, string>> = {
     
     // Common
     'common.back': 'Orqaga',
+    
+    // Button
+    'button.open': 'Ochish',
+    
+    // Premium Card
+    'premium.upgrade': "Premiumga o'ting",
+    'premium.inPlan': 'Premium rejada:',
+    'premium.benefit1': 'Cheksiz muloqot',
+    'premium.benefit2': 'Rasm va fayl tahlili',
+    'premium.benefit3': 'Maxsus rejimlar',
+    'premium.benefit4': 'Tez javoblar',
+    'premium.comingSoon': 'Tez orada',
+    'premium.paymentDisabled': "To'lov tizimi vaqtincha o'chirib qo'yildi. Tez orada qaytamiz.",
+    'premium.paymentComingSoon': "To'lov tizimi tez orada ishga tushadi",
+    
+    // Chat
+    'chat.moreOptions': 'Qo\'shimcha',
   },
 
   en: {
@@ -490,6 +510,9 @@ export const translations: Record<Lang, Record<string, string>> = {
     'usage.limitReached.desc': 'Upgrade to Premium to use Bahor AI without limits. Get unlimited conversations, file and image analysis, specialized modes, and faster responses.',
     'usage.upgradeToPremium': 'Upgrade to Premium',
     'usage.continueTomorrow': "I'll continue tomorrow",
+    'usage.remaining': '{count} remaining',
+    'usage.limitReachedMessage': "Your daily limit is reached. Try again tomorrow or upgrade to Premium.",
+    'usage.nearLimit': "Approaching limit. Upgrade to Premium for unlimited messages.",
     
     // Delete Modal
     'delete.title': 'Delete this chat?',
@@ -695,6 +718,23 @@ export const translations: Record<Lang, Record<string, string>> = {
     
     // Common
     'common.back': 'Back',
+    
+    // Button
+    'button.open': 'Open',
+    
+    // Premium Card
+    'premium.upgrade': 'Upgrade to Premium',
+    'premium.inPlan': 'Premium plan includes:',
+    'premium.benefit1': 'Unlimited conversations',
+    'premium.benefit2': 'Image and file analysis',
+    'premium.benefit3': 'Special modes',
+    'premium.benefit4': 'Faster responses',
+    'premium.comingSoon': 'Coming soon',
+    'premium.paymentDisabled': 'Payment system is temporarily disabled. We\'ll be back soon.',
+    'premium.paymentComingSoon': 'Payment system coming soon',
+    
+    // Chat
+    'chat.moreOptions': 'More options',
   },
 
   ru: {
@@ -1043,6 +1083,23 @@ export const translations: Record<Lang, Record<string, string>> = {
     
     // Common
     'common.back': 'Назад',
+    
+    // Button
+    'button.open': 'Открыть',
+    
+    // Premium Card
+    'premium.upgrade': 'Перейти на Premium',
+    'premium.inPlan': 'В Premium плане:',
+    'premium.benefit1': 'Неограниченные сообщения',
+    'premium.benefit2': 'Анализ изображений и файлов',
+    'premium.benefit3': 'Специальные режимы',
+    'premium.benefit4': 'Быстрые ответы',
+    'premium.comingSoon': 'Скоро',
+    'premium.paymentDisabled': 'Платёжная система временно отключена. Скоро вернёмся.',
+    'premium.paymentComingSoon': 'Платёжная система скоро заработает',
+    
+    // Chat
+    'chat.moreOptions': 'Ещё',
   },
 
   tr: {
@@ -1391,6 +1448,23 @@ export const translations: Record<Lang, Record<string, string>> = {
     
     // Common
     'common.back': 'Geri',
+    
+    // Button
+    'button.open': 'Aç',
+    
+    // Premium Card
+    'premium.upgrade': "Premium'a geç",
+    'premium.inPlan': 'Premium planda:',
+    'premium.benefit1': 'Sınırsız sohbet',
+    'premium.benefit2': 'Görüntü ve dosya analizi',
+    'premium.benefit3': 'Özel modlar',
+    'premium.benefit4': 'Hızlı cevaplar',
+    'premium.comingSoon': 'Yakında',
+    'premium.paymentDisabled': 'Ödeme sistemi geçici olarak kapalı. Yakında döneceğiz.',
+    'premium.paymentComingSoon': 'Ödeme sistemi yakında aktif olacak',
+    
+    // Chat
+    'chat.moreOptions': 'Daha fazla',
   },
 };
 

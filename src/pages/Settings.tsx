@@ -87,19 +87,19 @@ export default function Settings() {
     if (profile?.full_name) {
       return profile.full_name;
     }
-    return "Foydalanuvchi";
+    return t('settings.user');
   };
 
   const getPlanLabel = () => {
-    if (isDevBypass) return 'Dev Unlimited';
-    if (isPremium) return 'Premium';
+    if (isDevBypass) return t('settings.devUnlimited');
+    if (isPremium) return t('settings.premium');
     switch (profile?.plan) {
-      case 'free': return 'Bepul';
+      case 'free': return t('settings.free');
       case 'premium':
-      case 'monthly': return 'Premium';
+      case 'monthly': return t('settings.premium');
       case 'ultra':
-      case 'yearly': return 'Ultra';
-      default: return 'Bepul';
+      case 'yearly': return t('settings.ultra');
+      default: return t('settings.free');
     }
   };
 
@@ -107,8 +107,8 @@ export default function Settings() {
     const { error } = await signOut();
     if (error) {
       toast({
-        title: "Xatolik",
-        description: "Chiqishda xatolik yuz berdi",
+        title: t('settings.error'),
+        description: t('settings.logoutError'),
         variant: "destructive",
       });
     } else {
@@ -197,7 +197,7 @@ export default function Settings() {
                           className="shrink-0 self-start"
                         >
                           <Edit className="w-4 h-4 sm:mr-1" />
-                          <span className="hidden sm:inline">Tahrirlash</span>
+                          <span className="hidden sm:inline">{t('settings.edit')}</span>
                         </Button>
                       </div>
                     </div>
@@ -211,14 +211,14 @@ export default function Settings() {
                   {(isDevBypass || isPremium) ? (
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-foreground">Bugungi foydalanish</p>
+                        <p className="text-sm font-medium text-foreground">{t('settings.usageToday')}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {isDevBypass ? 'Dev Unlimited' : 'Premium'} rejasi
+                          {isDevBypass ? t('settings.devUnlimited') : t('settings.premium')} {t('settings.plan')}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary border border-primary/20">
                         {isDevBypass ? <Shield className="w-4 h-4" /> : <Crown className="w-4 h-4" />}
-                        <span className="text-sm font-medium">Cheksiz</span>
+                        <span className="text-sm font-medium">{t('settings.unlimited')}</span>
                         <Infinity className="w-4 h-4" />
                       </div>
                     </div>
@@ -240,15 +240,15 @@ export default function Settings() {
           {/* Notifications Section */}
           <section className="bg-card border border-border/40 rounded-2xl overflow-hidden shadow-premium-sm w-full">
             <header className="px-4 py-3 border-b border-border/40">
-              <h2 className="text-[15px] font-semibold text-foreground">Bildirishnomalar</h2>
+              <h2 className="text-[15px] font-semibold text-foreground">{t('settings.notifications')}</h2>
             </header>
             <div className="divide-y divide-border/40">
               <div className="px-4 min-h-[56px] flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <Bell className="w-5 h-5 text-muted-foreground shrink-0" />
                   <div className="min-w-0">
-                    <p className="font-medium text-foreground text-[15px]">Yangiliklar</p>
-                    <p className="text-[13px] text-muted-foreground">Yangi funksiyalar</p>
+                    <p className="font-medium text-foreground text-[15px]">{t('settings.news')}</p>
+                    <p className="text-[13px] text-muted-foreground">{t('settings.newsDesc')}</p>
                   </div>
                 </div>
                 <Switch 
@@ -261,8 +261,8 @@ export default function Settings() {
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <Zap className="w-5 h-5 text-muted-foreground shrink-0" />
                   <div className="min-w-0">
-                    <p className="font-medium text-foreground text-[15px]">Maslahatlar</p>
-                    <p className="text-[13px] text-muted-foreground">Foydali g'oyalar</p>
+                    <p className="font-medium text-foreground text-[15px]">{t('settings.tips')}</p>
+                    <p className="text-[13px] text-muted-foreground">{t('settings.tipsDesc')}</p>
                   </div>
                 </div>
                 <Switch 
@@ -275,8 +275,8 @@ export default function Settings() {
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <CreditCard className="w-5 h-5 text-muted-foreground shrink-0" />
                   <div className="min-w-0">
-                    <p className="font-medium text-foreground text-[15px]">Chegirmalar</p>
-                    <p className="text-[13px] text-muted-foreground">Maxsus takliflar</p>
+                    <p className="font-medium text-foreground text-[15px]">{t('settings.discounts')}</p>
+                    <p className="text-[13px] text-muted-foreground">{t('settings.discountsDesc')}</p>
                   </div>
                 </div>
                 <Switch 
@@ -291,7 +291,7 @@ export default function Settings() {
           {/* App Experience Section */}
           <section className="bg-card border border-border/40 rounded-2xl overflow-hidden shadow-premium-sm w-full">
             <header className="px-4 py-3 border-b border-border/40">
-              <h2 className="text-[15px] font-semibold text-foreground">Bahor AI tajribasi</h2>
+              <h2 className="text-[15px] font-semibold text-foreground">{t('settings.experience')}</h2>
             </header>
             <div className="divide-y divide-border/40">
               {/* Animations */}
@@ -299,8 +299,8 @@ export default function Settings() {
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <Zap className="w-5 h-5 text-muted-foreground shrink-0" />
                   <div className="min-w-0">
-                    <p className="font-medium text-foreground text-[15px]">Animatsiyalar</p>
-                    <p className="text-[13px] text-muted-foreground">Interfeys effektlari</p>
+                    <p className="font-medium text-foreground text-[15px]">{t('settings.animations')}</p>
+                    <p className="text-[13px] text-muted-foreground">{t('settings.animationsDesc')}</p>
                   </div>
                 </div>
                 <Switch 
@@ -315,8 +315,8 @@ export default function Settings() {
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <Zap className="w-5 h-5 text-muted-foreground shrink-0" />
                   <div className="min-w-0">
-                    <p className="font-medium text-foreground text-[15px]">Aqlli takliflar</p>
-                    <p className="text-[13px] text-muted-foreground">Tavsiya etilgan savollar</p>
+                    <p className="font-medium text-foreground text-[15px]">{t('settings.smartSuggestions')}</p>
+                    <p className="text-[13px] text-muted-foreground">{t('settings.smartSuggestionsDesc')}</p>
                   </div>
                 </div>
                 <Switch 
@@ -331,17 +331,17 @@ export default function Settings() {
           {/* Security Section */}
           <section className="bg-card border border-border/40 rounded-2xl overflow-hidden shadow-premium-sm w-full">
             <header className="px-4 py-3 border-b border-border/40">
-              <h2 className="text-[15px] font-semibold text-foreground">Xavfsizlik</h2>
+              <h2 className="text-[15px] font-semibold text-foreground">{t('settings.security')}</h2>
             </header>
             <div className="divide-y divide-border/40">
               {/* Change Password */}
               <button
-                onClick={() => toast({ description: "Bu funksiya tez orada qo'shiladi" })}
+                onClick={() => toast({ description: t('settings.comingSoon') })}
                 className="w-full px-4 min-h-[56px] flex items-center justify-between hover:bg-muted/50 transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <Lock className="w-5 h-5 text-muted-foreground shrink-0" />
-                  <span className="font-medium text-foreground text-[15px]">Parolni o'zgartirish</span>
+                  <span className="font-medium text-foreground text-[15px]">{t('settings.changePassword')}</span>
                 </div>
                 <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
               </button>
@@ -351,17 +351,17 @@ export default function Settings() {
                 onClick={async () => {
                   try {
                     await signOut();
-                    toast({ description: "Barcha qurilmalardan chiqdingiz" });
+                    toast({ description: t('settings.logoutSuccess') });
                     navigate("/auth");
                   } catch (error) {
-                    toast({ description: "Xatolik yuz berdi", variant: "destructive" });
+                    toast({ description: t('settings.error'), variant: "destructive" });
                   }
                 }}
                 className="w-full px-4 min-h-[56px] flex items-center justify-between hover:bg-muted/50 transition-colors"
               >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <Shield className="w-5 h-5 text-muted-foreground shrink-0" />
-                  <span className="font-medium text-foreground text-[15px]">Barcha qurilmalardan chiqish</span>
+                  <span className="font-medium text-foreground text-[15px]">{t('settings.logoutAllDevices')}</span>
                 </div>
                 <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
               </button>
@@ -380,7 +380,7 @@ export default function Settings() {
           {/* Section 2: Ilova (App) */}
           <section className="bg-card border border-border/40 rounded-2xl overflow-hidden shadow-premium-sm w-full">
             <header className="px-4 py-3 border-b border-border/40">
-              <h2 className="text-[15px] font-semibold text-foreground">Ilova sozlamalari</h2>
+              <h2 className="text-[15px] font-semibold text-foreground">{t('settings.appSettings')}</h2>
             </header>
             <div className="divide-y divide-border/40">
               {/* Til (Language) */}
@@ -435,7 +435,7 @@ export default function Settings() {
                       }`}
                     >
                       <Sun className="w-4 h-4 shrink-0" />
-                      <span>Yorug'</span>
+                      <span>{t('settings.themeLight')}</span>
                     </button>
                     <button
                       onClick={() => setTheme("dark")}
@@ -446,7 +446,7 @@ export default function Settings() {
                       }`}
                     >
                       <Moon className="w-4 h-4 shrink-0" />
-                      <span>Qorong'i</span>
+                      <span>{t('settings.themeDark')}</span>
                     </button>
                   </div>
                 </CollapsibleContent>
@@ -465,7 +465,7 @@ export default function Settings() {
                 </DrawerTrigger>
                 <DrawerContent className="max-h-[90vh] bg-background">
                   <DrawerHeader className="text-center border-b border-border/40">
-                    <DrawerTitle className="text-lg font-semibold">Obuna holati</DrawerTitle>
+                    <DrawerTitle className="text-lg font-semibold">{t('settings.subscription')}</DrawerTitle>
                   </DrawerHeader>
                   <ScrollArea className="px-4 pb-6 pt-4">
                     <SubscriptionStatus />
@@ -537,7 +537,7 @@ export default function Settings() {
               onClick={() => setSubscriptionDrawerOpen(true)}
               className="w-full text-center text-[13px] text-primary hover:underline transition-colors py-2"
             >
-              Barcha rejalar va narxlarni ko'rish →
+              {t('settings.viewAllPlans')}
             </button>
           )}
 

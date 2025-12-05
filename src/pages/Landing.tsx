@@ -211,7 +211,7 @@ export default function Landing() {
               className="h-9 px-4 sm:px-5 rounded-xl font-medium shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all text-sm"
             >
               <span className="hidden sm:inline">{t('button.openApp')}</span>
-              <span className="sm:hidden">Ochish</span>
+              <span className="sm:hidden">{t('button.open')}</span>
             </Button>
           </div>
         </div>

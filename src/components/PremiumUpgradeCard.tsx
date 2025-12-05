@@ -1,14 +1,24 @@
 import { Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 export default function PremiumUpgradeCard() {
+  const { t } = useTranslation();
+  
   const handleUpgrade = () => {
     toast({
-      title: "Tez orada",
-      description: "To'lov tizimi vaqtincha o'chirib qo'yildi. Tez orada qaytamiz.",
+      title: t('premium.comingSoon'),
+      description: t('premium.paymentDisabled'),
     });
   };
+
+  const benefits = [
+    t('premium.benefit1'),
+    t('premium.benefit2'),
+    t('premium.benefit3'),
+    t('premium.benefit4'),
+  ];
 
   return (
     <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-2xl p-6">
@@ -20,20 +30,15 @@ export default function PremiumUpgradeCard() {
           <div className="p-2 bg-primary/10 rounded-lg">
             <Crown className="w-6 h-6 text-primary" />
           </div>
-          <h3 className="text-lg font-bold text-foreground">Premiumga o'ting</h3>
+          <h3 className="text-lg font-bold text-foreground">{t('premium.upgrade')}</h3>
         </div>
 
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Premium rejada:
+          {t('premium.inPlan')}
         </p>
 
         <ul className="space-y-2">
-          {[
-            "Cheksiz muloqot",
-            "Rasm va fayl tahlili",
-            "Maxsus rejimlar",
-            "Tez javoblar",
-          ].map((benefit) => (
+          {benefits.map((benefit) => (
             <li key={benefit} className="flex items-center gap-2 text-sm">
               <div className="w-1.5 h-1.5 rounded-full bg-primary" />
               <span className="text-foreground">{benefit}</span>
@@ -46,11 +51,11 @@ export default function PremiumUpgradeCard() {
           onClick={handleUpgrade}
         >
           <Crown className="w-4 h-4 mr-2" />
-          Tez orada
+          {t('premium.comingSoon')}
         </Button>
 
         <p className="text-xs text-center text-muted-foreground">
-          To'lov tizimi tez orada ishga tushadi
+          {t('premium.paymentComingSoon')}
         </p>
       </div>
     </div>
