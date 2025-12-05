@@ -108,13 +108,15 @@ async function iloveUpload(
   return data.server_filename;
 }
 
-// Upload from cloud URL
+// Upload from cloud URL - for htmlpdf this tells iLoveAPI to RENDER the URL as a webpage
 async function iloveUploadFromUrl(
   token: string,
   server: string,
   task: string,
   url: string
 ): Promise<string> {
+  console.log("[doc-run] Uploading URL to iLoveAPI:", url);
+  
   const response = await fetch(`https://${server}/v1/upload`, {
     method: "POST",
     headers: { 
@@ -131,6 +133,7 @@ async function iloveUploadFromUrl(
   }
   
   const data = await response.json();
+  console.log("[doc-run] URL upload response:", JSON.stringify(data));
   return data.server_filename;
 }
 
@@ -381,20 +384,24 @@ serve(async (req) => {
       if (tool === "htmlpdf") {
         const { contentType, content, template = "clean", options = {} } = inputs;
         
+        // Convert content to HTML
         let htmlContent = contentType === "html" ? sanitizeHtml(content) : textToHtml(content);
         const fullHtml = buildHtmlDocument(htmlContent, title, template);
         
         console.log("[doc-run] HTML content length:", fullHtml.length);
+        console.log("[doc-run] HTML preview:", fullHtml.substring(0, 200));
         
         // Create a temporary HTML document with a secure token
+        // Generate random token for URL validation
         const tempToken = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
         
+        // Store the HTML document with the raw token (pdf-html will verify it)
         const { data: tempDoc, error: tempInsertError } = await supabase
           .from("temp_html_docs")
           .insert({
             user_id: user.id,
-            token: tempToken,
+            token: tempToken, // Store raw token for now (pdf-html supports both)
             html: fullHtml,
             expires_at: expiresAt.toISOString(),
           })
@@ -406,29 +413,33 @@ serve(async (req) => {
           throw new Error("Failed to prepare HTML for processing");
         }
         
-        // Construct the URL that iLoveAPI will fetch
-        // This points to our pdf-html edge function which serves the HTML
-        const functionsUrl = Deno.env.get("SUPABASE_URL")!.replace(".supabase.co", ".supabase.co/functions/v1");
-        const htmlUrl = `${functionsUrl}/pdf-html?id=${tempDoc.id}&token=${tempToken}`;
-        console.log("[doc-run] HTML URL created for iLoveAPI");
+        // Construct the public URL that iLoveAPI will fetch
+        // This must be the full URL to our pdf-html edge function
+        const supabaseProjectUrl = Deno.env.get("SUPABASE_URL")!;
+        const htmlUrl = `${supabaseProjectUrl}/functions/v1/pdf-html?id=${tempDoc.id}&token=${tempToken}`;
+        console.log("[doc-run] HTML URL for iLoveAPI:", htmlUrl);
         
-        // Use URL upload for htmlpdf - iLoveAPI will fetch and RENDER this URL
+        // Use URL upload for htmlpdf - iLoveAPI will fetch and RENDER this URL as HTML
         const serverFilename = await iloveUploadFromUrl(iloveToken, server, task, htmlUrl);
         console.log("[doc-run] HTML uploaded via URL, server_filename:", serverFilename);
         
+        // Process with htmlpdf tool - this converts the HTML webpage to PDF
         await iloveProcess(iloveToken, server, task, tool, [
           { server_filename: serverFilename, filename: "document.html" },
         ], {
           page_size: options.page_size || "A4",
           orientation: options.orientation || "portrait",
-          margin: options.margin || 10,
+          margin: options.margin ?? 10,
           single_page: options.single_page || false,
         });
         
         outputBytes = await iloveDownload(iloveToken, server, task);
+        console.log("[doc-run] PDF downloaded, size:", outputBytes.length, "bytes");
         
         // Clean up temp HTML doc
         await supabase.from("temp_html_docs").delete().eq("id", tempDoc.id);
+        console.log("[doc-run] Cleaned up temp HTML doc:", tempDoc.id);
+
         
 
       } else if (tool === "imagepdf") {
