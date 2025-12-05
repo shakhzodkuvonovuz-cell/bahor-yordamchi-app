@@ -8,25 +8,26 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/i18n/LanguageProvider";
+import UsageBadge from "./UsageBadge";
 
 interface ChatHeaderProps {
   title: string;
   subtitle?: string;
-  usageText?: string;
   onMenuClick?: () => void;
   onClearChat?: () => void;
   onOpenSettings?: () => void;
   showMenu?: boolean;
+  showUsage?: boolean;
 }
 
 export default function ChatHeader({
   title,
   subtitle,
-  usageText,
   onMenuClick,
   onClearChat,
   onOpenSettings,
   showMenu = true,
+  showUsage = true,
 }: ChatHeaderProps) {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -48,14 +49,15 @@ export default function ChatHeader({
 
           {/* Center: Title + Subtitle */}
           <div className="flex-1 min-w-0 text-center sm:text-left">
-            <h1 className="text-base sm:text-lg font-semibold text-foreground truncate leading-tight">
-              {title}
-            </h1>
-            {(subtitle || usageText) && (
+            <div className="flex items-center justify-center sm:justify-start gap-2">
+              <h1 className="text-base sm:text-lg font-semibold text-foreground truncate leading-tight">
+                {title}
+              </h1>
+              {showUsage && <UsageBadge />}
+            </div>
+            {subtitle && (
               <p className="text-xs text-muted-foreground truncate mt-0.5">
-                {subtitle && <span>{subtitle}</span>}
-                {subtitle && usageText && <span className="mx-1.5">•</span>}
-                {usageText && <span className="font-medium">{usageText}</span>}
+                {subtitle}
               </p>
             )}
           </div>
