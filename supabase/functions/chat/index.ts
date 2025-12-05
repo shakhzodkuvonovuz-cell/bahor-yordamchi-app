@@ -67,10 +67,18 @@ function isIdentityQuestion(msg: string): boolean {
 }
 
 function shouldUseSearch(userMsg: string): boolean {
-  const q = userMsg.toLowerCase();
+  // Only check the first 500 chars to avoid triggering on long document content
+  const q = userMsg.toLowerCase().slice(0, 500);
+  
+  // Skip search if message looks like document analysis
+  if (q.includes('hujjat tahlili:') || q.includes('document analysis:') || 
+      q.includes('rasm tahlili:') || q.includes('image analysis:')) {
+    return false;
+  }
+  
   const searchTriggers = [
     "yangilik", "yangiliklar", "qidir", "qidirish", "oxirgi", "so'nggi",
-    "bugungi", "hozirgi", "joriy", "kim", "nima haqida", "qachon",
+    "bugungi", "hozirgi", "joriy", "nima haqida", "qachon",
     "search", "news", "latest", "recent", "current", "find", "look up",
     "what is", "who is", "when did",
     "новости", "поиск", "найти", "последние", "текущие",
@@ -535,21 +543,36 @@ Agar yuqorida qidiruv natijalari bo'lsa, ularga suyanib javob ber va manbalarni 
     const unsupportedCount = attachments?.filter((att: any) => att.readStatus === 'unsupported')?.length || 0;
     console.log(`Chat: user=${user.id}, email=${userEmail}, mode=${modeKey}, plan=${effectivePlan}, devBypass=${isDevBypass}, usage=${usageResult.used}/${usageResult.limit}, textFiles=${textFilesCount}, unsupported=${unsupportedCount}`);
 
-    // Call DeepSeek
-    const response = await fetch("https://api.deepseek.com/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${deepseekApiKey}`,
-      },
-      body: JSON.stringify({
-        model: "deepseek-chat",
-        messages: finalMessages,
-        temperature: 0.6,
-        max_tokens: 2000,
-        stream: true,
-      }),
-    });
+    // Call DeepSeek with timeout
+    const deepseekController = new AbortController();
+    const deepseekTimeout = setTimeout(() => deepseekController.abort(), 60000); // 60 second timeout
+    
+    let response: Response;
+    try {
+      response = await fetch("https://api.deepseek.com/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${deepseekApiKey}`,
+        },
+        body: JSON.stringify({
+          model: "deepseek-chat",
+          messages: finalMessages,
+          temperature: 0.6,
+          max_tokens: 2000,
+          stream: true,
+        }),
+        signal: deepseekController.signal,
+      });
+    } catch (fetchError) {
+      clearTimeout(deepseekTimeout);
+      console.error('DeepSeek fetch error:', fetchError);
+      return new Response(
+        JSON.stringify({ error: "AI_TIMEOUT", message: "AI javob bermadi. Qayta urinib ko'ring." }),
+        { status: 504, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    clearTimeout(deepseekTimeout);
 
     if (!response.ok) {
       const errorText = await response.text();
