@@ -75,14 +75,16 @@ async function iloveUpload(
   server: string,
   task: string,
   file: Uint8Array,
-  filename: string
+  filename: string,
+  mimeType?: string
 ): Promise<string> {
-  // Create blob from Uint8Array for Deno compatibility
-  const blob = new Blob([new Uint8Array(file)] as BlobPart[]);
+  // Create blob with explicit MIME type for proper handling
+  const blob = new Blob([new Uint8Array(file)] as BlobPart[], { 
+    type: mimeType || "application/octet-stream" 
+  });
   const formData = new FormData();
   formData.append("task", task);
   formData.append("file", blob, filename);
-  
   
   const response = await fetch(`https://${server}/v1/upload`, {
     method: "POST",
@@ -376,35 +378,13 @@ serve(async (req) => {
         let htmlContent = contentType === "html" ? sanitizeHtml(content) : textToHtml(content);
         const fullHtml = buildHtmlDocument(htmlContent, title, template);
         
-        // First upload HTML to Supabase storage to get a public URL
+        console.log("[doc-run] HTML content length:", fullHtml.length);
+        
+        // Upload HTML directly with proper MIME type
         const htmlBytes = new TextEncoder().encode(fullHtml);
-        const tempPath = `${user.id}/temp-${crypto.randomUUID()}.html`;
+        const serverFilename = await iloveUpload(iloveToken, server, task, htmlBytes, "document.html", "text/html");
         
-        const { error: htmlUploadError } = await supabase.storage
-          .from("user-files")
-          .upload(tempPath, htmlBytes, {
-            contentType: "text/html",
-            upsert: true,
-          });
-        
-        if (htmlUploadError) {
-          console.error("[doc-run] HTML upload failed:", htmlUploadError);
-          throw new Error("Failed to upload HTML file");
-        }
-        
-        // Get a signed URL for iLovePDF to access
-        const { data: signedData, error: signedError } = await supabase.storage
-          .from("user-files")
-          .createSignedUrl(tempPath, 300); // 5 minutes expiry
-        
-        if (signedError || !signedData?.signedUrl) {
-          console.error("[doc-run] Signed URL creation failed:", signedError);
-          throw new Error("Failed to create signed URL for HTML");
-        }
-        
-        console.log("[doc-run] Uploading HTML from URL:", signedData.signedUrl);
-        
-        const serverFilename = await iloveUploadFromUrl(iloveToken, server, task, signedData.signedUrl);
+        console.log("[doc-run] HTML uploaded, server_filename:", serverFilename);
         
         await iloveProcess(iloveToken, server, task, tool, [
           { server_filename: serverFilename, filename: "document.html" },
@@ -417,10 +397,7 @@ serve(async (req) => {
         
         outputBytes = await iloveDownload(iloveToken, server, task);
         
-        // Clean up temp HTML file
-        await supabase.storage.from("user-files").remove([tempPath]);
-        
-        
+
       } else if (tool === "imagepdf") {
         const { images, options = {} } = inputs;
         
