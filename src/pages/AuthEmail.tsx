@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import bahorLogo from "@/assets/bahor-logo.png";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 export default function AuthEmail() {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get('next') || '/modes';
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,13 +23,6 @@ export default function AuthEmail() {
   const [showResetPanel, setShowResetPanel] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
-
-  // Redirect if already logged in
-  useEffect(() => {
-    if (!authLoading && user) {
-      navigate("/modes");
-    }
-  }, [user, authLoading, navigate]);
 
   const mapSupabaseError = (err: any): string => {
     const msg = err?.message?.toLowerCase() || "";
@@ -84,7 +78,7 @@ export default function AuthEmail() {
         if (signUpError) {
           setError(mapSupabaseError(signUpError));
         } else {
-          navigate("/modes");
+          navigate(redirectTo);
         }
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({ 
@@ -95,7 +89,7 @@ export default function AuthEmail() {
         if (signInError) {
           setError(mapSupabaseError(signInError));
         } else {
-          navigate("/modes");
+          navigate(redirectTo);
         }
       }
     } catch (err) {
@@ -131,14 +125,6 @@ export default function AuthEmail() {
     setResetLoading(false);
   };
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background via-background to-primary/5">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-background to-primary/5">
       <div className="flex-1 flex flex-col items-center justify-center p-6">
@@ -159,7 +145,7 @@ export default function AuthEmail() {
           <div className="bg-card rounded-[24px] shadow-xl border border-border/30 p-6 sm:p-8 animate-scale-in">
             {/* Back Button & Title */}
             <div className="flex items-center gap-3 mb-6">
-              <Link to="/auth">
+              <Link to={`/auth${searchParams.toString() ? `?${searchParams.toString()}` : ''}`}>
                 <button className="w-10 h-10 rounded-xl bg-muted/50 hover:bg-muted flex items-center justify-center transition-colors">
                   <ArrowLeft className="w-5 h-5 text-muted-foreground" />
                 </button>

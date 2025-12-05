@@ -2,11 +2,14 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 
-interface ProtectedRouteProps {
+interface PublicRouteProps {
   children: React.ReactNode;
 }
 
-export function ProtectedRoute({ children }: ProtectedRouteProps) {
+/**
+ * PublicRoute: For auth pages that should redirect away if user is already logged in
+ */
+export function PublicRoute({ children }: PublicRouteProps) {
   const { user, loading } = useAuth();
   const location = useLocation();
 
@@ -18,10 +21,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  if (!user) {
-    // Preserve the intended destination
-    const redirectTo = `/auth?next=${encodeURIComponent(location.pathname + location.search)}`;
-    return <Navigate to={redirectTo} replace />;
+  if (user) {
+    // Check for ?next= param to redirect to intended destination
+    const searchParams = new URLSearchParams(location.search);
+    const next = searchParams.get('next') || '/modes';
+    return <Navigate to={next} replace />;
   }
 
   return <>{children}</>;

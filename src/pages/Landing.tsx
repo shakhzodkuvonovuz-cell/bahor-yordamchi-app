@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Accordion,
   AccordionContent,
@@ -97,6 +98,25 @@ function ChatMockup() {
 export default function Landing() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { user, loading } = useAuth();
+  
+  // Navigate to modes if logged in, otherwise to auth with redirect
+  const handleOpenApp = () => {
+    if (user) {
+      navigate("/modes");
+    } else {
+      navigate("/auth?next=/modes");
+    }
+  };
+
+  // Navigate to specific chat mode with auth check
+  const handleModeClick = (modeId: string) => {
+    if (user) {
+      navigate(`/chat/${modeId}`);
+    } else {
+      navigate(`/auth?next=${encodeURIComponent(`/chat/${modeId}`)}`);
+    }
+  };
   
   const heroRef = useScrollAnimation({ threshold: 0.2 });
   const featuresRef = useScrollAnimation({ threshold: 0.1 });
@@ -206,7 +226,7 @@ export default function Landing() {
           <div className="flex items-center gap-2 sm:gap-3">
             <LanguageSwitcher variant="pill" />
             <Button 
-              onClick={() => navigate("/modes")} 
+              onClick={handleOpenApp} 
               size="sm"
               className="h-9 px-4 sm:px-5 rounded-xl font-medium shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all text-sm"
             >
@@ -245,7 +265,7 @@ export default function Landing() {
               
               <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
                 <Button
-                  onClick={() => navigate("/modes")}
+                  onClick={handleOpenApp}
                   size="lg"
                   className="h-12 px-8 text-base font-semibold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/35 transition-all hover-lift"
                 >
@@ -335,7 +355,7 @@ export default function Landing() {
                   modesRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
                 }`}
                 style={{ transitionDelay: `${index * 60}ms` }}
-                onClick={() => navigate(`/chat/${mode.id}`)}
+                onClick={() => handleModeClick(mode.id)}
               >
                 <div className="w-11 h-11 lg:w-12 lg:h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
                   {mode.icon}
@@ -348,7 +368,7 @@ export default function Landing() {
           
           <div className="text-center">
             <Button
-              onClick={() => navigate("/modes")}
+              onClick={handleOpenApp}
               size="lg"
               className="h-11 lg:h-12 px-6 lg:px-8 text-sm lg:text-base font-semibold rounded-xl shadow-lg shadow-primary/20 transition-all hover-lift"
             >

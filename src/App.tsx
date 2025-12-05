@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/hooks/useTheme";
 import { LanguageProvider } from "@/i18n/LanguageProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { PublicRoute } from "@/components/PublicRoute";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import Home from "./pages/Home";
 import Chat from "./pages/Chat";
@@ -37,16 +38,35 @@ const App = () => (
                 <Toaster />
                 <Sonner />
                 <Routes>
+                  {/* Public routes */}
                   <Route path="/" element={<Landing />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/auth/email" element={<AuthEmail />} />
-                  <Route path="/auth/google" element={<AuthGoogle />} />
-                  <Route path="/auth/phone" element={<AuthPhone />} />
-                  <Route path="/auth/callback" element={<AuthCallback />} />
-                  <Route path="/modes" element={<Home />} />
                   <Route path="/terms" element={<Terms />} />
                   <Route path="/privacy" element={<Privacy />} />
-                  <Route path="/support" element={<Support />} />
+                  
+                  {/* Auth routes - redirect to /modes if already logged in */}
+                  <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
+                  <Route path="/auth/email" element={<PublicRoute><AuthEmail /></PublicRoute>} />
+                  <Route path="/auth/google" element={<PublicRoute><AuthGoogle /></PublicRoute>} />
+                  <Route path="/auth/phone" element={<PublicRoute><AuthPhone /></PublicRoute>} />
+                  <Route path="/auth/callback" element={<AuthCallback />} />
+                  
+                  {/* Protected routes */}
+                  <Route 
+                    path="/modes" 
+                    element={
+                      <ProtectedRoute>
+                        <Home />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/support" 
+                    element={
+                      <ProtectedRoute>
+                        <Support />
+                      </ProtectedRoute>
+                    } 
+                  />
                   <Route 
                     path="/chat/:mode" 
                     element={

@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { useState } from "react";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import bahorLogo from "@/assets/bahor-logo.png";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, AlertCircle } from "lucide-react";
@@ -8,17 +7,11 @@ import { supabase } from "@/integrations/supabase/client";
 
 export default function AuthGoogle() {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get('next') || '/modes';
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Redirect if already logged in
-  useEffect(() => {
-    if (!authLoading && user) {
-      navigate("/modes");
-    }
-  }, [user, authLoading, navigate]);
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -28,7 +21,7 @@ export default function AuthGoogle() {
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`
         }
       });
       
@@ -46,14 +39,6 @@ export default function AuthGoogle() {
       setLoading(false);
     }
   };
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background via-background to-primary/5">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-background to-primary/5">

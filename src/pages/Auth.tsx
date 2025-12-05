@@ -1,29 +1,12 @@
-import { useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import bahorLogo from "@/assets/bahor-logo.png";
-import { Loader2, Mail, Phone, Shield, Info } from "lucide-react";
 import { useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import bahorLogo from "@/assets/bahor-logo.png";
+import { Mail, Phone, Shield, Info } from "lucide-react";
 
 export default function Auth() {
-  const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const [searchParams] = useSearchParams();
+  const queryString = searchParams.toString();
   const [showDevHint, setShowDevHint] = useState(false);
-
-  // Redirect if already logged in
-  useEffect(() => {
-    if (!authLoading && user) {
-      navigate("/modes");
-    }
-  }, [user, authLoading, navigate]);
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background via-background to-primary/5">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-background to-primary/5">
@@ -47,7 +30,7 @@ export default function Auth() {
           {/* Method Buttons */}
           <div className="space-y-4">
             {/* Email */}
-            <Link to="/auth/email" className="block">
+            <Link to={`/auth/email${queryString ? `?${queryString}` : ''}`} className="block">
               <button className="w-full bg-card hover:bg-card/80 border border-border/50 rounded-[20px] p-5 text-left transition-all duration-200 hover:shadow-lg hover:border-primary/30 active:scale-[0.98] group min-h-[80px]">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
@@ -66,7 +49,7 @@ export default function Auth() {
             </Link>
 
             {/* Google */}
-            <Link to="/auth/google" className="block">
+            <Link to={`/auth/google${queryString ? `?${queryString}` : ''}`} className="block">
               <button className="w-full bg-card hover:bg-card/80 border border-border/50 rounded-[20px] p-5 text-left transition-all duration-200 hover:shadow-lg hover:border-primary/30 active:scale-[0.98] group min-h-[80px]">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-2xl bg-card border border-border/50 flex items-center justify-center shrink-0 group-hover:border-primary/30 transition-colors">
@@ -90,7 +73,7 @@ export default function Auth() {
             </Link>
 
             {/* Phone */}
-            <Link to="/auth/phone" className="block">
+            <Link to={`/auth/phone${queryString ? `?${queryString}` : ''}`} className="block">
               <button className="w-full bg-card hover:bg-card/80 border border-border/50 rounded-[20px] p-5 text-left transition-all duration-200 hover:shadow-lg hover:border-primary/30 active:scale-[0.98] group min-h-[80px]">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
