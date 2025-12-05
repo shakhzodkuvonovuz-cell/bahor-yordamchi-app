@@ -60,7 +60,13 @@ serve(async (req) => {
         .single();
 
       const plan = entitlement?.plan || 'free';
-      const isPremium = isDevBypass || plan === 'premium';
+      const isPremium = isDevBypass || plan === 'dev_unlimited' || plan === 'beta_premium';
+      
+      // Get trial status for beta info
+      const { data: trialData } = await supabaseAdmin.rpc('get_trial_status', { p_user_id: user.id });
+      const isBetaActive = (trialData as any)?.is_beta_active || false;
+      const betaExpiresAt = (trialData as any)?.beta_expires_at || null;
+      const daysRemaining = (trialData as any)?.days_remaining || 0;
       
       // Get daily usage
       const today = new Date().toISOString().split('T')[0];
@@ -72,13 +78,17 @@ serve(async (req) => {
         .single();
 
       const used = usageData?.messages_count || 0;
-      const limit = isPremium ? -1 : 5; // -1 = unlimited
+      // Limits: dev_unlimited = -1, beta_premium = 10, free = 5
+      const limit = isDevBypass || plan === 'dev_unlimited' ? -1 : plan === 'beta_premium' ? 10 : 5;
 
       return new Response(
         JSON.stringify({
-          plan,
+          plan: isDevBypass ? 'dev_unlimited' : plan,
           isPremium,
           isDevBypass,
+          isBetaActive,
+          betaExpiresAt,
+          daysRemaining,
           expiresAt: entitlement?.expires_at || null,
           flags: entitlement?.flags || {},
           usage: { date: today, used, limit },
@@ -185,9 +195,9 @@ serve(async (req) => {
         );
       }
 
-      if (!['free', 'premium'].includes(plan)) {
+      if (!['free', 'beta_premium', 'dev_unlimited'].includes(plan)) {
         return new Response(
-          JSON.stringify({ error: 'Plan must be "free" or "premium"' }),
+          JSON.stringify({ error: 'Plan must be "free", "beta_premium", or "dev_unlimited"' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }

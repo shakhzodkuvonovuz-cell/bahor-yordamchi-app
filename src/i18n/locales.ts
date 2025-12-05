@@ -385,6 +385,18 @@ export const translations: Record<Lang, Record<string, string>> = {
     'trial.hours': 'soat',
     'trial.canStillChat': 'Siz hali ham {count} ta oddiy xabar yozishingiz mumkin.',
     'trial.upgradeSoon': 'Premium (tez kunda)',
+    
+    // Plan types
+    'plan.devUnlimited': 'Dev Unlimited',
+    'plan.betaPremium': 'Beta Premium',
+    'plan.free': 'Bepul reja',
+    'plan.noLimits': 'Cheksiz foydalanish',
+    'plan.upgradeForMore': 'Premiumga o\'ting — ko\'proq imkoniyatlar siz uchun!',
+    
+    // Beta banner
+    'beta.bannerTitle': 'Beta Premium faollashtirildi!',
+    'beta.bannerDesc': 'Sizda 14 kun davomida kuniga 10 ta xabar va barcha premium imkoniyatlar mavjud. {days} kun qoldi.',
+    
     'common.ok': 'OK',
   },
 
@@ -772,6 +784,18 @@ export const translations: Record<Lang, Record<string, string>> = {
     'trial.hours': 'hours',
     'trial.canStillChat': 'You can still send {count} regular messages.',
     'trial.upgradeSoon': 'Premium (coming soon)',
+    
+    // Plan types
+    'plan.devUnlimited': 'Dev Unlimited',
+    'plan.betaPremium': 'Beta Premium',
+    'plan.free': 'Free plan',
+    'plan.noLimits': 'Unlimited access',
+    'plan.upgradeForMore': 'Upgrade to Premium — unlock all features!',
+    
+    // Beta banner
+    'beta.bannerTitle': 'Beta Premium activated!',
+    'beta.bannerDesc': 'You have 10 messages per day and all premium features for 14 days. {days} days remaining.',
+    
     'common.ok': 'OK',
   },
 
@@ -1156,6 +1180,18 @@ export const translations: Record<Lang, Record<string, string>> = {
     'trial.hours': 'часов',
     'trial.canStillChat': 'Вы можете отправить ещё {count} обычных сообщений.',
     'trial.upgradeSoon': 'Premium (скоро)',
+    
+    // Plan types
+    'plan.devUnlimited': 'Dev Unlimited',
+    'plan.betaPremium': 'Beta Premium',
+    'plan.free': 'Бесплатный план',
+    'plan.noLimits': 'Безлимитный доступ',
+    'plan.upgradeForMore': 'Перейдите на Premium — откройте все возможности!',
+    
+    // Beta banner
+    'beta.bannerTitle': 'Beta Premium активирован!',
+    'beta.bannerDesc': 'У вас 10 сообщений в день и все премиум-функции на 14 дней. Осталось {days} дней.',
+    
     'common.ok': 'OK',
   },
 
@@ -1540,6 +1576,18 @@ export const translations: Record<Lang, Record<string, string>> = {
     'trial.hours': 'saat',
     'trial.canStillChat': 'Hâlâ {count} normal mesaj gönderebilirsiniz.',
     'trial.upgradeSoon': 'Premium (yakında)',
+    
+    // Plan types
+    'plan.devUnlimited': 'Dev Unlimited',
+    'plan.betaPremium': 'Beta Premium',
+    'plan.free': 'Ücretsiz plan',
+    'plan.noLimits': 'Sınırsız erişim',
+    'plan.upgradeForMore': 'Premium\'a geçin — tüm özellikleri açın!',
+    
+    // Beta banner
+    'beta.bannerTitle': 'Beta Premium etkinleştirildi!',
+    'beta.bannerDesc': '14 gün boyunca günde 10 mesaj ve tüm premium özelliklere sahipsiniz. {days} gün kaldı.',
+    
     'common.ok': 'OK',
   },
 };
