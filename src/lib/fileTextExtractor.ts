@@ -21,7 +21,7 @@ const TEXT_EXTENSIONS = [
   '.css', '.scss', '.less', '.sql', '.sh', '.bash', '.zsh',
 ];
 
-export type FileReadStatus = 'ready' | 'unsupported' | 'error';
+export type FileReadStatus = 'ready' | 'unsupported' | 'error' | 'processing';
 
 export interface TextExtractionResult {
   text: string | null;
@@ -62,7 +62,7 @@ export function isImageFile(file: File): boolean {
 }
 
 /**
- * Check if file is a PDF (handled separately)
+ * Check if file is a PDF
  */
 export function isPdfFile(file: File): boolean {
   return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
@@ -81,6 +81,63 @@ export function isWordFile(file: File): boolean {
 }
 
 /**
+ * Extract text from PDF using pdf.js
+ */
+async function extractTextFromPdf(file: File): Promise<TextExtractionResult> {
+  try {
+    const pdfjsLib = await import('pdfjs-dist');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+    
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    
+    const maxPages = Math.min(pdf.numPages, 10); // Limit to first 10 pages
+    const extractedTexts: string[] = [];
+    
+    for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items
+        .map((item: any) => item.str)
+        .join(' ')
+        .trim();
+      
+      if (pageText) {
+        extractedTexts.push(`--- Page ${pageNum} ---\n${pageText}`);
+      }
+    }
+    
+    if (extractedTexts.length === 0) {
+      // PDF might be image-based (scanned), not supported for text extraction in beta
+      return { 
+        text: null, 
+        status: 'unsupported', 
+        truncated: false 
+      };
+    }
+    
+    let fullText = extractedTexts.join('\n\n');
+    const truncated = fullText.length > MAX_TEXT_LENGTH;
+    if (truncated) {
+      fullText = fullText.slice(0, MAX_TEXT_LENGTH) + '\n\n[... truncated ...]';
+    }
+    
+    if (pdf.numPages > maxPages) {
+      fullText += `\n\n[Note: Only first ${maxPages} of ${pdf.numPages} pages extracted]`;
+    }
+    
+    return {
+      text: fullText,
+      status: 'ready',
+      truncated,
+    };
+  } catch (error) {
+    console.error('PDF extraction error:', error);
+    return { text: null, status: 'error', truncated: false };
+  }
+}
+
+/**
  * Extract text content from a file
  */
 export async function extractTextFromFile(file: File): Promise<TextExtractionResult> {
@@ -89,9 +146,9 @@ export async function extractTextFromFile(file: File): Promise<TextExtractionRes
     return { text: null, status: 'ready', truncated: false };
   }
   
-  // PDFs are handled by documentService (vision/OCR)
+  // PDFs - extract text directly
   if (isPdfFile(file)) {
-    return { text: null, status: 'ready', truncated: false };
+    return extractTextFromPdf(file);
   }
   
   // Word docs not supported in beta
@@ -147,6 +204,12 @@ export function getFileReadStatusLabel(
       en: "Could not read",
       ru: "Не удалось прочитать",
       tr: "Okunamadı",
+    },
+    processing: {
+      uz: "O'qilmoqda...",
+      en: "Reading...",
+      ru: "Чтение...",
+      tr: "Okunuyor...",
     },
   };
   
