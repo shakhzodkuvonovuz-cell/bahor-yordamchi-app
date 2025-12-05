@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import bahorLogo from "@/assets/bahor-logo.png";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 export default function AuthPhone() {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get('next') || '/modes';
   
   const [phone, setPhone] = useState("");
   const [otpCode, setOtpCode] = useState("");
@@ -19,13 +19,6 @@ export default function AuthPhone() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
-
-  // Redirect if already logged in
-  useEffect(() => {
-    if (!authLoading && user) {
-      navigate("/modes");
-    }
-  }, [user, authLoading, navigate]);
 
   // Cooldown timer
   useEffect(() => {
@@ -101,7 +94,7 @@ export default function AuthPhone() {
       }
     } else {
       toast.success("Muvaffaqiyatli kirdingiz!");
-      navigate("/modes");
+      navigate(redirectTo);
     }
     
     setLoading(false);
@@ -111,14 +104,6 @@ export default function AuthPhone() {
     if (cooldown > 0) return;
     await handleSendOtp();
   };
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 bg-gradient-to-b from-background to-muted/30">

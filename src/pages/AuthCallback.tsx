@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import bahorLogo from "@/assets/bahor-logo.png";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,8 @@ import { Loader2, AlertCircle } from "lucide-react";
 
 export default function AuthCallback() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get('next') || '/modes';
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -16,7 +18,7 @@ export default function AuthCallback() {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session) {
-          navigate("/modes", { replace: true });
+          navigate(redirectTo, { replace: true });
           return;
         }
 
@@ -37,7 +39,7 @@ export default function AuthCallback() {
           if (exchangeError) {
             setError("Sessiya yaratishda xatolik yuz berdi. Qayta urinib ko'ring.");
           } else {
-            navigate("/modes", { replace: true });
+            navigate(redirectTo, { replace: true });
           }
         } else {
           // No code and no error, try to get session from hash fragment
@@ -46,7 +48,7 @@ export default function AuthCallback() {
           if (sessionError) {
             setError("Xatolik yuz berdi. Qayta urinib ko'ring.");
           } else if (data.session) {
-            navigate("/modes", { replace: true });
+            navigate(redirectTo, { replace: true });
           } else {
             setError("Sessiya topilmadi. Qayta kiring.");
           }
@@ -57,7 +59,7 @@ export default function AuthCallback() {
     };
 
     handleCallback();
-  }, [navigate]);
+  }, [navigate, redirectTo]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-b from-background via-background to-primary/5">
