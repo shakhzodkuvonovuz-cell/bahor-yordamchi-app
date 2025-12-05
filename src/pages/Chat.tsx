@@ -1287,6 +1287,7 @@ export default function Chat() {
           }
           
           refreshProfile();
+          refreshUsage(); // Update usage badge after successful message
           
           // Clear failed message on success
           setFailedMessageContent(null);
