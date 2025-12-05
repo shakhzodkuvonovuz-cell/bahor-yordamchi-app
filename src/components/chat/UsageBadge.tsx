@@ -12,8 +12,8 @@ export default function UsageBadge() {
     );
   }
   
-  // Dev bypass users or unlimited plans show infinity
-  if (isDevBypass || usage.limit === -1) {
+  // Only dev bypass users show unlimited infinity
+  if (isDevBypass) {
     return (
       <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
         <Infinity className="w-3.5 h-3.5" />
