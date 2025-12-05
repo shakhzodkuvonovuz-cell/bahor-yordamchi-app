@@ -1,5 +1,6 @@
 import { Progress } from "@/components/ui/progress";
 import { Crown } from "lucide-react";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 interface UsageProgressBarProps {
   used: number;
@@ -8,6 +9,7 @@ interface UsageProgressBarProps {
 }
 
 export default function UsageProgressBar({ used, limit, plan }: UsageProgressBarProps) {
+  const { t } = useTranslation();
   const percentage = Math.min((used / limit) * 100, 100);
   const remaining = Math.max(limit - used, 0);
   const isNearLimit = percentage >= 80;
@@ -15,12 +17,12 @@ export default function UsageProgressBar({ used, limit, plan }: UsageProgressBar
 
   const getPlanLabel = () => {
     switch (plan) {
-      case 'free': return 'Bepul';
+      case 'free': return t('settings.free');
       case 'premium':
-      case 'monthly': return 'Premium';
+      case 'monthly': return t('settings.premium');
       case 'ultra':
-      case 'yearly': return 'Ultra';
-      default: return 'Bepul';
+      case 'yearly': return t('settings.ultra');
+      default: return t('settings.free');
     }
   };
 
@@ -28,7 +30,7 @@ export default function UsageProgressBar({ used, limit, plan }: UsageProgressBar
     <div className="space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-foreground">Bugungi foydalanish</span>
+        <span className="text-sm font-medium text-foreground">{t('settings.usageToday')}</span>
         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
           plan === 'free' 
             ? 'bg-secondary text-secondary-foreground'
@@ -47,10 +49,10 @@ export default function UsageProgressBar({ used, limit, plan }: UsageProgressBar
         />
         <div className="flex items-center justify-between text-xs">
           <span className={`font-medium ${isAtLimit ? 'text-destructive' : isNearLimit ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>
-            {used} / {limit} so'rov
+            {used} / {limit} {t('usage.requests')}
           </span>
           <span className="text-muted-foreground">
-            {remaining > 0 ? `${remaining} ta qoldi` : 'Limit tugadi'}
+            {remaining > 0 ? t('usage.remaining', { count: remaining }) : t('usage.limitReached')}
           </span>
         </div>
       </div>
@@ -58,12 +60,12 @@ export default function UsageProgressBar({ used, limit, plan }: UsageProgressBar
       {/* Warning message */}
       {isAtLimit && (
         <p className="text-xs text-destructive bg-destructive/10 rounded-lg px-3 py-2">
-          Bugungi limitingiz tugadi. Ertaga qaytadan urinib ko'ring yoki Premiumga o'ting.
+          {t('usage.limitReachedMessage')}
         </p>
       )}
       {isNearLimit && !isAtLimit && (
         <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2">
-          Limitga yaqinlashyapsiz. Cheksiz so'rovlar uchun Premiumga o'ting.
+          {t('usage.nearLimit')}
         </p>
       )}
     </div>

@@ -1497,7 +1497,7 @@ export default function Chat() {
                 {modeTranslation?.title || modeInfo.title}
               </h1>
               <p className="text-[10px] sm:text-xs text-muted-foreground">
-                {isPremium ? 'Cheksiz' : `${usedToday}/${dailyLimit}`} {translate('usage.requests')}
+                {isPremium ? translate('settings.unlimited') : `${usedToday}/${dailyLimit}`} {translate('usage.requests')}
               </p>
             </div>
 

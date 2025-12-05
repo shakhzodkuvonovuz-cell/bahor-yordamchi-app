@@ -7,6 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 interface ChatHeaderProps {
   title: string;
@@ -28,6 +29,7 @@ export default function ChatHeader({
   showMenu = true,
 }: ChatHeaderProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <header className="sticky top-0 z-20 bg-card/95 backdrop-blur-lg border-b border-border/40 shadow-sm">
@@ -39,7 +41,7 @@ export default function ChatHeader({
             size="icon"
             onClick={() => navigate("/")}
             className="shrink-0 h-10 w-10 rounded-xl hover:bg-secondary/80"
-            aria-label="Back"
+            aria-label={t('common.back')}
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
@@ -67,7 +69,7 @@ export default function ChatHeader({
                 size="icon"
                 onClick={onMenuClick}
                 className="h-10 w-10 rounded-xl hover:bg-secondary/80"
-                aria-label="Chat history"
+                aria-label={t('chat.history')}
               >
                 <Menu className="w-5 h-5" />
               </Button>
@@ -80,7 +82,7 @@ export default function ChatHeader({
                   variant="ghost"
                   size="icon"
                   className="h-10 w-10 rounded-xl hover:bg-secondary/80"
-                  aria-label="More options"
+                  aria-label={t('chat.moreOptions')}
                 >
                   <MoreVertical className="w-5 h-5" />
                 </Button>
@@ -89,13 +91,13 @@ export default function ChatHeader({
                 {onClearChat && (
                   <DropdownMenuItem onClick={onClearChat} className="text-destructive focus:text-destructive">
                     <Trash2 className="w-4 h-4 mr-2" />
-                    <span>Suhbatni tozalash</span>
+                    <span>{t('chat.clear')}</span>
                   </DropdownMenuItem>
                 )}
                 {onOpenSettings && (
                   <DropdownMenuItem onClick={onOpenSettings}>
                     <Settings className="w-4 h-4 mr-2" />
-                    <span>Sozlamalar</span>
+                    <span>{t('settings.title')}</span>
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
