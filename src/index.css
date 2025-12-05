@@ -79,14 +79,14 @@
   }
 
   .dark {
-    /* Dark mode - Premium deep charcoal with teal undertones */
-    --background: 200 25% 7%;
+    /* Dark mode - Ultra premium deep black with teal undertones */
+    --background: 220 30% 4%;
     --foreground: 200 10% 95%;
 
-    --card: 200 20% 11%;
+    --card: 210 25% 8%;
     --card-foreground: 200 10% 95%;
 
-    --popover: 200 20% 11%;
+    --popover: 210 25% 8%;
     --popover-foreground: 200 10% 95%;
 
     /* Bahor AI Turquoise - Glowing in dark */
@@ -95,47 +95,53 @@
     --primary-light: 175 55% 55%;
     --primary-glow: 175 50% 35%;
 
-    --secondary: 200 18% 15%;
+    --secondary: 210 20% 12%;
     --secondary-foreground: 200 10% 90%;
 
-    --muted: 200 18% 18%;
+    --muted: 210 18% 15%;
     --muted-foreground: 200 10% 55%;
 
-    --accent: 200 18% 18%;
+    --accent: 210 18% 14%;
     --accent-foreground: 175 55% 55%;
 
     --destructive: 0 65% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 200 18% 18%;
-    --input: 200 18% 15%;
+    --border: 210 15% 15%;
+    --input: 210 18% 12%;
     --ring: 175 60% 48%;
 
-    /* Chat bubbles - Dark */
+    /* Chat bubbles - Premium dark */
     --user-message: 175 55% 42%;
     --user-message-foreground: 0 0% 100%;
-    --ai-message: 200 18% 14%;
+    --ai-message: 210 20% 10%;
     --ai-message-foreground: 200 10% 92%;
 
+    /* Premium surface layers */
+    --surface-1: 210 25% 6%;
+    --surface-2: 210 22% 9%;
+    --surface-3: 210 20% 12%;
+
     /* Premium gradients - Dark */
-    --gradient-hero: linear-gradient(180deg, hsl(200 25% 7%), hsl(200 22% 9%));
-    --gradient-card: linear-gradient(135deg, hsl(200 20% 11%), hsl(200 18% 13%));
+    --gradient-hero: linear-gradient(180deg, hsl(220 30% 4%), hsl(210 25% 6%));
+    --gradient-card: linear-gradient(135deg, hsl(210 25% 8%), hsl(210 20% 10%));
     --gradient-accent: linear-gradient(135deg, hsl(175 55% 42%), hsl(175 60% 48%));
 
-    /* Premium shadows - Dark */
-    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.2);
-    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.3), 0 2px 4px -2px hsl(0 0% 0% / 0.2);
-    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.4), 0 4px 6px -4px hsl(0 0% 0% / 0.3);
-    --shadow-glow: 0 0 30px hsl(175 60% 48% / 0.2);
+    /* Premium shadows - Dark with depth */
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.3);
+    --shadow-md: 0 4px 12px -2px hsl(0 0% 0% / 0.5), 0 2px 6px -2px hsl(0 0% 0% / 0.3);
+    --shadow-lg: 0 10px 30px -5px hsl(0 0% 0% / 0.6), 0 4px 12px -4px hsl(0 0% 0% / 0.4);
+    --shadow-glow: 0 0 40px hsl(175 60% 48% / 0.15);
+    --shadow-premium: 0 10px 40px -10px hsl(0 0% 0% / 0.5);
 
     /* Sidebar - Dark */
-    --sidebar-background: 200 20% 9%;
+    --sidebar-background: 210 22% 6%;
     --sidebar-foreground: 200 10% 92%;
     --sidebar-primary: 175 60% 48%;
     --sidebar-primary-foreground: 200 25% 7%;
-    --sidebar-accent: 200 18% 15%;
+    --sidebar-accent: 210 18% 12%;
     --sidebar-accent-foreground: 200 10% 92%;
-    --sidebar-border: 200 18% 15%;
+    --sidebar-border: 210 15% 13%;
     --sidebar-ring: 175 60% 48%;
   }
 }
@@ -175,6 +181,30 @@
     @apply backdrop-blur-2xl border border-border/30;
   }
 
+  /* Premium chat container */
+  .chat-container-premium {
+    @apply relative min-h-screen;
+    background: linear-gradient(180deg, hsl(220 30% 4%) 0%, hsl(210 28% 5%) 50%, hsl(215 32% 3%) 100%);
+  }
+
+  /* Glow blob effects */
+  .glow-blob {
+    @apply absolute rounded-full pointer-events-none;
+    filter: blur(80px);
+  }
+
+  .glow-blob-teal {
+    background: radial-gradient(circle, hsl(175 60% 40% / 0.12) 0%, transparent 70%);
+  }
+
+  .glow-blob-blue {
+    background: radial-gradient(circle, hsl(220 60% 35% / 0.08) 0%, transparent 70%);
+  }
+
+  .glow-blob-purple {
+    background: radial-gradient(circle, hsl(260 50% 35% / 0.06) 0%, transparent 70%);
+  }
+
   .glow-primary {
     box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
   }
@@ -203,6 +233,34 @@
 
   .hover-scale {
     @apply transition-transform duration-300 hover:scale-[1.02];
+  }
+
+  /* Premium message bubbles */
+  .bubble-user {
+    background: linear-gradient(135deg, hsl(175 50% 38% / 0.95) 0%, hsl(175 55% 42%) 100%);
+    @apply border border-white/10 shadow-[0_8px_24px_-8px_hsl(0_0%_0%/0.4)];
+  }
+
+  .bubble-assistant {
+    background: linear-gradient(180deg, hsl(var(--card)) 0%, hsl(210 22% 9%) 100%);
+    @apply border border-white/[0.08] shadow-[0_8px_24px_-8px_hsl(0_0%_0%/0.35)];
+  }
+
+  /* Premium composer */
+  .composer-premium {
+    background: linear-gradient(180deg, hsl(210 22% 9% / 0.95) 0%, hsl(210 25% 7% / 0.98) 100%);
+    @apply backdrop-blur-2xl border border-white/[0.08] shadow-[0_-8px_32px_-8px_hsl(0_0%_0%/0.4)];
+  }
+
+  /* Noise texture overlay */
+  .noise-texture::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    opacity: 0.5;
+    z-index: 0;
   }
 }
 
