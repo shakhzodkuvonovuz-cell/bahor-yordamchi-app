@@ -11,3 +11,18 @@ verify_jwt = false
 
 [functions.admin-entitlements]
 verify_jwt = false
+
+[functions.doc-run]
+verify_jwt = false
+
+[functions.file-signed-url]
+verify_jwt = false
+
+[functions.profile]
+verify_jwt = false
+
+[functions.profile-avatar]
+verify_jwt = false
+
+[functions.speech-to-text]
+verify_jwt = false

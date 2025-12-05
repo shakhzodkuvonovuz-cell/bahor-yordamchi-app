@@ -19,6 +19,7 @@ interface ChatMessageProps {
   onContinue?: (messageId: string) => void;
   onVariant?: (messageId: string, variant: MessageVariant) => void;
   onFormatRequest?: (prompt: string) => void;
+  onExportPdf?: (messageId: string, content: string) => void;
   showActions?: boolean;
   showActionBar?: boolean;
   isStreaming?: boolean;
@@ -36,6 +37,7 @@ export default function ChatMessage({
   onContinue,
   onVariant,
   onFormatRequest,
+  onExportPdf,
   showActions = true,
   showActionBar = true,
   isStreaming = false,
@@ -117,6 +119,10 @@ export default function ChatMessage({
   const handleFormatRequest = (prompt: string) => {
     track("format_button_clicked", { format: prompt.split(" ")[2] });
     onFormatRequest?.(prompt);
+  };
+
+  const handleExportPdf = () => {
+    onExportPdf?.(message.id, message.content);
   };
 
   // Format and render content with Bahor Cards
@@ -350,6 +356,7 @@ export default function ChatMessage({
           onRegenerate={handleRegenerate}
           onVariant={handleVariant}
           onEdit={isUser ? handleEdit : undefined}
+          onExportPdf={!isUser && onExportPdf ? handleExportPdf : undefined}
         />
       )}
     </>

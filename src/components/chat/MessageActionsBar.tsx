@@ -15,6 +15,7 @@ import {
   X,
   Edit3,
   Flag,
+  FileDown,
 } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { Button } from "@/components/ui/button";
@@ -254,6 +255,7 @@ export function MessageActionsSheet({
   onVariant,
   onEdit,
   onReport,
+  onExportPdf,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -268,6 +270,7 @@ export function MessageActionsSheet({
   onVariant: (variant: MessageVariant) => void;
   onEdit?: () => void;
   onReport?: () => void;
+  onExportPdf?: () => void;
 }) {
   const { language } = useTranslation();
   const [copied, setCopied] = useState(false);
@@ -349,6 +352,7 @@ export function MessageActionsSheet({
     disliked: language === "uz" ? "Yoqmadi ✓" : language === "ru" ? "Не понравилось ✓" : language === "tr" ? "Beğenilmedi ✓" : "Disliked ✓",
     error: language === "uz" ? "Xatolik yuz berdi" : language === "ru" ? "Произошла ошибка" : language === "tr" ? "Hata oluştu" : "Error occurred",
     report: language === "uz" ? "Noto'g'ri javobni bildirish" : language === "ru" ? "Сообщить о неверном ответе" : language === "tr" ? "Yanlış cevabı bildir" : "Report incorrect answer",
+    exportPdf: language === "uz" ? "PDFga chiqarish" : language === "ru" ? "Экспорт в PDF" : language === "tr" ? "PDF'e aktar" : "Export to PDF",
   };
 
   const closeWithDelay = useCallback(() => {
@@ -550,6 +554,22 @@ export function MessageActionsSheet({
                   <RefreshCw className="w-5 h-5 text-muted-foreground" />
                   <span className="text-[15px] font-medium">{labels.regenerate}</span>
                 </button>
+
+                {/* Export to PDF */}
+                {onExportPdf && (
+                  <button
+                    onClick={() => {
+                      haptic("light");
+                      onExportPdf();
+                      onClose();
+                    }}
+                    disabled={isDisabled}
+                    className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-secondary/60 active:bg-secondary transition-colors"
+                  >
+                    <FileDown className="w-5 h-5 text-muted-foreground" />
+                    <span className="text-[15px] font-medium">{labels.exportPdf}</span>
+                  </button>
+                )}
 
                 {/* Divider */}
                 <div className="h-px bg-border/40 my-2" />
