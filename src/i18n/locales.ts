@@ -322,18 +322,31 @@ export const translations: Record<Lang, Record<string, string>> = {
     'beta.description': "Xatolar bo'lishi mumkin. Feedback juda kerak —",
     'beta.report': 'xabar bering',
     
-    // Support Page
-    'support.title': 'Yordam markazi',
-    'support.contact': 'Bog\'lanish',
-    'support.email': 'Elektron pochta',
-    'support.reportBug': 'Xatolik haqida xabar berish',
-    'support.reportBugDesc': 'Ilovadagi muammolarni bizga xabar qiling',
-    
     // Terms Page
     'terms.title': 'Foydalanish shartlari',
+    'terms.lastUpdated': 'Oxirgi yangilanish: 2025-yil, yanvar',
     
     // Privacy Page
     'privacy.title': 'Maxfiylik siyosati',
+    'privacy.lastUpdated': 'Oxirgi yangilanish: 2025-yil, yanvar',
+    
+    // Support Page
+    'support.title': 'Yordam',
+    'support.contact': "Bog'lanish",
+    'support.contactDesc': 'Savollaringiz uchun',
+    'support.email': 'Elektron pochta',
+    'support.reportBug': 'Xatolik haqida xabar berish',
+    'support.reportBugDesc': 'Muammolarni hal qilishga yordam bering',
+    'support.sendBug': 'Xatolik yuborish',
+    'support.howToReport': 'Qanday xatolik yuborish kerak?',
+    'support.step1': 'Sozlamalar → "Xatolik haqida xabar berish" tugmasini bosing',
+    'support.step2': 'Xatolik turini tanlang (bug, taklif yoki boshqa)',
+    'support.step3': 'Muammoni batafsil tushuntiring. Iloji bo\'lsa, skrinshot qo\'shing.',
+    'support.step4': 'Yuborish tugmasini bosing. Biz tez orada ko\'rib chiqamiz!',
+    'support.faqComingSoon': 'FAQ va qo\'llanmalar tez orada qo\'shiladi',
+    
+    // Common
+    'common.back': 'Orqaga',
   },
 
   en: {
@@ -657,18 +670,31 @@ export const translations: Record<Lang, Record<string, string>> = {
     'beta.description': 'Errors may occur. Your feedback is very important —',
     'beta.report': 'report here',
     
-    // Support Page
-    'support.title': 'Help Center',
-    'support.contact': 'Contact',
-    'support.email': 'Email',
-    'support.reportBug': 'Report a bug',
-    'support.reportBugDesc': 'Let us know about issues in the app',
-    
     // Terms Page
     'terms.title': 'Terms of Use',
+    'terms.lastUpdated': 'Last updated: January 2025',
     
     // Privacy Page
     'privacy.title': 'Privacy Policy',
+    'privacy.lastUpdated': 'Last updated: January 2025',
+    
+    // Support Page
+    'support.title': 'Help',
+    'support.contact': 'Contact',
+    'support.contactDesc': 'For your questions',
+    'support.email': 'Email',
+    'support.reportBug': 'Report a bug',
+    'support.reportBugDesc': 'Help us fix issues',
+    'support.sendBug': 'Send bug report',
+    'support.howToReport': 'How to report a bug?',
+    'support.step1': 'Go to Settings → "Report a bug"',
+    'support.step2': 'Select the type (bug, suggestion, or other)',
+    'support.step3': 'Describe the issue in detail. Add a screenshot if possible.',
+    'support.step4': 'Press Submit. We\'ll review it soon!',
+    'support.faqComingSoon': 'FAQ and guides coming soon',
+    
+    // Common
+    'common.back': 'Back',
   },
 
   ru: {
@@ -992,18 +1018,31 @@ export const translations: Record<Lang, Record<string, string>> = {
     'beta.description': 'Возможны ошибки. Ваш отзыв очень важен —',
     'beta.report': 'сообщите здесь',
     
-    // Support Page
-    'support.title': 'Центр помощи',
-    'support.contact': 'Контакты',
-    'support.email': 'Эл. почта',
-    'support.reportBug': 'Сообщить об ошибке',
-    'support.reportBugDesc': 'Сообщите нам о проблемах в приложении',
-    
     // Terms Page
     'terms.title': 'Условия использования',
+    'terms.lastUpdated': 'Последнее обновление: январь 2025',
     
     // Privacy Page
     'privacy.title': 'Политика конфиденциальности',
+    'privacy.lastUpdated': 'Последнее обновление: январь 2025',
+    
+    // Support Page
+    'support.title': 'Помощь',
+    'support.contact': 'Контакты',
+    'support.contactDesc': 'Для ваших вопросов',
+    'support.email': 'Эл. почта',
+    'support.reportBug': 'Сообщить об ошибке',
+    'support.reportBugDesc': 'Помогите нам исправить проблемы',
+    'support.sendBug': 'Отправить отчёт об ошибке',
+    'support.howToReport': 'Как сообщить об ошибке?',
+    'support.step1': 'Перейдите в Настройки → "Сообщить об ошибке"',
+    'support.step2': 'Выберите тип (ошибка, предложение или другое)',
+    'support.step3': 'Подробно опишите проблему. Если возможно, добавьте скриншот.',
+    'support.step4': 'Нажмите Отправить. Мы скоро рассмотрим!',
+    'support.faqComingSoon': 'FAQ и руководства скоро появятся',
+    
+    // Common
+    'common.back': 'Назад',
   },
 
   tr: {
@@ -1327,18 +1366,31 @@ export const translations: Record<Lang, Record<string, string>> = {
     'beta.description': 'Hatalar olabilir. Geri bildiriminiz çok önemli —',
     'beta.report': 'buradan bildirin',
     
-    // Support Page
-    'support.title': 'Yardım Merkezi',
-    'support.contact': 'İletişim',
-    'support.email': 'E-posta',
-    'support.reportBug': 'Hata bildir',
-    'support.reportBugDesc': 'Uygulamadaki sorunları bize bildirin',
-    
     // Terms Page
     'terms.title': 'Kullanım Şartları',
+    'terms.lastUpdated': 'Son güncelleme: Ocak 2025',
     
     // Privacy Page
     'privacy.title': 'Gizlilik Politikası',
+    'privacy.lastUpdated': 'Son güncelleme: Ocak 2025',
+    
+    // Support Page
+    'support.title': 'Yardım',
+    'support.contact': 'İletişim',
+    'support.contactDesc': 'Sorularınız için',
+    'support.email': 'E-posta',
+    'support.reportBug': 'Hata bildir',
+    'support.reportBugDesc': 'Sorunları düzeltmemize yardım edin',
+    'support.sendBug': 'Hata raporu gönder',
+    'support.howToReport': 'Hata nasıl bildirilir?',
+    'support.step1': 'Ayarlar → "Hata bildir" e gidin',
+    'support.step2': 'Türü seçin (hata, öneri veya diğer)',
+    'support.step3': 'Sorunu ayrıntılı açıklayın. Mümkünse ekran görüntüsü ekleyin.',
+    'support.step4': 'Gönder\'e basın. En kısa sürede inceleyeceğiz!',
+    'support.faqComingSoon': 'SSS ve kılavuzlar yakında',
+    
+    // Common
+    'common.back': 'Geri',
   },
 };
 

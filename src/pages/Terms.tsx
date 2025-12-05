@@ -5,7 +5,7 @@ import { useTranslation } from "@/i18n/LanguageProvider";
 
 export default function Terms() {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   return (
     <div className="min-h-screen bg-background">
@@ -27,8 +27,17 @@ export default function Terms() {
       <ScrollArea className="h-[calc(100vh-56px)]">
         <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
           <div className="prose prose-sm dark:prose-invert max-w-none">
+            {/* Translation notice for non-Uzbek users */}
+            {language !== 'uz' && (
+              <div className="bg-muted/50 border border-border/40 rounded-xl p-4 text-sm text-muted-foreground mb-4">
+                {language === 'en' && "These terms are provided in Uzbek. Translation is for convenience only."}
+                {language === 'ru' && "Эти условия предоставлены на узбекском языке. Перевод предоставлен для удобства."}
+                {language === 'tr' && "Bu şartlar Özbekçe olarak sunulmaktadır. Çeviri yalnızca kolaylık sağlamak içindir."}
+              </div>
+            )}
+
             <p className="text-muted-foreground text-sm">
-              Oxirgi yangilanish: 2025-yil, yanvar
+              {t('terms.lastUpdated')}
             </p>
 
             <h2 className="text-lg font-semibold text-foreground mt-6">1. Umumiy qoidalar</h2>
