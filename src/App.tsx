@@ -24,6 +24,7 @@ import Feedback from "./pages/Feedback";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Support from "./pages/Support";
+import DocumentTools from "./pages/DocumentTools";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -98,6 +99,14 @@ const App = () => (
                     element={
                       <ProtectedRoute>
                         <AdminEntitlements />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/tools/documents" 
+                    element={
+                      <ProtectedRoute>
+                        <DocumentTools />
                       </ProtectedRoute>
                     } 
                   />

@@ -77,7 +77,8 @@ async function iloveUpload(
   file: Uint8Array,
   filename: string
 ): Promise<string> {
-  const blob = new Blob([file]);
+  // Create blob from Uint8Array for Deno compatibility
+  const blob = new Blob([new Uint8Array(file)] as BlobPart[]);
   const formData = new FormData();
   formData.append("task", task);
   formData.append("file", blob, filename);

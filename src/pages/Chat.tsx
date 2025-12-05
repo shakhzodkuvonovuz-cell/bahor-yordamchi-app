@@ -13,6 +13,7 @@ import {
   FollowUpSuggestions,
   ChatEmptyState,
   EditingIndicator,
+  ExportToPdfModal,
 } from "@/components/chat";
 import { ChatListSkeleton, ChatMessagesSkeleton } from "@/components/chat/ChatListSkeleton";
 import { ChatMigrationModal, checkMigrationNeeded } from "@/components/ChatMigrationModal";
@@ -214,6 +215,11 @@ export default function Chat() {
   const [lastAssistantMessageId, setLastAssistantMessageId] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  
+  // PDF Export modal state
+  const [exportPdfModalOpen, setExportPdfModalOpen] = useState(false);
+  const [exportPdfContent, setExportPdfContent] = useState("");
+  const [exportPdfTitle, setExportPdfTitle] = useState("");
   
   // Network status
   const { isOnline } = useNetworkStatus();
@@ -538,7 +544,15 @@ export default function Chat() {
     }
   };
 
-  // Handle continue - generate continuation of assistant message
+  // Handle export to PDF
+  const handleExportPdf = (messageId: string, content: string) => {
+    const thread = threads.find(t => t.id === currentThreadId);
+    const defaultTitle = thread?.title || modeTranslation?.title || modeInfo.title;
+    setExportPdfContent(content);
+    setExportPdfTitle(defaultTitle);
+    setExportPdfModalOpen(true);
+  };
+
   const handleContinue = async (messageId: string) => {
     if (isLoading || typing || !user || !currentThreadId) return;
     
@@ -1654,6 +1668,7 @@ export default function Chat() {
                     onShare={handleShare}
                     onContinue={handleContinue}
                     onVariant={handleVariant}
+                    onExportPdf={handleExportPdf}
                     showActions={!isLoading && !typing}
                     showActionBar={!isLoading && !typing}
                     isStreaming={isLoading || typing}
@@ -1885,6 +1900,14 @@ export default function Chat() {
         onOpenChange={setTraceSheetOpen}
         trace={selectedTraceMessageId ? messages.find(m => m.id === selectedTraceMessageId)?.trace || activeTrace : null}
         language={language}
+      />
+
+      {/* Export to PDF Modal */}
+      <ExportToPdfModal
+        open={exportPdfModalOpen}
+        onOpenChange={setExportPdfModalOpen}
+        messageContent={exportPdfContent}
+        defaultTitle={exportPdfTitle}
       />
     </div>
   );

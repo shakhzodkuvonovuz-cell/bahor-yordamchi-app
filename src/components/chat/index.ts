@@ -24,3 +24,6 @@ export { ModesSkeleton, HomeSkeleton } from "./ModesSkeleton";
 
 // New features 11-15
 export { default as OutputFormatButtons } from "./OutputFormatButtons";
+
+// Document tools
+export { ExportToPdfModal } from "./ExportToPdfModal";
