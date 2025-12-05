@@ -251,7 +251,7 @@ serve(async (req) => {
   const requestStartTime = Date.now();
 
   try {
-    const { messages, mode, threadSummary, hasAnalysis, analysisType, reply_language, ui_language, attachments } = await req.json();
+    const { messages, mode, threadSummary, hasAnalysis, analysisType, reply_language, ui_language, attachments, userToneContext } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(
@@ -520,8 +520,21 @@ Note: The user attached file(s) that could not be read: ${names}. If they ask ab
       }
     }
 
+    // Build user tone preference directive
+    let toneDirective = "";
+    if (userToneContext) {
+      toneDirective = `
+═══════════════════════════════════════════════════════════════════
+USER TONE PREFERENCE (APPLY THIS STYLE)
+═══════════════════════════════════════════════════════════════════
+
+${userToneContext}
+`;
+    }
+
     const systemPrompt = `${BRAND_SYSTEM_PROMPT}
 ${languageDirective}
+${toneDirective}
 ${styleClamp}
 
 MODE: ${modeKey.toUpperCase()}
