@@ -1,9 +1,11 @@
 import { ArrowLeft, Mail, MessageSquare, Bug, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 export default function Support() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen bg-background">
@@ -13,10 +15,11 @@ export default function Support() {
           <button
             onClick={() => navigate(-1)}
             className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-secondary rounded-xl transition-colors"
+            aria-label={t('common.back')}
           >
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
-          <h1 className="text-lg font-semibold text-foreground">Yordam</h1>
+          <h1 className="text-lg font-semibold text-foreground">{t('support.title')}</h1>
         </div>
       </header>
 
@@ -29,8 +32,8 @@ export default function Support() {
               <Mail className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-foreground">Bog'lanish</h2>
-              <p className="text-sm text-muted-foreground">Savollaringiz uchun</p>
+              <h2 className="text-lg font-semibold text-foreground">{t('support.contact')}</h2>
+              <p className="text-sm text-muted-foreground">{t('support.contactDesc')}</p>
             </div>
           </div>
           
@@ -53,8 +56,8 @@ export default function Support() {
               <Bug className="w-6 h-6 text-destructive" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-foreground">Xatolik haqida xabar berish</h2>
-              <p className="text-sm text-muted-foreground">Muammolarni hal qilishga yordam bering</p>
+              <h2 className="text-lg font-semibold text-foreground">{t('support.reportBug')}</h2>
+              <p className="text-sm text-muted-foreground">{t('support.reportBugDesc')}</p>
             </div>
           </div>
           
@@ -63,13 +66,13 @@ export default function Support() {
             className="w-full min-h-[48px] text-base"
           >
             <MessageSquare className="w-5 h-5 mr-2" />
-            Xatolik yuborish
+            {t('support.sendBug')}
           </Button>
         </section>
 
         {/* How to Report */}
         <section className="bg-card border border-border/40 rounded-2xl p-6 shadow-premium-sm">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Qanday xatolik yuborish kerak?</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4">{t('support.howToReport')}</h2>
           
           <div className="space-y-4">
             <div className="flex gap-3">
@@ -77,7 +80,7 @@ export default function Support() {
                 1
               </div>
               <p className="text-foreground/80 text-sm">
-                Sozlamalar → "Xatolik haqida xabar berish" tugmasini bosing
+                {t('support.step1')}
               </p>
             </div>
             
@@ -86,7 +89,7 @@ export default function Support() {
                 2
               </div>
               <p className="text-foreground/80 text-sm">
-                Xatolik turini tanlang (bug, taklif yoki boshqa)
+                {t('support.step2')}
               </p>
             </div>
             
@@ -95,7 +98,7 @@ export default function Support() {
                 3
               </div>
               <p className="text-foreground/80 text-sm">
-                Muammoni batafsil tushuntiring. Iloji bo'lsa, skrinshot qo'shing.
+                {t('support.step3')}
               </p>
             </div>
             
@@ -104,7 +107,7 @@ export default function Support() {
                 4
               </div>
               <p className="text-foreground/80 text-sm">
-                "Yuborish" tugmasini bosing. Biz tez orada ko'rib chiqamiz!
+                {t('support.step4')}
               </p>
             </div>
           </div>
@@ -113,7 +116,7 @@ export default function Support() {
         {/* FAQ Placeholder */}
         <section className="bg-muted/30 border border-border/40 rounded-2xl p-6">
           <p className="text-center text-muted-foreground text-sm">
-            FAQ va qo'llanmalar tez orada qo'shiladi
+            {t('support.faqComingSoon')}
           </p>
         </section>
       </div>

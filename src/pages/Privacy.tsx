@@ -1,9 +1,14 @@
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 export default function Privacy() {
   const navigate = useNavigate();
+  const { t, language } = useTranslation();
+
+  // Privacy policy content is only provided in Uzbek - other languages show a notice
+  const isUzbek = language === 'uz';
 
   return (
     <div className="min-h-screen bg-background">
@@ -13,19 +18,29 @@ export default function Privacy() {
           <button
             onClick={() => navigate(-1)}
             className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-secondary rounded-xl transition-colors"
+            aria-label={t('common.back')}
           >
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
-          <h1 className="text-lg font-semibold text-foreground">Maxfiylik siyosati</h1>
+          <h1 className="text-lg font-semibold text-foreground">{t('privacy.title')}</h1>
         </div>
       </header>
 
       {/* Content */}
       <ScrollArea className="h-[calc(100vh-56px)]">
         <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+          {/* Translation notice for non-Uzbek users */}
+          {!isUzbek && (
+            <div className="bg-muted/50 border border-border/40 rounded-xl p-4 text-sm text-muted-foreground">
+              {language === 'en' && "This policy is provided in Uzbek. Translation is for convenience only."}
+              {language === 'ru' && "Эта политика предоставлена на узбекском языке. Перевод предоставлен для удобства."}
+              {language === 'tr' && "Bu politika Özbekçe olarak sunulmaktadır. Çeviri yalnızca kolaylık sağlamak içindir."}
+            </div>
+          )}
+
           <div className="prose prose-sm dark:prose-invert max-w-none">
             <p className="text-muted-foreground text-sm">
-              Oxirgi yangilanish: 2025-yil, yanvar
+              {t('privacy.lastUpdated')}
             </p>
 
             <h2 className="text-lg font-semibold text-foreground mt-6">1. Qanday ma'lumotlar yig'iladi</h2>
