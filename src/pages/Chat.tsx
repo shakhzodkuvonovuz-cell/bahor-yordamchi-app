@@ -1102,16 +1102,20 @@ export default function Chat() {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         
-        if (errorData.error === "DAILY_LIMIT_REACHED") {
+        // Handle limit errors (server sends "LIMIT_REACHED" with reason)
+        if (errorData.error === "DAILY_LIMIT_REACHED" || errorData.error === "LIMIT_REACHED") {
           setShowLimitCard(true);
           setTyping(false);
           setIsLoading(false);
           setMessages((prev) => prev.filter(m => m.id !== (savedUserMessageId || tempUserMessageId)));
+          
+          // Use localized message from server if available
+          const localizedMessage = errorData[`message_${language}`] || errorData.message;
           toast({
             title: language === "uz" ? "Limit tugadi" : "Limit reached",
-            description: language === "uz" 
+            description: localizedMessage || (language === "uz" 
               ? "Bugungi limit tugadi. Ertaga yana davom eting yoki Premiumga o'ting." 
-              : "Daily limit reached. Continue tomorrow or upgrade to Premium.",
+              : "Daily limit reached. Continue tomorrow or upgrade to Premium."),
             variant: "destructive",
           });
           refreshProfile();
