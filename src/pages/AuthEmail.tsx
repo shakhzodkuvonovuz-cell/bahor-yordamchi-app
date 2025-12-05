@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
 import bahorLogo from "@/assets/bahor-logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, ArrowLeft, Mail, AlertCircle, CheckCircle } from "lucide-react";
+import { Loader2, ArrowLeft, Mail, AlertCircle, CheckCircle, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function AuthEmail() {
@@ -15,9 +14,14 @@ export default function AuthEmail() {
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Password visibility
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   // Password reset state
   const [showResetPanel, setShowResetPanel] = useState(false);
@@ -59,8 +63,20 @@ export default function AuthEmail() {
     }
     
     if (password.length < 8) {
-      setError("Parol kamida 8 ta belgidan iborat bo'lsin.");
+      setError("Parol kamida 8 ta belgidan iborat bo'lishi kerak.");
       return;
+    }
+
+    // Signup-specific validation
+    if (isSignUp) {
+      if (!confirmPassword) {
+        setError("Parolni qayta kiriting.");
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError("Parollar mos kelmadi. Qayta tekshiring.");
+        return;
+      }
     }
 
     setLoading(true);
@@ -262,21 +278,72 @@ export default function AuthEmail() {
                   <Label htmlFor="password" className="text-[13px] font-medium">
                     Parol
                   </Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      setError(null);
-                    }}
-                    placeholder="Kamida 8 ta belgi"
-                    className="h-12 rounded-[14px] border-border/50 focus:border-primary focus:ring-2 focus:ring-primary/20 text-[15px]"
-                    required
-                    minLength={8}
-                    disabled={loading}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setError(null);
+                      }}
+                      placeholder="Kamida 8 ta belgi"
+                      className="h-12 rounded-[14px] border-border/50 focus:border-primary focus:ring-2 focus:ring-primary/20 text-[15px] pr-12"
+                      required
+                      minLength={8}
+                      disabled={loading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
                 </div>
+
+                {/* Confirm Password - Signup only */}
+                {isSignUp && (
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword" className="text-[13px] font-medium">
+                      Parolni qayta kiriting
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="confirmPassword"
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(e) => {
+                          setConfirmPassword(e.target.value);
+                          setError(null);
+                        }}
+                        placeholder="Parolni qayta kiriting"
+                        className="h-12 rounded-[14px] border-border/50 focus:border-primary focus:ring-2 focus:ring-primary/20 text-[15px] pr-12"
+                        required
+                        minLength={8}
+                        disabled={loading}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        tabIndex={-1}
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="w-5 h-5" />
+                        ) : (
+                          <Eye className="w-5 h-5" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {!isSignUp && (
                   <button
@@ -313,6 +380,7 @@ export default function AuthEmail() {
                   onClick={() => {
                     setIsSignUp(!isSignUp);
                     setError(null);
+                    setConfirmPassword("");
                   }}
                   className="text-[14px] text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
                 >
