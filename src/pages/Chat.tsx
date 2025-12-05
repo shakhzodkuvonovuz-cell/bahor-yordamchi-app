@@ -44,6 +44,7 @@ import { processAttachments } from "@/services/documentService";
 import { isVisionSupportedImage } from "@/services/visionService";
 import { detectReplyLanguage } from "@/lib/languageDetect";
 import { extractTextFromFile, isImageFile, isPdfFile, getFileReadStatusLabel } from "@/lib/fileTextExtractor";
+import { getPreferencesPromptContext } from "@/components/UserPreferencesSection";
 
 // Helper to format relative time
 function formatRelativeTime(dateString: string, lang: string): string {
@@ -642,6 +643,7 @@ export default function Chat() {
             variantType: variant,
             reply_language: language, // Use UI language for variants since instruction is system-generated
             ui_language: language,
+            userToneContext: getPreferencesPromptContext(),
           }),
         }
       );
@@ -1103,6 +1105,7 @@ export default function Chat() {
               threadSummary: threadSummary || undefined,
               reply_language: detectReplyLanguage(content.trim(), language as "uz" | "ru" | "en" | "tr").lang,
               ui_language: language,
+              userToneContext: getPreferencesPromptContext(),
             }),
             signal: controller.signal,
           }
