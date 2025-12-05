@@ -380,12 +380,12 @@ serve(async (req) => {
         
         console.log("[doc-run] HTML content length:", fullHtml.length);
         
-        // Upload HTML to public bucket for iLovePDF to access via URL
+        // Upload HTML to user-files bucket (allows any file type) and use signed URL
         const htmlBytes = new TextEncoder().encode(fullHtml);
-        const tempHtmlPath = `temp/${user.id}/${crypto.randomUUID()}.html`;
+        const tempHtmlPath = `${user.id}/temp-${crypto.randomUUID()}.html`;
         
         const { error: htmlUploadError } = await supabase.storage
-          .from("chat-attachments") // Public bucket
+          .from("user-files")
           .upload(tempHtmlPath, htmlBytes, {
             contentType: "text/html",
             upsert: true,
@@ -396,13 +396,18 @@ serve(async (req) => {
           throw new Error("Failed to upload HTML for processing");
         }
         
-        // Get public URL
-        const { data: publicUrlData } = supabase.storage
-          .from("chat-attachments")
-          .getPublicUrl(tempHtmlPath);
+        // Get signed URL for iLovePDF to access (5 minutes expiry)
+        const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+          .from("user-files")
+          .createSignedUrl(tempHtmlPath, 300);
         
-        const htmlUrl = publicUrlData.publicUrl;
-        console.log("[doc-run] HTML public URL:", htmlUrl);
+        if (signedUrlError || !signedUrlData?.signedUrl) {
+          console.error("[doc-run] Signed URL creation failed:", signedUrlError);
+          throw new Error("Failed to create signed URL for HTML");
+        }
+        
+        const htmlUrl = signedUrlData.signedUrl;
+        console.log("[doc-run] HTML signed URL created");
         
         // Use URL upload for htmlpdf
         const serverFilename = await iloveUploadFromUrl(iloveToken, server, task, htmlUrl);
@@ -420,7 +425,7 @@ serve(async (req) => {
         outputBytes = await iloveDownload(iloveToken, server, task);
         
         // Clean up temp HTML file
-        await supabase.storage.from("chat-attachments").remove([tempHtmlPath]);
+        await supabase.storage.from("user-files").remove([tempHtmlPath]);
         
 
       } else if (tool === "imagepdf") {
