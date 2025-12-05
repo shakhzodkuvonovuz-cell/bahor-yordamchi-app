@@ -146,14 +146,8 @@ export default function Settings() {
                 <div className="px-4 sm:px-6 py-4">
                   <div className="flex items-start gap-3 sm:gap-4">
                     {/* Profile Photo */}
-                    <div 
-                      className="relative cursor-pointer group shrink-0" 
-                      onClick={() => {
-                        const input = document.querySelector('input[type="file"]') as HTMLInputElement;
-                        input?.click();
-                      }}
-                    >
-                      <Avatar className="w-16 h-16 sm:w-20 sm:h-20 transition-opacity group-hover:opacity-80">
+                    <div className="relative shrink-0">
+                      <Avatar className="w-16 h-16 sm:w-20 sm:h-20">
                         <AvatarImage src={profile?.avatar_url || ""} />
                         <AvatarFallback className="bg-gradient-to-br from-primary via-primary/60 to-primary/30 text-primary-foreground text-lg sm:text-xl font-bold">
                           {getInitials()}
