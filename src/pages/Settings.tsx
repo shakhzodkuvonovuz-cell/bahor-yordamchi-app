@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, User, Globe, Moon, Sun, Shield, HelpCircle, FileText, Mail, LogOut, ChevronRight, CreditCard, Bell, Zap, Edit, Crown, Lock, RotateCcw, Loader2, Infinity } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
-import { useLanguage, Language } from "@/hooks/useLanguage";
-import { getTranslation } from "@/data/translations";
+import { useTranslation } from "@/i18n/LanguageProvider";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -25,10 +24,9 @@ import { supabase } from "@/integrations/supabase/client";
 export default function Settings() {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useTranslation();
   const { user, profile, profileLoading, signOut, refreshProfile } = useAuth();
   const { usage, loading: usageLoading, isPremium, isDevBypass, hasReachedLimit } = useDailyUsageServer();
-  const t = getTranslation(language);
   
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [subscriptionDrawerOpen, setSubscriptionDrawerOpen] = useState(false);
@@ -126,11 +124,11 @@ export default function Settings() {
           <button
             onClick={() => navigate(-1)}
             className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-secondary rounded-xl transition-colors shrink-0"
-            aria-label={t.settings.back}
+            aria-label={t('settings.back')}
           >
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
-          <h1 className="text-lg font-semibold text-foreground truncate">{t.settings.title}</h1>
+          <h1 className="text-lg font-semibold text-foreground truncate">{t('settings.title')}</h1>
         </div>
       </header>
 
@@ -376,7 +374,7 @@ export default function Settings() {
             className="w-full min-h-[44px] flex items-center justify-center gap-2 text-destructive hover:text-destructive/80 font-medium text-[15px] transition-colors"
           >
             <LogOut className="w-4 h-4" />
-            <span>{t.settings.logout}</span>
+            <span>{t('settings.logout')}</span>
           </button>
 
           {/* Section 2: Ilova (App) */}
@@ -390,7 +388,7 @@ export default function Settings() {
                 <CollapsibleTrigger className="w-full px-4 min-h-[56px] flex items-center justify-between hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-3">
                     <Globe className="w-5 h-5 text-muted-foreground shrink-0" />
-                    <span className="font-medium text-foreground text-[15px]">{t.settings.language}</span>
+                    <span className="font-medium text-foreground text-[15px]">{t('settings.language')}</span>
                   </div>
                   <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${openSection === "language" ? "rotate-90" : ""}`} />
                 </CollapsibleTrigger>
@@ -422,7 +420,7 @@ export default function Settings() {
                     ) : (
                       <Sun className="w-5 h-5 text-muted-foreground shrink-0" />
                     )}
-                    <span className="font-medium text-foreground text-[15px]">{t.settings.theme}</span>
+                    <span className="font-medium text-foreground text-[15px]">{t('settings.theme')}</span>
                   </div>
                   <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${openSection === "theme" ? "rotate-90" : ""}`} />
                 </CollapsibleTrigger>
@@ -460,7 +458,7 @@ export default function Settings() {
                   <button className="w-full px-4 min-h-[56px] flex items-center justify-between hover:bg-muted/50 transition-colors">
                     <div className="flex items-center gap-3">
                       <CreditCard className="w-5 h-5 text-muted-foreground shrink-0" />
-                      <span className="font-medium text-foreground text-[15px]">{t.settings.subscription}</span>
+                      <span className="font-medium text-foreground text-[15px]">{t('settings.subscription')}</span>
                     </div>
                     <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
                   </button>
@@ -480,7 +478,7 @@ export default function Settings() {
           {/* Section 3: Yordam va huquqiy (Support & Legal) */}
           <section className="bg-card border border-border/40 rounded-2xl overflow-hidden shadow-premium-sm w-full">
             <header className="px-4 py-3 border-b border-border/40">
-              <h2 className="text-[15px] font-semibold text-foreground">{t.settings.helpLegal}</h2>
+              <h2 className="text-[15px] font-semibold text-foreground">{t('settings.helpLegal')}</h2>
             </header>
             <div className="divide-y divide-border/40">
               {/* Yordam markazi */}
@@ -490,7 +488,7 @@ export default function Settings() {
               >
                 <div className="flex items-center gap-3">
                   <HelpCircle className="w-5 h-5 text-muted-foreground shrink-0" />
-                  <span className="font-medium text-foreground text-[15px]">{t.settings.helpCenter}</span>
+                  <span className="font-medium text-foreground text-[15px]">{t('settings.helpCenter')}</span>
                 </div>
                 <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
               </button>
@@ -502,7 +500,7 @@ export default function Settings() {
               >
                 <div className="flex items-center gap-3">
                   <Mail className="w-5 h-5 text-muted-foreground shrink-0" />
-                  <span className="font-medium text-foreground text-[15px]">{t.settings.reportBug}</span>
+                  <span className="font-medium text-foreground text-[15px]">{t('settings.reportBug')}</span>
                 </div>
                 <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
               </button>
@@ -514,7 +512,7 @@ export default function Settings() {
               >
                 <div className="flex items-center gap-3">
                   <FileText className="w-5 h-5 text-muted-foreground shrink-0" />
-                  <span className="font-medium text-foreground text-[15px]">{t.settings.terms}</span>
+                  <span className="font-medium text-foreground text-[15px]">{t('settings.terms')}</span>
                 </div>
                 <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
               </button>
@@ -526,7 +524,7 @@ export default function Settings() {
               >
                 <div className="flex items-center gap-3">
                   <FileText className="w-5 h-5 text-muted-foreground shrink-0" />
-                  <span className="font-medium text-foreground text-[15px]">{t.settings.privacy}</span>
+                  <span className="font-medium text-foreground text-[15px]">{t('settings.privacy')}</span>
                 </div>
                 <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
               </button>

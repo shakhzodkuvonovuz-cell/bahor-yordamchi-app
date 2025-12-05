@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "@/i18n/LanguageProvider";
 import { supabase } from "@/integrations/supabase/client";
 
 type FeedbackCategory = "bug" | "idea" | "other";
@@ -15,6 +16,7 @@ export default function Feedback() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { t } = useTranslation();
   
   const [category, setCategory] = useState<FeedbackCategory>("bug");
   const [message, setMessage] = useState("");
@@ -29,7 +31,7 @@ export default function Feedback() {
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
         toast({
-          description: "Rasm 5MB dan kichik bo'lishi kerak",
+          description: t('feedback.imageTooLarge'),
           variant: "destructive",
         });
         return;
@@ -50,7 +52,7 @@ export default function Feedback() {
   const handleSubmit = async () => {
     if (!message.trim()) {
       toast({
-        description: "Iltimos, xabaringizni yozing",
+        description: t('feedback.emptyMessage'),
         variant: "destructive",
       });
       return;
@@ -93,7 +95,7 @@ export default function Feedback() {
       if (error) throw error;
 
       toast({
-        description: "Yuborildi, rahmat! 🙏",
+        description: t('feedback.success'),
       });
 
       // Go back to settings
@@ -101,7 +103,7 @@ export default function Feedback() {
     } catch (error) {
       console.error("Feedback submission error:", error);
       toast({
-        description: "Xatolik yuz berdi. Qayta urinib ko'ring.",
+        description: t('feedback.error'),
         variant: "destructive",
       });
     } finally {
@@ -109,11 +111,17 @@ export default function Feedback() {
     }
   };
 
-  const categories: { id: FeedbackCategory; label: string; icon: React.ReactNode }[] = [
-    { id: "bug", label: "Xatolik", icon: <Bug className="w-4 h-4" /> },
-    { id: "idea", label: "Taklif", icon: <Lightbulb className="w-4 h-4" /> },
-    { id: "other", label: "Boshqa", icon: <MessageSquare className="w-4 h-4" /> },
+  const categories: { id: FeedbackCategory; labelKey: string; icon: React.ReactNode }[] = [
+    { id: "bug", labelKey: "feedback.bug", icon: <Bug className="w-4 h-4" /> },
+    { id: "idea", labelKey: "feedback.idea", icon: <Lightbulb className="w-4 h-4" /> },
+    { id: "other", labelKey: "feedback.other", icon: <MessageSquare className="w-4 h-4" /> },
   ];
+
+  const getPlaceholder = () => {
+    if (category === "bug") return t('feedback.messagePlaceholder.bug');
+    if (category === "idea") return t('feedback.messagePlaceholder.idea');
+    return t('feedback.messagePlaceholder.other');
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -123,10 +131,11 @@ export default function Feedback() {
           <button
             onClick={() => navigate(-1)}
             className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-secondary rounded-xl transition-colors"
+            aria-label={t('settings.back')}
           >
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
-          <h1 className="text-lg font-semibold text-foreground">Fikr bildirish</h1>
+          <h1 className="text-lg font-semibold text-foreground">{t('feedback.title')}</h1>
         </div>
       </header>
 
@@ -134,7 +143,7 @@ export default function Feedback() {
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
         {/* Category Selection */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Turi</label>
+          <label className="text-sm font-medium text-foreground">{t('feedback.type')}</label>
           <div className="flex gap-2">
             {categories.map((cat) => (
               <button
@@ -147,7 +156,7 @@ export default function Feedback() {
                 }`}
               >
                 {cat.icon}
-                {cat.label}
+                {t(cat.labelKey)}
               </button>
             ))}
           </div>
@@ -155,17 +164,11 @@ export default function Feedback() {
 
         {/* Message */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Xabar *</label>
+          <label className="text-sm font-medium text-foreground">{t('feedback.message')} *</label>
           <Textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder={
-              category === "bug"
-                ? "Qanday xatolik yuz berdi? Qadam-baqadam tushuntiring..."
-                : category === "idea"
-                ? "Taklifingizni batafsil yozing..."
-                : "Xabaringizni yozing..."
-            }
+            placeholder={getPlaceholder()}
             rows={5}
             className="resize-none"
           />
@@ -174,7 +177,7 @@ export default function Feedback() {
         {/* Screenshot Upload */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-foreground">
-            Skrinshot (ixtiyoriy)
+            {t('feedback.screenshot')}
           </label>
           
           {screenshotPreview ? (
@@ -197,7 +200,7 @@ export default function Feedback() {
               className="w-full min-h-[80px] border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary/50 hover:bg-muted/50 transition-colors"
             >
               <Camera className="w-6 h-6 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Rasm qo'shish</span>
+              <span className="text-sm text-muted-foreground">{t('feedback.addImage')}</span>
             </button>
           )}
           
@@ -221,14 +224,14 @@ export default function Feedback() {
           ) : (
             <>
               <Send className="w-5 h-5 mr-2" />
-              Yuborish
+              {t('feedback.submit')}
             </>
           )}
         </Button>
 
         {/* Info */}
         <p className="text-xs text-muted-foreground text-center">
-          Sizning fikringiz Bahor AI ni yaxshilashga yordam beradi. Rahmat!
+          {t('feedback.thanks')}
         </p>
       </div>
     </div>

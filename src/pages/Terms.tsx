@@ -1,9 +1,11 @@
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 export default function Terms() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen bg-background">
@@ -13,10 +15,11 @@ export default function Terms() {
           <button
             onClick={() => navigate(-1)}
             className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-secondary rounded-xl transition-colors"
+            aria-label={t('settings.back')}
           >
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
-          <h1 className="text-lg font-semibold text-foreground">Foydalanish shartlari</h1>
+          <h1 className="text-lg font-semibold text-foreground">{t('terms.title')}</h1>
         </div>
       </header>
 

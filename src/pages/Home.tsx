@@ -3,25 +3,52 @@ import { useNavigate } from "react-router-dom";
 import { Send, Settings, ArrowRight, AlertCircle } from "lucide-react";
 import { CHAT_MODES } from "@/data/modes";
 import { useTranslation } from "@/i18n/LanguageProvider";
-import { getTranslation } from "@/data/translations";
 import bahorLogo from "@/assets/bahor-logo.png";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 
-// Beta prompt chips
-const BETA_PROMPTS = [
-  { label: "📝 IELTS essay", mode: "ielts", prompt: "IELTS Writing Task 2 uchun essay yozishda yordam ber" },
-  { label: "💼 CV tayyorlash", mode: "job", prompt: "Professional CV tayyorlashda yordam ber" },
-  { label: "🍳 Taom retsepti", mode: "daily", prompt: "Oson va mazali taom retseptini ber" },
-  { label: "🏠 Kundalik maslahat", mode: "daily", prompt: "Bugun qanday foydali ish qilsam bo'ladi?" },
-  { label: "💻 Kod yozish", mode: "tech", prompt: "React da button komponenti yozishda yordam ber" },
-  { label: "📐 Matematika", mode: "homework", prompt: "Kvadrat tenglama yechishni tushuntir" },
-];
-
 export default function Home() {
   const navigate = useNavigate();
-  const { language } = useTranslation();
-  const t = getTranslation(language);
+  const { language, t } = useTranslation();
   const [input, setInput] = useState("");
+
+  // Get localized beta prompt chips
+  const getBetaPrompts = () => {
+    const prompts = {
+      uz: [
+        { label: "📝 IELTS essay", mode: "ielts", prompt: "IELTS Writing Task 2 uchun essay yozishda yordam ber" },
+        { label: "💼 CV tayyorlash", mode: "job", prompt: "Professional CV tayyorlashda yordam ber" },
+        { label: "🍳 Taom retsepti", mode: "daily", prompt: "Oson va mazali taom retseptini ber" },
+        { label: "🏠 Kundalik maslahat", mode: "daily", prompt: "Bugun qanday foydali ish qilsam bo'ladi?" },
+        { label: "💻 Kod yozish", mode: "tech", prompt: "React da button komponenti yozishda yordam ber" },
+        { label: "📐 Matematika", mode: "homework", prompt: "Kvadrat tenglama yechishni tushuntir" },
+      ],
+      en: [
+        { label: "📝 IELTS essay", mode: "ielts", prompt: "Help me write an IELTS Writing Task 2 essay" },
+        { label: "💼 CV/Resume", mode: "job", prompt: "Help me create a professional CV" },
+        { label: "🍳 Recipe", mode: "daily", prompt: "Give me an easy and delicious recipe" },
+        { label: "🏠 Daily advice", mode: "daily", prompt: "What useful thing can I do today?" },
+        { label: "💻 Coding", mode: "tech", prompt: "Help me write a React button component" },
+        { label: "📐 Math", mode: "homework", prompt: "Explain how to solve quadratic equations" },
+      ],
+      ru: [
+        { label: "📝 IELTS эссе", mode: "ielts", prompt: "Помоги написать эссе для IELTS Writing Task 2" },
+        { label: "💼 Резюме", mode: "job", prompt: "Помоги создать профессиональное резюме" },
+        { label: "🍳 Рецепт", mode: "daily", prompt: "Дай простой и вкусный рецепт" },
+        { label: "🏠 Совет на день", mode: "daily", prompt: "Что полезного я могу сделать сегодня?" },
+        { label: "💻 Код", mode: "tech", prompt: "Помоги написать компонент кнопки в React" },
+        { label: "📐 Математика", mode: "homework", prompt: "Объясни как решать квадратные уравнения" },
+      ],
+      tr: [
+        { label: "📝 IELTS kompozisyon", mode: "ielts", prompt: "IELTS Writing Task 2 için kompozisyon yazmama yardım et" },
+        { label: "💼 CV hazırlama", mode: "job", prompt: "Profesyonel CV hazırlamama yardım et" },
+        { label: "🍳 Tarif", mode: "daily", prompt: "Kolay ve lezzetli bir tarif ver" },
+        { label: "🏠 Günlük tavsiye", mode: "daily", prompt: "Bugün ne faydalı yapabilirim?" },
+        { label: "💻 Kodlama", mode: "tech", prompt: "React\'ta bir buton komponenti yazmama yardım et" },
+        { label: "📐 Matematik", mode: "homework", prompt: "İkinci dereceden denklemleri çözmeyi açıkla" },
+      ],
+    };
+    return prompts[language] || prompts.uz;
+  };
 
   const handleSend = () => {
     if (!input.trim()) return;
@@ -52,6 +79,27 @@ export default function Home() {
     health: "❤️",
   };
 
+  // Get localized mode info
+  const getModeTranslation = (modeId: string) => {
+    const modeKeys: Record<string, { title: string; desc: string }> = {
+      general: { title: 'mode.general.title', desc: 'mode.general.desc' },
+      tech: { title: 'mode.tech.title', desc: 'mode.tech.desc' },
+      daily: { title: 'mode.life.title', desc: 'mode.life.desc' },
+      business: { title: 'mode.business.title', desc: 'mode.business.desc' },
+      ielts: { title: 'mode.english.title', desc: 'mode.english.desc' },
+      homework: { title: 'mode.homework.title', desc: 'mode.homework.desc' },
+      job: { title: 'mode.job.title', desc: 'mode.job.desc' },
+      finance: { title: 'mode.finance.title', desc: 'mode.finance.desc' },
+      health: { title: 'mode.health.title', desc: 'mode.health.desc' },
+    };
+    const keys = modeKeys[modeId];
+    if (!keys) return null;
+    return {
+      title: t(keys.title),
+      subtitle: t(keys.desc),
+    };
+  };
+
   return (
     <div className="min-h-screen bg-background relative">
       {/* Background effects */}
@@ -78,7 +126,7 @@ export default function Home() {
             <button
               onClick={() => navigate("/settings")}
               className="p-2.5 hover:bg-secondary rounded-xl transition-colors"
-              aria-label="Sozlamalar"
+              aria-label={t('settings.title')}
             >
               <Settings className="w-5 h-5 text-muted-foreground" />
             </button>
@@ -90,10 +138,10 @@ export default function Home() {
           <AlertCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm text-foreground font-medium">
-              Beta versiya
+              {t('beta.title')}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Xatolar bo'lishi mumkin. Feedback juda kerak — <button onClick={() => navigate("/feedback")} className="text-primary hover:underline">xabar bering</button>
+              {t('beta.description')} <button onClick={() => navigate("/feedback")} className="text-primary hover:underline">{t('beta.report')}</button>
             </p>
           </div>
         </div>
@@ -101,7 +149,7 @@ export default function Home() {
         {/* Hero Section */}
         <div className="text-center pt-4 pb-2">
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-relaxed mb-2">
-            {t.heroText}
+            {t('app.tagline.main')}
           </h1>
         </div>
 
@@ -113,7 +161,7 @@ export default function Home() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder={t.chatPlaceholder}
+                placeholder={t('chat.input.placeholder')}
                 rows={1}
                 className="flex-1 border-none outline-none bg-transparent text-base text-foreground placeholder:text-muted-foreground resize-none"
                 style={{ minHeight: "48px" }}
@@ -131,7 +179,7 @@ export default function Home() {
 
         {/* Quick Prompt Chips */}
         <div className="flex flex-wrap gap-2 justify-center">
-          {BETA_PROMPTS.map((item, index) => (
+          {getBetaPrompts().map((item, index) => (
             <button
               key={index}
               onClick={() => handlePromptChip(item.mode, item.prompt)}
@@ -145,14 +193,14 @@ export default function Home() {
         {/* Section Title */}
         <div className="text-center pt-2">
           <p className="text-sm text-muted-foreground font-medium">
-            {t.subtitle}
+            {t('section.exploreModes.subtitle')}
           </p>
         </div>
 
         {/* Mode Cards Grid - Premium 2x4 Layout */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-8">
           {CHAT_MODES.filter((mode) => mode.id !== "general").map((mode, index) => {
-            const modeTranslation = t.modes[mode.id as keyof typeof t.modes];
+            const modeTranslation = getModeTranslation(mode.id);
             
             return (
               <button
