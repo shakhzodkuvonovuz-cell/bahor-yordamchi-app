@@ -16,6 +16,12 @@ const TOOLS = {
   watermark: { premium: false, freeDailyLimit: 2, premiumDailyLimit: 20 },
   pagenumber: { premium: false, freeDailyLimit: 2, premiumDailyLimit: 20 },
   ocr: { premium: true, freeDailyLimit: 0, premiumDailyLimit: 2, maxPages: 10 },
+  officepdf: { premium: false, freeDailyLimit: 2, premiumDailyLimit: 20 },
+  pdfjpg: { premium: false, freeDailyLimit: 2, premiumDailyLimit: 20 },
+  rotate: { premium: false, freeDailyLimit: 2, premiumDailyLimit: 20 },
+  protect: { premium: true, freeDailyLimit: 0, premiumDailyLimit: 5 },
+  unlock: { premium: true, freeDailyLimit: 0, premiumDailyLimit: 5 },
+  repair: { premium: true, freeDailyLimit: 0, premiumDailyLimit: 3 },
 };
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -477,7 +483,7 @@ serve(async (req) => {
         await iloveProcess(iloveToken, server, task, tool, uploadedFiles);
         outputBytes = await iloveDownload(iloveToken, server, task);
         
-      } else if (tool === "split" || tool === "compress" || tool === "watermark" || tool === "pagenumber" || tool === "ocr") {
+      } else if (tool === "split" || tool === "compress" || tool === "watermark" || tool === "pagenumber" || tool === "ocr" || tool === "rotate" || tool === "protect" || tool === "unlock" || tool === "repair") {
         const { pdf, ...toolOptions } = inputs;
         
         const { data: fileData, error: downloadError } = await supabase.storage
@@ -514,7 +520,14 @@ serve(async (req) => {
           processOptions.starting_number = toolOptions.start || 1;
         } else if (tool === "ocr") {
           processOptions.ocr_languages = [toolOptions.language || "eng"];
+        } else if (tool === "rotate") {
+          processOptions.degrees = toolOptions.degrees || 90;
+        } else if (tool === "protect") {
+          processOptions.password = toolOptions.password || "";
+        } else if (tool === "unlock") {
+          processOptions.password = toolOptions.password || "";
         }
+        // repair has no extra options
         
         await iloveProcess(iloveToken, server, task, tool, [
           { server_filename: serverFilename, filename },
@@ -522,18 +535,74 @@ serve(async (req) => {
         
         outputBytes = await iloveDownload(iloveToken, server, task);
         
+      } else if (tool === "officepdf") {
+        // Office to PDF conversion (docx, pptx, xlsx)
+        const { file } = inputs;
+        
+        const { data: fileData, error: downloadError } = await supabase.storage
+          .from(file.bucket || "chat-attachments")
+          .download(file.storagePath);
+        
+        if (downloadError) throw new Error(`Failed to download file: ${file.storagePath}`);
+        
+        const fileBytes = new Uint8Array(await fileData.arrayBuffer());
+        if (fileBytes.length > MAX_FILE_SIZE) {
+          throw new Error("Fayl hajmi juda katta (max 10MB)");
+        }
+        
+        const filename = file.storagePath.split("/").pop() || "document";
+        const mimeType = file.mimeType || "application/octet-stream";
+        const serverFilename = await iloveUpload(iloveToken, server, task, fileBytes, filename, mimeType);
+        
+        await iloveProcess(iloveToken, server, task, tool, [
+          { server_filename: serverFilename, filename },
+        ]);
+        
+        outputBytes = await iloveDownload(iloveToken, server, task);
+        
+      } else if (tool === "pdfjpg") {
+        // PDF to JPG conversion
+        const { pdf, ...toolOptions } = inputs;
+        
+        const { data: fileData, error: downloadError } = await supabase.storage
+          .from(pdf.bucket || "user-files")
+          .download(pdf.storagePath);
+        
+        if (downloadError) throw new Error(`Failed to download PDF: ${pdf.storagePath}`);
+        
+        const fileBytes = new Uint8Array(await fileData.arrayBuffer());
+        if (fileBytes.length > MAX_FILE_SIZE) {
+          throw new Error("Fayl hajmi juda katta (max 10MB)");
+        }
+        
+        const filename = pdf.storagePath.split("/").pop() || "document.pdf";
+        const serverFilename = await iloveUpload(iloveToken, server, task, fileBytes, filename);
+        
+        await iloveProcess(iloveToken, server, task, tool, [
+          { server_filename: serverFilename, filename },
+        ], {
+          pdfjpg_mode: toolOptions.mode || "pages", // "pages" or "extract"
+        });
+        
+        // pdfjpg returns a ZIP file with images
+        outputBytes = await iloveDownload(iloveToken, server, task);
+        outputFilename = `${title.replace(/[^a-zA-Z0-9-_]/g, "_")}.zip`;
+        
       } else {
         throw new Error("Unsupported tool");
       }
 
       // Upload result to Supabase Storage
       const fileId = crypto.randomUUID();
-      const storagePath = `${user.id}/${fileId}.pdf`;
+      const isZip = outputFilename.endsWith(".zip");
+      const ext = isZip ? "zip" : "pdf";
+      const mimeType = isZip ? "application/zip" : "application/pdf";
+      const storagePath = `${user.id}/${fileId}.${ext}`;
       
       const { error: uploadError } = await supabase.storage
         .from("user-files")
         .upload(storagePath, outputBytes, {
-          contentType: "application/pdf",
+          contentType: mimeType,
           upsert: false,
         });
 
@@ -552,6 +621,7 @@ serve(async (req) => {
           title,
           path: storagePath,
           size_bytes: outputBytes.length,
+          mime_type: mimeType,
           meta: inputs,
         })
         .select()
@@ -585,7 +655,7 @@ serve(async (req) => {
           file: {
             id: fileId,
             title,
-            mime_type: "application/pdf",
+            mime_type: mimeType,
             size_bytes: outputBytes.length,
             signed_url: signedUrlData?.signedUrl,
             created_at: fileRecord.created_at,
