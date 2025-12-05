@@ -52,32 +52,30 @@ serve(async (req) => {
 
     // GET: my-entitlement - any authenticated user can check their own status
     if (req.method === 'GET' && action === 'my-entitlement') {
-      // Get entitlement from database
-      const { data: entitlement } = await supabaseAdmin
-        .from('user_entitlements')
-        .select('plan, expires_at, flags, note')
-        .eq('user_id', user.id)
-        .single();
-
-      const plan = entitlement?.plan || 'free';
-      const isPremium = isDevBypass || plan === 'dev_unlimited' || plan === 'beta_premium';
+      // Ensure trial is initialized for the user (same as chat function)
+      const TRIAL_DAYS = 7;
+      if (!isDevBypass) {
+        await supabaseAdmin.rpc('get_or_create_trial', { p_user_id: user.id, p_trial_days: TRIAL_DAYS });
+      }
       
-      // Get trial status for beta info
+      // Get trial status which includes plan from profiles table
       const { data: trialData } = await supabaseAdmin.rpc('get_trial_status', { p_user_id: user.id });
+      const plan = (trialData as any)?.plan || 'free';
       const isBetaActive = (trialData as any)?.is_beta_active || false;
       const betaExpiresAt = (trialData as any)?.beta_expires_at || null;
       const daysRemaining = (trialData as any)?.days_remaining || 0;
+      const isPremium = isDevBypass || plan === 'dev_unlimited' || plan === 'beta_premium';
       
-      // Get daily usage
+      // Get daily usage from usage_counters (same table chat function uses)
       const today = new Date().toISOString().split('T')[0];
       const { data: usageData } = await supabaseAdmin
-        .from('daily_usage')
-        .select('messages_count')
+        .from('usage_counters')
+        .select('messages_used')
         .eq('user_id', user.id)
         .eq('date', today)
         .single();
 
-      const used = usageData?.messages_count || 0;
+      const used = usageData?.messages_used || 0;
       // Limits: dev_unlimited = -1, beta_premium = 10, free = 5
       const limit = isDevBypass || plan === 'dev_unlimited' ? -1 : plan === 'beta_premium' ? 10 : 5;
 
@@ -89,8 +87,6 @@ serve(async (req) => {
           isBetaActive,
           betaExpiresAt,
           daysRemaining,
-          expiresAt: entitlement?.expires_at || null,
-          flags: entitlement?.flags || {},
           usage: { date: today, used, limit },
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

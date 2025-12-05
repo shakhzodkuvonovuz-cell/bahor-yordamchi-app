@@ -529,10 +529,17 @@ ${modePrompt}
 ${summaryContext}
 ${fileContentBlocks}
 ${searchResults ? `
-QIDIRUV NATIJALARI:
+═══════════════════════════════════════════════════════════════════
+WEB SEARCH RESULTS (CRITICAL - USE THESE!)
+═══════════════════════════════════════════════════════════════════
+
 ${searchResults}
 
-Agar yuqorida qidiruv natijalari bo'lsa, ularga suyanib javob ber va manbalarni ko'rsat.
+**IMPORTANT**: You HAVE access to live web search. The results above are REAL and CURRENT.
+- USE the information from these search results to answer the user's question
+- CITE the sources by mentioning the website names
+- DO NOT say "I cannot perform live internet searches" - you CAN and DID
+- Base your answer primarily on these search results
 ` : ""}`;
 
     const finalMessages = [
