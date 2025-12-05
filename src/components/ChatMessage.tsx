@@ -309,6 +309,7 @@ export default function ChatMessage({
               onContinue={handleContinue}
               onRegenerate={handleRegenerate}
               onVariant={handleVariant}
+              onExportPdf={onExportPdf ? handleExportPdf : undefined}
             />
           )}
 
