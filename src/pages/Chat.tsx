@@ -750,7 +750,9 @@ export default function Chat() {
         
         if (!isImage) {
           // Attempt text extraction for non-image files (including PDFs)
+          console.log('[FileUpload] Extracting text from:', file.name, file.type);
           const extraction = await extractTextFromFile(file);
+          console.log('[FileUpload] Extraction result:', { status: extraction.status, textLength: extraction.text?.length || 0, truncated: extraction.truncated });
           if (extraction.status === 'ready' && extraction.text) {
             extractedText = extraction.text;
             readStatus = 'ready';
@@ -917,9 +919,21 @@ export default function Chat() {
       if (attachmentsToProcess.length > 0) {
         const hasImages = attachmentsToProcess.some(att => isVisionSupportedImage(att));
         
+        // Debug logging for attachments
+        console.log('[Chat] Processing attachments:', attachmentsToProcess.map(att => ({
+          name: att.name,
+          type: att.type,
+          readStatus: att.readStatus,
+          hasExtractedText: !!att.extractedText,
+          extractedTextLength: att.extractedText?.length || 0,
+        })));
+        
         // Check if any attachments already have extracted text (from PDF text extraction on upload)
         const attachmentsWithExtractedText = attachmentsToProcess.filter(att => att.extractedText && att.readStatus === 'ready');
         const attachmentsNeedingProcessing = attachmentsToProcess.filter(att => !att.extractedText || att.readStatus !== 'ready');
+        
+        console.log('[Chat] Attachments with extracted text:', attachmentsWithExtractedText.length);
+        console.log('[Chat] Attachments needing processing:', attachmentsNeedingProcessing.length);
         
         // Use already-extracted text for text-based PDFs
         if (attachmentsWithExtractedText.length > 0) {
@@ -929,10 +943,12 @@ export default function Chat() {
           
           analysisContent = extractedContents;
           analysisType = 'ocr';
+          console.log('[Chat] Using pre-extracted text, length:', extractedContents.length);
         }
         
         // Only process attachments that need Vision/OCR analysis (images, scanned PDFs)
         if (attachmentsNeedingProcessing.length > 0) {
+          console.log('[Chat] Starting processAttachments for:', attachmentsNeedingProcessing.map(a => a.name));
           setProcessingStatus(
             hasImages
               ? (language === "uz" ? "Tasvir tahlil qilinmoqda..." : 
@@ -955,6 +971,8 @@ export default function Chat() {
             }
           );
           
+          console.log('[Chat] processAttachments result:', { hasContent: !!analysisResult.content, type: analysisResult.type });
+          
           if (analysisResult.content) {
             // Combine with already extracted text
             if (analysisContent) {
@@ -968,6 +986,8 @@ export default function Chat() {
           
           setProcessingStatus(null);
         }
+        
+        console.log('[Chat] Final analysisContent length:', analysisContent?.length || 0);
         
         if (!analysisContent && attachmentsToProcess.length > 0 && !attachmentsWithExtractedText.length) {
           toast({
@@ -1034,6 +1054,13 @@ export default function Chat() {
         setIsLoading(false);
         return;
       }
+
+      console.log('[Chat] About to call chat API with:', {
+        messageCount: conversationMessages.length,
+        lastMessageLength: conversationMessages[conversationMessages.length - 1]?.content?.length || 0,
+        hasAnalysis: !!analysisContent,
+        analysisType,
+      });
 
       // Add timeout with AbortController (40 seconds)
       const controller = new AbortController();
