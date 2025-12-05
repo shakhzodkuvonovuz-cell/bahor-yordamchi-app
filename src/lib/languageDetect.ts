@@ -92,6 +92,21 @@ const ENGLISH_PATTERNS = [
   /\byour\b/gi,
   /\bi\b/gi,
   /\bmy\b/gi,
+  /\bof\b/gi,
+  /\bto\b/gi,
+  /\band\b/gi,
+  /\bthat\b/gi,
+  /\bthis\b/gi,
+  /\bit\b/gi,
+  /\bon\b/gi,
+  /\bat\b/gi,
+  /\bcheck\b/gi,
+  /\bonline\b/gi,
+  /\bupdate/gi,
+  /\bchange/gi,
+  /\bfind\b/gi,
+  /\bget\b/gi,
+  /\bmake\b/gi,
 ];
 
 // Russian common words (beyond just Cyrillic detection)

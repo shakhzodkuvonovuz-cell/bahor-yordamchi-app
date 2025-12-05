@@ -79,9 +79,11 @@ function shouldUseSearch(userMsg: string): boolean {
   const searchTriggers = [
     "yangilik", "yangiliklar", "qidir", "qidirish", "oxirgi", "so'nggi",
     "bugungi", "hozirgi", "joriy", "nima haqida", "qachon",
-    "search", "news", "latest", "recent", "current", "find", "look up",
-    "what is", "who is", "when did",
-    "новости", "поиск", "найти", "последние", "текущие",
+    "search", "news", "latest", "recent", "current", "find", "look up", "lookup",
+    "check online", "online for", "on the internet", "on internet",
+    "what is", "who is", "when did", "where is", "where can",
+    "updates on", "update on", "information about", "info about",
+    "новости", "поиск", "найти", "последние", "текущие", "в интернете",
     "narxi", "price", "цена", "kurs", "rate", "ob-havo", "weather", "погода"
   ];
   return searchTriggers.some(t => q.includes(t));
