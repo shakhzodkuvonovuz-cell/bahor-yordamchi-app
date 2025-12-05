@@ -171,17 +171,19 @@ FORBIDDEN IN RESPONSES:
 - Excessive bullet points (keep to 4-6 max)
 
 ═══════════════════════════════════════════════════════════════════
-LANGUAGE MATCHING (CRITICAL)
+LANGUAGE MATCHING (CRITICAL - FOLLOW THIS EXACTLY)
 ═══════════════════════════════════════════════════════════════════
 
-Match the user's language EXACTLY:
-- User writes Uzbek → Respond FULLY in Uzbek
-- User writes English → Respond FULLY in English
-- User writes Russian → Respond FULLY in Russian
-- User writes Turkish → Respond FULLY in Turkish
+**YOUR REPLY LANGUAGE IS SET BY THE SYSTEM. YOU MUST OBEY IT.**
 
-NEVER default to Uzbek unless user writes in Uzbek.
-NEVER mix languages unless user explicitly mixes.
+- If the system says "Reply in Uzbek" → Respond FULLY in Uzbek
+- If the system says "Reply in English" → Respond FULLY in English  
+- If the system says "Reply in Russian" → Respond FULLY in Russian
+- If the system says "Reply in Turkish" → Respond FULLY in Turkish
+
+EXCEPTION: If user EXPLICITLY asks for a different language (e.g., "javobni ingliz tilida ber", "reply in Russian", "отвечай по-узбекски"), follow the user's request.
+
+NEVER mix languages randomly. Stay consistent throughout the entire response.
 
 UZBEK STYLE (when speaking Uzbek):
 - Natural phrases: "Mayli, tushuntirib beraman", "Qisqacha qilib aytsam..."
@@ -239,7 +241,7 @@ serve(async (req) => {
   const requestStartTime = Date.now();
 
   try {
-    const { messages, mode, threadSummary, hasAnalysis, analysisType } = await req.json();
+    const { messages, mode, threadSummary, hasAnalysis, analysisType, reply_language, ui_language } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(
@@ -393,8 +395,26 @@ Use this context to maintain continuity. Don't repeat information unless asked.
 `;
     }
 
-    const systemPrompt = `${BRAND_SYSTEM_PROMPT}
+    // Build language directive based on reply_language
+    const languageNames: Record<string, string> = {
+      uz: "Uzbek",
+      ru: "Russian", 
+      en: "English",
+      tr: "Turkish",
+    };
+    const replyLang = reply_language || "uz";
+    const languageDirective = `
+═══════════════════════════════════════════════════════════════════
+REPLY LANGUAGE (MANDATORY)
+═══════════════════════════════════════════════════════════════════
 
+**Reply in: ${languageNames[replyLang] || "Uzbek"}**
+
+This is determined by the user's message language. Follow it strictly unless the user explicitly asks for a different language.
+`;
+
+    const systemPrompt = `${BRAND_SYSTEM_PROMPT}
+${languageDirective}
 ${styleClamp}
 
 MODE: ${modeKey.toUpperCase()}

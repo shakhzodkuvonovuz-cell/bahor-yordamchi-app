@@ -38,6 +38,7 @@ import { useToast } from "@/hooks/use-toast";
 import bahorLogo from "@/assets/bahor-logo.png";
 import { processAttachments } from "@/services/documentService";
 import { isVisionSupportedImage } from "@/services/visionService";
+import { detectReplyLanguage } from "@/lib/languageDetect";
 
 // Helper to format relative time
 function formatRelativeTime(dateString: string, lang: string): string {
@@ -624,9 +625,10 @@ export default function Chat() {
           body: JSON.stringify({
             messages: conversationMessages,
             mode: mode || "general",
-            language,
             isVariant: true,
             variantType: variant,
+            reply_language: language, // Use UI language for variants since instruction is system-generated
+            ui_language: language,
           }),
         }
       );
@@ -1012,6 +1014,8 @@ export default function Chat() {
               hasAnalysis: !!analysisContent,
               analysisType,
               threadSummary: threadSummary || undefined,
+              reply_language: detectReplyLanguage(content.trim(), language as "uz" | "ru" | "en" | "tr").lang,
+              ui_language: language,
             }),
             signal: controller.signal,
           }
