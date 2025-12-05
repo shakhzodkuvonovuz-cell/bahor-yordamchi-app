@@ -171,13 +171,11 @@ export default function ChatMessage({
       <div
         className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"} ${
           isUser ? "chat-message-user" : "chat-message-ai"
-        } group animate-fade-in select-none`}
-        style={{ WebkitTouchCallout: 'none' }}
+        } group animate-fade-in`}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchEnd}
         onTouchMove={handleTouchMove}
-        onContextMenu={handleContextMenu}
       >
         {/* AI Avatar */}
         {!isUser && (
@@ -199,13 +197,14 @@ export default function ChatMessage({
           )}
 
           <div
-            className={`rounded-2xl transition-transform duration-150 ${
+            className={`rounded-2xl transition-transform duration-150 no-ios-callout ${
               isPressed ? "scale-[0.98]" : ""
             } ${
               isUser
                 ? "bg-primary text-primary-foreground rounded-tr-md shadow-lg"
                 : "bg-card border border-border/40 rounded-tl-md shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.06)]"
             }`}
+            onContextMenu={(e) => e.preventDefault()}
           >
             <div className={isUser ? "px-5 py-4" : "px-5 py-4"}>
               {/* Attachments */}
