@@ -42,6 +42,7 @@ export interface MessageActionsBarProps {
   onContinue: () => void;
   onRegenerate: () => void;
   onVariant: (variant: MessageVariant) => void;
+  onExportPdf?: () => void;
 }
 
 export function MessageActionsBar({
@@ -54,6 +55,7 @@ export function MessageActionsBar({
   onContinue,
   onRegenerate,
   onVariant,
+  onExportPdf,
 }: MessageActionsBarProps) {
   const { language } = useTranslation();
   const [copied, setCopied] = useState(false);
@@ -74,6 +76,7 @@ export function MessageActionsBar({
     simplify: language === "uz" ? "Soddalash" : language === "ru" ? "Упростить" : language === "tr" ? "Basitleştir" : "Simplify",
     detailed: language === "uz" ? "Batafsil" : language === "ru" ? "Подробнее" : language === "tr" ? "Detaylı" : "More detailed",
     more: language === "uz" ? "Ko'proq" : language === "ru" ? "Ещё" : language === "tr" ? "Daha fazla" : "More",
+    exportPdf: language === "uz" ? "PDFga chiqarish" : language === "ru" ? "Экспорт в PDF" : language === "tr" ? "PDF'e aktar" : "Export to PDF",
   };
 
   const handleCopy = () => {
@@ -233,6 +236,19 @@ export function MessageActionsBar({
               <FileText className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm">{labels.detailed}</span>
             </button>
+            {onExportPdf && (
+              <>
+                <div className="h-px bg-border/40 my-1.5" />
+                <button
+                  onClick={() => { onExportPdf(); setMoreOpen(false); }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-secondary/60 transition-colors text-left"
+                  disabled={isDisabled}
+                >
+                  <FileDown className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm">{labels.exportPdf}</span>
+                </button>
+              </>
+            )}
           </div>
         </PopoverContent>
       </Popover>
