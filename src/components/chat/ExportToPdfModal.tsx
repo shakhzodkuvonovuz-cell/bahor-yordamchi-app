@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FileText, Loader2, Download } from "lucide-react";
 import {
   Dialog,
@@ -41,6 +41,11 @@ export function ExportToPdfModal({
   const [template, setTemplate] = useState("clean");
   const [includeCitations, setIncludeCitations] = useState(citations.length > 0);
   const [loading, setLoading] = useState(false);
+
+  // Reset title when defaultTitle changes
+  useEffect(() => {
+    setTitle(defaultTitle);
+  }, [defaultTitle]);
 
   const t = (key: string) => {
     const labels: Record<string, Record<string, string>> = {
@@ -100,7 +105,7 @@ export function ExportToPdfModal({
     return labels[language]?.[key] || labels.en[key] || key;
   };
 
-  // Escape HTML entities for safety
+  // Escape HTML entities
   const escapeHtml = (str: string): string => {
     return str
       .replace(/&/g, "&amp;")
@@ -110,69 +115,37 @@ export function ExportToPdfModal({
       .replace(/'/g, "&#039;");
   };
 
-  // Convert markdown to HTML with proper escaping
+  // Convert markdown to HTML
   const markdownToHtml = (md: string): string => {
-    // First, extract and preserve code blocks to prevent double-processing
     const codeBlocks: string[] = [];
     let html = md.replace(/```([\s\S]*?)```/g, (_, code) => {
-      codeBlocks.push(escapeHtml(code.replace(/^\w*\n?/, ""))); // Remove language identifier
+      codeBlocks.push(escapeHtml(code.replace(/^\w*\n?/, "")));
       return `__CODEBLOCK_${codeBlocks.length - 1}__`;
     });
 
-    // Process markdown
     html = html
-      // Headers
-      .replace(/^### (.+)$/gm, "<h3 style='font-size:16px;font-weight:600;margin:16px 0 8px 0;'>$1</h3>")
-      .replace(/^## (.+)$/gm, "<h2 style='font-size:18px;font-weight:600;margin:20px 0 10px 0;'>$1</h2>")
-      .replace(/^# (.+)$/gm, "<h1 style='font-size:22px;font-weight:700;margin:24px 0 12px 0;'>$1</h1>")
-      // Bold and italic
+      .replace(/^### (.+)$/gm, "<h3>$1</h3>")
+      .replace(/^## (.+)$/gm, "<h2>$1</h2>")
+      .replace(/^# (.+)$/gm, "<h1>$1</h1>")
       .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
       .replace(/\*(.+?)\*/g, "<em>$1</em>")
-      // Inline code
-      .replace(/`([^`]+)`/g, "<code style='background:#f5f5f5;padding:2px 6px;border-radius:4px;font-size:13px;font-family:Consolas,Monaco,monospace;'>$1</code>")
-      // Lists
-      .replace(/^- (.+)$/gm, "<li style='margin:4px 0;'>$1</li>")
-      .replace(/^(\d+)\. (.+)$/gm, "<li style='margin:4px 0;'>$2</li>")
-      // Paragraphs
-      .replace(/\n\n/g, "</p><p style='margin:12px 0;'>")
+      .replace(/`([^`]+)`/g, "<code>$1</code>")
+      .replace(/^- (.+)$/gm, "<li>$1</li>")
+      .replace(/^(\d+)\. (.+)$/gm, "<li>$2</li>")
+      .replace(/\n\n/g, "</p><p>")
       .replace(/\n/g, "<br>");
 
-    // Wrap in paragraphs
-    html = `<p style='margin:12px 0;'>${html}</p>`;
-    
-    // Wrap consecutive list items in ul
-    html = html.replace(/(<li[^>]*>.*?<\/li>)+/g, (match) => 
-      `<ul style='margin:12px 0;padding-left:24px;list-style-type:disc;'>${match}</ul>`
-    );
+    html = `<p>${html}</p>`;
+    html = html.replace(/(<li>.*?<\/li>)+/g, (match) => `<ul>${match}</ul>`);
 
-    // Restore code blocks
     codeBlocks.forEach((code, i) => {
       html = html.replace(
         `__CODEBLOCK_${i}__`,
-        `<pre style='background:#f5f5f5;padding:12px;border-radius:6px;overflow-x:auto;font-size:13px;font-family:Consolas,Monaco,monospace;margin:12px 0;white-space:pre-wrap;word-break:break-word;'><code>${code}</code></pre>`
+        `<pre><code>${code}</code></pre>`
       );
     });
 
     return html;
-  };
-
-  const getTemplateStyles = (): { container: string; title: string } => {
-    const baseContainer = "font-family:'Segoe UI',Inter,system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.7;color:#1a1a1a;background:#ffffff;";
-    const baseTitle = "font-size:24px;margin:0 0 24px 0;font-weight:700;color:#111;";
-    
-    const styles: Record<string, { container: string; title: string }> = {
-      clean: { container: baseContainer, title: baseTitle },
-      assignment: { 
-        container: baseContainer, 
-        title: `${baseTitle}padding-bottom:12px;border-bottom:2px solid #10b981;` 
-      },
-      report: { 
-        container: baseContainer, 
-        title: `${baseTitle}text-align:center;` 
-      },
-    };
-    
-    return styles[template] || styles.clean;
   };
 
   const handleExport = async () => {
@@ -184,84 +157,113 @@ export function ExportToPdfModal({
     setLoading(true);
 
     try {
-      // Dynamically import html2pdf
       const html2pdfModule = await import("html2pdf.js");
       const html2pdf = html2pdfModule.default;
 
-      // Convert markdown content to HTML
+      // Build HTML content
       let content = markdownToHtml(messageContent);
-
-      // Add citations if enabled
       if (includeCitations && citations.length > 0) {
-        const citationsHtml = `
-          <div style="margin-top:32px;padding-top:16px;border-top:1px solid #e5e5e5;">
-            <h3 style="font-size:16px;margin-bottom:12px;font-weight:600;">Manbalar</h3>
-            <ul style="margin:0;padding-left:20px;list-style-type:disc;">
-              ${citations.map((c) => `<li style="margin:6px 0;"><a href="${escapeHtml(c.url)}" style="color:#10b981;text-decoration:underline;">${escapeHtml(c.title)}</a></li>`).join("")}
+        content += `
+          <div class="citations">
+            <h3>Manbalar</h3>
+            <ul>
+              ${citations.map((c) => `<li><a href="${escapeHtml(c.url)}">${escapeHtml(c.title)}</a></li>`).join("")}
             </ul>
           </div>
         `;
-        content += citationsHtml;
       }
 
-      const templateStyles = getTemplateStyles();
-
-      // Build complete HTML document
-      const fullHtml = `
-        <div style="${templateStyles.container}padding:0;box-sizing:border-box;">
-          <h1 style="${templateStyles.title}">${escapeHtml(title)}</h1>
-          <div style="word-wrap:break-word;">${content}</div>
-        </div>
-      `;
-
-      // Create a container element for rendering
-      // CRITICAL: Element must be visible and in the DOM for html2canvas to work
-      // Using position:absolute with left:-9999px keeps it off-screen but rendered
+      // Create container element
       const container = document.createElement("div");
-      container.id = "pdf-export-container-" + Date.now();
-      container.innerHTML = fullHtml;
-      container.style.cssText = `
-        position: absolute;
-        left: -9999px;
-        top: 0;
-        width: 650px;
-        padding: 40px;
-        background-color: white;
-        box-sizing: border-box;
-      `;
+      container.className = `pdf-template pdf-template-${template}`;
+      container.innerHTML = `<h1 class="pdf-title">${escapeHtml(title)}</h1>${content}`;
       
-      // Append to body
+      // Style container - MUST be visible and rendered for html2canvas
+      // Using clip-path to hide visually while keeping it rendered
+      container.style.cssText = `
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 794px;
+        background: #ffffff;
+        padding: 40px;
+        box-sizing: border-box;
+        z-index: 99999;
+        font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+        font-size: 12pt;
+        line-height: 1.6;
+        color: #1a1a1a;
+      `;
+
+      // Inject styles
+      const styleEl = document.createElement("style");
+      styleEl.textContent = `
+        .pdf-template .pdf-title {
+          font-size: 22pt !important;
+          font-weight: 700 !important;
+          margin: 0 0 24px 0 !important;
+          color: #111 !important;
+        }
+        .pdf-template h1 { font-size: 18pt !important; font-weight: 600 !important; margin: 20px 0 12px 0 !important; }
+        .pdf-template h2 { font-size: 16pt !important; font-weight: 600 !important; margin: 18px 0 10px 0 !important; }
+        .pdf-template h3 { font-size: 14pt !important; font-weight: 600 !important; margin: 16px 0 8px 0 !important; }
+        .pdf-template p { margin: 10px 0 !important; }
+        .pdf-template ul, .pdf-template ol { margin: 10px 0 !important; padding-left: 24px !important; list-style-type: disc !important; }
+        .pdf-template li { margin: 4px 0 !important; display: list-item !important; }
+        .pdf-template code { 
+          background: #f5f5f5 !important; 
+          padding: 2px 6px !important; 
+          border-radius: 4px !important; 
+          font-family: Consolas, Monaco, monospace !important;
+          font-size: 11pt !important;
+        }
+        .pdf-template pre {
+          background: #f5f5f5 !important;
+          padding: 12px !important;
+          border-radius: 6px !important;
+          overflow-x: auto !important;
+          margin: 12px 0 !important;
+          white-space: pre-wrap !important;
+          word-break: break-word !important;
+        }
+        .pdf-template pre code { background: transparent !important; padding: 0 !important; }
+        .pdf-template strong { font-weight: 600 !important; }
+        .pdf-template em { font-style: italic !important; }
+        .pdf-template .citations { margin-top: 32px !important; padding-top: 16px !important; border-top: 1px solid #e5e5e5 !important; }
+        .pdf-template .citations h3 { font-size: 14pt !important; margin-bottom: 12px !important; }
+        .pdf-template .citations a { color: #10b981 !important; text-decoration: underline !important; }
+        .pdf-template-assignment .pdf-title { padding-bottom: 12px !important; border-bottom: 2px solid #10b981 !important; }
+        .pdf-template-report .pdf-title { text-align: center !important; }
+        .pdf-template-report h2 { border-bottom: 1px solid #ddd !important; padding-bottom: 6px !important; }
+      `;
+      document.head.appendChild(styleEl);
       document.body.appendChild(container);
 
-      // Force browser to layout the element - wait for next animation frame + additional time
+      // Wait for browser to render
       await new Promise<void>(resolve => {
         requestAnimationFrame(() => {
-          // Additional timeout to ensure layout is complete
-          setTimeout(resolve, 300);
+          requestAnimationFrame(() => {
+            setTimeout(resolve, 200);
+          });
         });
       });
 
-      // Verify content is rendered
-      console.log("[PDF Export] Container dimensions:", container.offsetWidth, "x", container.offsetHeight);
-      console.log("[PDF Export] Content length:", messageContent.length);
+      console.log("[PDF Export] Container size:", container.offsetWidth, "x", container.offsetHeight);
 
       const filename = `${title.replace(/[^a-zA-Z0-9\u0400-\u04FF\-_\s]/g, "").trim() || "document"}.pdf`;
 
-      // Generate PDF with proper settings
       await html2pdf()
         .set({
-          margin: [15, 15, 15, 15],
+          margin: [10, 10, 10, 10],
           filename,
-          image: { type: "jpeg", quality: 0.95 },
+          image: { type: "jpeg", quality: 0.98 },
           html2canvas: {
             scale: 2,
             useCORS: true,
             backgroundColor: "#ffffff",
-            logging: false,
-            width: 650,
-            windowWidth: 650,
-            scrollX: 0,
-            scrollY: 0,
+            logging: true, // Enable logging for debugging
+            width: 794,
+            windowWidth: 794,
           },
           jsPDF: {
             unit: "mm",
@@ -273,8 +275,9 @@ export function ExportToPdfModal({
         .from(container)
         .save();
 
-      // Clean up
+      // Cleanup
       document.body.removeChild(container);
+      document.head.removeChild(styleEl);
 
       toast({ title: t("success") });
       onOpenChange(false);
@@ -291,7 +294,7 @@ export function ExportToPdfModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) setTitle(defaultTitle); onOpenChange(o); }}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) { setTitle(defaultTitle); } onOpenChange(o); }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
