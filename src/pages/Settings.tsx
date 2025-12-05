@@ -92,7 +92,7 @@ export default function Settings() {
 
   const getPlanLabel = () => {
     if (isDevBypass) return t('settings.devUnlimited');
-    if (isPremium) return t('settings.premium');
+    if (usage.plan === 'beta_premium') return t('plan.betaPremium');
     switch (profile?.plan) {
       case 'free': return t('settings.free');
       case 'premium':
@@ -178,14 +178,16 @@ export default function Settings() {
                           {profile && (
                             <div className="mt-2">
                               <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                                (isDevBypass || isPremium)
+                                isDevBypass
                                   ? 'bg-gradient-to-r from-primary/20 to-primary/10 text-primary border border-primary/30'
-                                  : 'bg-secondary text-secondary-foreground'
+                                  : usage.plan === 'beta_premium'
+                                    ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                                    : 'bg-secondary text-secondary-foreground'
                               }`}>
                                 {isDevBypass && <Shield className="w-3 h-3" />}
-                                {isPremium && !isDevBypass && <Crown className="w-3 h-3" />}
+                                {usage.plan === 'beta_premium' && !isDevBypass && <Crown className="w-3 h-3" />}
                                 {getPlanLabel()}
-                                {(isDevBypass || isPremium) && <Infinity className="w-3 h-3 ml-0.5" />}
+                                {isDevBypass && <Infinity className="w-3 h-3 ml-0.5" />}
                               </span>
                             </div>
                           )}
@@ -208,16 +210,16 @@ export default function Settings() {
               {/* Usage Progress Bar */}
               {profile && (
                 <section className="bg-card border border-border/40 rounded-2xl p-4 shadow-premium-sm w-full">
-                  {(isDevBypass || isPremium) ? (
+              {isDevBypass ? (
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-foreground">{t('settings.usageToday')}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {isDevBypass ? t('settings.devUnlimited') : t('settings.premium')} {t('settings.plan')}
+                          {t('settings.devUnlimited')} {t('settings.plan')}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-                        {isDevBypass ? <Shield className="w-4 h-4" /> : <Crown className="w-4 h-4" />}
+                        <Shield className="w-4 h-4" />
                         <span className="text-sm font-medium">{t('settings.unlimited')}</span>
                         <Infinity className="w-4 h-4" />
                       </div>
