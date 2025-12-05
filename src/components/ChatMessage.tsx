@@ -48,8 +48,13 @@ export default function ChatMessage({
   const hasCards = !isUser && hasCardContent(message.content);
   const parsedSections = hasCards ? parseMessageForCards(message.content) : null;
 
-  const handleTouchStart = () => {
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
     if (isMobile) {
+      // Store initial touch position to detect scroll
+      const touch = e.touches[0];
+      touchStartPos.current = { x: touch.clientX, y: touch.clientY };
       setIsPressed(true);
       longPressTimer.current = setTimeout(() => {
         setShowMobileSheet(true);
@@ -58,28 +63,35 @@ export default function ChatMessage({
     }
   };
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = (e: React.TouchEvent) => {
     setIsPressed(false);
+    touchStartPos.current = null;
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
   };
 
-  const handleTouchMove = () => {
-    // Cancel long-press if user scrolls
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-      setIsPressed(false);
+  const handleTouchMove = (e: React.TouchEvent) => {
+    // Cancel long-press if user scrolls (moved more than 10px)
+    if (longPressTimer.current && touchStartPos.current) {
+      const touch = e.touches[0];
+      const deltaX = Math.abs(touch.clientX - touchStartPos.current.x);
+      const deltaY = Math.abs(touch.clientY - touchStartPos.current.y);
+      if (deltaX > 10 || deltaY > 10) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+        setIsPressed(false);
+        touchStartPos.current = null;
+      }
     }
   };
 
-  const handleContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleContextMenu = (e: React.MouseEvent | React.TouchEvent) => {
+    // Prevent native context menu on mobile
     if (isMobile) {
-      setShowMobileSheet(true);
+      e.preventDefault();
+      e.stopPropagation();
     }
   };
 
@@ -179,8 +191,7 @@ export default function ChatMessage({
       <div
         className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"} ${
           isUser ? "chat-message-user" : "chat-message-ai"
-        } group select-none`}
-        style={{ WebkitTouchCallout: 'none' }}
+        } group touch-message`}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchEnd}
