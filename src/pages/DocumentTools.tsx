@@ -316,6 +316,94 @@ export default function DocumentTools() {
     return path;
   };
 
+  // Client-side PDF generation for "Matndan PDF" (htmlpdf)
+  const handleHtmlPdfClientSide = async () => {
+    if (!content.trim()) {
+      throw new Error("Matn kiriting");
+    }
+
+    // Dynamic imports for jsPDF and markdown renderer
+    const { jsPDF } = await import("jspdf");
+    const { MdTextRender } = await import("jspdf-md-renderer");
+
+    // Prepare content - use markdown or plain text
+    let mdContent = `# ${title}\n\n${contentType === "html" ? content : content}`;
+
+    // Create PDF document
+    const doc = new jsPDF({
+      unit: 'mm',
+      format: 'a4',
+      orientation: 'portrait',
+    });
+
+    // Configure render options based on template
+    const getOptions = () => {
+      const baseOptions = {
+        cursor: { x: 15, y: 20 },
+        page: {
+          format: 'a4' as const,
+          unit: 'mm' as const,
+          orientation: 'portrait' as const,
+          maxContentWidth: 180,
+          maxContentHeight: 260,
+          lineSpace: 1.5,
+          defaultLineHeightFactor: 1.25,
+          defaultFontSize: 11,
+          defaultTitleFontSize: 14,
+          topmargin: 20,
+          xpading: 15,
+          xmargin: 15,
+          indent: 8,
+        },
+        font: {
+          bold: { name: 'helvetica', style: 'bold' as const },
+          regular: { name: 'helvetica', style: 'normal' as const },
+          light: { name: 'helvetica', style: 'normal' as const },
+        },
+        endCursorYHandler: () => {},
+      };
+
+      if (template === 'assignment') {
+        baseOptions.page.topmargin = 25;
+        baseOptions.page.defaultTitleFontSize = 16;
+      } else if (template === 'report') {
+        baseOptions.page.defaultFontSize = 10;
+        baseOptions.page.lineSpace = 1.4;
+      }
+
+      return baseOptions;
+    };
+
+    // Render markdown to PDF
+    await MdTextRender(doc, mdContent, getOptions());
+
+    // Add template-specific styling
+    if (template === 'assignment') {
+      doc.setPage(1);
+      doc.setDrawColor(16, 185, 129);
+      doc.setLineWidth(0.5);
+      doc.line(15, 28, 195, 28);
+    } else if (template === 'report') {
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(9);
+        doc.setTextColor(128);
+        doc.text(`${i} / ${pageCount}`, 105, 290, { align: 'center' });
+      }
+    }
+
+    // Generate filename and download
+    const filename = `${title.replace(/[^a-zA-Z0-9\u0400-\u04FF\-_\s]/g, "").trim() || "document"}.pdf`;
+    doc.save(filename);
+
+    toast({ title: t("docs.success"), description: title });
+    
+    // Reset form
+    setTitle("");
+    setContent("");
+  };
+
   const handleRun = async () => {
     if (!user) return;
     if (!title.trim()) {
@@ -325,14 +413,16 @@ export default function DocumentTools() {
 
     setLoading(true);
     try {
+      // Handle htmlpdf client-side (iLoveAPI doesn't support HTML properly)
+      if (selectedTool === "htmlpdf") {
+        await handleHtmlPdfClientSide();
+        setLoading(false);
+        return;
+      }
+
       let inputs: Record<string, unknown> = {};
 
-      if (selectedTool === "htmlpdf") {
-        if (!content.trim()) {
-          throw new Error("Matn kiriting");
-        }
-        inputs = { contentType, content, template };
-      } else if (selectedTool === "imagepdf") {
+      if (selectedTool === "imagepdf") {
         if (selectedImages.length === 0) {
           throw new Error("Rasmlarni tanlang");
         }
@@ -399,19 +489,19 @@ export default function DocumentTools() {
           throw new Error("PDF faylni tanlang");
         }
         const path = await uploadToStorage(selectedPdfs[0]);
-        inputs = { pdf: { storagePath: path, bucket: "chat-attachments" }, mode: "pages" };
+        inputs = { pdf: { storagePath: path, bucket: "chat-attachments" } };
       } else if (selectedTool === "rotate") {
         if (selectedPdfs.length === 0) {
           throw new Error("PDF faylni tanlang");
         }
         const path = await uploadToStorage(selectedPdfs[0]);
-        inputs = { pdf: { storagePath: path, bucket: "chat-attachments" }, degrees: parseInt(rotateDegrees) };
+        inputs = { pdf: { storagePath: path, bucket: "chat-attachments" }, angle: rotateDegrees };
       } else if (selectedTool === "protect") {
         if (selectedPdfs.length === 0) {
           throw new Error("PDF faylni tanlang");
         }
         if (!protectPassword.trim()) {
-          throw new Error("Parol kiriting");
+          throw new Error("Parolni kiriting");
         }
         const path = await uploadToStorage(selectedPdfs[0]);
         inputs = { pdf: { storagePath: path, bucket: "chat-attachments" }, password: protectPassword };
@@ -420,7 +510,7 @@ export default function DocumentTools() {
           throw new Error("PDF faylni tanlang");
         }
         if (!unlockPassword.trim()) {
-          throw new Error("Parol kiriting");
+          throw new Error("Parolni kiriting");
         }
         const path = await uploadToStorage(selectedPdfs[0]);
         inputs = { pdf: { storagePath: path, bucket: "chat-attachments" }, password: unlockPassword };
