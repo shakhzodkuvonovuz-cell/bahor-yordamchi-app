@@ -1,8 +1,14 @@
 import { useState, useRef } from "react";
-import { Camera, Loader2 } from "lucide-react";
+import { Camera, Loader2, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface ProfilePhotoUploadProps {
   currentAvatarUrl: string | null;
@@ -11,6 +17,7 @@ interface ProfilePhotoUploadProps {
 
 export default function ProfilePhotoUpload({ currentAvatarUrl, onPhotoUpdated }: ProfilePhotoUploadProps) {
   const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,16 +80,14 @@ export default function ProfilePhotoUpload({ currentAvatarUrl, onPhotoUpdated }:
       // Delete old avatar if exists (don't wait for it)
       if (currentAvatarUrl && currentAvatarUrl.includes('/avatars/')) {
         try {
-          // Extract just the path after /avatars/
           const urlParts = currentAvatarUrl.split('/avatars/');
           if (urlParts[1]) {
-            const oldPath = decodeURIComponent(urlParts[1].split('?')[0]); // Remove query params
+            const oldPath = decodeURIComponent(urlParts[1].split('?')[0]);
             console.log('[Avatar] Deleting old avatar:', oldPath);
             await supabase.storage.from('avatars').remove([oldPath]);
           }
         } catch (e) {
           console.warn('[Avatar] Could not delete old avatar:', e);
-          // Continue anyway
         }
       }
 
@@ -126,7 +131,6 @@ export default function ProfilePhotoUpload({ currentAvatarUrl, onPhotoUpdated }:
         description: "Rasm yangilandi",
       });
       
-      // Trigger parent refresh
       onPhotoUpdated();
 
     } catch (error: any) {
@@ -144,39 +148,122 @@ export default function ProfilePhotoUpload({ currentAvatarUrl, onPhotoUpdated }:
     }
   };
 
-  const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log('[Avatar] Button clicked, opening file picker');
+  const deletePhoto = async () => {
+    if (!currentAvatarUrl || !currentAvatarUrl.includes('/avatars/')) {
+      toast({
+        title: "Ma'lumot",
+        description: "O'chirish uchun rasm yo'q",
+      });
+      return;
+    }
+
+    setDeleting(true);
+    
+    try {
+      console.log('[Avatar] Starting delete...');
+      
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        throw new Error("Foydalanuvchi topilmadi");
+      }
+
+      // Delete from storage
+      const urlParts = currentAvatarUrl.split('/avatars/');
+      if (urlParts[1]) {
+        const filePath = decodeURIComponent(urlParts[1].split('?')[0]);
+        console.log('[Avatar] Deleting file:', filePath);
+        
+        const { error: deleteError } = await supabase.storage
+          .from('avatars')
+          .remove([filePath]);
+
+        if (deleteError) {
+          console.error('[Avatar] Storage delete error:', deleteError);
+          // Continue anyway - file might not exist
+        }
+      }
+
+      // Clear avatar URL in profile
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: null })
+        .eq('user_id', user.id);
+
+      if (updateError) {
+        console.error('[Avatar] Profile update error:', updateError);
+        throw new Error(updateError.message);
+      }
+
+      console.log('[Avatar] Photo deleted successfully');
+
+      toast({
+        title: "✅ Muvaffaqiyatli!",
+        description: "Rasm o'chirildi",
+      });
+      
+      onPhotoUpdated();
+
+    } catch (error: any) {
+      console.error("[Avatar] Error deleting avatar:", error);
+      toast({
+        title: "Xatolik",
+        description: error.message || "Rasm o'chirilmadi",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleUploadClick = () => {
+    console.log('[Avatar] Upload option clicked');
     fileInputRef.current?.click();
   };
 
+  const isLoading = uploading || deleting;
+  const hasPhoto = currentAvatarUrl && currentAvatarUrl.includes('/avatars/');
+
   return (
     <>
-      {/* File input - iOS Safari compatible */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
         className="hidden"
         onChange={handleFileSelect}
-        disabled={uploading}
+        disabled={isLoading}
       />
 
-      <Button
-        variant="ghost"
-        size="icon"
-        type="button"
-        className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg z-10"
-        disabled={uploading}
-        onClick={handleClick}
-      >
-        {uploading ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
-        ) : (
-          <Camera className="w-4 h-4" />
-        )}
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            type="button"
+            className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg z-10"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Camera className="w-4 h-4" />
+            )}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem onClick={handleUploadClick}>
+            <Camera className="w-4 h-4 mr-2" />
+            Rasm yuklash
+          </DropdownMenuItem>
+          {hasPhoto && (
+            <DropdownMenuItem onClick={deletePhoto} className="text-destructive focus:text-destructive">
+              <Trash2 className="w-4 h-4 mr-2" />
+              Rasmni o'chirish
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </>
   );
 }
