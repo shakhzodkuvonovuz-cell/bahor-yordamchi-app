@@ -79,14 +79,14 @@
   }
 
   .dark {
-    /* Dark mode - Ultra premium deep black with teal undertones */
-    --background: 220 30% 4%;
+    /* Dark mode - Premium deep charcoal with teal undertones */
+    --background: 200 25% 7%;
     --foreground: 200 10% 95%;
 
-    --card: 210 25% 8%;
+    --card: 200 20% 11%;
     --card-foreground: 200 10% 95%;
 
-    --popover: 210 25% 8%;
+    --popover: 200 20% 11%;
     --popover-foreground: 200 10% 95%;
 
     /* Bahor AI Turquoise - Glowing in dark */
@@ -95,53 +95,47 @@
     --primary-light: 175 55% 55%;
     --primary-glow: 175 50% 35%;
 
-    --secondary: 210 20% 12%;
+    --secondary: 200 18% 15%;
     --secondary-foreground: 200 10% 90%;
 
-    --muted: 210 18% 15%;
+    --muted: 200 18% 18%;
     --muted-foreground: 200 10% 55%;
 
-    --accent: 210 18% 14%;
+    --accent: 200 18% 18%;
     --accent-foreground: 175 55% 55%;
 
     --destructive: 0 65% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 15% 15%;
-    --input: 210 18% 12%;
+    --border: 200 18% 18%;
+    --input: 200 18% 15%;
     --ring: 175 60% 48%;
 
-    /* Chat bubbles - Premium dark */
+    /* Chat bubbles - Dark */
     --user-message: 175 55% 42%;
     --user-message-foreground: 0 0% 100%;
-    --ai-message: 210 20% 10%;
+    --ai-message: 200 18% 14%;
     --ai-message-foreground: 200 10% 92%;
 
-    /* Premium surface layers */
-    --surface-1: 210 25% 6%;
-    --surface-2: 210 22% 9%;
-    --surface-3: 210 20% 12%;
-
     /* Premium gradients - Dark */
-    --gradient-hero: linear-gradient(180deg, hsl(220 30% 4%), hsl(210 25% 6%));
-    --gradient-card: linear-gradient(135deg, hsl(210 25% 8%), hsl(210 20% 10%));
+    --gradient-hero: linear-gradient(180deg, hsl(200 25% 7%), hsl(200 22% 9%));
+    --gradient-card: linear-gradient(135deg, hsl(200 20% 11%), hsl(200 18% 13%));
     --gradient-accent: linear-gradient(135deg, hsl(175 55% 42%), hsl(175 60% 48%));
 
-    /* Premium shadows - Dark with depth */
-    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.3);
-    --shadow-md: 0 4px 12px -2px hsl(0 0% 0% / 0.5), 0 2px 6px -2px hsl(0 0% 0% / 0.3);
-    --shadow-lg: 0 10px 30px -5px hsl(0 0% 0% / 0.6), 0 4px 12px -4px hsl(0 0% 0% / 0.4);
-    --shadow-glow: 0 0 40px hsl(175 60% 48% / 0.15);
-    --shadow-premium: 0 10px 40px -10px hsl(0 0% 0% / 0.5);
+    /* Premium shadows - Dark */
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.2);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.3), 0 2px 4px -2px hsl(0 0% 0% / 0.2);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.4), 0 4px 6px -4px hsl(0 0% 0% / 0.3);
+    --shadow-glow: 0 0 30px hsl(175 60% 48% / 0.2);
 
     /* Sidebar - Dark */
-    --sidebar-background: 210 22% 6%;
+    --sidebar-background: 200 20% 9%;
     --sidebar-foreground: 200 10% 92%;
     --sidebar-primary: 175 60% 48%;
     --sidebar-primary-foreground: 200 25% 7%;
-    --sidebar-accent: 210 18% 12%;
+    --sidebar-accent: 200 18% 15%;
     --sidebar-accent-foreground: 200 10% 92%;
-    --sidebar-border: 210 15% 13%;
+    --sidebar-border: 200 18% 15%;
     --sidebar-ring: 175 60% 48%;
   }
 }
@@ -181,22 +175,16 @@
     @apply backdrop-blur-2xl border border-border/30;
   }
 
-  /* Chat container - Original Bahor dark theme */
-  .chat-container-premium {
-    @apply relative min-h-screen bg-background;
-  }
-
-  /* Subtle glow utilities */
   .glow-primary {
-    box-shadow: 0 0 20px hsl(var(--primary) / 0.2);
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
   }
 
   .glow-primary-strong {
-    box-shadow: 0 0 30px hsl(var(--primary) / 0.3);
+    box-shadow: 0 0 40px hsl(var(--primary) / 0.4);
   }
 
   .glow-primary-subtle {
-    box-shadow: 0 0 40px hsl(var(--primary) / 0.1);
+    box-shadow: 0 0 60px hsl(var(--primary) / 0.15);
   }
 
   /* Premium text gradients */
@@ -215,20 +203,6 @@
 
   .hover-scale {
     @apply transition-transform duration-300 hover:scale-[1.02];
-  }
-
-  /* Message bubbles - Clean, original Bahor style */
-  .bubble-user {
-    @apply bg-primary border border-primary/20 shadow-md;
-  }
-
-  .bubble-assistant {
-    @apply bg-card border border-border shadow-sm;
-  }
-
-  /* Composer */
-  .composer-premium {
-    @apply bg-card/95 backdrop-blur-lg border border-border shadow-lg;
   }
 }
 
@@ -351,43 +325,6 @@
 
 .chat-message-enter {
   animation: message-fade-in 0.25s ease-out forwards;
-}
-
-/* iOS Safari touch selection prevention - STRONG enforcement */
-@media (pointer: coarse) {
-  .no-ios-select,
-  .no-ios-select *,
-  .no-ios-select *::before,
-  .no-ios-select *::after {
-    -webkit-touch-callout: none !important;
-    -webkit-user-select: none !important;
-    user-select: none !important;
-    -webkit-tap-highlight-color: transparent !important;
-    touch-action: manipulation;
-  }
-  
-  /* Links should still be tappable */
-  .no-ios-select a {
-    pointer-events: auto;
-    cursor: pointer;
-  }
-  
-  /* Ensure prose/markdown content doesn't override */
-  .no-ios-select .prose,
-  .no-ios-select .prose * {
-    -webkit-touch-callout: none !important;
-    -webkit-user-select: none !important;
-    user-select: none !important;
-  }
-}
-
-/* Desktop: allow normal text selection */
-@media (pointer: fine) {
-  .no-ios-select,
-  .no-ios-select * {
-    -webkit-user-select: text;
-    user-select: text;
-  }
 }
 
 /* Typing indicator animation */

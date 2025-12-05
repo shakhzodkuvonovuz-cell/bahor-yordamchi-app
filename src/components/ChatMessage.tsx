@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useRef } from "react";
 import { Message } from "@/types/chat";
 import { ExternalLink, FileText, User } from "lucide-react";
 import { MessageActionsPopover } from "@/components/chat/MessageActions";
@@ -6,7 +6,6 @@ import { MessageActionsBar, MessageActionsSheet, MessageVariant } from "@/compon
 import BahorCard, { parseMessageForCards, hasCardContent } from "@/components/chat/BahorCard";
 import { CollapsibleMessage } from "@/components/chat";
 import { formatAssistantText } from "@/lib/formatAssistant";
-import { useIOSLongPressBlocker } from "@/hooks/useIOSLongPressBlocker";
 import bahorLogo from "@/assets/bahor-logo.png";
 
 interface ChatMessageProps {
@@ -41,6 +40,7 @@ export default function ChatMessage({
   isMobile = false,
 }: ChatMessageProps) {
   const isUser = message.role === "user";
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const [isPressed, setIsPressed] = useState(false);
   const [showMobileSheet, setShowMobileSheet] = useState(false);
 
@@ -48,18 +48,40 @@ export default function ChatMessage({
   const hasCards = !isUser && hasCardContent(message.content);
   const parsedSections = hasCards ? parseMessageForCards(message.content) : null;
 
-  // Use native event listener hook for iOS long-press blocking
-  const handleLongPress = useCallback(() => {
-    setShowMobileSheet(true);
-    setIsPressed(false);
-  }, []);
+  const handleTouchStart = () => {
+    if (isMobile) {
+      setIsPressed(true);
+      longPressTimer.current = setTimeout(() => {
+        setShowMobileSheet(true);
+        setIsPressed(false);
+      }, 400);
+    }
+  };
 
-  const bubbleRef = useIOSLongPressBlocker<HTMLDivElement>({
-    onLongPress: handleLongPress,
-    delay: 400,
-    moveThreshold: 10,
-    disabled: !isMobile,
-  });
+  const handleTouchEnd = () => {
+    setIsPressed(false);
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const handleTouchMove = () => {
+    // Cancel long-press if user scrolls
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+      setIsPressed(false);
+    }
+  };
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isMobile) {
+      setShowMobileSheet(true);
+    }
+  };
 
   const handleCopy = () => {
     onCopy?.(message.content);
@@ -97,17 +119,9 @@ export default function ChatMessage({
     if (!parsedSections) {
       const contentElement = (
         <div
-          className={`text-[15px] leading-[1.75] whitespace-pre-wrap [overflow-wrap:anywhere] [word-break:break-word] 
-            [&_pre]:mt-3 [&_pre]:rounded-xl [&_pre]:bg-black/30 [&_pre]:border [&_pre]:border-white/10 [&_pre]:text-foreground [&_pre]:text-[13px] [&_pre]:p-4 [&_pre]:overflow-x-auto [&_pre]:max-w-full 
-            [&_code]:font-mono [&_code]:text-[13px] [&_code]:bg-black/20 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded
-            [&_a]:text-primary [&_a]:underline [&_a]:break-all
-            [&_h1]:text-lg [&_h1]:font-semibold [&_h1]:mt-4 [&_h1]:mb-2
-            [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-3 [&_h2]:mb-1.5
-            [&_h3]:text-sm [&_h3]:font-medium [&_h3]:mt-2 [&_h3]:mb-1
-            [&_ul]:my-2 [&_ul]:pl-4 [&_ul]:list-disc
-            [&_ol]:my-2 [&_ol]:pl-4 [&_ol]:list-decimal
-            [&_li]:my-0.5
-            ${isUser ? "text-white/95" : "text-foreground/90"}`}
+          className={`text-[15px] leading-[1.75] whitespace-pre-wrap [overflow-wrap:anywhere] [word-break:break-word] [&_pre]:mt-3 [&_pre]:rounded-xl [&_pre]:bg-secondary/80 [&_pre]:text-foreground [&_pre]:text-[13px] [&_pre]:p-4 [&_pre]:overflow-x-auto [&_pre]:max-w-full [&_code]:font-mono [&_code]:text-[13px] [&_a]:text-primary [&_a]:underline [&_a]:break-all ${
+            isUser ? "" : "text-card-foreground"
+          }`}
         >
           {displayContent}
         </div>
@@ -155,19 +169,24 @@ export default function ChatMessage({
   return (
     <>
       <div
-        ref={bubbleRef}
         className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"} ${
           isUser ? "chat-message-user" : "chat-message-ai"
-        } group ${isMobile ? "no-ios-select" : ""}`}
+        } group animate-fade-in select-none`}
+        style={{ WebkitTouchCallout: 'none' }}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
+        onTouchMove={handleTouchMove}
+        onContextMenu={handleContextMenu}
       >
         {/* AI Avatar */}
         {!isUser && (
-          <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center mt-0.5">
-            <img src={bahorLogo} alt="Bahor AI" className="w-7 h-7 object-contain" />
+          <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-card border border-border/40 flex items-center justify-center mt-0.5 shadow-[0_0_12px_rgba(45,212,191,0.3)]">
+            <img src={bahorLogo} alt="Bahor AI" className="w-8 h-8 object-contain" />
           </div>
         )}
 
-        <div className={`relative min-w-0 ${isUser ? "max-w-[85%] sm:max-w-[70%]" : "max-w-[85%] sm:max-w-[75%]"}`}>
+        <div className="relative max-w-[88%] sm:max-w-[80%] lg:max-w-[75%] min-w-0">
           {/* Desktop actions button - appears on hover */}
           {showActions && !isMobile && isUser && (
             <div className="absolute left-0 -translate-x-full pr-2 top-1">
@@ -180,15 +199,15 @@ export default function ChatMessage({
           )}
 
           <div
-            className={`transition-all duration-150 ${
+            className={`rounded-2xl transition-transform duration-150 ${
               isPressed ? "scale-[0.98]" : ""
             } ${
               isUser
-                ? "bubble-user rounded-2xl rounded-tr-md text-white"
-                : "bubble-assistant rounded-2xl rounded-tl-md"
+                ? "bg-primary text-primary-foreground rounded-tr-md shadow-lg"
+                : "bg-card border border-border/40 rounded-tl-md shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.06)]"
             }`}
           >
-            <div className="px-4 py-3.5 sm:px-5 sm:py-4">
+            <div className={isUser ? "px-5 py-4" : "px-5 py-4"}>
               {/* Attachments */}
               {message.attachments && message.attachments.length > 0 && (
                 <div className="mb-3 space-y-2">
@@ -246,12 +265,12 @@ export default function ChatMessage({
               {message.content && renderContent()}
             </div>
 
-            {/* Timestamp - smaller, lower contrast */}
+            {/* Timestamp - only show for messages without cards (cards have their own timestamps) */}
             {!hasCards && (
-              <div className="px-4 sm:px-5 pb-2.5 -mt-1">
+              <div className="px-4 pb-2.5 -mt-1">
                 <span
-                  className={`text-[10px] ${
-                    isUser ? "text-white/40" : "text-muted-foreground/50"
+                  className={`text-[11px] ${
+                    isUser ? "text-primary-foreground/60" : "text-muted-foreground"
                   }`}
                 >
                   {new Date(message.timestamp).toLocaleTimeString("uz-UZ", {
@@ -295,8 +314,8 @@ export default function ChatMessage({
 
         {/* User Avatar */}
         {isUser && (
-          <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-primary flex items-center justify-center mt-0.5">
-            <User className="w-3.5 h-3.5 text-primary-foreground" />
+          <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center mt-0.5 shadow-lg glow-primary-subtle">
+            <User className="w-4 h-4 text-primary-foreground" />
           </div>
         )}
       </div>

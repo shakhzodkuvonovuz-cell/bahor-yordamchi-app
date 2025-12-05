@@ -1442,11 +1442,10 @@ export default function Chat() {
         </div>
       )}
 
-      {/* Main Chat Container - Original Bahor theme */}
-      <div className="chat-container-premium">
-        <div className="flex flex-col h-screen max-w-[820px] mx-auto">
-          {/* Header */}
-          <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg border-b border-border">
+      {/* Main Chat Container */}
+      <div className="flex flex-col h-screen max-w-5xl mx-auto">
+        {/* Header */}
+        <div className="sticky top-0 z-40 glass-strong border-b border-border/20">
           <div className="flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4">
             <div className="flex items-center gap-1.5 sm:gap-2">
               <button
@@ -1490,17 +1489,17 @@ export default function Chat() {
           </div>
         </div>
 
-        {/* Messages Area - Premium spacing */}
+        {/* Messages Area */}
         <div 
           ref={messagesContainerRef}
-          className="flex-1 overflow-y-auto px-4 sm:px-6 pb-4 pt-6 sm:pt-8"
+          className="flex-1 overflow-y-auto px-3 sm:px-6 pb-4 pt-4 sm:pt-6"
         >
           {isLoadingMessages ? (
             <ChatMessagesSkeleton />
           ) : messages.length === 0 ? (
             <ChatEmptyState modeInfo={modeInfo} modeTranslation={modeTranslation} />
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-5 max-w-3xl mx-auto">
               {/* Load more button */}
               {hasMoreMessages && (
                 <div className="flex justify-center">
@@ -1583,8 +1582,8 @@ export default function Chat() {
           onClick={() => scrollToBottom()} 
         />
 
-        {/* Input Area - Premium Floating Composer */}
-        <div className="sticky bottom-0 px-3 sm:px-6 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-6 pt-3">
+        {/* Input Area */}
+        <div className="sticky bottom-0 px-3 sm:px-6 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-6 pt-2">
           {modeSuggestions && modeSuggestions.length > 0 && messages.length === 0 && (
             <div className="pb-3">
               <QuickSuggestions
@@ -1595,7 +1594,7 @@ export default function Chat() {
             </div>
           )}
 
-          <div className="composer-premium rounded-2xl p-2 transition-all duration-200 focus-within:ring-2 focus-within:ring-primary/25 focus-within:border-primary/30">
+          <div className="glass-strong rounded-2xl border border-border/30 shadow-lg p-2">
             {editingMessageId && (
               <EditingIndicator onCancel={handleCancelEdit} />
             )}
@@ -1605,7 +1604,7 @@ export default function Chat() {
                 {pendingAttachments.map((attachment) => (
                   <div
                     key={attachment.id}
-                    className="flex items-center gap-2 px-3 py-2 bg-white/[0.05] rounded-xl border border-white/[0.08] animate-scale-in"
+                    className="flex items-center gap-2 px-3 py-2 bg-secondary/60 rounded-xl border border-border/30 animate-scale-in"
                   >
                     {attachment.type.startsWith("image/") && attachment.previewUrl ? (
                       <img
@@ -1614,7 +1613,7 @@ export default function Chat() {
                         className="w-10 h-10 object-cover rounded-lg"
                       />
                     ) : (
-                      <div className="w-10 h-10 bg-white/[0.05] rounded-lg flex items-center justify-center">
+                      <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">
                         <FileText className="w-5 h-5 text-muted-foreground" />
                       </div>
                     )}
@@ -1652,7 +1651,7 @@ export default function Chat() {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isLoading || typing || isUploading}
-                className="p-3 text-muted-foreground hover:text-foreground hover:bg-white/[0.05] rounded-xl transition-all duration-200 disabled:opacity-40 flex-shrink-0 active:scale-[0.97]"
+                className="p-3 text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-xl transition-all duration-200 disabled:opacity-40 flex-shrink-0 active:scale-95"
                 aria-label="Attach file"
               >
                 <Paperclip className="w-5 h-5" />
@@ -1666,7 +1665,7 @@ export default function Chat() {
                 placeholder={t.chatPlaceholder}
                 disabled={isLoading || typing}
                 rows={1}
-                className="flex-1 bg-transparent border-none outline-none resize-none text-[15px] leading-relaxed text-foreground placeholder:text-muted-foreground/50 disabled:opacity-50 max-h-[140px] overflow-y-auto py-3 px-1"
+                className="flex-1 bg-transparent border-none outline-none resize-none text-[15px] leading-relaxed text-foreground placeholder:text-muted-foreground/60 disabled:opacity-50 max-h-[140px] overflow-y-auto py-3 px-1"
               />
               
               <VoiceModeButton
@@ -1678,14 +1677,13 @@ export default function Chat() {
               <button
                 type="submit"
                 disabled={(!inputValue.trim() && pendingAttachments.length === 0) || isLoading || typing}
-                className="p-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0 active:scale-[0.97] glow-primary-subtle hover:glow-primary"
+                className="p-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0 active:scale-95 glow-primary-subtle hover:glow-primary"
                 aria-label={language === "uz" ? "Yuborish" : language === "en" ? "Send" : language === "ru" ? "Отправить" : "Gönder"}
               >
                 <Send className="w-5 h-5" />
               </button>
             </form>
           </div>
-        </div>
         </div>
       </div>
 
