@@ -348,6 +348,36 @@ export type Database = {
         }
         Relationships: []
       }
+      temp_html_docs: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          html: string
+          id: string
+          token: string
+          used: boolean | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          html: string
+          id?: string
+          token: string
+          used?: boolean | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          html?: string
+          id?: string
+          token?: string
+          used?: boolean | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       usage_counters: {
         Row: {
           date: string
