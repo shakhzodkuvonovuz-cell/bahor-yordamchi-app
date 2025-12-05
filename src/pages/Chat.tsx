@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Send, Trash2, Menu, Paperclip, X, FileText, RefreshCw, CheckCircle, AlertCircle } from "lucide-react";
+import { ArrowLeft, Send, Trash2, Menu, Paperclip, X, FileText, RefreshCw, CheckCircle, AlertCircle, Search, Square, StickyNote } from "lucide-react";
 import ChatMessage from "@/components/ChatMessage";
 import QuickSuggestions from "@/components/QuickSuggestions";
 import { DeleteChatModal } from "@/components/DeleteChatModal";
@@ -18,6 +18,10 @@ import { ChatListSkeleton, ChatMessagesSkeleton } from "@/components/chat/ChatLi
 import { ChatMigrationModal, checkMigrationNeeded } from "@/components/ChatMigrationModal";
 import { ReasonedChip } from "@/components/chat/ReasonedChip";
 import { TraceSheet } from "@/components/chat/TraceSheet";
+import ChatSearchBar from "@/components/ChatSearchBar";
+import ChatNotesDrawer, { getChatNotes } from "@/components/ChatNotesDrawer";
+import ChatStopButton from "@/components/ChatStopButton";
+import { useNetworkStatus, checkNetwork } from "@/hooks/useNetworkStatus";
 import { Message, ChatAttachment } from "@/types/chat";
 import type { TraceEvent, TraceComplete, MessageTrace, TraceStepData } from "@/types/trace";
 import { supabase } from "@/integrations/supabase/client";
@@ -207,6 +211,14 @@ export default function Chat() {
   const [showMobileActions, setShowMobileActions] = useState(false);
   const [activeActionMessageId, setActiveActionMessageId] = useState<string | null>(null);
   const [lastAssistantMessageId, setLastAssistantMessageId] = useState<string | null>(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  
+  // Network status
+  const { isOnline } = useNetworkStatus();
+  
+  // Abort controller for stop button
+  const streamAbortControllerRef = useRef<AbortController | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
