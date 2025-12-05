@@ -59,7 +59,10 @@ serve(async (req) => {
       }
       
       // Get trial status which includes plan from profiles table
-      const { data: trialData } = await supabaseAdmin.rpc('get_trial_status', { p_user_id: user.id });
+      const { data: trialData, error: trialError } = await supabaseAdmin.rpc('get_trial_status', { p_user_id: user.id });
+      
+      console.log('[my-entitlement] trialData:', JSON.stringify(trialData), 'error:', trialError);
+      
       const plan = (trialData as any)?.plan || 'free';
       const isBetaActive = (trialData as any)?.is_beta_active || false;
       const betaExpiresAt = (trialData as any)?.beta_expires_at || null;
@@ -78,6 +81,8 @@ serve(async (req) => {
       const used = usageData?.messages_used || 0;
       // Limits: dev_unlimited = -1, beta_premium = 10, free = 5
       const limit = isDevBypass || plan === 'dev_unlimited' ? -1 : plan === 'beta_premium' ? 10 : 5;
+
+      console.log('[my-entitlement] Response:', { email: userEmail, plan, isDevBypass, isBetaActive, limit, used });
 
       return new Response(
         JSON.stringify({
