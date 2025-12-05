@@ -1442,16 +1442,11 @@ export default function Chat() {
         </div>
       )}
 
-      {/* Main Chat Container - Premium */}
-      <div className="chat-container-premium noise-texture">
-        {/* Glow blobs for depth */}
-        <div className="glow-blob glow-blob-teal w-[500px] h-[500px] -top-40 -left-40 fixed opacity-60" />
-        <div className="glow-blob glow-blob-blue w-[400px] h-[400px] top-1/3 -right-32 fixed opacity-50" />
-        <div className="glow-blob glow-blob-purple w-[350px] h-[350px] bottom-20 left-1/4 fixed opacity-40" />
-        
-        <div className="relative z-10 flex flex-col h-screen max-w-[820px] mx-auto">
+      {/* Main Chat Container - Original Bahor theme */}
+      <div className="chat-container-premium">
+        <div className="flex flex-col h-screen max-w-[820px] mx-auto">
           {/* Header */}
-          <div className="sticky top-0 z-40 glass-strong border-b border-white/[0.06]">
+          <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg border-b border-border">
           <div className="flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4">
             <div className="flex items-center gap-1.5 sm:gap-2">
               <button

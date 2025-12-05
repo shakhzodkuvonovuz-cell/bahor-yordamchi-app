@@ -187,9 +187,9 @@ export default function ChatMessage({
         onTouchMove={handleTouchMove}
         onContextMenu={handleContextMenu}
       >
-        {/* AI Avatar - Premium glow */}
+        {/* AI Avatar */}
         {!isUser && (
-          <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-card to-secondary border border-white/[0.08] flex items-center justify-center mt-0.5 shadow-[0_0_20px_rgba(45,212,191,0.25)]">
+          <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center mt-0.5">
             <img src={bahorLogo} alt="Bahor AI" className="w-7 h-7 object-contain" />
           </div>
         )}
@@ -320,9 +320,9 @@ export default function ChatMessage({
           )}
         </div>
 
-        {/* User Avatar - Premium */}
+        {/* User Avatar */}
         {isUser && (
-          <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center mt-0.5 shadow-[0_4px_12px_-2px_hsl(175_60%_48%/0.4)]">
+          <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-primary flex items-center justify-center mt-0.5">
             <User className="w-3.5 h-3.5 text-primary-foreground" />
           </div>
         )}

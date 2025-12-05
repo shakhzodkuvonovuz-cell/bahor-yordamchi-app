@@ -101,35 +101,23 @@ function CollapsibleMessageComponent({
 
   return (
     <div className={`relative ${className}`}>
-      {/* Content container with smooth transition */}
+      {/* Content container with smooth transition - NO FADE OVERLAY */}
       <div
         ref={contentRef}
-        className={`overflow-hidden transition-[max-height] duration-200 ease-out ${
-          !isExpanded ? "relative" : ""
-        }`}
+        className="overflow-hidden transition-[max-height] duration-200 ease-out"
         style={{
           maxHeight: !isExpanded ? `${maxLines * 26}px` : "none",
         }}
       >
         {children}
-        
-        {/* Gradient fade overlay when collapsed */}
-        {!isExpanded && (
-          <div 
-            className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none"
-            style={{
-              background: 'linear-gradient(to top, hsl(var(--card)) 0%, hsl(var(--card) / 0.9) 30%, hsl(var(--card) / 0.5) 60%, transparent 100%)'
-            }}
-          />
-        )}
       </div>
 
-      {/* Expand/Collapse button - MUST be a real button, not anchor */}
-      <div className={`${!isExpanded ? "-mt-1 relative z-10" : "mt-2"}`}>
+      {/* Expand/Collapse button - simple inline link style */}
+      <div className="mt-2">
         <button
           type="button"
           onClick={handleToggle}
-          className="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium text-primary hover:text-primary/80 hover:bg-primary/5 rounded-lg transition-all duration-150 active:scale-[0.97] select-none"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors duration-150 active:scale-[0.97] select-none"
           aria-expanded={isExpanded}
         >
           <ChevronDown
