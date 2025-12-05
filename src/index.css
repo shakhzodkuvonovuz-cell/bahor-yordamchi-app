@@ -156,6 +156,20 @@
   }
 }
 
+/* iOS Safari text selection prevention - touch devices only, bubble content only */
+@media (pointer: coarse) {
+  .no-ios-callout {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .no-ios-callout * {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
 /* Premium glassmorphism utilities */
 @layer utilities {
   .glass {
