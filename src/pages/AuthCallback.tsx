@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import bahorLogo from "@/assets/bahor-logo.png";
 import { Button } from "@/components/ui/button";
 import { Loader2, AlertCircle } from "lucide-react";
+import { trackLoginCompleted } from "@/lib/analytics";
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -39,6 +40,7 @@ export default function AuthCallback() {
           if (exchangeError) {
             setError("Sessiya yaratishda xatolik yuz berdi. Qayta urinib ko'ring.");
           } else {
+            trackLoginCompleted("google");
             navigate(redirectTo, { replace: true });
           }
         } else {

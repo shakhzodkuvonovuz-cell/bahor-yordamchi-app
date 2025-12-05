@@ -19,6 +19,7 @@ import UsageProgressBar from "@/components/UsageProgressBar";
 import SettingsProfileSkeleton from "@/components/SettingsProfileSkeleton";
 import ProfileCompletionCard from "@/components/ProfileCompletionCard";
 import DataManagementModal from "@/components/DataManagementModal";
+import UserPreferencesSection from "@/components/UserPreferencesSection";
 import { useDailyUsageServer } from "@/hooks/useEntitlements";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -339,6 +340,9 @@ export default function Settings() {
               </div>
             </div>
           </section>
+
+          {/* User Preferences Section */}
+          <UserPreferencesSection />
 
           {/* Security Section */}
           <section className="bg-card border border-border/40 rounded-2xl overflow-hidden shadow-premium-sm w-full">
