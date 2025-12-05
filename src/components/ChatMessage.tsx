@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useCallback } from "react";
 import { Message } from "@/types/chat";
 import { ExternalLink, FileText, User } from "lucide-react";
 import { MessageActionsPopover } from "@/components/chat/MessageActions";
@@ -6,6 +6,7 @@ import { MessageActionsBar, MessageActionsSheet, MessageVariant } from "@/compon
 import BahorCard, { parseMessageForCards, hasCardContent } from "@/components/chat/BahorCard";
 import { CollapsibleMessage } from "@/components/chat";
 import { formatAssistantText } from "@/lib/formatAssistant";
+import { useIOSLongPressBlocker } from "@/hooks/useIOSLongPressBlocker";
 import bahorLogo from "@/assets/bahor-logo.png";
 
 interface ChatMessageProps {
@@ -40,7 +41,6 @@ export default function ChatMessage({
   isMobile = false,
 }: ChatMessageProps) {
   const isUser = message.role === "user";
-  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const [isPressed, setIsPressed] = useState(false);
   const [showMobileSheet, setShowMobileSheet] = useState(false);
 
@@ -48,52 +48,18 @@ export default function ChatMessage({
   const hasCards = !isUser && hasCardContent(message.content);
   const parsedSections = hasCards ? parseMessageForCards(message.content) : null;
 
-  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (isMobile) {
-      // Store initial touch position to detect scroll
-      const touch = e.touches[0];
-      touchStartPos.current = { x: touch.clientX, y: touch.clientY };
-      setIsPressed(true);
-      longPressTimer.current = setTimeout(() => {
-        setShowMobileSheet(true);
-        setIsPressed(false);
-      }, 400);
-    }
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
+  // Use native event listener hook for iOS long-press blocking
+  const handleLongPress = useCallback(() => {
+    setShowMobileSheet(true);
     setIsPressed(false);
-    touchStartPos.current = null;
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-  };
+  }, []);
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    // Cancel long-press if user scrolls (moved more than 10px)
-    if (longPressTimer.current && touchStartPos.current) {
-      const touch = e.touches[0];
-      const deltaX = Math.abs(touch.clientX - touchStartPos.current.x);
-      const deltaY = Math.abs(touch.clientY - touchStartPos.current.y);
-      if (deltaX > 10 || deltaY > 10) {
-        clearTimeout(longPressTimer.current);
-        longPressTimer.current = null;
-        setIsPressed(false);
-        touchStartPos.current = null;
-      }
-    }
-  };
-
-  const handleContextMenu = (e: React.MouseEvent | React.TouchEvent) => {
-    // Prevent native context menu on mobile
-    if (isMobile) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  };
+  const bubbleRef = useIOSLongPressBlocker<HTMLDivElement>({
+    onLongPress: handleLongPress,
+    delay: 400,
+    moveThreshold: 10,
+    disabled: !isMobile,
+  });
 
   const handleCopy = () => {
     onCopy?.(message.content);
@@ -189,14 +155,10 @@ export default function ChatMessage({
   return (
     <>
       <div
+        ref={bubbleRef}
         className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"} ${
           isUser ? "chat-message-user" : "chat-message-ai"
-        } group touch-message`}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        onTouchCancel={handleTouchEnd}
-        onTouchMove={handleTouchMove}
-        onContextMenu={handleContextMenu}
+        } group ${isMobile ? "no-ios-select" : ""}`}
       >
         {/* AI Avatar */}
         {!isUser && (

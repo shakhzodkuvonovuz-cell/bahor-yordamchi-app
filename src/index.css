@@ -353,31 +353,38 @@
   animation: message-fade-in 0.25s ease-out forwards;
 }
 
-/* iOS Safari touch selection prevention - touch devices only */
+/* iOS Safari touch selection prevention - STRONG enforcement */
 @media (pointer: coarse) {
-  .touch-message,
-  .touch-message * {
+  .no-ios-select,
+  .no-ios-select *,
+  .no-ios-select *::before,
+  .no-ios-select *::after {
     -webkit-touch-callout: none !important;
     -webkit-user-select: none !important;
     user-select: none !important;
-    -webkit-tap-highlight-color: transparent;
+    -webkit-tap-highlight-color: transparent !important;
+    touch-action: manipulation;
   }
   
-  /* Allow links to be tappable but not selectable */
-  .touch-message a {
-    -webkit-touch-callout: none !important;
+  /* Links should still be tappable */
+  .no-ios-select a {
     pointer-events: auto;
+    cursor: pointer;
+  }
+  
+  /* Ensure prose/markdown content doesn't override */
+  .no-ios-select .prose,
+  .no-ios-select .prose * {
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
   }
 }
 
 /* Desktop: allow normal text selection */
 @media (pointer: fine) {
-  .touch-message {
-    -webkit-user-select: text;
-    user-select: text;
-  }
-  
-  .touch-message * {
+  .no-ios-select,
+  .no-ios-select * {
     -webkit-user-select: text;
     user-select: text;
   }
