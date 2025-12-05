@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, FileText, Images, Merge, Split, Minimize2, Droplet, Hash, ScanText, Download, RefreshCw, Loader2, File, X, Plus } from "lucide-react";
+import { ArrowLeft, FileText, Images, Merge, Split, Minimize2, Droplet, Hash, ScanText, Download, RefreshCw, Loader2, File, X, Plus, FileUp, Image, RotateCw, Lock, Unlock, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,54 +25,84 @@ interface UserFile {
 const TOOLS = [
   { id: "htmlpdf", icon: FileText, labelKey: "docs.tool.htmlpdf", premium: false },
   { id: "imagepdf", icon: Images, labelKey: "docs.tool.imagepdf", premium: false },
+  { id: "officepdf", icon: FileUp, labelKey: "docs.tool.officepdf", premium: false },
   { id: "merge", icon: Merge, labelKey: "docs.tool.merge", premium: false },
   { id: "split", icon: Split, labelKey: "docs.tool.split", premium: false },
   { id: "compress", icon: Minimize2, labelKey: "docs.tool.compress", premium: false },
+  { id: "pdfjpg", icon: Image, labelKey: "docs.tool.pdfjpg", premium: false },
   { id: "watermark", icon: Droplet, labelKey: "docs.tool.watermark", premium: false },
   { id: "pagenumber", icon: Hash, labelKey: "docs.tool.pagenumber", premium: false },
+  { id: "rotate", icon: RotateCw, labelKey: "docs.tool.rotate", premium: false },
   { id: "ocr", icon: ScanText, labelKey: "docs.tool.ocr", premium: true },
+  { id: "protect", icon: Lock, labelKey: "docs.tool.protect", premium: true },
+  { id: "unlock", icon: Unlock, labelKey: "docs.tool.unlock", premium: true },
+  { id: "repair", icon: Wrench, labelKey: "docs.tool.repair", premium: true },
 ];
 
 const TOOL_LABELS: Record<string, Record<string, string>> = {
   uz: {
     htmlpdf: "Matndan PDF",
     imagepdf: "Rasmlardan PDF",
-    merge: "PDF birlashtirish",
-    split: "PDF bo'lish",
-    compress: "PDF siqish",
+    officepdf: "Office → PDF",
+    merge: "Birlashtirish",
+    split: "Bo'lish",
+    compress: "Siqish",
+    pdfjpg: "PDF → Rasm",
     watermark: "Watermark",
-    pagenumber: "Sahifa raqamlash",
-    ocr: "OCR (Premium)",
+    pagenumber: "Sahifa raqam",
+    rotate: "Aylantirish",
+    ocr: "OCR",
+    protect: "Himoyalash",
+    unlock: "Ochish",
+    repair: "Tuzatish",
   },
   en: {
     htmlpdf: "Text to PDF",
     imagepdf: "Images to PDF",
-    merge: "Merge PDFs",
-    split: "Split PDF",
-    compress: "Compress PDF",
+    officepdf: "Office → PDF",
+    merge: "Merge",
+    split: "Split",
+    compress: "Compress",
+    pdfjpg: "PDF → Images",
     watermark: "Watermark",
     pagenumber: "Page Numbers",
-    ocr: "OCR (Premium)",
+    rotate: "Rotate",
+    ocr: "OCR",
+    protect: "Protect",
+    unlock: "Unlock",
+    repair: "Repair",
   },
   ru: {
     htmlpdf: "Текст в PDF",
     imagepdf: "Изображения в PDF",
-    merge: "Объединить PDF",
-    split: "Разделить PDF",
-    compress: "Сжать PDF",
+    officepdf: "Office → PDF",
+    merge: "Объединить",
+    split: "Разделить",
+    compress: "Сжать",
+    pdfjpg: "PDF → Изобр.",
     watermark: "Водяной знак",
-    pagenumber: "Нумерация страниц",
-    ocr: "OCR (Премиум)",
+    pagenumber: "Нумерация",
+    rotate: "Повернуть",
+    ocr: "OCR",
+    protect: "Защита",
+    unlock: "Разблокир.",
+    repair: "Восстановить",
   },
   tr: {
     htmlpdf: "Metinden PDF",
     imagepdf: "Resimlerden PDF",
-    merge: "PDF Birleştir",
-    split: "PDF Böl",
-    compress: "PDF Sıkıştır",
+    officepdf: "Office → PDF",
+    merge: "Birleştir",
+    split: "Böl",
+    compress: "Sıkıştır",
+    pdfjpg: "PDF → Resim",
     watermark: "Filigran",
-    pagenumber: "Sayfa Numarası",
-    ocr: "OCR (Premium)",
+    pagenumber: "Sayfa No",
+    rotate: "Döndür",
+    ocr: "OCR",
+    protect: "Koruma",
+    unlock: "Kilit Aç",
+    repair: "Onar",
   },
 };
 
@@ -94,11 +124,15 @@ export default function DocumentTools() {
   const [template, setTemplate] = useState("clean");
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [selectedPdfs, setSelectedPdfs] = useState<File[]>([]);
+  const [selectedOfficeFile, setSelectedOfficeFile] = useState<File | null>(null);
   const [watermarkText, setWatermarkText] = useState("");
   const [splitRanges, setSplitRanges] = useState("1-3");
   const [compressLevel, setCompressLevel] = useState("recommended");
   const [pagePosition, setPagePosition] = useState("bottom-right");
   const [ocrLanguage, setOcrLanguage] = useState("eng");
+  const [rotateDegrees, setRotateDegrees] = useState("90");
+  const [protectPassword, setProtectPassword] = useState("");
+  const [unlockPassword, setUnlockPassword] = useState("");
 
   const t = (key: string) => {
     const labels: Record<string, Record<string, string>> = {
@@ -354,6 +388,48 @@ export default function DocumentTools() {
         }
         const path = await uploadToStorage(selectedPdfs[0]);
         inputs = { pdf: { storagePath: path, bucket: "chat-attachments" }, language: ocrLanguage };
+      } else if (selectedTool === "officepdf") {
+        if (!selectedOfficeFile) {
+          throw new Error("Office faylni tanlang (DOCX, PPTX, XLSX)");
+        }
+        const path = await uploadToStorage(selectedOfficeFile);
+        inputs = { file: { storagePath: path, bucket: "chat-attachments", mimeType: selectedOfficeFile.type } };
+      } else if (selectedTool === "pdfjpg") {
+        if (selectedPdfs.length === 0) {
+          throw new Error("PDF faylni tanlang");
+        }
+        const path = await uploadToStorage(selectedPdfs[0]);
+        inputs = { pdf: { storagePath: path, bucket: "chat-attachments" }, mode: "pages" };
+      } else if (selectedTool === "rotate") {
+        if (selectedPdfs.length === 0) {
+          throw new Error("PDF faylni tanlang");
+        }
+        const path = await uploadToStorage(selectedPdfs[0]);
+        inputs = { pdf: { storagePath: path, bucket: "chat-attachments" }, degrees: parseInt(rotateDegrees) };
+      } else if (selectedTool === "protect") {
+        if (selectedPdfs.length === 0) {
+          throw new Error("PDF faylni tanlang");
+        }
+        if (!protectPassword.trim()) {
+          throw new Error("Parol kiriting");
+        }
+        const path = await uploadToStorage(selectedPdfs[0]);
+        inputs = { pdf: { storagePath: path, bucket: "chat-attachments" }, password: protectPassword };
+      } else if (selectedTool === "unlock") {
+        if (selectedPdfs.length === 0) {
+          throw new Error("PDF faylni tanlang");
+        }
+        if (!unlockPassword.trim()) {
+          throw new Error("Parol kiriting");
+        }
+        const path = await uploadToStorage(selectedPdfs[0]);
+        inputs = { pdf: { storagePath: path, bucket: "chat-attachments" }, password: unlockPassword };
+      } else if (selectedTool === "repair") {
+        if (selectedPdfs.length === 0) {
+          throw new Error("PDF faylni tanlang");
+        }
+        const path = await uploadToStorage(selectedPdfs[0]);
+        inputs = { pdf: { storagePath: path, bucket: "chat-attachments" } };
       }
 
       const { data: session } = await supabase.auth.getSession();
@@ -376,7 +452,10 @@ export default function DocumentTools() {
       setContent("");
       setSelectedImages([]);
       setSelectedPdfs([]);
+      setSelectedOfficeFile(null);
       setWatermarkText("");
+      setProtectPassword("");
+      setUnlockPassword("");
       
       // Reload files
       await loadFiles();
@@ -436,7 +515,7 @@ export default function DocumentTools() {
                 <CardTitle className="text-base">{t("docs.selectTool")}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                   {TOOLS.map((tool) => {
                     const Icon = tool.icon;
                     const isSelected = selectedTool === tool.id;
@@ -444,13 +523,14 @@ export default function DocumentTools() {
                       <Button
                         key={tool.id}
                         variant={isSelected ? "default" : "outline"}
-                        className={`flex flex-col items-center gap-1 h-auto py-3 ${tool.premium ? "border-amber-500/50" : ""}`}
+                        className={`flex flex-col items-center gap-1 h-auto py-2.5 px-2 text-xs ${tool.premium ? "border-amber-500/50" : ""}`}
                         onClick={() => setSelectedTool(tool.id)}
                       >
-                        <Icon className="h-5 w-5" />
-                        <span className="text-xs text-center leading-tight">
+                        <Icon className="h-4 w-4" />
+                        <span className="text-[10px] text-center leading-tight line-clamp-1">
                           {TOOL_LABELS[language]?.[tool.id] || TOOL_LABELS.en[tool.id]}
                         </span>
+                        {tool.premium && <span className="text-[8px] text-amber-500">Pro</span>}
                       </Button>
                     );
                   })}
@@ -547,7 +627,7 @@ export default function DocumentTools() {
                   </div>
                 )}
 
-                {(selectedTool === "merge" || selectedTool === "split" || selectedTool === "compress" || selectedTool === "watermark" || selectedTool === "pagenumber" || selectedTool === "ocr") && (
+                {(selectedTool === "merge" || selectedTool === "split" || selectedTool === "compress" || selectedTool === "watermark" || selectedTool === "pagenumber" || selectedTool === "ocr" || selectedTool === "pdfjpg" || selectedTool === "rotate" || selectedTool === "protect" || selectedTool === "unlock" || selectedTool === "repair") && (
                   <div>
                     <label className="text-sm font-medium mb-2 block">{t("docs.selectPdfs")}</label>
                     <div className="flex flex-wrap gap-2 mb-2">
@@ -589,6 +669,49 @@ export default function DocumentTools() {
                         }
                       }}
                     />
+                  </div>
+                )}
+
+                {selectedTool === "officepdf" && (
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      {language === "uz" ? "Office faylni tanlang" : language === "ru" ? "Выберите Office файл" : language === "tr" ? "Office dosyası seçin" : "Select Office file"}
+                    </label>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {selectedOfficeFile && (
+                        <div className="relative bg-muted rounded-lg p-2 flex items-center gap-2">
+                          <FileUp className="h-8 w-8 text-blue-500" />
+                          <span className="text-xs truncate max-w-[120px]">{selectedOfficeFile.name}</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => setSelectedOfficeFile(null)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={() => document.getElementById("office-input")?.click()}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      {t("docs.addFile")}
+                    </Button>
+                    <input
+                      id="office-input"
+                      type="file"
+                      accept=".doc,.docx,.ppt,.pptx,.xls,.xlsx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) {
+                          setSelectedOfficeFile(e.target.files[0]);
+                        }
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground mt-2">DOCX, PPTX, XLSX</p>
                   </div>
                 )}
 
@@ -663,6 +786,52 @@ export default function DocumentTools() {
                         <SelectItem value="ara">العربية</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                )}
+
+                {selectedTool === "rotate" && (
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      {language === "uz" ? "Burchak" : language === "ru" ? "Угол" : language === "tr" ? "Açı" : "Angle"}
+                    </label>
+                    <Select value={rotateDegrees} onValueChange={setRotateDegrees}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="90">90°</SelectItem>
+                        <SelectItem value="180">180°</SelectItem>
+                        <SelectItem value="270">270°</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {selectedTool === "protect" && (
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      {language === "uz" ? "Parol" : language === "ru" ? "Пароль" : language === "tr" ? "Şifre" : "Password"}
+                    </label>
+                    <Input
+                      type="password"
+                      value={protectPassword}
+                      onChange={(e) => setProtectPassword(e.target.value)}
+                      placeholder="••••••••"
+                    />
+                  </div>
+                )}
+
+                {selectedTool === "unlock" && (
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      {language === "uz" ? "Joriy parol" : language === "ru" ? "Текущий пароль" : language === "tr" ? "Mevcut şifre" : "Current password"}
+                    </label>
+                    <Input
+                      type="password"
+                      value={unlockPassword}
+                      onChange={(e) => setUnlockPassword(e.target.value)}
+                      placeholder="••••••••"
+                    />
                   </div>
                 )}
 
