@@ -917,33 +917,59 @@ export default function Chat() {
       if (attachmentsToProcess.length > 0) {
         const hasImages = attachmentsToProcess.some(att => isVisionSupportedImage(att));
         
-        setProcessingStatus(
-          hasImages
-            ? (language === "uz" ? "Tasvir tahlil qilinmoqda..." : 
-               language === "en" ? "Analyzing image..." :
-               language === "ru" ? "Анализ изображения..." : 
-               "Görsel analiz ediliyor...")
-            : (language === "uz" ? "Hujjat o'qilmoqda..." : 
-               language === "en" ? "Reading document..." :
-               language === "ru" ? "Чтение документа..." : 
-               "Belge okunuyor...")
-        );
+        // Check if any attachments already have extracted text (from PDF text extraction on upload)
+        const attachmentsWithExtractedText = attachmentsToProcess.filter(att => att.extractedText && att.readStatus === 'ready');
+        const attachmentsNeedingProcessing = attachmentsToProcess.filter(att => !att.extractedText || att.readStatus !== 'ready');
         
-        const analysisResult = await processAttachments(
-          attachmentsToProcess,
-          {
-            mode: mode || 'general',
-            language,
-            userPrompt: content.trim(),
-            onProgress: (status) => setProcessingStatus(status),
+        // Use already-extracted text for text-based PDFs
+        if (attachmentsWithExtractedText.length > 0) {
+          const extractedContents = attachmentsWithExtractedText
+            .map(att => `[${att.name}]\n${att.extractedText}`)
+            .join('\n\n---\n\n');
+          
+          analysisContent = extractedContents;
+          analysisType = 'ocr';
+        }
+        
+        // Only process attachments that need Vision/OCR analysis (images, scanned PDFs)
+        if (attachmentsNeedingProcessing.length > 0) {
+          setProcessingStatus(
+            hasImages
+              ? (language === "uz" ? "Tasvir tahlil qilinmoqda..." : 
+                 language === "en" ? "Analyzing image..." :
+                 language === "ru" ? "Анализ изображения..." : 
+                 "Görsel analiz ediliyor...")
+              : (language === "uz" ? "Hujjat o'qilmoqda..." : 
+                 language === "en" ? "Reading document..." :
+                 language === "ru" ? "Чтение документа..." : 
+                 "Belge okunuyor...")
+          );
+          
+          const analysisResult = await processAttachments(
+            attachmentsNeedingProcessing,
+            {
+              mode: mode || 'general',
+              language,
+              userPrompt: content.trim(),
+              onProgress: (status) => setProcessingStatus(status),
+            }
+          );
+          
+          if (analysisResult.content) {
+            // Combine with already extracted text
+            if (analysisContent) {
+              analysisContent = `${analysisContent}\n\n---\n\n${analysisResult.content}`;
+              analysisType = 'mixed';
+            } else {
+              analysisContent = analysisResult.content;
+              analysisType = analysisResult.type;
+            }
           }
-        );
+          
+          setProcessingStatus(null);
+        }
         
-        analysisContent = analysisResult.content;
-        analysisType = analysisResult.type;
-        setProcessingStatus(null);
-        
-        if (!analysisContent && attachmentsToProcess.length > 0) {
+        if (!analysisContent && attachmentsToProcess.length > 0 && !attachmentsWithExtractedText.length) {
           toast({
             title: language === "uz" ? "Ogohlantirish" : "Warning",
             description: language === "uz" 
