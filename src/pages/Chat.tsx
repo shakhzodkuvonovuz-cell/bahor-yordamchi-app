@@ -744,12 +744,12 @@ export default function Chat() {
           continue;
         }
 
-        // Try to extract text from file (for text-like files)
+        // Try to extract text from file (for text-like files AND PDFs)
         let extractedText: string | undefined;
         let readStatus: ChatAttachment['readStatus'] = undefined;
         
-        if (!isImage && !isPDF) {
-          // Attempt text extraction for non-image/PDF files
+        if (!isImage) {
+          // Attempt text extraction for non-image files (including PDFs)
           const extraction = await extractTextFromFile(file);
           if (extraction.status === 'ready' && extraction.text) {
             extractedText = extraction.text;

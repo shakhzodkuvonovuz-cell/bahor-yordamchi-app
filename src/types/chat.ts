@@ -10,7 +10,7 @@ export interface ChatAttachment {
   url?: string;
   previewUrl?: string;
   extractedText?: string;
-  readStatus?: 'ready' | 'unsupported' | 'error';
+  readStatus?: 'ready' | 'unsupported' | 'error' | 'processing';
 }
 
 export interface Message {
