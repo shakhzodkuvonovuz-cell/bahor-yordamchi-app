@@ -186,6 +186,7 @@ export default function Chat() {
   const [isVoiceModeOpen, setIsVoiceModeOpen] = useState(false);
   const [searchUsed, setSearchUsed] = useState(false);
   const [searchUrls, setSearchUrls] = useState<string[]>([]);
+  const [failedMessageContent, setFailedMessageContent] = useState<string | null>(null);
   
   // Trace state for "Reasoned for Xs" feature
   const [activeTrace, setActiveTrace] = useState<MessageTrace | null>(null);
@@ -990,24 +991,34 @@ export default function Chat() {
         return;
       }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({
-            messages: conversationMessages,
-            mode: mode || "general",
-            attachments: attachmentsToProcess,
-            hasAnalysis: !!analysisContent,
-            analysisType,
-            threadSummary: threadSummary || undefined,
-          }),
-        }
-      );
+      // Add timeout with AbortController (40 seconds)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 40000);
+      
+      let response: Response;
+      try {
+        response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({
+              messages: conversationMessages,
+              mode: mode || "general",
+              attachments: attachmentsToProcess,
+              hasAnalysis: !!analysisContent,
+              analysisType,
+              threadSummary: threadSummary || undefined,
+            }),
+            signal: controller.signal,
+          }
+        );
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -1193,6 +1204,9 @@ export default function Chat() {
           }
           
           refreshProfile();
+          
+          // Clear failed message on success
+          setFailedMessageContent(null);
         },
         onError: (error) => {
           throw error;
@@ -1207,11 +1221,21 @@ export default function Chat() {
       setActiveTrace(null);
       inputRef.current?.focus();
       
+      // Store failed message for retry
+      setFailedMessageContent(content.trim());
+      
+      // Check if it was a timeout (AbortError)
+      const isTimeout = error instanceof Error && error.name === 'AbortError';
+      
       toast({
         title: language === "uz" ? "Xatolik" : "Error",
-        description: language === "uz" 
-          ? "Internetda muammo. Qayta urinib ko'ring." 
-          : "Network error. Please try again.",
+        description: isTimeout 
+          ? (language === "uz" 
+              ? "Ulanish cho'zildi. Qayta urinib ko'ring." 
+              : "Connection timed out. Please try again.")
+          : (language === "uz" 
+              ? "Internetda muammo. Qayta urinib ko'ring." 
+              : "Network error. Please try again."),
         variant: "destructive",
       });
     }
@@ -1635,6 +1659,22 @@ export default function Chat() {
                     </button>
                   </div>
                 ))}
+            </div>
+            )}
+
+            {/* Retry button when last message failed */}
+            {failedMessageContent && !isLoading && !typing && (
+              <div className="mb-2 px-2">
+                <button
+                  onClick={() => {
+                    setFailedMessageContent(null);
+                    handleSendMessage(failedMessageContent);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 text-sm bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-xl transition-colors w-full justify-center"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  {language === "uz" ? "Qayta yuborish" : "Retry"}
+                </button>
               </div>
             )}
 

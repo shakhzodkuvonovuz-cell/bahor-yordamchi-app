@@ -1,11 +1,21 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Send, Settings, ArrowRight } from "lucide-react";
+import { Send, Settings, ArrowRight, AlertCircle } from "lucide-react";
 import { CHAT_MODES } from "@/data/modes";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { getTranslation } from "@/data/translations";
 import bahorLogo from "@/assets/bahor-logo.png";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+
+// Beta prompt chips
+const BETA_PROMPTS = [
+  { label: "📝 IELTS essay", mode: "ielts", prompt: "IELTS Writing Task 2 uchun essay yozishda yordam ber" },
+  { label: "💼 CV tayyorlash", mode: "job", prompt: "Professional CV tayyorlashda yordam ber" },
+  { label: "🍳 Taom retsepti", mode: "daily", prompt: "Oson va mazali taom retseptini ber" },
+  { label: "🏠 Kundalik maslahat", mode: "daily", prompt: "Bugun qanday foydali ish qilsam bo'ladi?" },
+  { label: "💻 Kod yozish", mode: "tech", prompt: "React da button komponenti yozishda yordam ber" },
+  { label: "📐 Matematika", mode: "homework", prompt: "Kvadrat tenglama yechishni tushuntir" },
+];
 
 export default function Home() {
   const navigate = useNavigate();
@@ -23,6 +33,10 @@ export default function Home() {
       e.preventDefault();
       handleSend();
     }
+  };
+
+  const handlePromptChip = (mode: string, prompt: string) => {
+    navigate(`/chat/${mode}`, { state: { initialMessage: prompt } });
   };
 
   // Mode icons mapping
@@ -46,7 +60,7 @@ export default function Home() {
         <div className="absolute bottom-1/4 left-1/4 w-[300px] h-[300px] bg-primary/3 rounded-full blur-[80px]" />
       </div>
       
-      <div className="max-w-3xl lg:max-w-5xl mx-auto px-4 py-6 space-y-8 relative z-10">
+      <div className="max-w-3xl lg:max-w-5xl mx-auto px-4 py-6 space-y-6 relative z-10">
         {/* Header */}
         <header className="flex justify-between items-center px-1 pt-2">
           <div className="flex items-center gap-3">
@@ -71,8 +85,21 @@ export default function Home() {
           </div>
         </header>
 
+        {/* Beta Banner */}
+        <div className="bg-primary/10 border border-primary/20 rounded-xl px-4 py-3 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm text-foreground font-medium">
+              Beta versiya
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Xatolar bo'lishi mumkin. Feedback juda kerak — <button onClick={() => navigate("/feedback")} className="text-primary hover:underline">xabar bering</button>
+            </p>
+          </div>
+        </div>
+
         {/* Hero Section */}
-        <div className="text-center pt-6 pb-4">
+        <div className="text-center pt-4 pb-2">
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-relaxed mb-2">
             {t.heroText}
           </h1>
@@ -102,8 +129,21 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Quick Prompt Chips */}
+        <div className="flex flex-wrap gap-2 justify-center">
+          {BETA_PROMPTS.map((item, index) => (
+            <button
+              key={index}
+              onClick={() => handlePromptChip(item.mode, item.prompt)}
+              className="px-3 py-1.5 text-sm bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-full transition-colors"
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
         {/* Section Title */}
-        <div className="text-center pt-4">
+        <div className="text-center pt-2">
           <p className="text-sm text-muted-foreground font-medium">
             {t.subtitle}
           </p>

@@ -18,6 +18,10 @@ import AuthPhone from "./pages/AuthPhone";
 import AuthCallback from "./pages/AuthCallback";
 import Landing from "./pages/Landing";
 import AdminEntitlements from "./pages/AdminEntitlements";
+import Feedback from "./pages/Feedback";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
+import Support from "./pages/Support";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +44,9 @@ const App = () => (
                   <Route path="/auth/phone" element={<AuthPhone />} />
                   <Route path="/auth/callback" element={<AuthCallback />} />
                   <Route path="/modes" element={<Home />} />
+                  <Route path="/terms" element={<Terms />} />
+                  <Route path="/privacy" element={<Privacy />} />
+                  <Route path="/support" element={<Support />} />
                   <Route 
                     path="/chat/:mode" 
                     element={
@@ -53,6 +60,14 @@ const App = () => (
                     element={
                       <ProtectedRoute>
                         <Settings />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/feedback" 
+                    element={
+                      <ProtectedRoute>
+                        <Feedback />
                       </ProtectedRoute>
                     } 
                   />

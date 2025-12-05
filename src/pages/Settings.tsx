@@ -484,68 +484,52 @@ export default function Settings() {
             </header>
             <div className="divide-y divide-border/40">
               {/* Yordam markazi */}
-              <Collapsible open={openSection === "help"} onOpenChange={() => toggleSection("help")}>
-                <CollapsibleTrigger className="w-full px-4 min-h-[56px] flex items-center justify-between hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <HelpCircle className="w-5 h-5 text-muted-foreground shrink-0" />
-                    <span className="font-medium text-foreground text-[15px]">{t.settings.helpCenter}</span>
-                  </div>
-                  <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${openSection === "help" ? "rotate-90" : ""}`} />
-                </CollapsibleTrigger>
-                <CollapsibleContent className="px-4 py-3 bg-muted/30">
-                  <p className="text-[13px] text-muted-foreground leading-relaxed">
-                    FAQ va qo'llanmalar tez orada qo'shiladi. Savollaringiz bo'lsa: <a href="mailto:support@bahorai.com" className="text-primary underline">support@bahorai.com</a>
-                  </p>
-                </CollapsibleContent>
-              </Collapsible>
+              <button
+                onClick={() => navigate("/support")}
+                className="w-full px-4 min-h-[56px] flex items-center justify-between hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <HelpCircle className="w-5 h-5 text-muted-foreground shrink-0" />
+                  <span className="font-medium text-foreground text-[15px]">{t.settings.helpCenter}</span>
+                </div>
+                <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+              </button>
 
               {/* Xatolik haqida xabar berish */}
-              <Collapsible open={openSection === "bug"} onOpenChange={() => toggleSection("bug")}>
-                <CollapsibleTrigger className="w-full px-4 min-h-[56px] flex items-center justify-between hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <Mail className="w-5 h-5 text-muted-foreground shrink-0" />
-                    <span className="font-medium text-foreground text-[15px]">{t.settings.reportBug}</span>
-                  </div>
-                  <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${openSection === "bug" ? "rotate-90" : ""}`} />
-                </CollapsibleTrigger>
-                <CollapsibleContent className="px-4 py-3 bg-muted/30">
-                  <p className="text-[13px] text-muted-foreground leading-relaxed">
-                    Xatolik haqida: <a href="mailto:support@bahorai.com?subject=Xatolik haqida" className="text-primary underline">support@bahorai.com</a>
-                  </p>
-                </CollapsibleContent>
-              </Collapsible>
+              <button
+                onClick={() => navigate("/feedback")}
+                className="w-full px-4 min-h-[56px] flex items-center justify-between hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <Mail className="w-5 h-5 text-muted-foreground shrink-0" />
+                  <span className="font-medium text-foreground text-[15px]">{t.settings.reportBug}</span>
+                </div>
+                <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+              </button>
 
               {/* Foydalanish shartlari */}
-              <Collapsible open={openSection === "terms"} onOpenChange={() => toggleSection("terms")}>
-                <CollapsibleTrigger className="w-full px-4 min-h-[56px] flex items-center justify-between hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <FileText className="w-5 h-5 text-muted-foreground shrink-0" />
-                    <span className="font-medium text-foreground text-[15px]">{t.settings.terms}</span>
-                  </div>
-                  <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${openSection === "terms" ? "rotate-90" : ""}`} />
-                </CollapsibleTrigger>
-                <CollapsibleContent className="px-4 py-3 bg-muted/30">
-                  <p className="text-[13px] text-muted-foreground leading-relaxed">
-                    Foydalanish shartlari sahifasi tayyorlanmoqda.
-                  </p>
-                </CollapsibleContent>
-              </Collapsible>
+              <button
+                onClick={() => navigate("/terms")}
+                className="w-full px-4 min-h-[56px] flex items-center justify-between hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <FileText className="w-5 h-5 text-muted-foreground shrink-0" />
+                  <span className="font-medium text-foreground text-[15px]">{t.settings.terms}</span>
+                </div>
+                <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+              </button>
 
               {/* Maxfiylik siyosati */}
-              <Collapsible open={openSection === "privacy"} onOpenChange={() => toggleSection("privacy")}>
-                <CollapsibleTrigger className="w-full px-4 min-h-[56px] flex items-center justify-between hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <FileText className="w-5 h-5 text-muted-foreground shrink-0" />
-                    <span className="font-medium text-foreground text-[15px]">{t.settings.privacy}</span>
-                  </div>
-                  <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${openSection === "privacy" ? "rotate-90" : ""}`} />
-                </CollapsibleTrigger>
-                <CollapsibleContent className="px-4 py-3 bg-muted/30">
-                  <p className="text-[13px] text-muted-foreground leading-relaxed">
-                    Maxfiylik siyosati tez kunda qo'shiladi.
-                  </p>
-                </CollapsibleContent>
-              </Collapsible>
+              <button
+                onClick={() => navigate("/privacy")}
+                className="w-full px-4 min-h-[56px] flex items-center justify-between hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <FileText className="w-5 h-5 text-muted-foreground shrink-0" />
+                  <span className="font-medium text-foreground text-[15px]">{t.settings.privacy}</span>
+                </div>
+                <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+              </button>
             </div>
           </section>
 
