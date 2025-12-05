@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Send, Trash2, Menu, Paperclip, X, FileText, RefreshCw, CheckCircle, AlertCircle, Search, Square, StickyNote } from "lucide-react";
+import { ArrowLeft, Send, Trash2, Menu, Paperclip, X, FileText, RefreshCw, CheckCircle, AlertCircle, Search, Square, StickyNote, FileStack } from "lucide-react";
 import ChatMessage from "@/components/ChatMessage";
 import QuickSuggestions from "@/components/QuickSuggestions";
 import { DeleteChatModal } from "@/components/DeleteChatModal";
@@ -1828,6 +1828,17 @@ export default function Chat() {
                 aria-label="Attach file"
               >
                 <Paperclip className="w-5 h-5" />
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => navigate("/tools/documents")}
+                disabled={isLoading || typing}
+                className="p-3 text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-xl transition-all duration-200 disabled:opacity-40 flex-shrink-0 active:scale-95"
+                aria-label={language === "uz" ? "PDF Asboblar" : language === "ru" ? "PDF Инструменты" : language === "tr" ? "PDF Araçları" : "PDF Tools"}
+                title={language === "uz" ? "PDF Asboblar" : language === "ru" ? "PDF Инструменты" : language === "tr" ? "PDF Araçları" : "PDF Tools"}
+              >
+                <FileStack className="w-5 h-5" />
               </button>
               
               <textarea
