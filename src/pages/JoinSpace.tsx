@@ -153,7 +153,7 @@ export default function JoinSpace() {
               ? "Davom etish uchun avval tizimga kiring"
               : "Please sign in to continue"}
           </p>
-          <Button onClick={() => navigate(`/auth?next=/invite/${code}`)}>
+          <Button onClick={() => navigate(`/auth?next=/spaces/invite/${code}`)}>
             {language === "uz" ? "Kirish" : "Sign In"}
           </Button>
         </div>

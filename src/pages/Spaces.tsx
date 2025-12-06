@@ -1,7 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Users, ArrowLeft, ChevronRight } from "lucide-react";
+import { Plus, Users, ArrowLeft, ChevronRight, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/i18n/LanguageProvider";
@@ -34,6 +41,8 @@ export default function Spaces() {
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showPasteLinkModal, setShowPasteLinkModal] = useState(false);
+  const [pasteLink, setPasteLink] = useState("");
 
   const fetchSpaces = async () => {
     if (!user) {
@@ -125,6 +134,33 @@ export default function Spaces() {
     fetchSpaces();
   };
 
+  const handlePasteLinkSubmit = () => {
+    if (!pasteLink.trim()) return;
+    
+    // Extract token from URL or use directly
+    let token = pasteLink.trim();
+    
+    // If it's a full URL, extract the token
+    const urlPatterns = [
+      /\/spaces\/invite\/([A-Za-z0-9]+)/,
+      /\/invite\/([A-Za-z0-9]+)/,
+      /\/join\/([A-Za-z0-9]+)/,
+    ];
+    
+    for (const pattern of urlPatterns) {
+      const match = token.match(pattern);
+      if (match) {
+        token = match[1];
+        break;
+      }
+    }
+    
+    // Navigate to invite page
+    setShowPasteLinkModal(false);
+    setPasteLink("");
+    navigate(`/spaces/invite/${token}`);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -141,14 +177,25 @@ export default function Spaces() {
               {language === "uz" ? "Xonalar" : "Spaces"}
             </h1>
           </div>
-          <Button
-            onClick={() => setShowCreateModal(true)}
-            size="sm"
-            className="gap-1.5"
-          >
-            <Plus className="w-4 h-4" />
-            {language === "uz" ? "Yangi" : "New"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setShowPasteLinkModal(true)}
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+            >
+              <Link2 className="w-4 h-4" />
+              {language === "uz" ? "Link" : "Link"}
+            </Button>
+            <Button
+              onClick={() => setShowCreateModal(true)}
+              size="sm"
+              className="gap-1.5"
+            >
+              <Plus className="w-4 h-4" />
+              {language === "uz" ? "Yangi" : "New"}
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -221,6 +268,38 @@ export default function Spaces() {
         onClose={() => setShowCreateModal(false)}
         onCreated={handleSpaceCreated}
       />
+
+      {/* Paste Link Modal */}
+      <Dialog open={showPasteLinkModal} onOpenChange={setShowPasteLinkModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {language === "uz" ? "Taklif linkini kiritish" : "Enter Invite Link"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              {language === "uz"
+                ? "Taklif linkini yoki kodini kiriting"
+                : "Enter the invite link or code"}
+            </p>
+            <Input
+              value={pasteLink}
+              onChange={(e) => setPasteLink(e.target.value)}
+              placeholder={language === "uz" ? "Link yoki kod" : "Link or code"}
+              onKeyDown={(e) => e.key === "Enter" && handlePasteLinkSubmit()}
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowPasteLinkModal(false)}>
+              {language === "uz" ? "Bekor" : "Cancel"}
+            </Button>
+            <Button onClick={handlePasteLinkSubmit} disabled={!pasteLink.trim()}>
+              {language === "uz" ? "Davom etish" : "Continue"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

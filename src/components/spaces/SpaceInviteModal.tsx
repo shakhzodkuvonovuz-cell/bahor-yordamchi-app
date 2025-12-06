@@ -110,16 +110,15 @@ export default function SpaceInviteModal({
     }
   };
 
+  const inviteLink = inviteCode ? `${window.location.origin}/spaces/invite/${inviteCode}` : "";
+
   const copyLink = () => {
     if (!inviteCode) return;
-    const link = `${window.location.origin}/join/${inviteCode}`;
-    navigator.clipboard.writeText(link);
+    navigator.clipboard.writeText(inviteLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     toast.success(language === "uz" ? "Link nusxalandi" : "Link copied");
   };
-
-  const inviteLink = inviteCode ? `${window.location.origin}/invite/${inviteCode}` : "";
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
