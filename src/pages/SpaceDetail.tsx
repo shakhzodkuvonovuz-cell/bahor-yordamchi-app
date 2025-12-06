@@ -208,7 +208,39 @@ export default function SpaceDetail() {
       return;
     }
 
-    setRequests(data || []);
+    // For requests without snapshot data, fetch from profiles
+    const requestsWithMissingData = (data || []).filter(
+      (r) => !r.requester_name && !r.requester_avatar_url
+    );
+    
+    if (requestsWithMissingData.length > 0) {
+      const requesterIds = requestsWithMissingData.map((r) => r.requester_id);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, first_name, last_name, avatar_url")
+        .in("user_id", requesterIds);
+
+      const profileMap = Object.fromEntries(
+        (profiles || []).map((p) => [
+          p.user_id,
+          {
+            name: `${p.first_name || ""} ${p.last_name || ""}`.trim() || null,
+            avatar_url: p.avatar_url,
+          },
+        ])
+      );
+
+      // Merge profile data as fallback
+      const enrichedData = (data || []).map((req) => ({
+        ...req,
+        requester_name: req.requester_name || profileMap[req.requester_id]?.name || null,
+        requester_avatar_url: req.requester_avatar_url || profileMap[req.requester_id]?.avatar_url || null,
+      }));
+
+      setRequests(enrichedData);
+    } else {
+      setRequests(data || []);
+    }
   };
 
   useEffect(() => {
