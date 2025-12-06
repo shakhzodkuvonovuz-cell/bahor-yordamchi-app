@@ -433,7 +433,9 @@ export type Database = {
           id: string
           invite_code: string
           note: string | null
+          requester_avatar_url: string | null
           requester_id: string
+          requester_name: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           space_id: string
@@ -444,7 +446,9 @@ export type Database = {
           id?: string
           invite_code: string
           note?: string | null
+          requester_avatar_url?: string | null
           requester_id: string
+          requester_name?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           space_id: string
@@ -455,7 +459,9 @@ export type Database = {
           id?: string
           invite_code?: string
           note?: string | null
+          requester_avatar_url?: string | null
           requester_id?: string
+          requester_name?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           space_id?: string

@@ -34,8 +34,8 @@ interface JoinRequest {
   status: string;
   note: string | null;
   created_at: string;
-  email?: string;
-  name?: string;
+  requester_name: string | null;
+  requester_avatar_url: string | null;
 }
 
 interface Message {
@@ -199,7 +199,7 @@ export default function SpaceDetail() {
 
     const { data, error } = await supabase
       .from("space_join_requests")
-      .select("*")
+      .select("id, requester_id, status, note, created_at, requester_name, requester_avatar_url")
       .eq("space_id", id)
       .order("created_at", { ascending: false });
 
@@ -208,30 +208,7 @@ export default function SpaceDetail() {
       return;
     }
 
-    // Get requester profiles
-    const requesterIds = data?.map((r) => r.requester_id) || [];
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("user_id, first_name, last_name, email")
-      .in("user_id", requesterIds);
-
-    const profileMap = Object.fromEntries(
-      (profiles || []).map((p) => [
-        p.user_id,
-        {
-          name: `${p.first_name || ""} ${p.last_name || ""}`.trim() || "User",
-          email: p.email || "",
-        },
-      ])
-    );
-
-    setRequests(
-      (data || []).map((r) => ({
-        ...r,
-        name: profileMap[r.requester_id]?.name || "User",
-        email: profileMap[r.requester_id]?.email || "",
-      }))
-    );
+    setRequests(data || []);
   };
 
   useEffect(() => {
@@ -673,71 +650,91 @@ export default function SpaceDetail() {
                   {language === "uz" ? "So'rovlar yo'q" : "No requests"}
                 </div>
               ) : (
-                requests.map((req) => (
-                  <div
-                    key={req.id}
-                    className="p-4 rounded-xl bg-card border border-border"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <p className="font-medium text-foreground">{req.name}</p>
-                        <p className="text-xs text-muted-foreground">{req.email}</p>
-                        {req.note && (
-                          <p className="text-sm text-foreground mt-2 italic">
-                            "{req.note}"
-                          </p>
-                        )}
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(req.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                      {req.status === "pending" ? (
-                        <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            onClick={() =>
-                              handleRequestAction(req.id, req.requester_id, "approved")
-                            }
-                            className="gap-1"
-                          >
-                            <Check className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() =>
-                              handleRequestAction(req.id, req.requester_id, "rejected")
-                            }
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() =>
-                              handleRequestAction(req.id, req.requester_id, "blocked")
-                            }
-                            className="text-destructive"
-                          >
-                            <Ban className="w-3.5 h-3.5" />
-                          </Button>
+                requests.map((req) => {
+                  const displayName = req.requester_name || "User";
+                  const initials = displayName.charAt(0).toUpperCase();
+                  
+                  return (
+                    <div
+                      key={req.id}
+                      className="p-4 rounded-xl bg-card border border-border"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3 flex-1">
+                          {/* Avatar */}
+                          {req.requester_avatar_url ? (
+                            <img
+                              src={req.requester_avatar_url}
+                              alt={displayName}
+                              className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                              <span className="text-sm font-medium text-primary">
+                                {initials}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-foreground">{displayName}</p>
+                            {req.note && (
+                              <p className="text-sm text-muted-foreground mt-1 italic">
+                                "{req.note}"
+                              </p>
+                            )}
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {new Date(req.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
                         </div>
-                      ) : (
-                        <span
-                          className={`text-xs px-2 py-1 rounded-full ${
-                            req.status === "approved"
-                              ? "bg-green-500/20 text-green-600"
-                              : req.status === "rejected"
-                              ? "bg-red-500/20 text-red-600"
-                              : "bg-orange-500/20 text-orange-600"
-                          }`}
-                        >
-                          {req.status}
-                        </span>
-                      )}
+                        {req.status === "pending" ? (
+                          <div className="flex gap-1 flex-shrink-0">
+                            <Button
+                              size="sm"
+                              onClick={() =>
+                                handleRequestAction(req.id, req.requester_id, "approved")
+                              }
+                              className="gap-1"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                handleRequestAction(req.id, req.requester_id, "rejected")
+                              }
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() =>
+                                handleRequestAction(req.id, req.requester_id, "blocked")
+                              }
+                              className="text-destructive"
+                            >
+                              <Ban className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <span
+                            className={`text-xs px-2 py-1 rounded-full flex-shrink-0 ${
+                              req.status === "approved"
+                                ? "bg-green-500/20 text-green-600"
+                                : req.status === "rejected"
+                                ? "bg-red-500/20 text-red-600"
+                                : "bg-orange-500/20 text-orange-600"
+                            }`}
+                          >
+                            {req.status}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </TabsContent>
