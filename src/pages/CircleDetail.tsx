@@ -47,20 +47,27 @@ export default function SpaceDetail() {
   const { user } = useAuth();
   const { language } = useTranslation();
 
+  // Circle state with separate error tracking
   const [space, setSpace] = useState<SpaceData | null>(null);
+  const [spaceError, setSpaceError] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string>("member");
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("chat");
 
-  // Members state
+  // Members state with error tracking
   const [members, setMembers] = useState<Member[]>([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [membersError, setMembersError] = useState<string | null>(null);
 
-  // Requests state
+  // Requests state with error tracking
   const [requests, setRequests] = useState<JoinRequest[]>([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [requestsError, setRequestsError] = useState<string | null>(null);
 
-  // AI Cards state
+  // AI Cards state with error tracking
   const [aiCards, setAiCards] = useState<AICard[]>([]);
   const [loadingCards, setLoadingCards] = useState(false);
+  const [cardsError, setCardsError] = useState<string | null>(null);
 
   // Invite modal
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -68,10 +75,11 @@ export default function SpaceDetail() {
   // Ref to send AI card content to chat
   const sendAICardToChatRef = useRef<((content: string, title: string) => void) | null>(null);
 
-  // Fetch AI cards
+  // Fetch AI cards - lazy load only when tab is active
   const fetchAICards = async () => {
     if (!id) return;
     setLoadingCards(true);
+    setCardsError(null);
     try {
       const { data, error } = await supabase
         .from("circle_ai_cards")
@@ -79,9 +87,15 @@ export default function SpaceDetail() {
         .eq("circle_id", id)
         .order("created_at", { ascending: false })
         .limit(50);
-      if (!error) setAiCards((data as AICard[]) || []);
+      if (error) {
+        console.error("Error fetching AI cards:", error);
+        setCardsError("Natijalarni yuklab bo'lmadi");
+      } else {
+        setAiCards((data as AICard[]) || []);
+      }
     } catch (err) {
       console.error("Error fetching AI cards:", err);
+      setCardsError("Natijalarni yuklab bo'lmadi");
     } finally {
       setLoadingCards(false);
     }
@@ -89,27 +103,45 @@ export default function SpaceDetail() {
 
   const handleDeleteCard = async (cardId: string) => {
     try {
-      await supabase.from("circle_ai_cards").delete().eq("id", cardId);
+      const { error } = await supabase.from("circle_ai_cards").delete().eq("id", cardId);
+      if (error) throw error;
       setAiCards(prev => prev.filter(c => c.id !== cardId));
       toast.success("O'chirildi ✓");
     } catch (err) {
-      toast.error("Xatolik");
+      console.error("Error deleting card:", err);
+      toast.error("O'chirishda xatolik");
     }
   };
 
   const isAdmin = userRole === "owner" || userRole === "admin";
 
   const fetchSpace = async () => {
-    if (!id || !user) return;
+    if (!id || !user) {
+      setLoading(false);
+      return;
+    }
 
+    setSpaceError(null);
     try {
       const { data: spaceData, error: spaceError } = await supabase
         .from("spaces")
         .select("*")
         .eq("id", id)
-        .single();
+        .maybeSingle();
 
-      if (spaceError) throw spaceError;
+      if (spaceError) {
+        console.error("Error fetching space:", spaceError);
+        setSpaceError("Doirani yuklab bo'lmadi");
+        setLoading(false);
+        return;
+      }
+
+      if (!spaceData) {
+        setSpaceError("Doira topilmadi");
+        setLoading(false);
+        return;
+      }
+
       setSpace(spaceData);
 
       const { data: memberData } = await supabase
@@ -118,15 +150,14 @@ export default function SpaceDetail() {
         .eq("space_id", id)
         .eq("user_id", user.id)
         .eq("status", "active")
-        .single();
+        .maybeSingle();
 
       if (memberData) {
         setUserRole(memberData.role);
       }
     } catch (err) {
       console.error("Error fetching space:", err);
-      toast.error("Xatolik yuz berdi");
-      navigate("/circles");
+      setSpaceError("Xatolik yuz berdi");
     } finally {
       setLoading(false);
     }
@@ -134,87 +165,112 @@ export default function SpaceDetail() {
 
   const fetchMembers = async () => {
     if (!id) return;
+    setMembersLoading(true);
+    setMembersError(null);
 
-    const { data, error } = await supabase
-      .from("space_members")
-      .select("*")
-      .eq("space_id", id)
-      .eq("status", "active");
+    try {
+      const { data, error } = await supabase
+        .from("space_members")
+        .select("*")
+        .eq("space_id", id)
+        .eq("status", "active");
 
-    if (error) {
-      console.error("Error fetching members:", error);
-      return;
-    }
+      if (error) {
+        console.error("Error fetching members:", error);
+        setMembersError("A'zolarni yuklab bo'lmadi");
+        return;
+      }
 
-    const userIds = data?.map((m) => m.user_id) || [];
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("user_id, first_name, last_name, email")
-      .in("user_id", userIds);
+      const userIds = data?.map((m) => m.user_id) || [];
+      if (userIds.length === 0) {
+        setMembers([]);
+        return;
+      }
 
-    const profileMap = Object.fromEntries(
-      (profiles || []).map((p) => [
-        p.user_id,
-        {
-          name: `${p.first_name || ""} ${p.last_name || ""}`.trim() || "User",
-          email: p.email || "",
-        },
-      ])
-    );
-
-    setMembers(
-      (data || []).map((m) => ({
-        ...m,
-        name: profileMap[m.user_id]?.name || "User",
-        email: profileMap[m.user_id]?.email || "",
-      }))
-    );
-  };
-
-  const fetchRequests = async () => {
-    if (!id || !isAdmin) return;
-
-    const { data, error } = await supabase
-      .from("space_join_requests")
-      .select("id, requester_id, status, note, created_at, requester_name, requester_avatar_url")
-      .eq("space_id", id)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Error fetching requests:", error);
-      return;
-    }
-
-    const requestsWithMissingData = (data || []).filter(
-      (r) => !r.requester_name && !r.requester_avatar_url
-    );
-
-    if (requestsWithMissingData.length > 0) {
-      const requesterIds = requestsWithMissingData.map((r) => r.requester_id);
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id, first_name, last_name, avatar_url")
-        .in("user_id", requesterIds);
+        .select("user_id, first_name, last_name, email")
+        .in("user_id", userIds);
 
       const profileMap = Object.fromEntries(
         (profiles || []).map((p) => [
           p.user_id,
           {
-            name: `${p.first_name || ""} ${p.last_name || ""}`.trim() || null,
-            avatar_url: p.avatar_url,
+            name: `${p.first_name || ""} ${p.last_name || ""}`.trim() || "User",
+            email: p.email || "",
           },
         ])
       );
 
-      const enrichedData = (data || []).map((req) => ({
-        ...req,
-        requester_name: req.requester_name || profileMap[req.requester_id]?.name || null,
-        requester_avatar_url: req.requester_avatar_url || profileMap[req.requester_id]?.avatar_url || null,
-      }));
+      setMembers(
+        (data || []).map((m) => ({
+          ...m,
+          name: profileMap[m.user_id]?.name || "User",
+          email: profileMap[m.user_id]?.email || "",
+        }))
+      );
+    } catch (err) {
+      console.error("Error fetching members:", err);
+      setMembersError("A'zolarni yuklab bo'lmadi");
+    } finally {
+      setMembersLoading(false);
+    }
+  };
 
-      setRequests(enrichedData);
-    } else {
-      setRequests(data || []);
+  const fetchRequests = async () => {
+    if (!id || !isAdmin) return;
+    setRequestsLoading(true);
+    setRequestsError(null);
+
+    try {
+      const { data, error } = await supabase
+        .from("space_join_requests")
+        .select("id, requester_id, status, note, created_at, requester_name, requester_avatar_url")
+        .eq("space_id", id)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching requests:", error);
+        setRequestsError("So'rovlarni yuklab bo'lmadi");
+        return;
+      }
+
+      const requestsWithMissingData = (data || []).filter(
+        (r) => !r.requester_name && !r.requester_avatar_url
+      );
+
+      if (requestsWithMissingData.length > 0) {
+        const requesterIds = requestsWithMissingData.map((r) => r.requester_id);
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, first_name, last_name, avatar_url")
+          .in("user_id", requesterIds);
+
+        const profileMap = Object.fromEntries(
+          (profiles || []).map((p) => [
+            p.user_id,
+            {
+              name: `${p.first_name || ""} ${p.last_name || ""}`.trim() || null,
+              avatar_url: p.avatar_url,
+            },
+          ])
+        );
+
+        const enrichedData = (data || []).map((req) => ({
+          ...req,
+          requester_name: req.requester_name || profileMap[req.requester_id]?.name || null,
+          requester_avatar_url: req.requester_avatar_url || profileMap[req.requester_id]?.avatar_url || null,
+        }));
+
+        setRequests(enrichedData);
+      } else {
+        setRequests(data || []);
+      }
+    } catch (err) {
+      console.error("Error fetching requests:", err);
+      setRequestsError("So'rovlarni yuklab bo'lmadi");
+    } finally {
+      setRequestsLoading(false);
     }
   };
 
@@ -312,8 +368,33 @@ export default function SpaceDetail() {
     );
   }
 
-  if (!space) {
-    return null;
+  // Show error page only if circle itself failed to load
+  if (spaceError || !space) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="max-w-sm w-full text-center space-y-6">
+          <div className="w-16 h-16 mx-auto rounded-full bg-destructive/10 flex items-center justify-center">
+            <MessageSquare className="w-8 h-8 text-destructive" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold text-foreground">
+              {spaceError || "Doira topilmadi"}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Iltimos sahifani yangilang yoki qaytadan urinib ko'ring.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3">
+            <Button onClick={() => window.location.reload()} className="w-full gap-2">
+              Qayta yuklash
+            </Button>
+            <Button variant="outline" onClick={() => navigate("/circles")} className="w-full">
+              Doiralarga qaytish
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -363,33 +444,33 @@ export default function SpaceDetail() {
 
       {/* Tabs container */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
-        {/* Tabs bar - fixed */}
-        <div className="flex-shrink-0 border-b border-border bg-background/50 backdrop-blur-sm">
-          <TabsList className="max-w-2xl mx-auto w-full justify-start px-4 bg-transparent h-12">
+        {/* Tabs bar - sticky with high z-index to ensure it's always clickable */}
+        <div className="flex-shrink-0 sticky top-0 z-30 border-b border-border bg-background backdrop-blur-sm pointer-events-auto">
+          <TabsList className="max-w-2xl mx-auto w-full justify-start px-4 bg-transparent h-12 pointer-events-auto">
             <TabsTrigger 
               value="chat" 
-              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-elevation-1 transition-all duration-150"
+              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-elevation-1 transition-all duration-150 pointer-events-auto"
             >
               <MessageSquare className="w-4 h-4" />
               Chat
             </TabsTrigger>
             <TabsTrigger 
               value="files" 
-              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-elevation-1 transition-all duration-150"
+              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-elevation-1 transition-all duration-150 pointer-events-auto"
             >
               <FileText className="w-4 h-4" />
               {language === "uz" ? "Fayllar" : "Files"}
             </TabsTrigger>
             <TabsTrigger 
               value="members" 
-              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-elevation-1 transition-all duration-150"
+              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-elevation-1 transition-all duration-150 pointer-events-auto"
             >
               <Users className="w-4 h-4" />
               {language === "uz" ? "A'zolar" : "Members"}
             </TabsTrigger>
             <TabsTrigger 
               value="natijalar" 
-              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-elevation-1 transition-all duration-150"
+              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-elevation-1 transition-all duration-150 pointer-events-auto"
             >
               <Sparkles className="w-4 h-4" />
               Natijalar
@@ -397,7 +478,7 @@ export default function SpaceDetail() {
             {isAdmin && (
               <TabsTrigger 
                 value="requests" 
-                className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-elevation-1 transition-all duration-150"
+                className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-elevation-1 transition-all duration-150 pointer-events-auto"
               >
                 <UserPlus className="w-4 h-4" />
                 {language === "uz" ? "So'rovlar" : "Requests"}
@@ -416,7 +497,7 @@ export default function SpaceDetail() {
           <CircleFilesTab spaceId={id || ""} isAdmin={isAdmin} />
         </TabsContent>
 
-        {/* Natijalar (AI Results) Tab */}
+        {/* Natijalar (AI Results) Tab - lazy loaded */}
         <TabsContent value="natijalar" className="flex-1 min-h-0 m-0 overflow-y-auto tab-panel-transition">
           <div className="max-w-2xl mx-auto px-4 py-4 space-y-4 pb-[env(safe-area-inset-bottom)]">
             <div className="flex items-center justify-between mb-2">
@@ -432,6 +513,16 @@ export default function SpaceDetail() {
             </div>
             {loadingCards ? (
               <CircleTabSkeleton type="members" />
+            ) : cardsError ? (
+              <div className="text-center py-8">
+                <div className="w-12 h-12 mx-auto rounded-full bg-destructive/10 flex items-center justify-center mb-3">
+                  <Sparkles className="w-6 h-6 text-destructive" />
+                </div>
+                <p className="text-sm text-destructive font-medium mb-3">{cardsError}</p>
+                <Button variant="outline" size="sm" onClick={fetchAICards}>
+                  Qayta urinib ko'rish
+                </Button>
+              </div>
             ) : aiCards.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <Sparkles className="w-10 h-10 mx-auto mb-3 opacity-40" />
@@ -459,8 +550,22 @@ export default function SpaceDetail() {
 
         {/* Members Tab */}
         <TabsContent value="members" className="flex-1 min-h-0 m-0 overflow-y-auto tab-panel-transition">
-          {members.length === 0 && loading ? (
+          {membersLoading ? (
             <CircleTabSkeleton type="members" />
+          ) : membersError ? (
+            <div className="max-w-2xl mx-auto px-4 py-8 text-center">
+              <div className="w-12 h-12 mx-auto rounded-full bg-destructive/10 flex items-center justify-center mb-3">
+                <Users className="w-6 h-6 text-destructive" />
+              </div>
+              <p className="text-sm text-destructive font-medium mb-3">{membersError}</p>
+              <Button variant="outline" size="sm" onClick={fetchMembers}>
+                Qayta urinib ko'rish
+              </Button>
+            </div>
+          ) : members.length === 0 ? (
+            <div className="max-w-2xl mx-auto px-4 py-4 text-center py-12 text-muted-foreground">
+              {language === "uz" ? "A'zolar yo'q" : "No members"}
+            </div>
           ) : (
             <div className="max-w-2xl mx-auto px-4 py-4 space-y-2 pb-[env(safe-area-inset-bottom)]">
               {members.map((member) => (
@@ -493,8 +598,18 @@ export default function SpaceDetail() {
         {/* Requests Tab (Admin only) */}
         {isAdmin && (
           <TabsContent value="requests" className="flex-1 min-h-0 m-0 overflow-y-auto tab-panel-transition">
-            {requests.length === 0 && loading ? (
+            {requestsLoading ? (
               <CircleTabSkeleton type="requests" />
+            ) : requestsError ? (
+              <div className="max-w-2xl mx-auto px-4 py-8 text-center">
+                <div className="w-12 h-12 mx-auto rounded-full bg-destructive/10 flex items-center justify-center mb-3">
+                  <UserPlus className="w-6 h-6 text-destructive" />
+                </div>
+                <p className="text-sm text-destructive font-medium mb-3">{requestsError}</p>
+                <Button variant="outline" size="sm" onClick={fetchRequests}>
+                  Qayta urinib ko'rish
+                </Button>
+              </div>
             ) : requests.length === 0 ? (
               <div className="max-w-2xl mx-auto px-4 py-4">
                 <div className="text-center py-12 text-muted-foreground">
