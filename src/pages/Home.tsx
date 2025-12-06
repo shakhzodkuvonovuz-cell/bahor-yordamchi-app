@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Send, Settings, ArrowRight, AlertCircle } from "lucide-react";
+import { Send, Settings, ArrowRight, AlertCircle, Users } from "lucide-react";
 import { CHAT_MODES } from "@/data/modes";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import bahorLogo from "@/assets/bahor-logo.png";
@@ -123,6 +123,13 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-2">
             <LanguageSwitcher variant="compact" />
+            <button
+              onClick={() => navigate("/spaces")}
+              className="p-2.5 hover:bg-secondary rounded-xl transition-colors"
+              aria-label="Spaces"
+            >
+              <Users className="w-5 h-5 text-muted-foreground" />
+            </button>
             <button
               onClick={() => navigate("/settings")}
               className="p-2.5 hover:bg-secondary rounded-xl transition-colors"

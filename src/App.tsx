@@ -25,6 +25,9 @@ import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Support from "./pages/Support";
 import DocumentTools from "./pages/DocumentTools";
+import Spaces from "./pages/Spaces";
+import SpaceDetail from "./pages/SpaceDetail";
+import JoinSpace from "./pages/JoinSpace";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -110,6 +113,23 @@ const App = () => (
                       </ProtectedRoute>
                     } 
                   />
+                  <Route 
+                    path="/spaces" 
+                    element={
+                      <ProtectedRoute>
+                        <Spaces />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/spaces/:id" 
+                    element={
+                      <ProtectedRoute>
+                        <SpaceDetail />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route path="/join/:code" element={<JoinSpace />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </TooltipProvider>
