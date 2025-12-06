@@ -429,40 +429,40 @@ export default function Landing() {
       </header>
 
       {/* Hero Section - Updated with feature badges */}
-      <section className="relative py-12 sm:py-20 lg:py-28 overflow-hidden">
+      <section className="relative py-6 sm:py-12 lg:py-16 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
             ref={heroRef.ref}
-            className={`grid lg:grid-cols-2 gap-10 lg:gap-16 items-center transition-all duration-700 ease-out ${
+            className={`grid lg:grid-cols-2 gap-8 lg:gap-12 items-center transition-all duration-700 ease-out ${
               heroRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
             }`}
           >
             {/* Left - Content (always first on mobile) */}
             <div className="text-center lg:text-left">
               {/* Beta badge */}
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-6 animate-badge-pulse">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-4 animate-badge-pulse">
                 <Sparkles className="w-4 h-4" />
                 {t('badge.beta')}
               </div>
               
-              <h1 className="text-3xl sm:text-4xl lg:text-display-lg font-bold mb-5 text-foreground leading-tight">
+              <h1 className="text-3xl sm:text-4xl lg:text-display-lg font-bold mb-3 text-foreground leading-tight">
                 {t('app.tagline.main').split('—')[0]}—{' '}
                 <span className="text-gradient-primary">{t('app.tagline.main').split('—')[1]?.trim() || "o'zbeklar uchun."}</span>
               </h1>
               
-              <p className="text-base sm:text-lg text-muted-foreground mb-5 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+              <p className="text-base sm:text-lg text-muted-foreground mb-3 max-w-xl mx-auto lg:mx-0 leading-relaxed">
                 {t('app.tagline.sub')}
               </p>
               
               {/* NEW: Feature badges */}
-              <div className="flex flex-wrap gap-2 justify-center lg:justify-start mb-4">
+              <div className="flex flex-wrap gap-2 justify-center lg:justify-start mb-2">
                 <FeatureBadge icon={ListTodo} text={t('hero.badge.aiActions')} />
                 <FeatureBadge icon={Users} text={t('hero.badge.circles')} />
                 <FeatureBadge icon={Search} text={t('hero.badge.webSearch')} />
               </div>
               
               {/* NEW: Secondary tagline */}
-              <p className="text-sm text-muted-foreground mb-8 max-w-xl mx-auto lg:mx-0">
+              <p className="text-sm text-muted-foreground mb-5 max-w-xl mx-auto lg:mx-0">
                 {t('hero.notJustChat')}
               </p>
               
@@ -470,7 +470,7 @@ export default function Landing() {
                 <Button
                   onClick={handleOpenApp}
                   size="lg"
-                  className="h-12 px-8 text-base font-semibold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/35 transition-all hover-lift"
+                  className="h-11 px-6 text-base font-semibold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/35 transition-all hover-lift"
                 >
                   <MessageSquare className="w-5 h-5 mr-2" />
                   {t('button.openApp')}
@@ -478,7 +478,7 @@ export default function Landing() {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="h-12 px-8 text-base font-medium rounded-xl border-border/60 hover:bg-secondary/50 transition-all"
+                  className="h-11 px-6 text-base font-medium rounded-xl border-border/60 hover:bg-secondary/50 transition-all"
                   onClick={() => document.getElementById('flagship')?.scrollIntoView({ behavior: 'smooth' })}
                 >
                   {t('hero.seeFlagship')}
@@ -486,13 +486,13 @@ export default function Landing() {
                 </Button>
               </div>
               
-              <p className="text-sm text-muted-foreground mt-6">
+              <p className="text-sm text-muted-foreground mt-4">
                 {t('label.freeDuringBeta')}
               </p>
             </div>
             
             {/* Right - Product Preview (always second on mobile) */}
-            <div className="mt-8 lg:mt-0">
+            <div className="mt-4 lg:mt-0">
               <ChatMockup />
             </div>
           </div>
