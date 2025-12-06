@@ -482,6 +482,71 @@ export const translations: Record<Lang, Record<string, string>> = {
     'starter.daily': "Kundalik maslahat",
     'starter.cv': "Rezyume yozish",
     'starter.coding': "Kod yordam",
+    
+    // Hero badges & CTA
+    'hero.badge.aiActions': "AI Amallar → Reja, Vazifalar",
+    'hero.badge.circles': "Doiralar → Jamoa suhbati",
+    'hero.badge.webSearch': "Web qidiruv → Manbalar bilan",
+    'hero.notJustChat': "Oddiy suhbat emas — suhbatlarni natijalarga aylantiradi.",
+    'hero.seeFlagship': "Asosiy imkoniyatlarni ko'rish",
+    
+    // New feature cards (Why Bahor AI section)
+    'feature.aiActions.title': "AI Amallar",
+    'feature.aiActions.desc': "Suhbatlarni rejalarga, vazifalar, qarorlar, bayonnomaga aylantiring — bir zumda.",
+    'feature.circles.title': "Doiralar (Guruhlar)",
+    'feature.circles.desc': "Jamoa suhbati, fayllar, tasdiqlash va umumiy AI natijalari uchun xususiy doiralar.",
+    'feature.toolsHub.title': "Asboblar markazi",
+    'feature.toolsHub.desc': "Fayllarni konvertatsiya qiling, xulosalash, eksport qilish va tartibga solish bir joyda.",
+    
+    // Flagship Features Section
+    'flagship.badge': "Asosiy imkoniyatlar",
+    'flagship.title': "Bahor AI ni ajratib turadigan xususiyatlar",
+    'flagship.subtitle': "Bular oddiy chatbotlarda yo'q. Bahor AI — bu natijaga yo'naltirilgan yordamchi.",
+    
+    // AI Actions Spotlight
+    'flagship.aiActions.title': "AI Amallar",
+    'flagship.aiActions.subtitle': "Suhbatlarni bir tugma bilan haqiqiy natijalarga aylantiring.",
+    'flagship.aiActions.label': "Suhbat → Natija",
+    'flagship.aiActions.bullet1': "Xulosalar — tushunish oson",
+    'flagship.aiActions.bullet2': "Reja, Vazifalar, Qarorlar, Bayonnoma",
+    'flagship.aiActions.bullet3': "Fayllar + oxirgi xabarlarni qo'shish (30/100/300)",
+    'flagship.aiActions.bullet4': "PDF ga eksport qilish",
+    'flagship.aiActions.bullet5': "Chatga yuborish / Fayllarga saqlash",
+    
+    // Circles Spotlight
+    'flagship.circles.title': "Doiralar",
+    'flagship.circles.subtitle': "Jamoa bilan haqiqiy hamkorlik — shovqin emas.",
+    'flagship.circles.label': "Hamkorlik, shovqin emas",
+    'flagship.circles.bullet1': "Real-time guruh suhbati",
+    'flagship.circles.bullet2': "Fayllar va rasmlar qo'llab-quvvatlanadi",
+    'flagship.circles.bullet3': "Taklifnoma havolalari + tasdiqlash so'rovlari",
+    'flagship.circles.bullet4': "Javob berish + o'qilganlik bildiruvlari",
+    'flagship.circles.bullet5': "Umumiy AI natijalari bir joyda",
+    
+    // Mini feature strip
+    'flagship.mini.fileAnalysis': "Fayl va rasm tahlili",
+    'flagship.mini.fileAnalysis.desc': "Hujjatlar, skrinshot va rasmlarni yuklang va tahlil qiling.",
+    'flagship.mini.webSearch': "Manbalar bilan web qidiruv",
+    'flagship.mini.webSearch.desc': "Javoblar manbalar va havolalar bilan keladi.",
+    'flagship.mini.privacy': "Maxfiylik va kirish nazorati",
+    'flagship.mini.privacy.desc': "Ma'lumotlaringiz xavfsiz va faqat sizga tegishli.",
+    
+    // How it works - 4 steps
+    'section.howItWorks.subtitle.4steps': "To'rt oddiy qadamda boshlang",
+    'step.4.title': "Natijalarni eksport qiling",
+    'step.4.desc': "PDF, chatga yuborish yoki fayllarga saqlash",
+    
+    // Trust section
+    'trust.title': "Ishonchli javoblar",
+    'trust.description': "Kerak bo'lganda Bahor AI internetdan qidiradi va bosiladigan manbalarni qo'shadi.",
+    
+    // New FAQs
+    'faq.aiActions.question': "AI Amallar nima?",
+    'faq.aiActions.answer': "AI Amallar — suhbatlardan xulosalar, vazifalar, rejalar va bayonnomalar yaratuvchi xususiyat. Bir tugma bilan natijalarga ega bo'lasiz — eksport qilish yoki saqlash mumkin.",
+    'faq.circles.question': "Doiralar nima va kimlar uchun?",
+    'faq.circles.answer': "Doiralar — jamoalar uchun xususiy suhbat xonalari. Real-time chat, fayllar, a'zolar boshqaruvi va AI natijalari bilan. Loyihalar, o'quv guruhlari yoki oilalar uchun ideal.",
+    'faq.webSearch.question': "Bahor AI web qidiruv ishlatganda manbalar ko'rsatadimi?",
+    'faq.webSearch.answer': "Ha. Agar internetdan ma'lumot qidirilsa, javoblar bosiladigan manbalar bilan keladi — kun.uz, gazeta.uz va boshqalar.",
   },
 
   en: {
@@ -553,12 +618,69 @@ export const translations: Record<Lang, Record<string, string>> = {
     // How It Works Section
     'section.howItWorks': 'How Bahor AI Works',
     'section.howItWorks.subtitle': 'Get started in three simple steps',
+    'section.howItWorks.subtitle.4steps': 'Get started in four simple steps',
     'step.1.title': 'Ask anything',
     'step.1.desc': 'From school assignments to recipes to coding help.',
     'step.2.title': 'Choose a mode (optional)',
     'step.2.desc': 'Get more precise answers by selecting a specialized mode.',
     'step.3.title': 'Continue the conversation',
     'step.3.desc': 'Refine, adjust, or ask follow-up questions instantly.',
+    'step.4.title': 'Export outcomes',
+    'step.4.desc': 'PDF, send to chat, or save to files.',
+    
+    // Hero badges & CTA
+    'hero.badge.aiActions': "AI Actions → Plans, Tasks",
+    'hero.badge.circles': "Circles → Team chat",
+    'hero.badge.webSearch': "Web search → With sources",
+    'hero.notJustChat': "Not just chat — it turns conversations into outcomes.",
+    'hero.seeFlagship': "See flagship features",
+    
+    // New feature cards
+    'feature.aiActions.title': "AI Actions",
+    'feature.aiActions.desc': "Turn chats into plans, tasks, decisions, meeting notes — instantly.",
+    'feature.circles.title': "Circles (Groups)",
+    'feature.circles.desc': "Private team spaces for chat, files, approvals, and shared AI results.",
+    'feature.toolsHub.title': "Tools Hub",
+    'feature.toolsHub.desc': "Convert, summarize, export, and organize files in one place.",
+    
+    // Flagship Features Section
+    'flagship.badge': "Flagship Features",
+    'flagship.title': "What makes Bahor AI special",
+    'flagship.subtitle': "These features don't exist in ordinary chatbots. Bahor AI is outcome-focused.",
+    'flagship.aiActions.title': "AI Actions",
+    'flagship.aiActions.subtitle': "Turn conversations into real outcomes with one button.",
+    'flagship.aiActions.label': "Chat → Outcome",
+    'flagship.aiActions.bullet1': "Summaries that make sense",
+    'flagship.aiActions.bullet2': "Plans, Tasks, Decisions, Meeting notes",
+    'flagship.aiActions.bullet3': "Include files + last messages (30/100/300)",
+    'flagship.aiActions.bullet4': "Export to PDF",
+    'flagship.aiActions.bullet5': "Send to chat / Save to files",
+    'flagship.circles.title': "Circles",
+    'flagship.circles.subtitle': "Real collaboration with your team — not noise.",
+    'flagship.circles.label': "Collaboration, not noise",
+    'flagship.circles.bullet1': "Real-time group chat",
+    'flagship.circles.bullet2': "Files & images support",
+    'flagship.circles.bullet3': "Invite links + approval requests",
+    'flagship.circles.bullet4': "Reply + read receipts",
+    'flagship.circles.bullet5': "Shared AI results in one place",
+    'flagship.mini.fileAnalysis': "File & image analysis",
+    'flagship.mini.fileAnalysis.desc': "Upload and analyze documents, screenshots, images.",
+    'flagship.mini.webSearch': "Web search with sources",
+    'flagship.mini.webSearch.desc': "Answers include clickable sources and links.",
+    'flagship.mini.privacy': "Privacy & access control",
+    'flagship.mini.privacy.desc': "Your data is safe and belongs only to you.",
+    
+    // Trust section
+    'trust.title': "Answers you can trust",
+    'trust.description': "When needed, Bahor AI can search the web and include clickable sources.",
+    
+    // New FAQs
+    'faq.aiActions.question': "What are AI Actions?",
+    'faq.aiActions.answer': "AI Actions let you generate summaries, tasks, plans, and meeting notes from conversations. Get real outcomes with one button — export or save them.",
+    'faq.circles.question': "What are Circles and who are they for?",
+    'faq.circles.answer': "Circles are private chat rooms for teams. Real-time chat, files, member management, and AI results. Ideal for projects, study groups, or families.",
+    'faq.webSearch.question': "Does Bahor AI provide sources when using web search?",
+    'faq.webSearch.answer': "Yes. When web information is searched, answers come with clickable sources — kun.uz, gazeta.uz, and more.",
     
     // Pricing Section
     'section.pricing': 'Pricing',
