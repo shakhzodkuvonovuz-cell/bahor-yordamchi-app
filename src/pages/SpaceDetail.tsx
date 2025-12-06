@@ -277,9 +277,9 @@ export default function SpaceDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border">
+    <div className="h-dvh bg-background flex flex-col overflow-hidden">
+      {/* Header - fixed */}
+      <header className="flex-shrink-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -311,9 +311,10 @@ export default function SpaceDetail() {
         </div>
       </header>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-        <div className="border-b border-border bg-background/50 backdrop-blur-sm">
+      {/* Tabs container */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        {/* Tabs bar - fixed */}
+        <div className="flex-shrink-0 border-b border-border bg-background/50 backdrop-blur-sm">
           <TabsList className="max-w-2xl mx-auto w-full justify-start px-4 bg-transparent h-12">
             <TabsTrigger 
               value="chat" 
@@ -348,22 +349,22 @@ export default function SpaceDetail() {
           </TabsList>
         </div>
 
-        {/* Chat Tab */}
-        <TabsContent value="chat" className="flex-1 flex flex-col m-0 relative tab-panel-transition">
+        {/* Chat Tab - takes remaining height */}
+        <TabsContent value="chat" className="flex-1 flex flex-col m-0 min-h-0 overflow-hidden tab-panel-transition">
           <SpaceChatTab spaceId={id || ""} />
         </TabsContent>
 
         {/* Files Tab */}
-        <TabsContent value="files" className="flex-1 m-0 overflow-y-auto tab-panel-transition">
+        <TabsContent value="files" className="flex-1 min-h-0 m-0 overflow-y-auto tab-panel-transition">
           <SpaceFilesTab spaceId={id || ""} isAdmin={isAdmin} />
         </TabsContent>
 
         {/* Members Tab */}
-        <TabsContent value="members" className="flex-1 m-0 overflow-y-auto tab-panel-transition">
+        <TabsContent value="members" className="flex-1 min-h-0 m-0 overflow-y-auto tab-panel-transition">
           {members.length === 0 && loading ? (
             <SpaceTabSkeleton type="members" />
           ) : (
-            <div className="max-w-2xl mx-auto px-4 py-4 space-y-2">
+            <div className="max-w-2xl mx-auto px-4 py-4 space-y-2 pb-[env(safe-area-inset-bottom)]">
               {members.map((member) => (
                 <div
                   key={member.id}
@@ -393,7 +394,7 @@ export default function SpaceDetail() {
 
         {/* Requests Tab (Admin only) */}
         {isAdmin && (
-          <TabsContent value="requests" className="flex-1 m-0 overflow-y-auto tab-panel-transition">
+          <TabsContent value="requests" className="flex-1 min-h-0 m-0 overflow-y-auto tab-panel-transition">
             {requests.length === 0 && loading ? (
               <SpaceTabSkeleton type="requests" />
             ) : requests.length === 0 ? (
