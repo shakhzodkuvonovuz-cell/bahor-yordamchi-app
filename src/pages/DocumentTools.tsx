@@ -1027,8 +1027,6 @@ export default function DocumentTools() {
       <LimitReachedSheet
         open={showLimitSheet}
         onClose={() => setShowLimitSheet(false)}
-        reason="pdf_limit_reached"
-        message={t("docs.error") + " - " + (language === "uz" ? "Ertaga qayta urinib ko'ring yoki Premiumga o'ting" : "Try again tomorrow or upgrade to Premium")}
         scope="pdf_monthly"
         used={limitData?.used || 0}
         limit={limitData?.limit || 0}
