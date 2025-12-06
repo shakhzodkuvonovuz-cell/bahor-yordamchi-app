@@ -136,7 +136,9 @@ const App = () => (
                     path="/circles/:id" 
                     element={
                       <ProtectedRoute>
-                        <CircleDetail />
+                        <ErrorBoundary>
+                          <CircleDetail />
+                        </ErrorBoundary>
                       </ProtectedRoute>
                     } 
                   />
