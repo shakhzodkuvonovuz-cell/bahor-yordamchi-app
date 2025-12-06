@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Users, FileText, MessageSquare, UserPlus, Check, X, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import CircleInviteModal from "@/components/circles/CircleInviteModal";
 import CircleFilesTab from "@/components/circles/CircleFilesTab";
 import CircleChatTab from "@/components/circles/CircleChatTab";
 import { CircleTabSkeleton } from "@/components/circles/CircleTabSkeleton";
+import { CircleAIActionsPanel } from "@/components/circles/CircleAIActionsPanel";
 
 interface SpaceData {
   id: string;
@@ -58,6 +59,9 @@ export default function SpaceDetail() {
 
   // Invite modal
   const [showInviteModal, setShowInviteModal] = useState(false);
+
+  // Ref to send AI card content to chat
+  const sendAICardToChatRef = useRef<((content: string, title: string) => void) | null>(null);
 
   const isAdmin = userRole === "owner" || userRole === "admin";
 
@@ -297,17 +301,27 @@ export default function SpaceDetail() {
               )}
             </div>
           </div>
-          {isAdmin && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowInviteModal(true)}
-              className="gap-1.5"
-            >
-              <UserPlus className="w-4 h-4" />
-              {language === "uz" ? "Taklif" : "Invite"}
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            <CircleAIActionsPanel 
+              circleId={id || ""} 
+              onSendToChat={(content, title) => {
+                if (sendAICardToChatRef.current) {
+                  sendAICardToChatRef.current(content, title);
+                }
+              }}
+            />
+            {isAdmin && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowInviteModal(true)}
+                className="gap-1.5"
+              >
+                <UserPlus className="w-4 h-4" />
+                {language === "uz" ? "Taklif" : "Invite"}
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -351,7 +365,7 @@ export default function SpaceDetail() {
 
         {/* Chat Tab - takes remaining height */}
         <TabsContent value="chat" className="flex-1 flex flex-col m-0 min-h-0 overflow-hidden tab-panel-transition">
-          <CircleChatTab spaceId={id || ""} />
+          <CircleChatTab spaceId={id || ""} onSendAICardRef={sendAICardToChatRef} />
         </TabsContent>
 
         {/* Files Tab */}
