@@ -1,0 +1,162 @@
+import { useState, useRef } from "react";
+import { Send, Paperclip, Camera, X, Image as ImageIcon, FileText, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import type { SpaceMessage } from "./SpaceChatMessage";
+
+interface SpaceChatInputProps {
+  value: string;
+  onChange: (value: string) => void;
+  onSend: () => void;
+  replyTo: SpaceMessage | null;
+  onCancelReply: () => void;
+  disabled?: boolean;
+  uploading?: boolean;
+  uploadProgress?: number;
+  onFileSelect: (files: FileList) => void;
+  language: string;
+}
+
+export default function SpaceChatInput({
+  value,
+  onChange,
+  onSend,
+  replyTo,
+  onCancelReply,
+  disabled,
+  uploading,
+  uploadProgress,
+  onFileSelect,
+  language,
+}: SpaceChatInputProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      onSend();
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      onFileSelect(e.target.files);
+      e.target.value = "";
+    }
+  };
+
+  return (
+    <div className="border-t border-border bg-background/80 backdrop-blur-lg">
+      {/* Reply preview */}
+      {replyTo && (
+        <div className="px-4 pt-2 max-w-2xl mx-auto">
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-secondary/50 border-l-2 border-primary">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-primary">{replyTo.senderName}</p>
+              <p className="text-xs text-muted-foreground truncate">
+                {replyTo.content?.slice(0, 60) || (language === "uz" ? "Rasm/Fayl" : "Image/File")}
+              </p>
+            </div>
+            <button onClick={onCancelReply} className="p-1 hover:bg-secondary rounded">
+              <X className="w-4 h-4 text-muted-foreground" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Upload progress */}
+      {uploading && (
+        <div className="px-4 pt-2 max-w-2xl mx-auto">
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-secondary/50">
+            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+            <span className="text-xs text-muted-foreground">
+              {language === "uz" ? "Yuklanmoqda..." : "Uploading..."}
+              {uploadProgress !== undefined && ` ${uploadProgress}%`}
+            </span>
+          </div>
+        </div>
+      )}
+
+      <div className="max-w-2xl mx-auto px-4 py-3">
+        <div className="flex gap-2 items-end">
+          {/* Attachment buttons */}
+          <div className="flex gap-1">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={disabled || uploading}
+              className={cn(
+                "p-2.5 rounded-xl bg-secondary hover:bg-secondary/80 transition-colors",
+                (disabled || uploading) && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              <Paperclip className="w-5 h-5 text-muted-foreground" />
+            </button>
+            <button
+              onClick={() => cameraInputRef.current?.click()}
+              disabled={disabled || uploading}
+              className={cn(
+                "p-2.5 rounded-xl bg-secondary hover:bg-secondary/80 transition-colors",
+                (disabled || uploading) && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              <Camera className="w-5 h-5 text-muted-foreground" />
+            </button>
+          </div>
+
+          {/* Text input */}
+          <textarea
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={language === "uz" ? "Xabar yozing... (/bahor savol)" : "Type a message... (/bahor question)"}
+            disabled={disabled || uploading}
+            rows={1}
+            className={cn(
+              "flex-1 px-4 py-2.5 rounded-xl bg-secondary border-none outline-none text-foreground",
+              "placeholder:text-muted-foreground resize-none min-h-[44px] max-h-[120px]",
+              (disabled || uploading) && "opacity-50"
+            )}
+            style={{
+              height: "auto",
+              minHeight: "44px",
+            }}
+            onInput={(e) => {
+              const target = e.target as HTMLTextAreaElement;
+              target.style.height = "auto";
+              target.style.height = Math.min(target.scrollHeight, 120) + "px";
+            }}
+          />
+
+          {/* Send button */}
+          <Button
+            onClick={onSend}
+            disabled={(!value.trim() && !uploading) || disabled}
+            size="icon"
+            className="rounded-xl h-11 w-11"
+          >
+            <Send className="w-5 h-5" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Hidden file inputs */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="*/*"
+        multiple
+        className="hidden"
+        onChange={handleFileChange}
+      />
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleFileChange}
+      />
+    </div>
+  );
+}
