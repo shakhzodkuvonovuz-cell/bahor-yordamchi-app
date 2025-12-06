@@ -15,6 +15,7 @@ import {
   EditingIndicator,
   ExportToPdfModal,
 } from "@/components/chat";
+import { InputWaveform } from "@/components/chat/InputWaveform";
 import { ChatListSkeleton, ChatMessagesSkeleton } from "@/components/chat/ChatListSkeleton";
 import { ChatMigrationModal, checkMigrationNeeded } from "@/components/ChatMigrationModal";
 import { ReasonedChip } from "@/components/chat/ReasonedChip";
@@ -46,6 +47,7 @@ import { isVisionSupportedImage } from "@/services/visionService";
 import { detectReplyLanguage } from "@/lib/languageDetect";
 import { extractTextFromFile, isImageFile, isPdfFile, getFileReadStatusLabel } from "@/lib/fileTextExtractor";
 import { getPreferencesPromptContext } from "@/components/UserPreferencesSection";
+import { usePushToTalkDictation } from "@/hooks/usePushToTalkDictation";
 
 // Helper to format relative time
 function formatRelativeTime(dateString: string, lang: string): string {
@@ -220,6 +222,10 @@ export default function Chat() {
   const [exportPdfModalOpen, setExportPdfModalOpen] = useState(false);
   const [exportPdfContent, setExportPdfContent] = useState("");
   const [exportPdfTitle, setExportPdfTitle] = useState("");
+  
+  // Push-to-talk dictation
+  const dictation = usePushToTalkDictation();
+  const [preDictationText, setPreDictationText] = useState("");
   
   // Network status
   const { isOnline } = useNetworkStatus();
@@ -427,9 +433,56 @@ export default function Chat() {
     }
   }, [currentThreadId]);
 
+  // Update input with dictation text (live interim updates)
+  useEffect(() => {
+    if (dictation.isListening) {
+      const transcript = dictation.finalText + (dictation.interimText ? " " + dictation.interimText : "");
+      const separator = preDictationText && transcript ? " " : "";
+      setInputValue(preDictationText + separator + transcript.trim());
+    }
+  }, [dictation.isListening, dictation.finalText, dictation.interimText, preDictationText]);
+
   const scrollToBottom = (smooth = true) => {
     messagesEndRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
   };
+
+  // Handle dictation start
+  const handleDictationStart = useCallback(() => {
+    if (!dictation.isSupported) {
+      toast({
+        description: language === "uz" 
+          ? "Jonli diktovka bu brauzerda ishlamaydi. Android'da Chrome tavsiya qilinadi."
+          : language === "ru"
+          ? "Голосовой ввод не поддерживается в этом браузере. Попробуйте Chrome на Android."
+          : language === "tr"
+          ? "Canlı dikte bu tarayıcıda desteklenmiyor. Android'de Chrome'u deneyin."
+          : "Live dictation isn't supported in this browser. Try Chrome on Android.",
+      });
+      return;
+    }
+    
+    // Save current input text before dictation
+    setPreDictationText(inputValue);
+    dictation.handlers.start(language);
+  }, [dictation.isSupported, dictation.handlers, inputValue, language, toast]);
+
+  // Handle dictation end
+  const handleDictationEnd = useCallback(() => {
+    const result = dictation.handlers.stop();
+    
+    if (result) {
+      const separator = preDictationText ? " " : "";
+      setInputValue(preDictationText + separator + result);
+    } else {
+      // No result - restore original text
+      setInputValue(preDictationText);
+    }
+    
+    setPreDictationText("");
+    
+    // Focus input after dictation
+    setTimeout(() => inputRef.current?.focus(), 100);
+  }, [dictation.handlers, preDictationText]);
 
   // Copy message content
   const handleCopyMessage = (content: string) => {
@@ -1841,26 +1894,44 @@ export default function Chat() {
                 <FileStack className="w-5 h-5" />
               </button>
               
-              <textarea
-                ref={inputRef}
-                value={inputValue}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                placeholder={t.chatPlaceholder}
-                disabled={isLoading || typing}
-                rows={1}
-                className="flex-1 bg-transparent border-none outline-none resize-none text-[15px] leading-relaxed text-foreground placeholder:text-muted-foreground/60 disabled:opacity-50 max-h-[140px] overflow-y-auto py-3 px-1"
-              />
+              <div className="relative flex-1">
+                {/* Waveform overlay for dictation */}
+                <InputWaveform 
+                  active={dictation.isListening} 
+                  amplitude={dictation.amplitude}
+                  className="rounded-xl"
+                />
+                
+                <textarea
+                  ref={inputRef}
+                  value={inputValue}
+                  onChange={handleInputChange}
+                  onKeyDown={handleKeyDown}
+                  placeholder={dictation.isListening 
+                    ? (language === "uz" ? "Eshitilyapti… Qo'yib yuboring" : language === "ru" ? "Слушаю… Отпустите" : language === "tr" ? "Dinleniyor… Bırakın" : "Listening… Release to finish")
+                    : t.chatPlaceholder
+                  }
+                  disabled={isLoading || typing || dictation.isListening}
+                  rows={1}
+                  className={clsx(
+                    "w-full bg-transparent border-none outline-none resize-none text-[15px] leading-relaxed text-foreground placeholder:text-muted-foreground/60 disabled:opacity-50 max-h-[140px] overflow-y-auto py-3 px-1",
+                    dictation.isListening && "text-primary"
+                  )}
+                />
+              </div>
               
               <VoiceModeButton
                 onClick={() => setIsVoiceModeOpen(true)}
                 disabled={isLoading || typing}
                 className="flex-shrink-0"
+                onDictationStart={handleDictationStart}
+                onDictationEnd={handleDictationEnd}
+                isDictating={dictation.isListening}
               />
               
               <button
                 type="submit"
-                disabled={(!inputValue.trim() && pendingAttachments.length === 0) || isLoading || typing}
+                disabled={(!inputValue.trim() && pendingAttachments.length === 0) || isLoading || typing || dictation.isListening}
                 className="p-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0 active:scale-95 glow-primary-subtle hover:glow-primary"
                 aria-label={language === "uz" ? "Yuborish" : language === "en" ? "Send" : language === "ru" ? "Отправить" : "Gönder"}
               >
