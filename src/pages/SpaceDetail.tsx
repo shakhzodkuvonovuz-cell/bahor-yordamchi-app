@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 import SpaceInviteModal from "@/components/spaces/SpaceInviteModal";
-
+import SpaceFilesTab from "@/components/spaces/SpaceFilesTab";
 interface SpaceData {
   id: string;
   name: string;
@@ -518,14 +518,9 @@ export default function SpaceDetail() {
           </div>
         </TabsContent>
 
-        {/* Files Tab (Placeholder) */}
-        <TabsContent value="files" className="flex-1 m-0">
-          <div className="max-w-2xl mx-auto px-4 py-12 text-center">
-            <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">
-              {language === "uz" ? "Tez orada..." : "Coming soon..."}
-            </p>
-          </div>
+        {/* Files Tab */}
+        <TabsContent value="files" className="flex-1 m-0 overflow-y-auto">
+          <SpaceFilesTab spaceId={id || ""} isAdmin={isAdmin} />
         </TabsContent>
 
         {/* Members Tab */}

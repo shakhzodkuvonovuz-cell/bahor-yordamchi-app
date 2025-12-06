@@ -348,6 +348,50 @@ export type Database = {
         }
         Relationships: []
       }
+      space_files: {
+        Row: {
+          created_at: string | null
+          id: string
+          mime_type: string | null
+          original_name: string
+          pinned: boolean | null
+          size_bytes: number | null
+          space_id: string
+          storage_path: string
+          uploader_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          mime_type?: string | null
+          original_name: string
+          pinned?: boolean | null
+          size_bytes?: number | null
+          space_id: string
+          storage_path: string
+          uploader_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          mime_type?: string | null
+          original_name?: string
+          pinned?: boolean | null
+          size_bytes?: number | null
+          space_id?: string
+          storage_path?: string
+          uploader_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_files_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_invites: {
         Row: {
           code: string
