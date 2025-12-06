@@ -48,7 +48,8 @@ serve(async (req) => {
       question, 
       include_last_messages, 
       selected_file_ids,
-      ui_language 
+      ui_language,
+      web_results 
     } = await req.json();
 
     if (!space_id || !question) {
@@ -216,6 +217,15 @@ serve(async (req) => {
       }
     }
 
+    // Build web results context if provided
+    let webResultsContext = "";
+    if (web_results && Array.isArray(web_results) && web_results.length > 0) {
+      const resultLines = web_results.map((r: { title: string; url: string; snippet: string }, i: number) => 
+        `${i + 1}) ${r.title}\n   URL: ${r.url}\n   ${r.snippet}`
+      );
+      webResultsContext = resultLines.join('\n\n');
+    }
+
     // Build the prompt
     const systemPrompt = `You are Bahor AI, an assistant for a collaborative Space chat.
 You are helping members of this space with their questions.
@@ -223,9 +233,11 @@ You are helping members of this space with their questions.
 RULES:
 - Be concise and helpful
 - If files are provided, prioritize answering based on their content
+- If web search results are provided, use them to answer and cite sources with clickable markdown links
 - If chat history is provided, use it for context
 - Reply in ${ui_language === 'en' ? 'English' : ui_language === 'ru' ? 'Russian' : ui_language === 'tr' ? 'Turkish' : 'Uzbek'}
 - Do not mention that you are DeepSeek, OpenAI, ChatGPT, or any other AI. You are Bahor AI.
+- When citing web sources, format as: [Title](URL)
 
 ${messagesContext ? `
 RECENT CHAT MESSAGES (last 30):
@@ -235,6 +247,11 @@ ${messagesContext}
 ${filesContext ? `
 ATTACHED FILES (use these to answer):
 ${filesContext}
+` : ''}
+
+${webResultsContext ? `
+WEB SEARCH RESULTS (cite these with links):
+${webResultsContext}
 ` : ''}`;
 
     const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
