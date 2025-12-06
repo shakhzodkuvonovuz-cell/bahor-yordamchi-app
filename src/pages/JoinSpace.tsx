@@ -138,12 +138,25 @@ export default function JoinSpace() {
 
     setSubmitting(true);
     try {
+      // Fetch current user's profile for snapshot
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("first_name, last_name, avatar_url")
+        .eq("user_id", user.id)
+        .single();
+
+      const requesterName = profile
+        ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || null
+        : null;
+
       const { error } = await supabase.from("space_join_requests").insert({
         space_id: space.id,
         requester_id: user.id,
         invite_code: code.toUpperCase(),
         note: note.trim() || null,
         status: "pending",
+        requester_name: requesterName,
+        requester_avatar_url: profile?.avatar_url || null,
       });
 
       if (error) throw error;
