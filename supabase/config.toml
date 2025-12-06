@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.speech-to-text]
 verify_jwt = false
+
+[functions.space-chat]
+verify_jwt = false

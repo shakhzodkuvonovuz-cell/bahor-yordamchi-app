@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Users, FileText, MessageSquare, UserPlus, Send, MoreVertical, Check, X, Ban } from "lucide-react";
+import { ArrowLeft, Users, FileText, MessageSquare, UserPlus, Send, MoreVertical, Check, X, Ban, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,8 @@ import { useTranslation } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 import SpaceInviteModal from "@/components/spaces/SpaceInviteModal";
 import SpaceFilesTab from "@/components/spaces/SpaceFilesTab";
+import BahorContextPicker from "@/components/spaces/BahorContextPicker";
+
 interface SpaceData {
   id: string;
   name: string;
@@ -43,6 +45,8 @@ interface Message {
   kind: string;
   created_at: string;
   senderName?: string;
+  usedFiles?: string[];
+  usedMessages?: boolean;
 }
 
 export default function SpaceDetail() {
@@ -70,6 +74,11 @@ export default function SpaceDetail() {
 
   // Invite modal
   const [showInviteModal, setShowInviteModal] = useState(false);
+
+  // Bahor context picker
+  const [showBahorPicker, setShowBahorPicker] = useState(false);
+  const [bahorQuestion, setBahorQuestion] = useState("");
+  const [sendingBahor, setSendingBahor] = useState(false);
 
   const isAdmin = userRole === "owner" || userRole === "admin";
 
@@ -288,12 +297,26 @@ export default function SpaceDetail() {
   const sendMessage = async () => {
     if (!messageInput.trim() || !id || !user || sendingMessage) return;
 
+    const trimmedInput = messageInput.trim();
+    
+    // Check if it's a /bahor command
+    if (trimmedInput.toLowerCase().startsWith("/bahor")) {
+      const question = trimmedInput.replace(/^\/bahor\s*/i, "").trim();
+      if (!question) {
+        toast.error(language === "uz" ? "Savol yozing" : "Please enter a question");
+        return;
+      }
+      setBahorQuestion(question);
+      setShowBahorPicker(true);
+      return;
+    }
+
     setSendingMessage(true);
     try {
       const { error } = await supabase.from("space_messages").insert({
         space_id: id,
         sender_id: user.id,
-        content: messageInput.trim(),
+        content: trimmedInput,
         kind: "text",
       });
 
@@ -304,6 +327,84 @@ export default function SpaceDetail() {
       toast.error("Xabar yuborishda xatolik");
     } finally {
       setSendingMessage(false);
+    }
+  };
+
+  const handleBahorSend = async (payload: {
+    question: string;
+    includeLastMessages: boolean;
+    selectedFileIds: string[];
+  }) => {
+    if (!id || !user) return;
+
+    setSendingBahor(true);
+    try {
+      // First, insert the user's question as a message
+      await supabase.from("space_messages").insert({
+        space_id: id,
+        sender_id: user.id,
+        content: `/bahor ${payload.question}`,
+        kind: "text",
+      });
+
+      // Call the space-chat edge function
+      const { data: session } = await supabase.auth.getSession();
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/space-chat`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.session?.access_token}`,
+          },
+          body: JSON.stringify({
+            space_id: id,
+            question: payload.question,
+            include_last_messages: payload.includeLastMessages,
+            selected_file_ids: payload.selectedFileIds,
+            ui_language: language,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "AI xizmati xatosi");
+      }
+
+      const data = await response.json();
+
+      // Insert AI response as a message
+      await supabase.from("space_messages").insert({
+        space_id: id,
+        sender_id: user.id, // Using user's ID but with kind='ai'
+        content: data.response,
+        kind: "ai",
+      });
+
+      // Show what Bahor used
+      const usedContext: string[] = [];
+      if (data.used_messages) {
+        usedContext.push(language === "uz" ? "oxirgi 30 xabar" : "last 30 messages");
+      }
+      if (data.used_files?.length > 0) {
+        usedContext.push(data.used_files.join(", "));
+      }
+      if (usedContext.length > 0) {
+        toast.success(
+          `Bahor: ${usedContext.join(" + ")}`,
+          { duration: 4000 }
+        );
+      }
+
+      setShowBahorPicker(false);
+      setMessageInput("");
+      setBahorQuestion("");
+    } catch (err: any) {
+      console.error("Bahor error:", err);
+      toast.error(err.message || "Xatolik yuz berdi");
+    } finally {
+      setSendingBahor(false);
     }
   };
 
@@ -469,17 +570,28 @@ export default function SpaceDetail() {
                   <div
                     key={msg.id}
                     className={`flex ${
-                      msg.sender_id === user?.id ? "justify-end" : "justify-start"
+                      msg.kind === "ai" 
+                        ? "justify-start" 
+                        : msg.sender_id === user?.id 
+                          ? "justify-end" 
+                          : "justify-start"
                     }`}
                   >
                     <div
                       className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
-                        msg.sender_id === user?.id
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-secondary text-secondary-foreground"
+                        msg.kind === "ai"
+                          ? "bg-primary/10 border border-primary/20 text-foreground"
+                          : msg.sender_id === user?.id
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary text-secondary-foreground"
                       }`}
                     >
-                      {msg.sender_id !== user?.id && (
+                      {msg.kind === "ai" ? (
+                        <div className="flex items-center gap-1.5 text-xs font-medium text-primary mb-1">
+                          <Sparkles className="w-3 h-3" />
+                          Bahor AI
+                        </div>
+                      ) : msg.sender_id !== user?.id && (
                         <p className="text-xs font-medium opacity-70 mb-1">
                           {msg.senderName}
                         </p>
@@ -502,7 +614,7 @@ export default function SpaceDetail() {
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
-                  placeholder={language === "uz" ? "Xabar yozing..." : "Type a message..."}
+                  placeholder={language === "uz" ? "Xabar yozing... (/bahor savol)" : "Type a message... (/bahor question)"}
                   className="flex-1 px-4 py-2.5 rounded-xl bg-secondary border-none outline-none text-foreground placeholder:text-muted-foreground"
                 />
                 <Button
@@ -638,6 +750,20 @@ export default function SpaceDetail() {
         spaceId={id || ""}
         spaceName={space.name}
       />
+
+      {/* Bahor Context Picker */}
+      {showBahorPicker && (
+        <BahorContextPicker
+          spaceId={id || ""}
+          question={bahorQuestion}
+          onSend={handleBahorSend}
+          onCancel={() => {
+            setShowBahorPicker(false);
+            setBahorQuestion("");
+          }}
+          sending={sendingBahor}
+        />
+      )}
     </div>
   );
 }
