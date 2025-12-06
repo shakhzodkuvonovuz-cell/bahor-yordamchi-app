@@ -55,11 +55,33 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
     return profileMapRef.current;
   }, []);
 
+  // Get signed URLs for attachments
+  const getSignedUrls = useCallback(async (attachments: SpaceMessageAttachment[]): Promise<SpaceMessageAttachment[]> => {
+    if (!attachments || attachments.length === 0) return [];
+    
+    const enrichedAttachments = await Promise.all(
+      attachments.map(async (att) => {
+        if (att.signedUrl) return att;
+        
+        const { data } = await supabase.storage
+          .from("space-chat-files")
+          .createSignedUrl(att.path, 60 * 10);
+        
+        return { ...att, signedUrl: data?.signedUrl || undefined };
+      })
+    );
+    
+    return enrichedAttachments;
+  }, []);
+
   // Enrich single message with profile data
-  const enrichMessage = useCallback((msg: any, profiles: Record<string, ProfileData>): SpaceMessage => {
-    const attachments = Array.isArray(msg.attachments)
+  const enrichMessage = useCallback(async (msg: any, profiles: Record<string, ProfileData>): Promise<SpaceMessage> => {
+    const rawAttachments = Array.isArray(msg.attachments)
       ? (msg.attachments as unknown as SpaceMessageAttachment[])
       : null;
+    
+    // Get signed URLs for attachments
+    const attachments = rawAttachments ? await getSignedUrls(rawAttachments) : null;
 
     return {
       ...msg,
@@ -69,7 +91,7 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
       readCount: readReceiptsRef.current[msg.id] || 0,
       status: pendingClientIdsRef.current.has(msg.client_id) ? "sending" : "sent",
     };
-  }, []);
+  }, [getSignedUrls]);
 
   // Fetch initial messages - runs only once
   const fetchMessages = useCallback(async () => {
@@ -103,9 +125,9 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
           const replyUserIds = [...new Set(replyData.map((r) => r.sender_id))];
           await fetchProfiles(replyUserIds);
 
-          replyData.forEach((r) => {
-            replyMap[r.id] = enrichMessage(r, profileMapRef.current);
-          });
+          for (const r of replyData) {
+            replyMap[r.id] = await enrichMessage(r, profileMapRef.current);
+          }
         }
       }
 
@@ -124,10 +146,12 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
         });
       }
 
-      const enriched = reversed.map((m) => ({
-        ...enrichMessage(m, profiles),
-        replyToMessage: m.reply_to_id ? replyMap[m.reply_to_id] : null,
-      }));
+      const enriched = await Promise.all(
+        reversed.map(async (m) => ({
+          ...(await enrichMessage(m, profiles)),
+          replyToMessage: m.reply_to_id ? replyMap[m.reply_to_id] : null,
+        }))
+      );
 
       setMessages(enriched);
       hasFetchedRef.current = true;
@@ -140,7 +164,7 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
 
   // Send message with optimistic UI
   const sendMessage = useCallback(
-    async (content: string, replyToId?: string, attachments?: SpaceMessageAttachment[]) => {
+    async (content: string, replyToId?: string, attachments?: SpaceMessageAttachment[], replyToMessage?: SpaceMessage) => {
       if (!spaceId || !userId) return;
 
       const clientId = generateClientId();
@@ -164,6 +188,7 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
         senderName: profileMapRef.current[userId]?.name || "You",
         senderAvatar: profileMapRef.current[userId]?.avatar || undefined,
         status: "sending",
+        replyToMessage: replyToMessage || null,
       };
 
       setMessages((prev) => [...prev, optimisticMsg]);
@@ -202,7 +227,7 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
 
   // Upload and send
   const uploadAndSend = useCallback(
-    async (files: FileList, content: string, replyToId?: string) => {
+    async (files: FileList, content: string, replyToId?: string, replyToMessage?: SpaceMessage) => {
       if (!spaceId || !userId || files.length === 0) return;
 
       setIsUploading(true);
@@ -232,7 +257,7 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
           setUploadProgress(Math.round(((i + 1) / files.length) * 100));
         }
 
-        await sendMessage(content, replyToId, attachments);
+        await sendMessage(content, replyToId, attachments, replyToMessage);
       } catch (err) {
         console.error("Error uploading files:", err);
       } finally {
@@ -353,20 +378,19 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
           if (newMsg.client_id && pendingClientIdsRef.current.has(newMsg.client_id)) {
             pendingClientIdsRef.current.delete(newMsg.client_id);
 
+            const enriched = await enrichMessage(newMsg, profileMapRef.current);
             setMessages((prev) => {
               const filtered = prev.filter((m) => m.id !== `temp-${newMsg.client_id}`);
-              const enriched = enrichMessage(newMsg, profileMapRef.current);
               return [...filtered, { ...enriched, status: "sent" }];
             });
           } else {
             // New message from someone else
             await fetchProfiles([newMsg.sender_id]);
 
+            const enriched = await enrichMessage(newMsg, profileMapRef.current);
             setMessages((prev) => {
               // Dedupe by id
               if (prev.some((m) => m.id === newMsg.id)) return prev;
-
-              const enriched = enrichMessage(newMsg, profileMapRef.current);
               return [...prev, { ...enriched, status: "sent" }];
             });
           }

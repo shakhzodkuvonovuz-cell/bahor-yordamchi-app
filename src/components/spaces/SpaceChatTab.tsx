@@ -128,14 +128,15 @@ export default function SpaceChatTab({ spaceId }: SpaceChatTabProps) {
       return;
     }
 
-    await sendMessage(trimmedInput, replyTo?.id);
+    // Pass replyTo.id and the full replyTo message for optimistic UI
+    await sendMessage(trimmedInput, replyTo?.id, undefined, replyTo || undefined);
     setMessageInput("");
     setReplyTo(null);
   };
 
   // Handle file upload
   const handleFileSelect = async (files: FileList) => {
-    await uploadAndSend(files, messageInput.trim(), replyTo?.id);
+    await uploadAndSend(files, messageInput.trim(), replyTo?.id, replyTo || undefined);
     setMessageInput("");
     setReplyTo(null);
   };
