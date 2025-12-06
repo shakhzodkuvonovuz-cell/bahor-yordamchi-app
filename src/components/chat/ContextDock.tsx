@@ -37,7 +37,7 @@ export function ContextDock({
   sources = [],
   onAIAction,
   aiActionsAvailable = false,
-  defaultCollapsed = false,
+  defaultCollapsed = true,
 }: ContextDockProps) {
   const { t } = useTranslation();
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);

@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Users, FileText, MessageSquare, UserPlus, Check, X, Ban, Sparkles, Lock } from "lucide-react";
+import { ArrowLeft, Users, FileText, MessageSquare, UserPlus, Check, X, Ban, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/i18n/LanguageProvider";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import CircleInviteModal from "@/components/circles/CircleInviteModal";
 import CircleFilesTab from "@/components/circles/CircleFilesTab";
@@ -14,8 +13,6 @@ import CircleChatTab from "@/components/circles/CircleChatTab";
 import { CircleTabSkeleton } from "@/components/circles/CircleTabSkeleton";
 import { CircleAIActionsPanel, type AICard } from "@/components/circles/CircleAIActionsPanel";
 import { CircleAICard } from "@/components/circles/CircleAICard";
-import { CircleStudioLayout } from "@/components/circles/CircleStudioLayout";
-import CreateCircleModal from "@/components/circles/CreateCircleModal";
 
 interface SpaceData {
   id: string;
@@ -49,7 +46,6 @@ export default function SpaceDetail() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { language } = useTranslation();
-  const isMobile = useIsMobile();
 
   // Circle state with separate error tracking
   const [space, setSpace] = useState<SpaceData | null>(null);
@@ -73,9 +69,8 @@ export default function SpaceDetail() {
   const [loadingCards, setLoadingCards] = useState(false);
   const [cardsError, setCardsError] = useState<string | null>(null);
 
-  // Modals
+  // Invite modal
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [showCreateCircleModal, setShowCreateCircleModal] = useState(false);
 
   // Ref to send AI card content to chat
   const sendAICardToChatRef = useRef<((content: string, title: string) => void) | null>(null);
@@ -119,7 +114,6 @@ export default function SpaceDetail() {
   };
 
   const isAdmin = userRole === "owner" || userRole === "admin";
-  const pendingRequestsCount = requests.filter(r => r.status === "pending").length;
 
   const fetchSpace = async () => {
     if (!id || !user) {
@@ -284,19 +278,15 @@ export default function SpaceDetail() {
     fetchSpace();
   }, [id, user]);
 
-  // Fetch members on mount for count display
   useEffect(() => {
-    if (space) {
+    if (space && activeTab === "members") {
       fetchMembers();
-      if (isAdmin) fetchRequests();
-    }
-  }, [space, isAdmin]);
-
-  useEffect(() => {
-    if (space && activeTab === "natijalar") {
+    } else if (space && activeTab === "requests" && isAdmin) {
+      fetchRequests();
+    } else if (space && activeTab === "natijalar") {
       fetchAICards();
     }
-  }, [space, activeTab]);
+  }, [space, activeTab, isAdmin]);
 
   const handleRequestAction = async (
     requestId: string,
@@ -348,7 +338,6 @@ export default function SpaceDetail() {
       );
 
       fetchRequests();
-      if (action === "approved") fetchMembers();
     } catch (err) {
       console.error("Error handling request:", err);
       toast.error("Xatolik yuz berdi");
@@ -408,34 +397,22 @@ export default function SpaceDetail() {
     );
   }
 
-  // Main content - tabs and their contents
-  const mainContent = (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
-      {/* Header - visible on mobile, simpler on desktop */}
-      <header className="flex-shrink-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border lg:border-b-0">
-        <div className="px-4 py-3 flex items-center justify-between lg:max-w-none">
+  return (
+    <div className="h-dvh bg-background flex flex-col overflow-hidden">
+      {/* Header - fixed */}
+      <header className="flex-shrink-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border">
+        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {/* Back button - mobile only */}
             <button
               onClick={() => navigate("/circles")}
-              className="p-2 -ml-2 hover:bg-secondary rounded-lg transition-colors lg:hidden"
+              className="p-2 -ml-2 hover:bg-secondary rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-bold text-foreground">{space.name}</h1>
-                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-secondary/50 text-xs text-muted-foreground">
-                  <Lock className="w-3 h-3" />
-                  Yopiq
-                </span>
-                <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Users className="w-3 h-3" />
-                  {members.length}
-                </span>
-              </div>
+              <h1 className="text-lg font-bold text-foreground">{space.name}</h1>
               {space.goal && (
-                <p className="text-xs text-muted-foreground truncate max-w-[200px] lg:max-w-[400px]">
+                <p className="text-xs text-muted-foreground truncate max-w-[200px]">
                   {space.goal}
                 </p>
               )}
@@ -458,39 +435,42 @@ export default function SpaceDetail() {
                 className="gap-1.5"
               >
                 <UserPlus className="w-4 h-4" />
-                <span className="hidden sm:inline">{language === "uz" ? "Taklif" : "Invite"}</span>
+                {language === "uz" ? "Taklif" : "Invite"}
               </Button>
             )}
           </div>
         </div>
+      </header>
 
-        {/* Tabs bar - sticky with high z-index */}
-        <div className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur-sm">
-          <TabsList className="w-full justify-start px-4 bg-transparent h-11 overflow-x-auto">
+      {/* Tabs container */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        {/* Tabs bar - sticky with high z-index to ensure it's always clickable */}
+        <div className="flex-shrink-0 sticky top-0 z-30 border-b border-border bg-background backdrop-blur-sm pointer-events-auto">
+          <TabsList className="max-w-2xl mx-auto w-full justify-start px-4 bg-transparent h-12 pointer-events-auto">
             <TabsTrigger 
               value="chat" 
-              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-sm"
+              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-elevation-1 transition-all duration-150 pointer-events-auto"
             >
               <MessageSquare className="w-4 h-4" />
               Chat
             </TabsTrigger>
             <TabsTrigger 
               value="files" 
-              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-sm"
+              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-elevation-1 transition-all duration-150 pointer-events-auto"
             >
               <FileText className="w-4 h-4" />
               {language === "uz" ? "Fayllar" : "Files"}
             </TabsTrigger>
             <TabsTrigger 
               value="members" 
-              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-sm lg:hidden"
+              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-elevation-1 transition-all duration-150 pointer-events-auto"
             >
               <Users className="w-4 h-4" />
               {language === "uz" ? "A'zolar" : "Members"}
             </TabsTrigger>
             <TabsTrigger 
               value="natijalar" 
-              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-sm lg:hidden"
+              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-elevation-1 transition-all duration-150 pointer-events-auto"
             >
               <Sparkles className="w-4 h-4" />
               Natijalar
@@ -498,275 +478,241 @@ export default function SpaceDetail() {
             {isAdmin && (
               <TabsTrigger 
                 value="requests" 
-                className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-sm lg:hidden"
+                className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-elevation-1 transition-all duration-150 pointer-events-auto"
               >
                 <UserPlus className="w-4 h-4" />
                 {language === "uz" ? "So'rovlar" : "Requests"}
-                {pendingRequestsCount > 0 && (
-                  <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-amber-500/20 text-amber-600">
-                    {pendingRequestsCount}
-                  </span>
-                )}
               </TabsTrigger>
             )}
           </TabsList>
         </div>
-      </header>
 
-      {/* Chat Tab */}
-      <TabsContent value="chat" className="flex-1 flex flex-col m-0 min-h-0 overflow-hidden">
-        <CircleChatTab spaceId={id || ""} onSendAICardRef={sendAICardToChatRef} />
-      </TabsContent>
+        {/* Chat Tab - takes remaining height */}
+        <TabsContent value="chat" className="flex-1 flex flex-col m-0 min-h-0 overflow-hidden tab-panel-transition">
+          <CircleChatTab spaceId={id || ""} onSendAICardRef={sendAICardToChatRef} />
+        </TabsContent>
 
-      {/* Files Tab */}
-      <TabsContent value="files" className="flex-1 min-h-0 m-0 overflow-y-auto">
-        <CircleFilesTab spaceId={id || ""} isAdmin={isAdmin} />
-      </TabsContent>
+        {/* Files Tab */}
+        <TabsContent value="files" className="flex-1 min-h-0 m-0 overflow-y-auto tab-panel-transition">
+          <CircleFilesTab spaceId={id || ""} isAdmin={isAdmin} />
+        </TabsContent>
 
-      {/* Natijalar Tab - mobile only */}
-      <TabsContent value="natijalar" className="flex-1 min-h-0 m-0 overflow-y-auto lg:hidden">
-        <div className="max-w-2xl mx-auto px-4 py-4 space-y-4 pb-[env(safe-area-inset-bottom)]">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-muted-foreground">AI tomonidan yaratilgan natijalar</p>
-          </div>
-          {loadingCards ? (
-            <CircleTabSkeleton type="members" />
-          ) : cardsError ? (
-            <div className="text-center py-8">
-              <div className="w-12 h-12 mx-auto rounded-full bg-destructive/10 flex items-center justify-center mb-3">
-                <Sparkles className="w-6 h-6 text-destructive" />
-              </div>
-              <p className="text-sm text-destructive font-medium mb-3">{cardsError}</p>
-              <Button variant="outline" size="sm" onClick={fetchAICards}>
-                Qayta urinib ko'rish
-              </Button>
-            </div>
-          ) : aiCards.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Sparkles className="w-10 h-10 mx-auto mb-3 opacity-40" />
-              <p className="font-medium">Hali natijalar yo'q</p>
-              <p className="text-sm mt-1">AI Amallar tugmasini bosib natija yarating</p>
-            </div>
-          ) : (
-            aiCards.map((card) => (
-              <CircleAICard
-                key={card.id}
-                card={card}
-                circleId={id || ""}
-                onDelete={() => handleDeleteCard(card.id)}
+        {/* Natijalar (AI Results) Tab - lazy loaded */}
+        <TabsContent value="natijalar" className="flex-1 min-h-0 m-0 overflow-y-auto tab-panel-transition">
+          <div className="max-w-2xl mx-auto px-4 py-4 space-y-4 pb-[env(safe-area-inset-bottom)]">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm text-muted-foreground">AI tomonidan yaratilgan natijalar</p>
+              <CircleAIActionsPanel 
+                circleId={id || ""} 
                 onSendToChat={(content, title) => {
                   if (sendAICardToChatRef.current) {
                     sendAICardToChatRef.current(content, title);
                   }
                 }}
-                isLatest={false}
               />
-            ))
-          )}
-        </div>
-      </TabsContent>
-
-      {/* Members Tab - mobile only */}
-      <TabsContent value="members" className="flex-1 min-h-0 m-0 overflow-y-auto lg:hidden">
-        {membersLoading ? (
-          <CircleTabSkeleton type="members" />
-        ) : membersError ? (
-          <div className="max-w-2xl mx-auto px-4 py-8 text-center">
-            <div className="w-12 h-12 mx-auto rounded-full bg-destructive/10 flex items-center justify-center mb-3">
-              <Users className="w-6 h-6 text-destructive" />
             </div>
-            <p className="text-sm text-destructive font-medium mb-3">{membersError}</p>
-            <Button variant="outline" size="sm" onClick={fetchMembers}>
-              Qayta urinib ko'rish
-            </Button>
-          </div>
-        ) : members.length === 0 ? (
-          <div className="max-w-2xl mx-auto px-4 py-4 text-center py-12 text-muted-foreground">
-            {language === "uz" ? "A'zolar yo'q" : "No members"}
-          </div>
-        ) : (
-          <div className="max-w-2xl mx-auto px-4 py-4 space-y-2 pb-[env(safe-area-inset-bottom)]">
-            {members.map((member) => (
-              <div
-                key={member.id}
-                className="flex items-center justify-between p-3 rounded-xl bg-card border border-border"
-              >
-                <div>
-                  <p className="font-medium text-foreground">{member.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {member.email} · {member.role}
-                  </p>
+            {loadingCards ? (
+              <CircleTabSkeleton type="members" />
+            ) : cardsError ? (
+              <div className="text-center py-8">
+                <div className="w-12 h-12 mx-auto rounded-full bg-destructive/10 flex items-center justify-center mb-3">
+                  <Sparkles className="w-6 h-6 text-destructive" />
                 </div>
-                {isAdmin && member.user_id !== user?.id && member.role !== "owner" && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleBlockMember(member.id)}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Ban className="w-4 h-4" />
-                  </Button>
-                )}
+                <p className="text-sm text-destructive font-medium mb-3">{cardsError}</p>
+                <Button variant="outline" size="sm" onClick={fetchAICards}>
+                  Qayta urinib ko'rish
+                </Button>
               </div>
-            ))}
+            ) : aiCards.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Sparkles className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                <p className="font-medium">Hali natijalar yo'q</p>
+                <p className="text-sm mt-1">AI Amallar tugmasini bosib natija yarating</p>
+              </div>
+            ) : (
+              aiCards.map((card) => (
+                <CircleAICard
+                  key={card.id}
+                  card={card}
+                  circleId={id || ""}
+                  onDelete={() => handleDeleteCard(card.id)}
+                  onSendToChat={(content, title) => {
+                    if (sendAICardToChatRef.current) {
+                      sendAICardToChatRef.current(content, title);
+                    }
+                  }}
+                  isLatest={false}
+                />
+              ))
+            )}
           </div>
-        )}
-      </TabsContent>
+        </TabsContent>
 
-      {/* Requests Tab - mobile only, admin only */}
-      {isAdmin && (
-        <TabsContent value="requests" className="flex-1 min-h-0 m-0 overflow-y-auto lg:hidden">
-          {requestsLoading ? (
-            <CircleTabSkeleton type="requests" />
-          ) : requestsError ? (
+        {/* Members Tab */}
+        <TabsContent value="members" className="flex-1 min-h-0 m-0 overflow-y-auto tab-panel-transition">
+          {membersLoading ? (
+            <CircleTabSkeleton type="members" />
+          ) : membersError ? (
             <div className="max-w-2xl mx-auto px-4 py-8 text-center">
               <div className="w-12 h-12 mx-auto rounded-full bg-destructive/10 flex items-center justify-center mb-3">
-                <UserPlus className="w-6 h-6 text-destructive" />
+                <Users className="w-6 h-6 text-destructive" />
               </div>
-              <p className="text-sm text-destructive font-medium mb-3">{requestsError}</p>
-              <Button variant="outline" size="sm" onClick={fetchRequests}>
+              <p className="text-sm text-destructive font-medium mb-3">{membersError}</p>
+              <Button variant="outline" size="sm" onClick={fetchMembers}>
                 Qayta urinib ko'rish
               </Button>
             </div>
-          ) : requests.length === 0 ? (
-            <div className="max-w-2xl mx-auto px-4 py-4">
-              <div className="text-center py-12 text-muted-foreground">
-                {language === "uz" ? "So'rovlar yo'q" : "No requests"}
-              </div>
+          ) : members.length === 0 ? (
+            <div className="max-w-2xl mx-auto px-4 py-4 text-center py-12 text-muted-foreground">
+              {language === "uz" ? "A'zolar yo'q" : "No members"}
             </div>
           ) : (
-            <div className="max-w-2xl mx-auto px-4 py-4 space-y-2">
-              {requests.map((req) => {
-                const displayName = req.requester_name || "User";
-                const initials = displayName.charAt(0).toUpperCase();
-
-                return (
-                  <div
-                    key={req.id}
-                    className="p-4 rounded-xl bg-card border border-border"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3 flex-1">
-                        {req.requester_avatar_url ? (
-                          <img
-                            src={req.requester_avatar_url}
-                            alt={displayName}
-                            className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                            <span className="text-sm font-medium text-primary">
-                              {initials}
-                            </span>
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-foreground">{displayName}</p>
-                          {req.note && (
-                            <p className="text-sm text-muted-foreground mt-1 italic">
-                              "{req.note}"
-                            </p>
-                          )}
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {new Date(req.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                      {req.status === "pending" ? (
-                        <div className="flex gap-1 flex-shrink-0">
-                          <Button
-                            size="sm"
-                            onClick={() =>
-                              handleRequestAction(req.id, req.requester_id, "approved")
-                            }
-                            className="gap-1"
-                          >
-                            <Check className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() =>
-                              handleRequestAction(req.id, req.requester_id, "rejected")
-                            }
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() =>
-                              handleRequestAction(req.id, req.requester_id, "blocked")
-                            }
-                            className="text-destructive"
-                          >
-                            <Ban className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <span
-                          className={`text-xs px-2 py-1 rounded-full flex-shrink-0 ${
-                            req.status === "approved"
-                              ? "bg-green-500/20 text-green-600"
-                              : req.status === "rejected"
-                              ? "bg-red-500/20 text-red-600"
-                              : "bg-orange-500/20 text-orange-600"
-                          }`}
-                        >
-                          {req.status}
-                        </span>
-                      )}
-                    </div>
+            <div className="max-w-2xl mx-auto px-4 py-4 space-y-2 pb-[env(safe-area-inset-bottom)]">
+              {members.map((member) => (
+                <div
+                  key={member.id}
+                  className="flex items-center justify-between p-3 rounded-xl bg-card border border-border shadow-elevation-1 hover:shadow-elevation-2 transition-shadow duration-150"
+                >
+                  <div>
+                    <p className="font-medium text-foreground">{member.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {member.email} · {member.role}
+                    </p>
                   </div>
-                );
-              })}
+                  {isAdmin && member.user_id !== user?.id && member.role !== "owner" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleBlockMember(member.id)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Ban className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </TabsContent>
-      )}
-    </Tabs>
-  );
 
-  // Mobile: just render content directly
-  // Desktop: wrap in 3-pane studio layout
-  return (
-    <div className="h-dvh bg-background flex flex-col overflow-hidden">
-      {isMobile ? (
-        mainContent
-      ) : (
-        <CircleStudioLayout
-          circleId={id || ""}
-          circleName={space.name}
-          circleGoal={space.goal}
-          isAdmin={isAdmin}
-          membersCount={members.length}
-          pendingRequestsCount={pendingRequestsCount}
-          onShowMembers={() => setActiveTab("members")}
-          onShowRequests={() => setActiveTab("requests")}
-          onCreateCircle={() => setShowCreateCircleModal(true)}
-          onSendToChat={(content, title) => {
-            if (sendAICardToChatRef.current) {
-              sendAICardToChatRef.current(content, title);
-            }
-          }}
-        >
-          {mainContent}
-        </CircleStudioLayout>
-      )}
+        {/* Requests Tab (Admin only) */}
+        {isAdmin && (
+          <TabsContent value="requests" className="flex-1 min-h-0 m-0 overflow-y-auto tab-panel-transition">
+            {requestsLoading ? (
+              <CircleTabSkeleton type="requests" />
+            ) : requestsError ? (
+              <div className="max-w-2xl mx-auto px-4 py-8 text-center">
+                <div className="w-12 h-12 mx-auto rounded-full bg-destructive/10 flex items-center justify-center mb-3">
+                  <UserPlus className="w-6 h-6 text-destructive" />
+                </div>
+                <p className="text-sm text-destructive font-medium mb-3">{requestsError}</p>
+                <Button variant="outline" size="sm" onClick={fetchRequests}>
+                  Qayta urinib ko'rish
+                </Button>
+              </div>
+            ) : requests.length === 0 ? (
+              <div className="max-w-2xl mx-auto px-4 py-4">
+                <div className="text-center py-12 text-muted-foreground">
+                  {language === "uz" ? "So'rovlar yo'q" : "No requests"}
+                </div>
+              </div>
+            ) : (
+              <div className="max-w-2xl mx-auto px-4 py-4 space-y-2">
+                {requests.map((req) => {
+                  const displayName = req.requester_name || "User";
+                  const initials = displayName.charAt(0).toUpperCase();
+
+                  return (
+                    <div
+                      key={req.id}
+                      className="p-4 rounded-xl bg-card border border-border shadow-elevation-1 hover:shadow-elevation-2 transition-shadow duration-150"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3 flex-1">
+                          {req.requester_avatar_url ? (
+                            <img
+                              src={req.requester_avatar_url}
+                              alt={displayName}
+                              className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                              <span className="text-sm font-medium text-primary">
+                                {initials}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-foreground">{displayName}</p>
+                            {req.note && (
+                              <p className="text-sm text-muted-foreground mt-1 italic">
+                                "{req.note}"
+                              </p>
+                            )}
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {new Date(req.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        {req.status === "pending" ? (
+                          <div className="flex gap-1 flex-shrink-0">
+                            <Button
+                              size="sm"
+                              onClick={() =>
+                                handleRequestAction(req.id, req.requester_id, "approved")
+                              }
+                              className="gap-1"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                handleRequestAction(req.id, req.requester_id, "rejected")
+                              }
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() =>
+                                handleRequestAction(req.id, req.requester_id, "blocked")
+                              }
+                              className="text-destructive"
+                            >
+                              <Ban className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <span
+                            className={`text-xs px-2 py-1 rounded-full flex-shrink-0 ${
+                              req.status === "approved"
+                                ? "bg-green-500/20 text-green-600"
+                                : req.status === "rejected"
+                                ? "bg-red-500/20 text-red-600"
+                                : "bg-orange-500/20 text-orange-600"
+                            }`}
+                          >
+                            {req.status}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+        )}
+      </Tabs>
 
       <CircleInviteModal
         open={showInviteModal}
         onClose={() => setShowInviteModal(false)}
         spaceId={id || ""}
         spaceName={space.name}
-      />
-
-      <CreateCircleModal
-        open={showCreateCircleModal}
-        onClose={() => setShowCreateCircleModal(false)}
-        onCreated={() => {
-          setShowCreateCircleModal(false);
-        }}
       />
     </div>
   );
