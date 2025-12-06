@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, MessageSquare, FileText, Sparkles, Check } from "lucide-react";
+import { X, MessageSquare, FileText, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
