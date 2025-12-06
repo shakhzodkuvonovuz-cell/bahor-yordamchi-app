@@ -17,10 +17,12 @@ export const FocusCanvas = forwardRef<HTMLDivElement, FocusCanvasProps>(
         ref={ref}
         className={cn(
           "flex-1 flex flex-col min-w-0",
-          // Canvas styling - subtle elevation
-          "bg-gradient-to-b from-card/30 via-card/20 to-card/30",
-          "lg:border-x lg:border-border/10",
-          "lg:shadow-[inset_0_0_60px_rgba(0,0,0,0.02)]",
+          // Canvas styling - visible elevation and glass effect
+          "bg-gradient-to-b from-card/50 via-card/40 to-card/50",
+          "lg:mx-4 lg:my-2 lg:rounded-2xl",
+          "lg:border lg:border-border/30",
+          "lg:shadow-xl lg:shadow-black/5",
+          "lg:backdrop-blur-sm",
           className
         )}
       >

@@ -1554,7 +1554,7 @@ export default function Chat() {
   if (!modeInfo) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-background/95 relative">
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-background/95 relative flex">
       {/* Migration Modal */}
       {user && (
         <ChatMigrationModal
@@ -1985,6 +1985,7 @@ export default function Chat() {
           lastAttachment={pendingAttachments.length > 0 ? pendingAttachments[pendingAttachments.length - 1] : undefined}
           sources={searchUrls}
           aiActionsAvailable={false}
+          defaultCollapsed={false}
         />
       </div>
 
