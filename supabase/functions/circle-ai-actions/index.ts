@@ -431,7 +431,14 @@ serve(async (req) => {
 
     if (insertError) {
       console.error("Error saving card:", insertError);
-      return new Response(JSON.stringify({ error: "Saqlashda xatolik" }), {
+      return new Response(JSON.stringify({ 
+        error: "Saqlashda xatolik", 
+        stage: "insert_outcome",
+        supabase_error: insertError.message,
+        code: insertError.code,
+        details: insertError.details,
+        hint: insertError.hint
+      }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
