@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, memo } from "react";
+import { useState, useRef, useEffect, useCallback, memo, type MutableRefObject } from "react";
 import { ChevronDown, Users, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/i18n/LanguageProvider";
@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 
 interface CircleChatTabProps {
   spaceId: string;
+  onSendAICardRef?: MutableRefObject<((content: string, title: string) => void) | null>;
 }
 
 const MemoizedMessage = memo(CircleChatMessage);
@@ -27,7 +28,7 @@ function markBahorHintSeen(circleId: string, userId: string): void {
   localStorage.setItem(`circle_bahor_hint_seen_${circleId}_${userId}`, "true");
 }
 
-export default function CircleChatTab({ spaceId }: CircleChatTabProps) {
+export default function CircleChatTab({ spaceId, onSendAICardRef }: CircleChatTabProps) {
   const { user } = useAuth();
   const { language } = useTranslation();
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -88,6 +89,24 @@ export default function CircleChatTab({ spaceId }: CircleChatTabProps) {
     if (!isInitialLoading && messages.length > 0) scrollToBottom(false);
   }, [isInitialLoading]);
 
+  // Expose function to send AI card content to chat
+  useEffect(() => {
+    if (onSendAICardRef) {
+      onSendAICardRef.current = async (content: string, title: string) => {
+        if (!user) return;
+        const formattedContent = `📌 **AI Amallar — ${title}**\n\n${content}`;
+        await supabase.from("space_messages").insert({
+          space_id: spaceId,
+          sender_id: user.id,
+          content: formattedContent,
+          type: "ai",
+        });
+      };
+    }
+    return () => {
+      if (onSendAICardRef) onSendAICardRef.current = null;
+    };
+  }, [onSendAICardRef, user, spaceId]);
   const handleSend = async (pendingFiles?: PendingAttachment[]) => {
     const trimmed = messageInput.trim();
     

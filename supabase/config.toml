@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.space-web-search]
 verify_jwt = false
+
+[functions.circle-ai-actions]
+verify_jwt = false

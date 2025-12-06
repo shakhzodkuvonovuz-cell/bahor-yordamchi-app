@@ -199,6 +199,53 @@ export type Database = {
         }
         Relationships: []
       }
+      circle_ai_cards: {
+        Row: {
+          circle_id: string
+          content_md: string
+          created_at: string
+          creator_id: string
+          id: string
+          pinned: boolean
+          source_last_message_at: string | null
+          source_message_count: number
+          title: string
+          type: string
+        }
+        Insert: {
+          circle_id: string
+          content_md: string
+          created_at?: string
+          creator_id: string
+          id?: string
+          pinned?: boolean
+          source_last_message_at?: string | null
+          source_message_count?: number
+          title: string
+          type: string
+        }
+        Update: {
+          circle_id?: string
+          content_md?: string
+          created_at?: string
+          creator_id?: string
+          id?: string
+          pinned?: boolean
+          source_last_message_at?: string | null
+          source_message_count?: number
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circle_ai_cards_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_usage: {
         Row: {
           date: string
