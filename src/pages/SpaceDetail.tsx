@@ -9,7 +9,7 @@ import { useTranslation } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 import SpaceInviteModal from "@/components/spaces/SpaceInviteModal";
 import SpaceFilesTab from "@/components/spaces/SpaceFilesTab";
-import BahorContextPicker from "@/components/spaces/BahorContextPicker";
+import SpaceChatTab from "@/components/spaces/SpaceChatTab";
 
 interface SpaceData {
   id: string;
@@ -42,7 +42,7 @@ interface Message {
   id: string;
   sender_id: string;
   content: string | null;
-  kind: string;
+  type: string;
   created_at: string;
   senderName?: string;
   usedFiles?: string[];
@@ -326,7 +326,7 @@ export default function SpaceDetail() {
         space_id: id,
         sender_id: user.id,
         content: trimmedInput,
-        kind: "text",
+        type: "text",
       });
 
       if (error) throw error;
@@ -353,7 +353,7 @@ export default function SpaceDetail() {
         space_id: id,
         sender_id: user.id,
         content: `/bahor ${payload.question}`,
-        kind: "text",
+        type: "text",
       });
 
       // Call the space-chat edge function
@@ -386,9 +386,9 @@ export default function SpaceDetail() {
       // Insert AI response as a message
       await supabase.from("space_messages").insert({
         space_id: id,
-        sender_id: user.id, // Using user's ID but with kind='ai'
+        sender_id: user.id,
         content: data.response,
-        kind: "ai",
+        type: "ai",
       });
 
       // Show what Bahor used
@@ -565,78 +565,8 @@ export default function SpaceDetail() {
         </div>
 
         {/* Chat Tab */}
-        <TabsContent value="chat" className="flex-1 flex flex-col m-0">
-          <div className="flex-1 overflow-y-auto">
-            <div className="max-w-2xl mx-auto px-4 py-4 space-y-3">
-              {messages.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  {language === "uz"
-                    ? "Hali xabarlar yo'q. Birinchi bo'ling!"
-                    : "No messages yet. Be the first!"}
-                </div>
-              ) : (
-                messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex ${
-                      msg.kind === "ai" 
-                        ? "justify-start" 
-                        : msg.sender_id === user?.id 
-                          ? "justify-end" 
-                          : "justify-start"
-                    }`}
-                  >
-                    <div
-                      className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
-                        msg.kind === "ai"
-                          ? "bg-primary/10 border border-primary/20 text-foreground"
-                          : msg.sender_id === user?.id
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-secondary text-secondary-foreground"
-                      }`}
-                    >
-                      {msg.kind === "ai" ? (
-                        <div className="flex items-center gap-1.5 text-xs font-medium text-primary mb-1">
-                          <Sparkles className="w-3 h-3" />
-                          Bahor AI
-                        </div>
-                      ) : msg.sender_id !== user?.id && (
-                        <p className="text-xs font-medium opacity-70 mb-1">
-                          {msg.senderName}
-                        </p>
-                      )}
-                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                    </div>
-                  </div>
-                ))
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-          </div>
-
-          {/* Message Input */}
-          <div className="border-t border-border bg-background/80 backdrop-blur-lg">
-            <div className="max-w-2xl mx-auto px-4 py-3">
-              <div className="flex gap-2 items-center">
-                <input
-                  type="text"
-                  value={messageInput}
-                  onChange={(e) => setMessageInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
-                  placeholder={language === "uz" ? "Xabar yozing... (/bahor savol)" : "Type a message... (/bahor question)"}
-                  className="flex-1 px-4 py-2.5 rounded-xl bg-secondary border-none outline-none text-foreground placeholder:text-muted-foreground"
-                />
-                <Button
-                  onClick={sendMessage}
-                  disabled={!messageInput.trim() || sendingMessage}
-                  size="icon"
-                  className="rounded-xl"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
+        <TabsContent value="chat" className="flex-1 flex flex-col m-0 relative">
+          <SpaceChatTab spaceId={id || ""} />
         </TabsContent>
 
         {/* Files Tab */}
@@ -780,19 +710,6 @@ export default function SpaceDetail() {
         spaceName={space.name}
       />
 
-      {/* Bahor Context Picker */}
-      {showBahorPicker && (
-        <BahorContextPicker
-          spaceId={id || ""}
-          question={bahorQuestion}
-          onSend={handleBahorSend}
-          onCancel={() => {
-            setShowBahorPicker(false);
-            setBahorQuestion("");
-          }}
-          sending={sendingBahor}
-        />
-      )}
     </div>
   );
 }

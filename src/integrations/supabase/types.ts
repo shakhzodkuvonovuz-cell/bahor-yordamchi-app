@@ -512,35 +512,83 @@ export type Database = {
           },
         ]
       }
-      space_messages: {
+      space_message_reads: {
         Row: {
-          content: string | null
-          created_at: string | null
-          file_id: string | null
-          id: string
-          kind: string
-          sender_id: string
-          space_id: string
+          message_id: string
+          read_at: string
+          user_id: string
         }
         Insert: {
-          content?: string | null
-          created_at?: string | null
-          file_id?: string | null
-          id?: string
-          kind?: string
-          sender_id: string
-          space_id: string
+          message_id: string
+          read_at?: string
+          user_id: string
         }
         Update: {
-          content?: string | null
-          created_at?: string | null
-          file_id?: string | null
-          id?: string
-          kind?: string
-          sender_id?: string
-          space_id?: string
+          message_id?: string
+          read_at?: string
+          user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "space_message_reads_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "space_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_messages: {
+        Row: {
+          attachments: Json | null
+          client_id: string | null
+          content: string | null
+          created_at: string | null
+          deleted_at: string | null
+          edited_at: string | null
+          file_id: string | null
+          id: string
+          reply_to_id: string | null
+          sender_id: string
+          space_id: string
+          type: string
+        }
+        Insert: {
+          attachments?: Json | null
+          client_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          edited_at?: string | null
+          file_id?: string | null
+          id?: string
+          reply_to_id?: string | null
+          sender_id: string
+          space_id: string
+          type?: string
+        }
+        Update: {
+          attachments?: Json | null
+          client_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          edited_at?: string | null
+          file_id?: string | null
+          id?: string
+          reply_to_id?: string | null
+          sender_id?: string
+          space_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "space_messages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "space_messages_space_id_fkey"
             columns: ["space_id"]
