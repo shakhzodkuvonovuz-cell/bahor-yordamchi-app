@@ -7,12 +7,9 @@ interface UseSpaceChatOptions {
   userId: string | undefined;
 }
 
-interface ReadReceipt {
-  message_id: string;
-  user_id: string;
-  read_at: string;
-  user_name?: string;
-  user_avatar?: string;
+interface ProfileData {
+  name: string;
+  avatar: string | null;
 }
 
 function generateClientId(): string {
@@ -21,60 +18,63 @@ function generateClientId(): string {
 
 export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
   const [messages, setMessages] = useState<SpaceMessage[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isSending, setIsSending] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [hasMoreMessages, setHasMoreMessages] = useState(true);
-  const [profileMap, setProfileMap] = useState<Record<string, { name: string; avatar: string | null }>>({});
-  const [readReceipts, setReadReceipts] = useState<Record<string, number>>({});
-  const latestMessageRef = useRef<string | null>(null);
-  const pendingClientIds = useRef<Set<string>>(new Set());
 
-  // Fetch profiles for a set of user IDs
-  const fetchProfiles = useCallback(async (userIds: string[]) => {
-    if (userIds.length === 0) return {};
+  // Refs for stable subscriptions
+  const profileMapRef = useRef<Record<string, ProfileData>>({});
+  const pendingClientIdsRef = useRef<Set<string>>(new Set());
+  const readReceiptsRef = useRef<Record<string, number>>({});
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const readsChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const hasFetchedRef = useRef(false);
+  const markReadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastMarkedMessageRef = useRef<string | null>(null);
 
-    const newIds = userIds.filter((id) => !profileMap[id]);
-    if (newIds.length === 0) return profileMap;
+  // Fetch profiles - memoized with ref
+  const fetchProfiles = useCallback(async (userIds: string[]): Promise<Record<string, ProfileData>> => {
+    if (userIds.length === 0) return profileMapRef.current;
+
+    const newIds = userIds.filter((id) => !profileMapRef.current[id]);
+    if (newIds.length === 0) return profileMapRef.current;
 
     const { data: profiles } = await supabase
       .from("profiles")
       .select("user_id, first_name, last_name, avatar_url")
       .in("user_id", newIds);
 
-    const newMap = { ...profileMap };
     (profiles || []).forEach((p) => {
-      newMap[p.user_id] = {
+      profileMapRef.current[p.user_id] = {
         name: `${p.first_name || ""} ${p.last_name || ""}`.trim() || "User",
         avatar: p.avatar_url,
       };
     });
 
-    setProfileMap(newMap);
-    return newMap;
-  }, [profileMap]);
+    return profileMapRef.current;
+  }, []);
 
-  // Enrich messages with profile data
-  const enrichMessages = useCallback(
-    (msgs: any[], profiles: Record<string, { name: string; avatar: string | null }>): SpaceMessage[] => {
-      return msgs.map((m) => ({
-        ...m,
-        attachments: m.attachments as SpaceMessageAttachment[] | null,
-        senderName: profiles[m.sender_id]?.name || "User",
-        senderAvatar: profiles[m.sender_id]?.avatar || undefined,
-        readCount: readReceipts[m.id] || 0,
-        status: pendingClientIds.current.has(m.client_id) ? "sending" : "sent",
-      }));
-    },
-    [readReceipts]
-  );
+  // Enrich single message with profile data
+  const enrichMessage = useCallback((msg: any, profiles: Record<string, ProfileData>): SpaceMessage => {
+    const attachments = Array.isArray(msg.attachments)
+      ? (msg.attachments as unknown as SpaceMessageAttachment[])
+      : null;
 
-  // Fetch initial messages
+    return {
+      ...msg,
+      attachments,
+      senderName: profiles[msg.sender_id]?.name || "User",
+      senderAvatar: profiles[msg.sender_id]?.avatar || undefined,
+      readCount: readReceiptsRef.current[msg.id] || 0,
+      status: pendingClientIdsRef.current.has(msg.client_id) ? "sending" : "sent",
+    };
+  }, []);
+
+  // Fetch initial messages - runs only once
   const fetchMessages = useCallback(async () => {
-    if (!spaceId) return;
+    if (!spaceId || !userId || hasFetchedRef.current) return;
 
-    setLoading(true);
     try {
       const { data, error } = await supabase
         .from("space_messages")
@@ -92,7 +92,7 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
       // Fetch reply-to messages
       const replyIds = reversed.filter((m) => m.reply_to_id).map((m) => m.reply_to_id);
       let replyMap: Record<string, SpaceMessage> = {};
-      
+
       if (replyIds.length > 0) {
         const { data: replyData } = await supabase
           .from("space_messages")
@@ -102,117 +102,110 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
         if (replyData) {
           const replyUserIds = [...new Set(replyData.map((r) => r.sender_id))];
           await fetchProfiles(replyUserIds);
-          
+
           replyData.forEach((r) => {
-            const attachmentsData = Array.isArray(r.attachments) 
-              ? (r.attachments as unknown as SpaceMessageAttachment[]) 
-              : null;
-            replyMap[r.id] = {
-              ...r,
-              attachments: attachmentsData,
-              senderName: profiles[r.sender_id]?.name || "User",
-            } as SpaceMessage;
+            replyMap[r.id] = enrichMessage(r, profileMapRef.current);
           });
         }
       }
 
-      const enriched = enrichMessages(reversed, profiles).map((m) => ({
-        ...m,
+      // Fetch read receipts for own messages
+      const ownMessageIds = reversed.filter((m) => m.sender_id === userId).map((m) => m.id);
+      if (ownMessageIds.length > 0) {
+        const { data: readsData } = await supabase
+          .from("space_message_reads")
+          .select("message_id, user_id")
+          .in("message_id", ownMessageIds);
+
+        (readsData || []).forEach((r) => {
+          if (r.user_id !== userId) {
+            readReceiptsRef.current[r.message_id] = (readReceiptsRef.current[r.message_id] || 0) + 1;
+          }
+        });
+      }
+
+      const enriched = reversed.map((m) => ({
+        ...enrichMessage(m, profiles),
         replyToMessage: m.reply_to_id ? replyMap[m.reply_to_id] : null,
       }));
 
       setMessages(enriched);
-      setHasMoreMessages(data && data.length === 50);
-
-      if (reversed.length > 0) {
-        latestMessageRef.current = reversed[reversed.length - 1].id;
-      }
+      hasFetchedRef.current = true;
     } catch (err) {
       console.error("Error fetching messages:", err);
     } finally {
-      setLoading(false);
+      setIsInitialLoading(false);
     }
-  }, [spaceId, fetchProfiles, enrichMessages]);
+  }, [spaceId, userId, fetchProfiles, enrichMessage]);
 
-  // Fetch read receipts for messages
-  const fetchReadReceipts = useCallback(async (messageIds: string[]) => {
-    if (messageIds.length === 0) return;
-
-    const { data } = await supabase
-      .from("space_message_reads")
-      .select("message_id, user_id")
-      .in("message_id", messageIds);
-
-    const counts: Record<string, number> = {};
-    (data || []).forEach((r) => {
-      // Exclude own reads
-      if (r.user_id !== userId) {
-        counts[r.message_id] = (counts[r.message_id] || 0) + 1;
-      }
-    });
-
-    setReadReceipts((prev) => ({ ...prev, ...counts }));
-  }, [userId]);
-
-  // Send message (optimistic)
+  // Send message with optimistic UI
   const sendMessage = useCallback(
     async (content: string, replyToId?: string, attachments?: SpaceMessageAttachment[]) => {
       if (!spaceId || !userId) return;
 
       const clientId = generateClientId();
-      pendingClientIds.current.add(clientId);
+      pendingClientIdsRef.current.add(clientId);
+
+      const msgType = attachments && attachments.length > 0
+        ? (attachments[0].mime.startsWith("image/") ? "image" : "file")
+        : "text";
 
       // Optimistic message
       const optimisticMsg: SpaceMessage = {
         id: `temp-${clientId}`,
         sender_id: userId,
         content,
-        type: attachments && attachments.length > 0 ? (attachments[0].mime.startsWith("image/") ? "image" : "file") : "text",
+        type: msgType,
         created_at: new Date().toISOString(),
         reply_to_id: replyToId || null,
         attachments: attachments || null,
         client_id: clientId,
         deleted_at: null,
-        senderName: profileMap[userId]?.name || "You",
-        senderAvatar: profileMap[userId]?.avatar || undefined,
+        senderName: profileMapRef.current[userId]?.name || "You",
+        senderAvatar: profileMapRef.current[userId]?.avatar || undefined,
         status: "sending",
       };
 
       setMessages((prev) => [...prev, optimisticMsg]);
-      setSending(true);
+      setIsSending(true);
 
       try {
-        const insertData: any = {
+        const insertPayload = {
           space_id: spaceId,
           sender_id: userId,
           content: content || null,
-          type: optimisticMsg.type,
+          type: msgType,
           reply_to_id: replyToId || null,
-          attachments: attachments || null,
+          attachments: attachments as any || null,
           client_id: clientId,
         };
-
-        const { error } = await supabase.from("space_messages").insert(insertData);
+        
+        const { error } = await supabase.from("space_messages").insert(insertPayload);
 
         if (error) throw error;
+        // Realtime will handle replacing the optimistic message
       } catch (err) {
         console.error("Error sending message:", err);
-        // Remove optimistic message on error
-        setMessages((prev) => prev.filter((m) => m.id !== `temp-${clientId}`));
-        pendingClientIds.current.delete(clientId);
+        // Mark as failed
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === `temp-${clientId}` ? { ...m, status: "failed" as const } : m
+          )
+        );
+        pendingClientIdsRef.current.delete(clientId);
       } finally {
-        setSending(false);
+        setIsSending(false);
       }
     },
-    [spaceId, userId, profileMap]
+    [spaceId, userId]
   );
 
-  // Upload file and send message
+  // Upload and send
   const uploadAndSend = useCallback(
     async (files: FileList, content: string, replyToId?: string) => {
       if (!spaceId || !userId || files.length === 0) return;
 
-      setUploading(true);
+      setIsUploading(true);
       setUploadProgress(0);
 
       const attachments: SpaceMessageAttachment[] = [];
@@ -243,7 +236,7 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
       } catch (err) {
         console.error("Error uploading files:", err);
       } finally {
-        setUploading(false);
+        setIsUploading(false);
         setUploadProgress(0);
       }
     },
@@ -272,38 +265,45 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
         if (error) throw error;
       } catch (err) {
         console.error("Error deleting message:", err);
-        // Revert on error
-        fetchMessages();
       }
     },
-    [userId, fetchMessages]
+    [userId]
   );
 
-  // Mark message as read
+  // Mark message as read - debounced
   const markAsRead = useCallback(
-    async (messageId: string) => {
-      if (!userId || !messageId) return;
+    (messageId: string) => {
+      if (!userId || !messageId || messageId.startsWith("temp-")) return;
+      if (lastMarkedMessageRef.current === messageId) return;
 
-      try {
-        await supabase.from("space_message_reads").upsert(
-          {
-            message_id: messageId,
-            user_id: userId,
-            read_at: new Date().toISOString(),
-          },
-          { onConflict: "message_id,user_id" }
-        );
-      } catch (err) {
-        // Silently fail for read receipts
-        console.error("Error marking as read:", err);
+      // Clear existing timeout
+      if (markReadTimeoutRef.current) {
+        clearTimeout(markReadTimeoutRef.current);
       }
+
+      // Debounce by 1 second
+      markReadTimeoutRef.current = setTimeout(async () => {
+        try {
+          await supabase.from("space_message_reads").upsert(
+            {
+              message_id: messageId,
+              user_id: userId,
+              read_at: new Date().toISOString(),
+            },
+            { onConflict: "message_id,user_id" }
+          );
+          lastMarkedMessageRef.current = messageId;
+        } catch (err) {
+          console.error("Error marking as read:", err);
+        }
+      }, 1000);
     },
     [userId]
   );
 
   // Get readers for a message
   const getMessageReaders = useCallback(
-    async (messageId: string): Promise<ReadReceipt[]> => {
+    async (messageId: string) => {
       const { data } = await supabase
         .from("space_message_reads")
         .select("*")
@@ -311,24 +311,32 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
 
       if (!data) return [];
 
-      // Fetch profiles for readers
       const userIds = data.map((r) => r.user_id);
-      const profiles = await fetchProfiles(userIds);
+      await fetchProfiles(userIds);
 
       return data.map((r) => ({
         ...r,
-        user_name: profiles[r.user_id]?.name || "User",
-        user_avatar: profiles[r.user_id]?.avatar || undefined,
+        user_name: profileMapRef.current[r.user_id]?.name || "User",
+        user_avatar: profileMapRef.current[r.user_id]?.avatar || undefined,
       }));
     },
     [fetchProfiles]
   );
 
-  // Set up realtime subscriptions
+  // Setup realtime subscriptions - stable, runs once per spaceId
   useEffect(() => {
-    if (!spaceId) return;
+    if (!spaceId || !userId) return;
 
-    const messagesChannel = supabase
+    // Cleanup existing channels
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+    }
+    if (readsChannelRef.current) {
+      supabase.removeChannel(readsChannelRef.current);
+    }
+
+    // Messages channel
+    channelRef.current = supabase
       .channel(`space-chat-${spaceId}`)
       .on(
         "postgres_changes",
@@ -342,39 +350,26 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
           const newMsg = payload.new as any;
 
           // If this is our optimistic message, replace it
-          if (newMsg.client_id && pendingClientIds.current.has(newMsg.client_id)) {
-            pendingClientIds.current.delete(newMsg.client_id);
-            
+          if (newMsg.client_id && pendingClientIdsRef.current.has(newMsg.client_id)) {
+            pendingClientIdsRef.current.delete(newMsg.client_id);
+
             setMessages((prev) => {
               const filtered = prev.filter((m) => m.id !== `temp-${newMsg.client_id}`);
-              const profiles = { ...profileMap };
-              const enriched: SpaceMessage = {
-                ...newMsg,
-                senderName: profiles[newMsg.sender_id]?.name || "User",
-                senderAvatar: profiles[newMsg.sender_id]?.avatar || undefined,
-                status: "sent",
-              };
-              return [...filtered, enriched];
+              const enriched = enrichMessage(newMsg, profileMapRef.current);
+              return [...filtered, { ...enriched, status: "sent" }];
             });
           } else {
             // New message from someone else
-            const profiles = await fetchProfiles([newMsg.sender_id]);
-            
+            await fetchProfiles([newMsg.sender_id]);
+
             setMessages((prev) => {
               // Dedupe by id
               if (prev.some((m) => m.id === newMsg.id)) return prev;
-              
-              const enriched: SpaceMessage = {
-                ...newMsg,
-                senderName: profiles[newMsg.sender_id]?.name || "User",
-                senderAvatar: profiles[newMsg.sender_id]?.avatar || undefined,
-                status: "sent",
-              };
-              return [...prev, enriched];
+
+              const enriched = enrichMessage(newMsg, profileMapRef.current);
+              return [...prev, { ...enriched, status: "sent" }];
             });
           }
-
-          latestMessageRef.current = newMsg.id;
         }
       )
       .on(
@@ -405,7 +400,7 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
       .subscribe();
 
     // Read receipts channel
-    const readsChannel = supabase
+    readsChannelRef.current = supabase
       .channel(`space-reads-${spaceId}`)
       .on(
         "postgres_changes",
@@ -417,48 +412,64 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
         (payload) => {
           const newRead = payload.new as any;
           if (newRead.user_id !== userId) {
-            setReadReceipts((prev) => ({
-              ...prev,
-              [newRead.message_id]: (prev[newRead.message_id] || 0) + 1,
-            }));
+            readReceiptsRef.current[newRead.message_id] =
+              (readReceiptsRef.current[newRead.message_id] || 0) + 1;
+
+            // Update message read count in state
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === newRead.message_id
+                  ? { ...m, readCount: readReceiptsRef.current[newRead.message_id] }
+                  : m
+              )
+            );
           }
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(messagesChannel);
-      supabase.removeChannel(readsChannel);
-    };
-  }, [spaceId, userId, fetchProfiles, profileMap]);
-
-  // Initial fetch
-  useEffect(() => {
-    fetchMessages();
-  }, [fetchMessages]);
-
-  // Fetch read receipts when messages change
-  useEffect(() => {
-    if (userId) {
-      const ownMessageIds = messages.filter((m) => m.sender_id === userId && m.id && !m.id.startsWith("temp-")).map((m) => m.id);
-      if (ownMessageIds.length > 0) {
-        fetchReadReceipts(ownMessageIds);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
       }
+      if (readsChannelRef.current) {
+        supabase.removeChannel(readsChannelRef.current);
+        readsChannelRef.current = null;
+      }
+      if (markReadTimeoutRef.current) {
+        clearTimeout(markReadTimeoutRef.current);
+      }
+    };
+  }, [spaceId, userId, enrichMessage, fetchProfiles]);
+
+  // Initial fetch - runs once
+  useEffect(() => {
+    if (spaceId && userId && !hasFetchedRef.current) {
+      fetchMessages();
     }
-  }, [messages, userId, fetchReadReceipts]);
+  }, [spaceId, userId, fetchMessages]);
+
+  // Reset when spaceId changes
+  useEffect(() => {
+    hasFetchedRef.current = false;
+    setMessages([]);
+    setIsInitialLoading(true);
+    profileMapRef.current = {};
+    readReceiptsRef.current = {};
+    pendingClientIdsRef.current.clear();
+  }, [spaceId]);
 
   return {
     messages,
-    loading,
-    sending,
-    uploading,
+    isInitialLoading,
+    isSending,
+    isUploading,
     uploadProgress,
-    hasMoreMessages,
     sendMessage,
     uploadAndSend,
     deleteMessage,
     markAsRead,
     getMessageReaders,
-    refetch: fetchMessages,
   };
 }
