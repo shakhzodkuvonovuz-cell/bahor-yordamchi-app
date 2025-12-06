@@ -117,31 +117,43 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
   const resultsRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
+  // Guard: if circleId is undefined, render nothing (prevents crashes)
+  if (!circleId) {
+    return null;
+  }
+
   // Helper to get display title
   const getDisplayTitle = (card: AICard) => card.title || card.auto_title;
 
-  // Load persisted state
+  // Load persisted state - wrapped in try-catch to prevent crashes
   useEffect(() => {
+    if (!circleId) return;
     try {
       const stored = localStorage.getItem(getStorageKey(circleId));
       if (stored) {
         const parsed = JSON.parse(stored);
         if (parsed.actionsCollapsed !== undefined) setActionsCollapsed(parsed.actionsCollapsed);
       }
-    } catch {}
+    } catch {
+      // Ignore localStorage errors
+    }
   }, [circleId]);
 
-  // Persist state
+  // Persist state - safe wrapper
   const persistState = (updates: { actionsCollapsed?: boolean }) => {
+    if (!circleId) return;
     try {
       const stored = localStorage.getItem(getStorageKey(circleId));
       const current = stored ? JSON.parse(stored) : {};
       localStorage.setItem(getStorageKey(circleId), JSON.stringify({ ...current, ...updates }));
-    } catch {}
+    } catch {
+      // Ignore localStorage errors
+    }
   };
 
-  // Fetch existing cards
+  // Fetch existing cards - with error handling to prevent crashes
   const fetchCards = async () => {
+    if (!circleId) return;
     setLoadingCards(true);
     try {
       const { data, error } = await supabase
@@ -151,7 +163,12 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
         .order("created_at", { ascending: false })
         .limit(50);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching cards:", error);
+        // Don't throw - just log and continue with empty cards
+        setCards([]);
+        return;
+      }
       const fetchedCards = (data as AICard[]) || [];
       setCards(fetchedCards);
 
@@ -161,13 +178,15 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
       }
     } catch (err) {
       console.error("Error fetching cards:", err);
+      // Graceful degradation - don't crash, just show empty state
+      setCards([]);
     } finally {
       setLoadingCards(false);
     }
   };
 
   useEffect(() => {
-    if (open) {
+    if (open && circleId) {
       fetchCards();
     }
   }, [open, circleId]);
@@ -863,6 +882,16 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
     </div>
   );
 
+  // Safe handler for panel open/close
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    // Reset modal state when closing to prevent overlay issues
+    if (!newOpen) {
+      setRenameModalOpen(false);
+      setShowConfig(false);
+    }
+  };
+
   const triggerButton = (
     <Button
       variant="outline"
@@ -877,7 +906,7 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
 
   if (isMobile) {
     return (
-      <Drawer open={open} onOpenChange={setOpen}>
+      <Drawer open={open} onOpenChange={handleOpenChange}>
         <DrawerTrigger asChild>
           {triggerButton}
         </DrawerTrigger>
@@ -897,7 +926,7 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
   }
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>
         {triggerButton}
       </SheetTrigger>
