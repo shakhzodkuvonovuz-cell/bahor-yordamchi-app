@@ -3,6 +3,7 @@ import {
   Upload, FileText, Image, File, Trash2, Download, Eye, 
   Pin, PinOff, MoreVertical 
 } from "lucide-react";
+import { SpaceTabSkeleton } from "./SpaceTabSkeleton";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { 
@@ -296,11 +297,7 @@ export default function SpaceFilesTab({ spaceId, isAdmin }: SpaceFilesTabProps) 
   const canDelete = (file: SpaceFile) => file.uploader_id === user?.id || isAdmin;
 
   if (loading) {
-    return (
-      <div className="max-w-2xl mx-auto px-4 py-12 text-center">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
-      </div>
-    );
+    return <SpaceTabSkeleton type="files" />;
   }
 
   return (

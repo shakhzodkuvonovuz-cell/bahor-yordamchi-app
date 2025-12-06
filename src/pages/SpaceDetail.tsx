@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import SpaceInviteModal from "@/components/spaces/SpaceInviteModal";
 import SpaceFilesTab from "@/components/spaces/SpaceFilesTab";
 import SpaceChatTab from "@/components/spaces/SpaceChatTab";
+import { SpaceTabSkeleton } from "@/components/spaces/SpaceTabSkeleton";
 
 interface SpaceData {
   id: string;
@@ -312,22 +313,34 @@ export default function SpaceDetail() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-        <div className="border-b border-border">
+        <div className="border-b border-border bg-background/50 backdrop-blur-sm">
           <TabsList className="max-w-2xl mx-auto w-full justify-start px-4 bg-transparent h-12">
-            <TabsTrigger value="chat" className="gap-1.5 data-[state=active]:bg-secondary">
+            <TabsTrigger 
+              value="chat" 
+              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-elevation-1 transition-all duration-150"
+            >
               <MessageSquare className="w-4 h-4" />
               Chat
             </TabsTrigger>
-            <TabsTrigger value="files" className="gap-1.5 data-[state=active]:bg-secondary">
+            <TabsTrigger 
+              value="files" 
+              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-elevation-1 transition-all duration-150"
+            >
               <FileText className="w-4 h-4" />
               {language === "uz" ? "Fayllar" : "Files"}
             </TabsTrigger>
-            <TabsTrigger value="members" className="gap-1.5 data-[state=active]:bg-secondary">
+            <TabsTrigger 
+              value="members" 
+              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-elevation-1 transition-all duration-150"
+            >
               <Users className="w-4 h-4" />
               {language === "uz" ? "A'zolar" : "Members"}
             </TabsTrigger>
             {isAdmin && (
-              <TabsTrigger value="requests" className="gap-1.5 data-[state=active]:bg-secondary">
+              <TabsTrigger 
+                value="requests" 
+                className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-elevation-1 transition-all duration-150"
+              >
                 <UserPlus className="w-4 h-4" />
                 {language === "uz" ? "So'rovlar" : "Requests"}
               </TabsTrigger>
@@ -336,61 +349,69 @@ export default function SpaceDetail() {
         </div>
 
         {/* Chat Tab */}
-        <TabsContent value="chat" className="flex-1 flex flex-col m-0 relative">
+        <TabsContent value="chat" className="flex-1 flex flex-col m-0 relative tab-panel-transition">
           <SpaceChatTab spaceId={id || ""} />
         </TabsContent>
 
         {/* Files Tab */}
-        <TabsContent value="files" className="flex-1 m-0 overflow-y-auto">
+        <TabsContent value="files" className="flex-1 m-0 overflow-y-auto tab-panel-transition">
           <SpaceFilesTab spaceId={id || ""} isAdmin={isAdmin} />
         </TabsContent>
 
         {/* Members Tab */}
-        <TabsContent value="members" className="flex-1 m-0 overflow-y-auto">
-          <div className="max-w-2xl mx-auto px-4 py-4 space-y-2">
-            {members.map((member) => (
-              <div
-                key={member.id}
-                className="flex items-center justify-between p-3 rounded-xl bg-card border border-border"
-              >
-                <div>
-                  <p className="font-medium text-foreground">{member.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {member.email} · {member.role}
-                  </p>
+        <TabsContent value="members" className="flex-1 m-0 overflow-y-auto tab-panel-transition">
+          {members.length === 0 && loading ? (
+            <SpaceTabSkeleton type="members" />
+          ) : (
+            <div className="max-w-2xl mx-auto px-4 py-4 space-y-2">
+              {members.map((member) => (
+                <div
+                  key={member.id}
+                  className="flex items-center justify-between p-3 rounded-xl bg-card border border-border shadow-elevation-1 hover:shadow-elevation-2 transition-shadow duration-150"
+                >
+                  <div>
+                    <p className="font-medium text-foreground">{member.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {member.email} · {member.role}
+                    </p>
+                  </div>
+                  {isAdmin && member.user_id !== user?.id && member.role !== "owner" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleBlockMember(member.id)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Ban className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
-                {isAdmin && member.user_id !== user?.id && member.role !== "owner" && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleBlockMember(member.id)}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Ban className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         {/* Requests Tab (Admin only) */}
         {isAdmin && (
-          <TabsContent value="requests" className="flex-1 m-0 overflow-y-auto">
-            <div className="max-w-2xl mx-auto px-4 py-4 space-y-2">
-              {requests.length === 0 ? (
+          <TabsContent value="requests" className="flex-1 m-0 overflow-y-auto tab-panel-transition">
+            {requests.length === 0 && loading ? (
+              <SpaceTabSkeleton type="requests" />
+            ) : requests.length === 0 ? (
+              <div className="max-w-2xl mx-auto px-4 py-4">
                 <div className="text-center py-12 text-muted-foreground">
                   {language === "uz" ? "So'rovlar yo'q" : "No requests"}
                 </div>
-              ) : (
-                requests.map((req) => {
+              </div>
+            ) : (
+              <div className="max-w-2xl mx-auto px-4 py-4 space-y-2">
+                {requests.map((req) => {
                   const displayName = req.requester_name || "User";
                   const initials = displayName.charAt(0).toUpperCase();
 
                   return (
                     <div
                       key={req.id}
-                      className="p-4 rounded-xl bg-card border border-border"
+                      className="p-4 rounded-xl bg-card border border-border shadow-elevation-1 hover:shadow-elevation-2 transition-shadow duration-150"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-3 flex-1">
@@ -466,9 +487,9 @@ export default function SpaceDetail() {
                       </div>
                     </div>
                   );
-                })
-              )}
-            </div>
+                })}
+              </div>
+            )}
           </TabsContent>
         )}
       </Tabs>
