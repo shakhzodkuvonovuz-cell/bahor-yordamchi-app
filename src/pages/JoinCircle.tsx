@@ -9,14 +9,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 
-interface SpaceInfo {
+interface CircleInfo {
   id: string;
   name: string;
   template: string;
   owner_name?: string;
 }
 
-export default function JoinSpace() {
+export default function JoinCircle() {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
@@ -24,7 +24,7 @@ export default function JoinSpace() {
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [space, setSpace] = useState<SpaceInfo | null>(null);
+  const [circle, setCircle] = useState<CircleInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -45,9 +45,9 @@ export default function JoinSpace() {
       }
 
       try {
-        // Use the RPC function to get space info by invite code
-        // This bypasses RLS and allows non-members to see basic space info
-        const { data: spaceResult, error: rpcError } = await supabase.rpc(
+        // Use the RPC function to get circle info by invite code
+        // This bypasses RLS and allows non-members to see basic circle info
+        const { data: circleResult, error: rpcError } = await supabase.rpc(
           "get_space_by_invite_code",
           { p_code: code.toUpperCase() }
         );
@@ -60,7 +60,7 @@ export default function JoinSpace() {
         }
 
         // Handle RPC response
-        const result = spaceResult as { 
+        const result = circleResult as { 
           error?: string; 
           id?: string; 
           name?: string; 
@@ -75,7 +75,7 @@ export default function JoinSpace() {
         }
 
         if (result.error === "space_not_found") {
-          setError(language === "uz" ? "Xona topilmadi" : "Space not found");
+          setError(language === "uz" ? "Doira topilmadi" : "Circle not found");
           setLoading(false);
           return;
         }
@@ -86,9 +86,9 @@ export default function JoinSpace() {
           return;
         }
 
-        setSpace({
+        setCircle({
           id: result.id,
-          name: result.name || "Space",
+          name: result.name || "Circle",
           template: result.template || "general",
           owner_name: result.owner_name,
         });
@@ -105,7 +105,7 @@ export default function JoinSpace() {
           if (membership.status === "active") {
             setAlreadyMember(true);
           } else if (membership.status === "blocked") {
-            setError(language === "uz" ? "Siz bu xonadan bloklangansiz" : "You are blocked from this space");
+            setError(language === "uz" ? "Siz bu doiradan bloklangansiz" : "You are blocked from this circle");
           }
         }
 
@@ -134,7 +134,7 @@ export default function JoinSpace() {
   }, [code, user, authLoading, language]);
 
   const handleSubmitRequest = async () => {
-    if (!space || !user || !code) return;
+    if (!circle || !user || !code) return;
 
     setSubmitting(true);
     try {
@@ -150,7 +150,7 @@ export default function JoinSpace() {
         : null;
 
       const { error } = await supabase.from("space_join_requests").insert({
-        space_id: space.id,
+        space_id: circle.id,
         requester_id: user.id,
         invite_code: code.toUpperCase(),
         note: note.trim() || null,
@@ -191,14 +191,14 @@ export default function JoinSpace() {
         <div className="max-w-sm w-full text-center space-y-4">
           <Users className="w-16 h-16 mx-auto text-primary" />
           <h1 className="text-xl font-bold text-foreground">
-            {language === "uz" ? "Xonaga qo'shilish" : "Join Space"}
+            {language === "uz" ? "Doiraga qo'shilish" : "Join Circle"}
           </h1>
           <p className="text-muted-foreground">
             {language === "uz"
               ? "Davom etish uchun avval tizimga kiring"
               : "Please sign in to continue"}
           </p>
-          <Button onClick={() => navigate(`/auth?next=/spaces/invite/${code}`)}>
+          <Button onClick={() => navigate(`/auth?next=/circles/invite/${code}`)}>
             {language === "uz" ? "Kirish" : "Sign In"}
           </Button>
         </div>
@@ -222,15 +222,15 @@ export default function JoinSpace() {
             <Users className="w-8 h-8 text-destructive" />
           </div>
           <h1 className="text-xl font-bold text-foreground">{error}</h1>
-          <Button variant="outline" onClick={() => navigate("/spaces")}>
-            {language === "uz" ? "Xonalarga qaytish" : "Back to Spaces"}
+          <Button variant="outline" onClick={() => navigate("/circles")}>
+            {language === "uz" ? "Doiralarga qaytish" : "Back to Circles"}
           </Button>
         </div>
       </div>
     );
   }
 
-  if (alreadyMember && space) {
+  if (alreadyMember && circle) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="max-w-sm w-full text-center space-y-4">
@@ -240,9 +240,9 @@ export default function JoinSpace() {
           <h1 className="text-xl font-bold text-foreground">
             {language === "uz" ? "Siz allaqachon a'zosiz!" : "You're already a member!"}
           </h1>
-          <p className="text-muted-foreground">{space.name}</p>
-          <Button onClick={() => navigate(`/spaces/${space.id}`)}>
-            {language === "uz" ? "Xonaga kirish" : "Go to Space"}
+          <p className="text-muted-foreground">{circle.name}</p>
+          <Button onClick={() => navigate(`/circles/${circle.id}`)}>
+            {language === "uz" ? "Doiraga kirish" : "Go to Circle"}
           </Button>
         </div>
       </div>
@@ -261,11 +261,11 @@ export default function JoinSpace() {
           </h1>
           <p className="text-muted-foreground">
             {language === "uz"
-              ? `"${space?.name}" xonasi admini so'rovingizni ko'rib chiqadi.`
-              : `The admin of "${space?.name}" will review your request.`}
+              ? `"${circle?.name}" doirasi admini so'rovingizni ko'rib chiqadi.`
+              : `The admin of "${circle?.name}" will review your request.`}
           </p>
-          <Button variant="outline" onClick={() => navigate("/spaces")}>
-            {language === "uz" ? "Xonalarga qaytish" : "Back to Spaces"}
+          <Button variant="outline" onClick={() => navigate("/circles")}>
+            {language === "uz" ? "Doiralarga qaytish" : "Back to Circles"}
           </Button>
         </div>
       </div>
@@ -287,8 +287,8 @@ export default function JoinSpace() {
               ? "Admin so'rovingizni rad etgan."
               : "The admin has rejected your request."}
           </p>
-          <Button variant="outline" onClick={() => navigate("/spaces")}>
-            {language === "uz" ? "Xonalarga qaytish" : "Back to Spaces"}
+          <Button variant="outline" onClick={() => navigate("/circles")}>
+            {language === "uz" ? "Doiralarga qaytish" : "Back to Circles"}
           </Button>
         </div>
       </div>
@@ -307,11 +307,11 @@ export default function JoinSpace() {
           </h1>
           <p className="text-muted-foreground">
             {language === "uz"
-              ? "Siz bu xonaga qo'shila olmaysiz."
-              : "You cannot join this Space."}
+              ? "Siz bu doiraga qo'shila olmaysiz."
+              : "You cannot join this Circle."}
           </p>
-          <Button variant="outline" onClick={() => navigate("/spaces")}>
-            {language === "uz" ? "Xonalarga qaytish" : "Back to Spaces"}
+          <Button variant="outline" onClick={() => navigate("/circles")}>
+            {language === "uz" ? "Doiralarga qaytish" : "Back to Circles"}
           </Button>
         </div>
       </div>
@@ -326,12 +326,12 @@ export default function JoinSpace() {
             <Users className="w-8 h-8 text-primary" />
           </div>
           <h1 className="text-xl font-bold text-foreground">
-            {language === "uz" ? "Xonaga qo'shilish" : "Join Space"}
+            {language === "uz" ? "Doiraga qo'shilish" : "Join Circle"}
           </h1>
-          <p className="text-2xl font-bold text-primary">{space?.name}</p>
-          {space?.owner_name && (
+          <p className="text-2xl font-bold text-primary">{circle?.name}</p>
+          {circle?.owner_name && (
             <p className="text-sm text-muted-foreground">
-              {language === "uz" ? "Yaratuvchi:" : "Owner:"} {space.owner_name}
+              {language === "uz" ? "Yaratuvchi:" : "Owner:"} {circle.owner_name}
             </p>
           )}
         </div>
@@ -369,7 +369,7 @@ export default function JoinSpace() {
 
         <Button
           variant="ghost"
-          onClick={() => navigate("/spaces")}
+          onClick={() => navigate("/circles")}
           className="w-full"
         >
           {language === "uz" ? "Bekor qilish" : "Cancel"}

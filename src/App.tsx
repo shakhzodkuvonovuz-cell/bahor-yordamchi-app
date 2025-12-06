@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { LanguageProvider } from "@/i18n/LanguageProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -31,6 +31,17 @@ import JoinCircle from "./pages/JoinCircle";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+// Redirect helpers for old /spaces URLs
+const SpaceIdRedirect = () => {
+  const { id } = useParams();
+  return <Navigate to={`/circles/${id}`} replace />;
+};
+
+const SpaceInviteRedirect = () => {
+  const { code } = useParams();
+  return <Navigate to={`/circles/invite/${code}`} replace />;
+};
 
 const App = () => (
   <ErrorBoundary>
@@ -135,8 +146,8 @@ const App = () => (
                   <Route path="/join/:code" element={<JoinCircle />} />
                   {/* Redirects from old /spaces URLs */}
                   <Route path="/spaces" element={<Navigate to="/circles" replace />} />
-                  <Route path="/spaces/:id" element={<Navigate to="/circles" replace />} />
-                  <Route path="/spaces/invite/:code" element={<Navigate to="/circles" replace />} />
+                  <Route path="/spaces/:id" element={<SpaceIdRedirect />} />
+                  <Route path="/spaces/invite/:code" element={<SpaceInviteRedirect />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </TooltipProvider>
