@@ -110,15 +110,27 @@ export default function VoiceModeButton({
         "w-12 h-12 rounded-full",
         "bg-gradient-to-br from-primary/20 to-primary/10",
         "border border-primary/30",
-        "transition-all duration-300 ease-out",
+        "transition-all duration-200 ease-out",
         
-        // Hover & active states
+        // Hover state
         "hover:scale-105 hover:border-primary/50",
-        "hover:shadow-[0_0_30px_hsla(var(--primary)/0.3)]",
+        "hover:shadow-[0_0_20px_hsl(var(--primary)/0.25)]",
         
-        // Pressed / dictating state
-        (isPressed || isDictating) && "scale-110 border-primary/70 shadow-[0_0_40px_hsla(var(--primary)/0.5)]",
-        isDictating && "animate-pulse",
+        // Pressed state (visual feedback before dictation starts)
+        isPressed && !isDictating && [
+          "scale-95",
+          "border-primary/60",
+          "shadow-[0_0_25px_hsl(var(--primary)/0.4)]",
+          "bg-gradient-to-br from-primary/30 to-primary/15",
+        ],
+        
+        // Dictating state (active recording)
+        isDictating && [
+          "scale-110",
+          "border-primary",
+          "shadow-[0_0_50px_hsl(var(--primary)/0.6)]",
+          "bg-gradient-to-br from-primary/40 to-primary/20",
+        ],
         
         // Disabled state
         "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100",
@@ -129,34 +141,34 @@ export default function VoiceModeButton({
         className
       )}
     >
-      {/* Animated glow rings */}
-      <div className={cn(
-        "absolute inset-0 rounded-full animate-voice-glow-ring opacity-60",
-        isDictating && "animate-ping"
-      )} />
-      <div className={cn(
-        "absolute inset-[-4px] rounded-full animate-voice-glow-ring-delayed opacity-40",
-        isDictating && "animate-ping"
-      )} />
+      {/* Pulsing glow rings when dictating */}
+      {isDictating && (
+        <>
+          <div className="absolute inset-[-8px] rounded-full border-2 border-primary/40 animate-ping" />
+          <div 
+            className="absolute inset-[-16px] rounded-full border border-primary/20 animate-ping" 
+            style={{ animationDelay: '150ms' }}
+          />
+        </>
+      )}
       
       {/* Inner glow */}
       <div 
         className={cn(
-          "absolute inset-1 rounded-full bg-gradient-to-br from-primary/10 to-transparent",
-          isDictating && "from-primary/30"
+          "absolute inset-1 rounded-full transition-all duration-200",
+          "bg-gradient-to-br from-primary/10 to-transparent",
+          isPressed && "from-primary/20",
+          isDictating && "from-primary/40 to-primary/10"
         )}
       />
       
       {/* Mic icon */}
       <Mic className={cn(
-        "w-5 h-5 text-primary relative z-10",
-        isDictating && "text-primary-foreground"
+        "w-5 h-5 relative z-10 transition-all duration-200",
+        "text-primary",
+        isPressed && "text-primary scale-90",
+        isDictating && "text-primary-foreground scale-110"
       )} />
-      
-      {/* Tooltip on hover */}
-      <span className="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-lg bg-card/90 backdrop-blur-sm border border-border/50 text-xs text-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
-        {t('voice.dictation')}
-      </span>
     </button>
   );
 }
