@@ -25,6 +25,20 @@ import {
   Check,
   Send,
   Wallet,
+  Users,
+  FileText,
+  Search,
+  Image,
+  Shield,
+  Download,
+  ListTodo,
+  ClipboardList,
+  FileOutput,
+  MessagesSquare,
+  FolderOpen,
+  UserCheck,
+  Link,
+  ExternalLink,
 } from "lucide-react";
 import bahorLogo from "@/assets/bahor-logo.png";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
@@ -81,6 +95,12 @@ function ChatMockup() {
           </div>
         </div>
         
+        {/* AI Actions badge overlay */}
+        <div className="absolute -bottom-3 right-4 px-3 py-1.5 rounded-full bg-primary/90 text-primary-foreground text-xs font-medium shadow-lg flex items-center gap-1.5">
+          <FileOutput className="w-3 h-3" />
+          Export to PDF
+        </div>
+        
         {/* Input mockup */}
         <div className="mt-4 pt-3 border-t border-border/30">
           <div className="flex items-center gap-2 bg-secondary/50 rounded-xl px-4 py-2.5">
@@ -90,6 +110,125 @@ function ChatMockup() {
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// Feature Badge Chip component
+function FeatureBadge({ icon: Icon, text }: { icon: React.ElementType; text: string }) {
+  return (
+    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/80 border border-border/40 text-sm text-foreground/90 backdrop-blur-sm">
+      <Icon className="w-3.5 h-3.5 text-primary" />
+      <span>{text}</span>
+    </div>
+  );
+}
+
+// Spotlight Section component
+function SpotlightSection({ 
+  title, 
+  subtitle, 
+  bullets, 
+  label,
+  icon: Icon,
+  mockupType,
+  reverse = false 
+}: { 
+  title: string; 
+  subtitle: string;
+  bullets: string[];
+  label: string;
+  icon: React.ElementType;
+  mockupType: 'actions' | 'circles';
+  reverse?: boolean;
+}) {
+  return (
+    <div className={`grid lg:grid-cols-2 gap-8 lg:gap-12 items-center ${reverse ? 'lg:flex-row-reverse' : ''}`}>
+      {/* Mockup side */}
+      <div className={`relative ${reverse ? 'lg:order-2' : ''}`}>
+        <div className="absolute inset-0 bg-primary/10 rounded-full blur-3xl scale-75" />
+        <div className="relative glass-premium rounded-2xl p-4 lg:p-6 border border-border/40 shadow-lg">
+          {mockupType === 'actions' ? (
+            // AI Actions mockup
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 pb-3 border-b border-border/30">
+                <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                  <ListTodo className="w-4 h-4 text-primary" />
+                </div>
+                <span className="font-semibold text-sm text-foreground">AI Amallar</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {['Xulosa', 'Vazifalar', 'Reja'].map((item) => (
+                  <div key={item} className="p-2 rounded-lg bg-secondary/50 text-center">
+                    <span className="text-xs text-muted-foreground">{item}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="p-3 rounded-xl bg-card border border-border/30">
+                <p className="text-xs text-muted-foreground mb-2">Natija:</p>
+                <p className="text-sm text-foreground line-clamp-2">• Loyiha bosqichlarini rejalashtirish<br/>• Haftalik vazifalarni taqsimlash</p>
+              </div>
+              <div className="flex gap-2">
+                <div className="flex-1 py-2 rounded-lg bg-primary/10 text-center text-xs text-primary">PDF</div>
+                <div className="flex-1 py-2 rounded-lg bg-primary/10 text-center text-xs text-primary">Chatga</div>
+                <div className="flex-1 py-2 rounded-lg bg-primary/10 text-center text-xs text-primary">Saqlash</div>
+              </div>
+            </div>
+          ) : (
+            // Circles mockup
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 pb-3 border-b border-border/30">
+                <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                  <Users className="w-4 h-4 text-primary" />
+                </div>
+                <span className="font-semibold text-sm text-foreground">Marketing Jamoasi</span>
+                <span className="ml-auto text-xs text-muted-foreground">5 a'zo</span>
+              </div>
+              <div className="flex gap-1 p-1 rounded-lg bg-secondary/50">
+                {['Chat', 'Fayllar', 'A\'zolar'].map((tab, i) => (
+                  <div key={tab} className={`flex-1 py-1.5 rounded-md text-center text-xs ${i === 0 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
+                    {tab}
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-2">
+                <div className="flex gap-2 items-start">
+                  <div className="w-6 h-6 rounded-full bg-primary/20 flex-shrink-0" />
+                  <div className="p-2 rounded-lg bg-card border border-border/30 flex-1">
+                    <p className="text-xs text-foreground">Yangi kampaniya rejasi tayyor!</p>
+                  </div>
+                </div>
+                <div className="flex gap-2 items-start justify-end">
+                  <div className="p-2 rounded-lg bg-primary/20 flex-1 max-w-[70%]">
+                    <p className="text-xs text-foreground">Zo'r! /bahor bilan tahlil qilamiz</p>
+                  </div>
+                  <div className="w-6 h-6 rounded-full bg-secondary flex-shrink-0" />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Content side */}
+      <div className={reverse ? 'lg:order-1' : ''}>
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium mb-4">
+          <Icon className="w-3.5 h-3.5" />
+          {label}
+        </div>
+        <h3 className="text-xl lg:text-2xl font-bold text-foreground mb-3">{title}</h3>
+        <p className="text-muted-foreground mb-5">{subtitle}</p>
+        <ul className="space-y-3">
+          {bullets.map((bullet, i) => (
+            <li key={i} className="flex items-start gap-3">
+              <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Check className="w-3 h-3 text-primary" />
+              </div>
+              <span className="text-foreground text-sm">{bullet}</span>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );
@@ -121,11 +260,14 @@ export default function Landing() {
   const heroRef = useScrollAnimation({ threshold: 0.2 });
   const featuresRef = useScrollAnimation({ threshold: 0.1 });
   const modesRef = useScrollAnimation({ threshold: 0.1 });
+  const flagshipRef = useScrollAnimation({ threshold: 0.1 });
   const builtForRef = useScrollAnimation({ threshold: 0.1 });
   const stepsRef = useScrollAnimation({ threshold: 0.1 });
+  const trustRef = useScrollAnimation({ threshold: 0.1 });
   const pricingRef = useScrollAnimation({ threshold: 0.1 });
   const faqRef = useScrollAnimation({ threshold: 0.1 });
 
+  // Expanded features - now 6 cards
   const features = [
     {
       icon: <Globe className="w-6 h-6" />,
@@ -142,6 +284,21 @@ export default function Landing() {
       title: t('feature.specializedModes.title'),
       description: t('feature.specializedModes.desc'),
     },
+    {
+      icon: <ListTodo className="w-6 h-6" />,
+      title: t('feature.aiActions.title'),
+      description: t('feature.aiActions.desc'),
+    },
+    {
+      icon: <Users className="w-6 h-6" />,
+      title: t('feature.circles.title'),
+      description: t('feature.circles.desc'),
+    },
+    {
+      icon: <FileText className="w-6 h-6" />,
+      title: t('feature.toolsHub.title'),
+      description: t('feature.toolsHub.desc'),
+    },
   ];
 
   // ALL 8 MODES with icons
@@ -156,17 +313,23 @@ export default function Landing() {
     { id: "financial", icon: <Wallet className="w-6 h-6" />, title: t('mode.finance.title'), description: t('mode.finance.desc') },
   ];
 
+  // Updated to 4 steps
   const steps = [
     { number: "1", title: t('step.1.title'), description: t('step.1.desc') },
     { number: "2", title: t('step.2.title'), description: t('step.2.desc') },
     { number: "3", title: t('step.3.title'), description: t('step.3.desc') },
+    { number: "4", title: t('step.4.title'), description: t('step.4.desc') },
   ];
 
+  // Extended FAQs with 3 new questions
   const faqs = [
     { question: t('faq.1.question'), answer: t('faq.1.answer') },
     { question: t('faq.2.question'), answer: t('faq.2.answer') },
     { question: t('faq.3.question'), answer: t('faq.3.answer') },
     { question: t('faq.4.question'), answer: t('faq.4.answer') },
+    { question: t('faq.aiActions.question'), answer: t('faq.aiActions.answer') },
+    { question: t('faq.circles.question'), answer: t('faq.circles.answer') },
+    { question: t('faq.webSearch.question'), answer: t('faq.webSearch.answer') },
   ];
 
   const pricingPlans = [
@@ -200,6 +363,9 @@ export default function Landing() {
       badge: t('pricing.yearly.badge'),
     },
   ];
+
+  // Source chips for trust section
+  const sourcesExample = ['kun.uz', 'gazeta.uz', 'lex.uz'];
 
   return (
     <div className="min-h-screen bg-background relative overflow-x-hidden">
@@ -237,7 +403,7 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* Hero Section - Mobile: text first, mockup second */}
+      {/* Hero Section - Updated with feature badges */}
       <section className="relative py-12 sm:py-20 lg:py-28 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
@@ -259,8 +425,20 @@ export default function Landing() {
                 <span className="text-gradient-primary">{t('app.tagline.main').split('—')[1]?.trim() || "o'zbeklar uchun."}</span>
               </h1>
               
-              <p className="text-base sm:text-lg text-muted-foreground mb-8 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+              <p className="text-base sm:text-lg text-muted-foreground mb-5 max-w-xl mx-auto lg:mx-0 leading-relaxed">
                 {t('app.tagline.sub')}
+              </p>
+              
+              {/* NEW: Feature badges */}
+              <div className="flex flex-wrap gap-2 justify-center lg:justify-start mb-4">
+                <FeatureBadge icon={ListTodo} text={t('hero.badge.aiActions')} />
+                <FeatureBadge icon={Users} text={t('hero.badge.circles')} />
+                <FeatureBadge icon={Search} text={t('hero.badge.webSearch')} />
+              </div>
+              
+              {/* NEW: Secondary tagline */}
+              <p className="text-sm text-muted-foreground mb-8 max-w-xl mx-auto lg:mx-0">
+                {t('hero.notJustChat')}
               </p>
               
               <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
@@ -276,9 +454,9 @@ export default function Landing() {
                   variant="outline"
                   size="lg"
                   className="h-12 px-8 text-base font-medium rounded-xl border-border/60 hover:bg-secondary/50 transition-all"
-                  onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+                  onClick={() => document.getElementById('flagship')?.scrollIntoView({ behavior: 'smooth' })}
                 >
-                  {t('button.learnMore')}
+                  {t('hero.seeFlagship')}
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
@@ -296,7 +474,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Features Section - Consistent cards */}
+      {/* Features Section - Now 6 cards (2 rows) */}
       <section id="features" className="py-16 sm:py-24 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div 
@@ -311,14 +489,14 @@ export default function Landing() {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6">
             {features.map((feature, index) => (
               <div
                 key={index}
                 className={`group relative p-6 lg:p-8 rounded-2xl glass-premium hover:shadow-glow hover-lift transition-all duration-500 border border-border/30 ${
                   featuresRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
                 }`}
-                style={{ transitionDelay: `${index * 100}ms` }}
+                style={{ transitionDelay: `${index * 80}ms` }}
               >
                 <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-5 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
                   {feature.icon}
@@ -379,6 +557,81 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* NEW: Flagship Features Section */}
+      <section id="flagship" className="py-16 sm:py-24 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div 
+            ref={flagshipRef.ref}
+            className={`text-center mb-14 transition-all duration-600 ease-out ${
+              flagshipRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
+              <Zap className="w-4 h-4" />
+              {t('flagship.badge')}
+            </div>
+            <h2 className="text-2xl sm:text-3xl lg:text-display-md font-bold mb-4 text-foreground">{t('flagship.title')}</h2>
+            <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
+              {t('flagship.subtitle')}
+            </p>
+          </div>
+          
+          {/* Spotlight 1: AI Actions */}
+          <div className={`mb-16 transition-all duration-700 ${flagshipRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`} style={{ transitionDelay: '100ms' }}>
+            <SpotlightSection
+              title={t('flagship.aiActions.title')}
+              subtitle={t('flagship.aiActions.subtitle')}
+              bullets={[
+                t('flagship.aiActions.bullet1'),
+                t('flagship.aiActions.bullet2'),
+                t('flagship.aiActions.bullet3'),
+                t('flagship.aiActions.bullet4'),
+                t('flagship.aiActions.bullet5'),
+              ]}
+              label={t('flagship.aiActions.label')}
+              icon={ListTodo}
+              mockupType="actions"
+            />
+          </div>
+          
+          {/* Spotlight 2: Circles */}
+          <div className={`mb-14 transition-all duration-700 ${flagshipRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`} style={{ transitionDelay: '200ms' }}>
+            <SpotlightSection
+              title={t('flagship.circles.title')}
+              subtitle={t('flagship.circles.subtitle')}
+              bullets={[
+                t('flagship.circles.bullet1'),
+                t('flagship.circles.bullet2'),
+                t('flagship.circles.bullet3'),
+                t('flagship.circles.bullet4'),
+                t('flagship.circles.bullet5'),
+              ]}
+              label={t('flagship.circles.label')}
+              icon={Users}
+              mockupType="circles"
+              reverse
+            />
+          </div>
+          
+          {/* Mini feature strip */}
+          <div className={`grid grid-cols-1 sm:grid-cols-3 gap-4 transition-all duration-700 ${flagshipRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`} style={{ transitionDelay: '300ms' }}>
+            {[
+              { icon: Image, title: t('flagship.mini.fileAnalysis'), desc: t('flagship.mini.fileAnalysis.desc') },
+              { icon: Search, title: t('flagship.mini.webSearch'), desc: t('flagship.mini.webSearch.desc') },
+              { icon: Shield, title: t('flagship.mini.privacy'), desc: t('flagship.mini.privacy.desc') },
+            ].map((item, i) => (
+              <div key={i} className="p-5 rounded-xl glass-premium border border-border/30 text-center">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mx-auto mb-3">
+                  <item.icon className="w-5 h-5" />
+                </div>
+                <h4 className="font-semibold text-foreground text-sm mb-1">{item.title}</h4>
+                <p className="text-xs text-muted-foreground">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Built for Uzbekistan Band */}
       <section className="py-16 sm:py-20 relative overflow-hidden">
         <div className="absolute inset-0 pattern-uzbek opacity-10" />
@@ -402,9 +655,9 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* How It Works Section - Premium flow */}
+      {/* How It Works Section - Now 4 steps */}
       <section className="py-16 sm:py-24">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div 
             ref={stepsRef.ref}
             className={`text-center mb-12 lg:mb-16 transition-all duration-600 ease-out ${
@@ -413,24 +666,24 @@ export default function Landing() {
           >
             <h2 className="text-2xl sm:text-3xl lg:text-display-md font-bold mb-4 text-foreground">{t('section.howItWorks')}</h2>
             <p className="text-muted-foreground text-base sm:text-lg">
-              {t('section.howItWorks.subtitle')}
+              {t('section.howItWorks.subtitle.4steps')}
             </p>
           </div>
           
           <div className="relative">
             {/* Curved connection line - hidden on mobile */}
-            <div className="hidden md:block absolute top-14 left-[15%] right-[15%] h-1">
-              <svg className="w-full h-16" viewBox="0 0 800 60" fill="none" preserveAspectRatio="none">
+            <div className="hidden lg:block absolute top-14 left-[10%] right-[10%] h-1">
+              <svg className="w-full h-16" viewBox="0 0 1000 60" fill="none" preserveAspectRatio="none">
                 <path 
-                  d="M0,30 Q200,0 400,30 T800,30" 
-                  stroke="url(#gradient)" 
+                  d="M0,30 Q250,0 500,30 T1000,30" 
+                  stroke="url(#gradient4)" 
                   strokeWidth="2" 
                   fill="none"
                   strokeDasharray="8,8"
                   className="opacity-40"
                 />
                 <defs>
-                  <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <linearGradient id="gradient4" x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0" />
                     <stop offset="50%" stopColor="hsl(var(--primary))" stopOpacity="1" />
                     <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
@@ -439,24 +692,53 @@ export default function Landing() {
               </svg>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-6">
               {steps.map((step, index) => (
                 <div 
                   key={index}
                   className={`text-center relative transition-all duration-500 ease-out ${
                     stepsRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
                   }`}
-                  style={{ transitionDelay: `${index * 120}ms` }}
+                  style={{ transitionDelay: `${index * 100}ms` }}
                 >
                   {/* Glowing circle number */}
-                  <div className="relative mx-auto mb-6 w-16 h-16 lg:w-20 lg:h-20">
+                  <div className="relative mx-auto mb-6 w-14 h-14 lg:w-16 lg:h-16">
                     <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse-glow" />
                     <div className="relative w-full h-full rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/30 flex items-center justify-center shadow-glow">
-                      <span className="text-xl lg:text-2xl font-bold text-primary">{step.number}</span>
+                      <span className="text-lg lg:text-xl font-bold text-primary">{step.number}</span>
                     </div>
                   </div>
-                  <h3 className="text-base lg:text-lg font-bold mb-2 text-foreground">{step.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed max-w-[260px] mx-auto">{step.description}</p>
+                  <h3 className="text-sm lg:text-base font-bold mb-2 text-foreground">{step.title}</h3>
+                  <p className="text-xs lg:text-sm text-muted-foreground leading-relaxed max-w-[200px] mx-auto">{step.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* NEW: Trust / Sources Section */}
+      <section className="py-12 sm:py-16">
+        <div 
+          ref={trustRef.ref}
+          className={`max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center transition-all duration-600 ease-out ${
+            trustRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+          }`}
+        >
+          <div className="glass-premium rounded-2xl p-8 border border-border/30">
+            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mx-auto mb-4">
+              <Link className="w-6 h-6" />
+            </div>
+            <h3 className="text-xl lg:text-2xl font-bold mb-3 text-foreground">{t('trust.title')}</h3>
+            <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
+              {t('trust.description')}
+            </p>
+            <div className="flex flex-wrap gap-3 justify-center">
+              {sourcesExample.map((source) => (
+                <div key={source} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/80 border border-border/40 text-sm">
+                  <ExternalLink className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-foreground">{source}</span>
+                  <span className="text-muted-foreground text-xs">[source]</span>
                 </div>
               ))}
             </div>
@@ -539,7 +821,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* FAQ Section - Consistent styling */}
+      {/* FAQ Section - Extended with 3 new questions */}
       <section className="py-16 sm:py-24">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div 
@@ -562,7 +844,7 @@ export default function Landing() {
                 className={`border-0 rounded-2xl overflow-hidden glass-premium border border-border/30 transition-all duration-500 ${
                   faqRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
                 }`}
-                style={{ transitionDelay: `${index * 80}ms` }}
+                style={{ transitionDelay: `${index * 60}ms` }}
               >
                 <AccordionTrigger className="text-sm lg:text-base font-semibold px-5 lg:px-6 py-4 lg:py-5 hover:no-underline text-foreground hover:text-primary transition-colors text-left">
                   {faq.question}
