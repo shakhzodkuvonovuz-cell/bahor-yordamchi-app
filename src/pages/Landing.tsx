@@ -125,7 +125,7 @@ function FeatureBadge({ icon: Icon, text }: { icon: React.ElementType; text: str
   );
 }
 
-// Spotlight Section component
+// Spotlight Section component with scroll animation
 function SpotlightSection({ 
   title, 
   subtitle, 
@@ -133,7 +133,9 @@ function SpotlightSection({
   label,
   icon: Icon,
   mockupType,
-  reverse = false 
+  reverse = false,
+  isVisible = true,
+  delay = 0
 }: { 
   title: string; 
   subtitle: string;
@@ -142,11 +144,20 @@ function SpotlightSection({
   icon: React.ElementType;
   mockupType: 'actions' | 'circles';
   reverse?: boolean;
+  isVisible?: boolean;
+  delay?: number;
 }) {
   return (
-    <div className={`grid lg:grid-cols-2 gap-8 lg:gap-12 items-center ${reverse ? 'lg:flex-row-reverse' : ''}`}>
+    <div 
+      className={`grid lg:grid-cols-2 gap-8 lg:gap-12 items-center transition-all duration-700 ease-out ${reverse ? 'lg:flex-row-reverse' : ''} ${
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
+      }`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
       {/* Mockup side */}
-      <div className={`relative ${reverse ? 'lg:order-2' : ''}`}>
+      <div className={`relative ${reverse ? 'lg:order-2' : ''} transition-all duration-700 ease-out ${
+        isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"
+      }`} style={{ transitionDelay: `${delay + 150}ms` }}>
         <div className="absolute inset-0 bg-primary/10 rounded-full blur-3xl scale-75" />
         <div className="relative glass-premium rounded-2xl p-4 lg:p-6 border border-border/40 shadow-lg">
           {mockupType === 'actions' ? (
@@ -212,16 +223,30 @@ function SpotlightSection({
       </div>
       
       {/* Content side */}
-      <div className={reverse ? 'lg:order-1' : ''}>
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium mb-4">
+      <div className={`${reverse ? 'lg:order-1' : ''} transition-all duration-700 ease-out ${
+        isVisible ? "opacity-100 translate-x-0" : reverse ? "opacity-0 -translate-x-8" : "opacity-0 translate-x-8"
+      }`} style={{ transitionDelay: `${delay + 200}ms` }}>
+        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium mb-4 transition-all duration-500 ${
+          isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+        }`} style={{ transitionDelay: `${delay + 250}ms` }}>
           <Icon className="w-3.5 h-3.5" />
           {label}
         </div>
-        <h3 className="text-xl lg:text-2xl font-bold text-foreground mb-3">{title}</h3>
-        <p className="text-muted-foreground mb-5">{subtitle}</p>
+        <h3 className={`text-xl lg:text-2xl font-bold text-foreground mb-3 transition-all duration-500 ${
+          isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+        }`} style={{ transitionDelay: `${delay + 300}ms` }}>{title}</h3>
+        <p className={`text-muted-foreground mb-5 transition-all duration-500 ${
+          isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+        }`} style={{ transitionDelay: `${delay + 350}ms` }}>{subtitle}</p>
         <ul className="space-y-3">
           {bullets.map((bullet, i) => (
-            <li key={i} className="flex items-start gap-3">
+            <li 
+              key={i} 
+              className={`flex items-start gap-3 transition-all duration-500 ease-out ${
+                isVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
+              }`}
+              style={{ transitionDelay: `${delay + 400 + i * 80}ms` }}
+            >
               <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                 <Check className="w-3 h-3 text-primary" />
               </div>
@@ -577,7 +602,7 @@ export default function Landing() {
           </div>
           
           {/* Spotlight 1: AI Actions */}
-          <div className={`mb-16 transition-all duration-700 ${flagshipRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`} style={{ transitionDelay: '100ms' }}>
+          <div className="mb-16">
             <SpotlightSection
               title={t('flagship.aiActions.title')}
               subtitle={t('flagship.aiActions.subtitle')}
@@ -591,11 +616,13 @@ export default function Landing() {
               label={t('flagship.aiActions.label')}
               icon={ListTodo}
               mockupType="actions"
+              isVisible={flagshipRef.isVisible}
+              delay={100}
             />
           </div>
           
           {/* Spotlight 2: Circles */}
-          <div className={`mb-14 transition-all duration-700 ${flagshipRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`} style={{ transitionDelay: '200ms' }}>
+          <div className="mb-14">
             <SpotlightSection
               title={t('flagship.circles.title')}
               subtitle={t('flagship.circles.subtitle')}
@@ -610,18 +637,26 @@ export default function Landing() {
               icon={Users}
               mockupType="circles"
               reverse
+              isVisible={flagshipRef.isVisible}
+              delay={300}
             />
           </div>
           
-          {/* Mini feature strip */}
-          <div className={`grid grid-cols-1 sm:grid-cols-3 gap-4 transition-all duration-700 ${flagshipRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`} style={{ transitionDelay: '300ms' }}>
+          {/* Mini feature strip with staggered animations */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
               { icon: Image, title: t('flagship.mini.fileAnalysis'), desc: t('flagship.mini.fileAnalysis.desc') },
               { icon: Search, title: t('flagship.mini.webSearch'), desc: t('flagship.mini.webSearch.desc') },
               { icon: Shield, title: t('flagship.mini.privacy'), desc: t('flagship.mini.privacy.desc') },
             ].map((item, i) => (
-              <div key={i} className="p-5 rounded-xl glass-premium border border-border/30 text-center">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mx-auto mb-3">
+              <div 
+                key={i} 
+                className={`p-5 rounded-xl glass-premium border border-border/30 text-center transition-all duration-500 ease-out hover:shadow-glow hover-lift ${
+                  flagshipRef.isVisible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-8 scale-95"
+                }`}
+                style={{ transitionDelay: `${500 + i * 100}ms` }}
+              >
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mx-auto mb-3 transition-transform duration-300 group-hover:scale-110">
                   <item.icon className="w-5 h-5" />
                 </div>
                 <h4 className="font-semibold text-foreground text-sm mb-1">{item.title}</h4>
