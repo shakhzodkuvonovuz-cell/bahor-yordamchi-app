@@ -5,7 +5,7 @@ import ChatMessage from "@/components/ChatMessage";
 import QuickSuggestions from "@/components/QuickSuggestions";
 import { DeleteChatModal } from "@/components/DeleteChatModal";
 import DailyUsageIndicator from "@/components/DailyUsageIndicator";
-import LimitReachedCard from "@/components/LimitReachedCard";
+import LimitReachedSheet from "@/components/LimitReachedSheet";
 
 import { VoiceModeButton } from "@/components/voice";
 import {
@@ -244,6 +244,8 @@ export default function Chat() {
   const usedToday = usage.used;
   const dailyLimit = usage.limit;
   const [showLimitCard, setShowLimitCard] = useState(false);
+  const [showLimitSheet, setShowLimitSheet] = useState(false);
+  const lastShownRemainingRef = useRef<number | null>(null);
 
   const modeInfo = getModeInfo(mode || "");
   const modeTranslation = t.modes[mode as keyof typeof t.modes];
@@ -932,8 +934,7 @@ export default function Chat() {
     lightTap();
     
     if (hasReachedLimit) {
-      setShowLimitCard(true);
-      scrollToBottom();
+      setShowLimitSheet(true);
       return;
     }
 
@@ -1186,20 +1187,10 @@ export default function Chat() {
         
         // Handle limit errors (server sends "LIMIT_REACHED" with reason)
         if (errorData.error === "DAILY_LIMIT_REACHED" || errorData.error === "LIMIT_REACHED") {
-          setShowLimitCard(true);
+          setShowLimitSheet(true);
           setTyping(false);
           setIsLoading(false);
           setMessages((prev) => prev.filter(m => m.id !== (savedUserMessageId || tempUserMessageId)));
-          
-          // Use localized message from server if available
-          const localizedMessage = errorData[`message_${language}`] || errorData.message;
-          toast({
-            title: language === "uz" ? "Limit tugadi" : "Limit reached",
-            description: localizedMessage || (language === "uz" 
-              ? "Bugungi limit tugadi. Ertaga yana davom eting yoki Premiumga o'ting." 
-              : "Daily limit reached. Continue tomorrow or upgrade to Premium."),
-            variant: "destructive",
-          });
           refreshProfile();
           return;
         }
@@ -1369,7 +1360,40 @@ export default function Chat() {
           }
           
           refreshProfile();
-          refreshUsage(); // Update usage badge after successful message
+          refreshUsage().then(() => {
+            // Show soft warning toasts based on remaining count
+            const remaining = usage.limit - usage.used - 1; // After this message
+            if (remaining >= 0 && remaining <= 3 && lastShownRemainingRef.current !== remaining) {
+              lastShownRemainingRef.current = remaining;
+              
+              if (remaining === 0) {
+                // Show sheet after streaming finishes if this was the last message
+                setTimeout(() => setShowLimitSheet(true), 500);
+              } else if (remaining === 1) {
+                toast({
+                  description: language === "uz" 
+                    ? "Oxirgi so'rov. Ertaga yangilanadi" 
+                    : language === "ru" 
+                    ? "Последний запрос. Обновится завтра"
+                    : language === "tr"
+                    ? "Son istek. Yarın yenilenir"
+                    : "Last request. Resets tomorrow",
+                  className: "bg-amber-500/10 border-amber-500/30 text-amber-100",
+                });
+              } else if (remaining === 3) {
+                toast({
+                  description: language === "uz" 
+                    ? "Bugun 3 ta so'rov qoldi" 
+                    : language === "ru" 
+                    ? "Осталось 3 запроса на сегодня"
+                    : language === "tr"
+                    ? "Bugün 3 istek kaldı"
+                    : "3 requests remaining today",
+                  className: "bg-secondary/80 border-border/30",
+                });
+              }
+            }
+          });
           
           // Clear failed message on success
           setFailedMessageContent(null);
@@ -1765,15 +1789,6 @@ export default function Chat() {
                 </div>
               ))}
               
-              {showLimitCard && hasReachedLimit && (
-                <LimitReachedCard 
-                  onClose={() => setShowLimitCard(false)} 
-                  scope="chat_daily"
-                  used={usage?.used || 0}
-                  limit={usage?.limit || 5}
-                  period="daily"
-                />
-              )}
               
               <div ref={messagesEndRef} className="h-4" />
             </div>
@@ -1913,9 +1928,18 @@ export default function Chat() {
                   value={inputValue}
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
-                  placeholder={dictation.isListening 
-                    ? (language === "uz" ? "Eshitilyapti… Qo'yib yuboring" : language === "ru" ? "Слушаю… Отпустите" : language === "tr" ? "Dinleniyor… Bırakın" : "Listening… Release to finish")
-                    : t.chatPlaceholder
+                  placeholder={
+                    hasReachedLimit
+                      ? (language === "uz" 
+                          ? "Bugungi limit tugadi — Premium yoki ertaga davom eting" 
+                          : language === "ru" 
+                          ? "Лимит исчерпан — Premium или завтра"
+                          : language === "tr"
+                          ? "Günlük limit doldu — Premium veya yarın devam edin"
+                          : "Daily limit reached — Premium or continue tomorrow")
+                      : dictation.isListening 
+                      ? (language === "uz" ? "Eshitilyapti… Qo'yib yuboring" : language === "ru" ? "Слушаю… Отпустите" : language === "tr" ? "Dinleniyor… Bırakın" : "Listening… Release to finish")
+                      : t.chatPlaceholder
                   }
                   disabled={isLoading || typing || dictation.isListening}
                   rows={1}
@@ -1936,7 +1960,7 @@ export default function Chat() {
               
               <button
                 type="submit"
-                disabled={(!inputValue.trim() && pendingAttachments.length === 0) || isLoading || typing || dictation.isListening}
+                disabled={(!inputValue.trim() && pendingAttachments.length === 0) || isLoading || typing || dictation.isListening || hasReachedLimit}
                 className="p-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0 active:scale-95 glow-primary-subtle hover:glow-primary"
                 aria-label={language === "uz" ? "Yuborish" : language === "en" ? "Send" : language === "ru" ? "Отправить" : "Gönder"}
               >
@@ -1985,6 +2009,19 @@ export default function Chat() {
         onOpenChange={setExportPdfModalOpen}
         messageContent={exportPdfContent}
         defaultTitle={exportPdfTitle}
+      />
+
+      {/* Limit Reached Sheet */}
+      <LimitReachedSheet
+        open={showLimitSheet || (showLimitCard && hasReachedLimit)}
+        onClose={() => {
+          setShowLimitSheet(false);
+          setShowLimitCard(false);
+        }}
+        scope="chat_daily"
+        used={usage?.used || 0}
+        limit={usage?.limit || 5}
+        onUpgrade={() => navigate("/settings")}
       />
     </div>
   );
