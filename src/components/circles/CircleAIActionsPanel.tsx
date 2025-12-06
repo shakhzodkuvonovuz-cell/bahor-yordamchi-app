@@ -469,21 +469,46 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
         onValueChange={(v) => setActiveTab(v as "amallar" | "natijalar")}
         className="flex flex-col flex-1 overflow-hidden"
       >
-        {/* Compact Tabs Header */}
-        <div className="px-2 pt-1 pb-1.5 border-b border-border">
-          <TabsList className="w-full grid grid-cols-2 h-8">
-            <TabsTrigger value="amallar" className="text-xs font-medium h-7">
-              Amallar
-            </TabsTrigger>
-            <TabsTrigger value="natijalar" className="text-xs font-medium h-7 gap-1">
-              Natijalar
+        {/* Compact Segmented Control */}
+        <div className="px-2 pt-1 pb-1.5 border-b border-border z-10">
+          <div
+            role="tablist"
+            className="relative grid grid-cols-2 h-9 bg-muted rounded-lg p-1"
+          >
+            {/* Sliding pill background */}
+            <div
+              className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-background rounded-md shadow-sm transition-transform duration-200 ease-out z-0 ${
+                activeTab === "natijalar" ? "translate-x-[calc(100%+8px)]" : "translate-x-0"
+              }`}
+            />
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === "amallar"}
+              onClick={() => setActiveTab("amallar")}
+              className="relative z-10 flex items-center justify-center w-full h-full text-xs font-medium rounded-md transition-colors cursor-pointer"
+            >
+              <span className={activeTab === "amallar" ? "text-foreground" : "text-muted-foreground"}>
+                Amallar
+              </span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === "natijalar"}
+              onClick={() => setActiveTab("natijalar")}
+              className="relative z-10 flex items-center justify-center w-full h-full text-xs font-medium rounded-md transition-colors cursor-pointer"
+            >
+              <span className={activeTab === "natijalar" ? "text-foreground" : "text-muted-foreground"}>
+                Natijalar
+              </span>
               {cards.length > 0 && (
-                <span className="ml-0.5 px-1 py-0 rounded-full text-[10px] bg-primary/20 text-primary">
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded-full text-[10px] bg-primary/20 text-primary">
                   {cards.length}
                 </span>
               )}
-            </TabsTrigger>
-          </TabsList>
+            </button>
+          </div>
         </div>
 
         {/* Amallar Tab */}
