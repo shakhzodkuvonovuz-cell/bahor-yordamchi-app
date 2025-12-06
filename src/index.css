@@ -67,6 +67,13 @@
     --shadow-lg: 0 10px 15px -3px hsl(220 25% 10% / 0.06), 0 4px 6px -4px hsl(220 25% 10% / 0.04);
     --shadow-glow: 0 0 20px hsl(175 55% 45% / 0.15);
 
+    /* 3D Elevation layers */
+    --elevation-0: 0 0 0 0 transparent;
+    --elevation-1: 0 1px 3px 0 hsl(220 25% 10% / 0.04), 0 1px 2px -1px hsl(220 25% 10% / 0.03);
+    --elevation-2: 0 4px 8px -2px hsl(220 25% 10% / 0.06), 0 2px 4px -2px hsl(220 25% 10% / 0.04);
+    --elevation-3: 0 12px 24px -4px hsl(220 25% 10% / 0.08), 0 4px 8px -4px hsl(220 25% 10% / 0.05);
+    --elevation-4: 0 24px 48px -8px hsl(220 25% 10% / 0.12), 0 8px 16px -8px hsl(220 25% 10% / 0.08);
+
     /* Sidebar */
     --sidebar-background: 220 15% 98%;
     --sidebar-foreground: 220 25% 15%;
@@ -127,6 +134,13 @@
     --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.3), 0 2px 4px -2px hsl(0 0% 0% / 0.2);
     --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.4), 0 4px 6px -4px hsl(0 0% 0% / 0.3);
     --shadow-glow: 0 0 30px hsl(175 60% 48% / 0.2);
+
+    /* 3D Elevation layers - Dark */
+    --elevation-0: 0 0 0 0 transparent;
+    --elevation-1: 0 1px 3px 0 hsl(0 0% 0% / 0.25), 0 1px 2px -1px hsl(0 0% 0% / 0.2);
+    --elevation-2: 0 4px 8px -2px hsl(0 0% 0% / 0.35), 0 2px 4px -2px hsl(0 0% 0% / 0.25);
+    --elevation-3: 0 12px 24px -4px hsl(0 0% 0% / 0.45), 0 4px 8px -4px hsl(0 0% 0% / 0.3);
+    --elevation-4: 0 24px 48px -8px hsl(0 0% 0% / 0.55), 0 8px 16px -8px hsl(0 0% 0% / 0.4);
 
     /* Sidebar - Dark */
     --sidebar-background: 200 20% 9%;
@@ -217,6 +231,37 @@
 
   .hover-scale {
     @apply transition-transform duration-300 hover:scale-[1.02];
+  }
+
+  /* 3D Elevation utilities */
+  .elevation-0 {
+    box-shadow: var(--elevation-0);
+  }
+
+  .elevation-1 {
+    box-shadow: var(--elevation-1);
+  }
+
+  .elevation-2 {
+    box-shadow: var(--elevation-2);
+  }
+
+  .elevation-3 {
+    box-shadow: var(--elevation-3);
+  }
+
+  .elevation-4 {
+    box-shadow: var(--elevation-4);
+  }
+
+  /* Tab transition utilities */
+  .tab-content-enter {
+    animation: tab-fade-in 0.15s ease-out forwards;
+  }
+
+  .tab-content-active {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -410,6 +455,22 @@
 
 .animate-scale-in {
   animation: scale-in 0.3s ease-out forwards;
+}
+
+/* Tab transition animation */
+@keyframes tab-fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tab-panel-transition {
+  animation: tab-fade-in 0.15s ease-out forwards;
 }
 
 /* Subtle pulse for loading states */
