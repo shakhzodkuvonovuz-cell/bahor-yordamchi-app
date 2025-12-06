@@ -144,16 +144,16 @@ export function usePushToTalkDictation() {
       recognitionRef.current.start();
       setIsListening(true);
 
-      // Haptic feedback on start
-      if (navigator.vibrate) {
-        navigator.vibrate(10);
-      }
+      // Haptic feedback on start (tap)
+      navigator.vibrate?.(10);
 
       // Start amplitude updates
       animationFrameRef.current = requestAnimationFrame(updateAmplitude);
     } catch (err) {
       console.error("Failed to start dictation:", err);
       setError("permission-denied");
+      // Error haptic feedback (longer pulse)
+      navigator.vibrate?.([30, 20, 30]);
       cleanup();
     }
   }, [cleanup, updateAmplitude]);
@@ -170,6 +170,9 @@ export function usePushToTalkDictation() {
 
     setIsListening(false);
     cleanup();
+
+    // Haptic feedback on stop (tap)
+    navigator.vibrate?.(10);
 
     // Return the complete transcription
     const result = accumulatedFinalRef.current + (interimText ? " " + interimText : "");
