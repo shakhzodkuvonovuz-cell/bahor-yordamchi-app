@@ -1,21 +1,16 @@
 import { useNavigate } from "react-router-dom";
-import { Language } from "@/hooks/useLanguage";
-import { getTranslation } from "@/data/translations";
 import { ModeInfo } from "@/types/chat";
 import RecommendedBadge, { incrementModeUsage } from "@/components/RecommendedBadge";
+import { useTranslation, Lang } from "@/i18n/LanguageProvider";
 
 interface MasonryCardProps {
   mode: ModeInfo;
-  language: Language;
   size?: "large" | "medium" | "small";
   chips?: string[];
   onClick: () => void;
 }
 
-function MasonryCard({ mode, language, size = "small", chips, onClick }: MasonryCardProps) {
-  const t = getTranslation(language);
-  const modeTranslation = t.modes[mode.id as keyof typeof t.modes];
-
+function MasonryCard({ mode, size = "small", chips, onClick }: MasonryCardProps) {
   const handleClick = () => {
     incrementModeUsage(mode.id);
     onClick();
@@ -39,7 +34,7 @@ function MasonryCard({ mode, language, size = "small", chips, onClick }: Masonry
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
             <h3 className={`font-semibold text-foreground leading-tight ${size === "large" ? "text-base" : "text-sm"}`}>
-              {modeTranslation?.title || mode.title}
+              {mode.title}
             </h3>
             <RecommendedBadge modeId={mode.id} />
           </div>
@@ -47,7 +42,7 @@ function MasonryCard({ mode, language, size = "small", chips, onClick }: Masonry
       </div>
 
       <p className={`text-muted-foreground leading-relaxed flex-1 ${size === "large" ? "text-sm line-clamp-3" : "text-xs line-clamp-2"}`}>
-        {modeTranslation?.subtitle || mode.subtitle}
+        {mode.subtitle}
       </p>
 
       {chips && chips.length > 0 && (
@@ -73,10 +68,9 @@ interface MasonrySectionProps {
     size?: "large" | "medium" | "small";
     chips?: string[];
   }>;
-  language: Language;
 }
 
-function MasonrySection({ title, modes, language }: MasonrySectionProps) {
+function MasonrySection({ title, modes }: MasonrySectionProps) {
   const navigate = useNavigate();
 
   return (
@@ -89,7 +83,6 @@ function MasonrySection({ title, modes, language }: MasonrySectionProps) {
           <MasonryCard
             key={mode.id}
             mode={mode}
-            language={language}
             size={size}
             chips={chips}
             onClick={() => navigate(`/chat/${mode.id}`)}
@@ -101,12 +94,14 @@ function MasonrySection({ title, modes, language }: MasonrySectionProps) {
 }
 
 interface MasonryGridProps {
-  language: Language;
+  language: Lang;
   primaryModes: ModeInfo[];
   learningModes: ModeInfo[];
 }
 
 export default function MasonryGrid({ language, primaryModes, learningModes }: MasonryGridProps) {
+  const { t } = useTranslation();
+  
   // Find specific modes
   const techMode = primaryModes.find(m => m.id === "tech");
   const dailyMode = primaryModes.find(m => m.id === "daily");
@@ -122,8 +117,7 @@ export default function MasonryGrid({ language, primaryModes, learningModes }: M
     <div>
       {/* Learning Section */}
       <MasonrySection
-        title="O'rganish"
-        language={language}
+        title={t('modes.learning') || "O'rganish"}
         modes={[
           ...(ieltsMode ? [{ mode: ieltsMode, size: "large" as const, chips: ["Speaking", "Writing", "IELTS"] }] : []),
           ...(homeworkMode ? [{ mode: homeworkMode, size: "medium" as const, chips: ["Fanlar", "Matematika"] }] : []),
@@ -135,7 +129,6 @@ export default function MasonryGrid({ language, primaryModes, learningModes }: M
       {/* Work & Productivity Section */}
       <MasonrySection
         title="Ish va Productivlik"
-        language={language}
         modes={[
           ...(businessMode ? [{ mode: businessMode, size: "medium" as const, chips: ["Marketing", "G'oya"] }] : []),
           ...(financialMode ? [{ mode: financialMode, chips: ["Byudjet", "Moliya"] }] : []),
@@ -146,7 +139,6 @@ export default function MasonryGrid({ language, primaryModes, learningModes }: M
       {/* Technical Section */}
       <MasonrySection
         title="Texnik"
-        language={language}
         modes={[
           ...(techMode ? [{ mode: techMode, size: "large" as const, chips: ["Kod", "Python", "Web"] }] : []),
         ]}

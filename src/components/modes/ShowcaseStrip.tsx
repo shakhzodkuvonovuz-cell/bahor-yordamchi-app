@@ -7,41 +7,70 @@ interface ShowcaseTile {
   icon: React.ReactNode;
   route: string;
   chips?: string[];
+  titleUz: string;
+  titleEn: string;
+  descUz: string;
+  descEn: string;
 }
 
 const SHOWCASE_TILES: ShowcaseTile[] = [
-  { id: "general", icon: <MessageCircle className="w-7 h-7" />, route: "/chat/general", chips: ["AI", "Chat"] },
-  { id: "tools", icon: <Wrench className="w-7 h-7" />, route: "/tools/documents", chips: ["PDF", "Fayl"] },
-  { id: "circles", icon: <Users className="w-7 h-7" />, route: "/circles", chips: ["Guruh", "Natija"] },
-  { id: "ielts", icon: <GraduationCap className="w-7 h-7" />, route: "/chat/ielts", chips: ["Speaking", "Writing"] },
-  { id: "homework", icon: <BookOpen className="w-7 h-7" />, route: "/chat/homework", chips: ["Fanlar", "Yordam"] },
+  { 
+    id: "general", 
+    icon: <MessageCircle className="w-7 h-7" />, 
+    route: "/chat/general", 
+    chips: ["AI", "Chat"],
+    titleUz: "Umumiy Chat",
+    titleEn: "General Chat",
+    descUz: "Har qanday savol",
+    descEn: "Any question"
+  },
+  { 
+    id: "tools", 
+    icon: <Wrench className="w-7 h-7" />, 
+    route: "/tools/documents", 
+    chips: ["PDF", "Fayl"],
+    titleUz: "Asboblar",
+    titleEn: "Tools",
+    descUz: "PDF va hujjatlar",
+    descEn: "PDF & documents"
+  },
+  { 
+    id: "circles", 
+    icon: <Users className="w-7 h-7" />, 
+    route: "/circles", 
+    chips: ["Guruh", "Natija"],
+    titleUz: "Doiralar",
+    titleEn: "Circles",
+    descUz: "Guruh bilan ishlash",
+    descEn: "Group collaboration"
+  },
+  { 
+    id: "ielts", 
+    icon: <GraduationCap className="w-7 h-7" />, 
+    route: "/chat/ielts", 
+    chips: ["Speaking", "Writing"],
+    titleUz: "IELTS",
+    titleEn: "IELTS",
+    descUz: "Ingliz tili tayyorgarlik",
+    descEn: "English preparation"
+  },
+  { 
+    id: "homework", 
+    icon: <BookOpen className="w-7 h-7" />, 
+    route: "/chat/homework", 
+    chips: ["Fanlar", "Yordam"],
+    titleUz: "Uy vazifasi",
+    titleEn: "Homework",
+    descUz: "O'qish yordami",
+    descEn: "Study help"
+  },
 ];
 
 export default function ShowcaseStrip() {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { language } = useTranslation();
 
-  const getTileTitle = (id: string) => {
-    const titles: Record<string, string> = {
-      general: t('modes.general.title') || "Umumiy Chat",
-      tools: t('nav.tools') || "Asboblar",
-      circles: t('nav.circles') || "Doiralar",
-      ielts: t('modes.ielts.title') || "IELTS",
-      homework: t('modes.homework.title') || "Uy vazifasi",
-    };
-    return titles[id] || id;
-  };
-
-  const getTileDescription = (id: string) => {
-    const descriptions: Record<string, string> = {
-      general: "Har qanday savol",
-      tools: "PDF va hujjatlar",
-      circles: "Guruh bilan ishlash",
-      ielts: "Ingliz tili tayyorgarlik",
-      homework: "O'qish yordami",
-    };
-    return descriptions[id] || "";
-  };
+  const isUz = language === 'uz' || language === 'ru';
 
   return (
     <section className="mb-8">
@@ -72,12 +101,12 @@ export default function ShowcaseStrip() {
 
                   {/* Title */}
                   <h3 className="text-sm font-semibold text-foreground leading-tight">
-                    {getTileTitle(tile.id)}
+                    {isUz ? tile.titleUz : tile.titleEn}
                   </h3>
 
                   {/* Description */}
                   <p className="text-xs text-muted-foreground leading-snug">
-                    {getTileDescription(tile.id)}
+                    {isUz ? tile.descUz : tile.descEn}
                   </p>
 
                   {/* Chips */}

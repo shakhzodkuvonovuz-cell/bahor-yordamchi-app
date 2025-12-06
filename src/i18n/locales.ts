@@ -2103,12 +2103,23 @@ export const translations: Record<Lang, Record<string, string>> = {
 export function translate(language: Lang, key: string, params?: Record<string, string | number>): string {
   const value = translations[language]?.[key];
   
-  // Return [[MISSING:key]] if not found to make untranslated strings obvious
+  // Fallback: try Uzbek if not found in current language, then show key name humanized
   if (!value) {
-    if (import.meta.env.DEV) {
-      console.warn(`Missing translation: ${key} for language: ${language}`);
+    // Try fallback to Uzbek
+    const fallbackValue = translations['uz']?.[key];
+    if (fallbackValue) {
+      if (!params) return fallbackValue;
+      return Object.entries(params).reduce(
+        (str, [param, val]) => str.replace(new RegExp(`\\{${param}\\}`, 'g'), String(val)),
+        fallbackValue
+      );
     }
-    return `[[MISSING:${key}]]`;
+    
+    // Final fallback: humanize the key (remove prefix, capitalize)
+    // e.g., 'modes.general.title' -> 'General title', 'nav.tools' -> 'Tools'
+    const parts = key.split('.');
+    const lastPart = parts[parts.length - 1];
+    return lastPart.charAt(0).toUpperCase() + lastPart.slice(1).replace(/_/g, ' ');
   }
   
   if (!params) return value;
