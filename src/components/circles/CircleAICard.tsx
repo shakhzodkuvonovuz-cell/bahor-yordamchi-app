@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Copy, Send, FileDown, FolderDown, Trash2, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { Copy, Send, FileDown, FolderDown, Trash2, ChevronDown, ChevronUp, Loader2, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { haptic } from "@/lib/haptics";
-import { downloadPDF, generatePDF, sanitizeFilename } from "@/lib/pdfGenerator";
+import { downloadPDF, generatePDF, sanitizeFilename, openHTMLPrintFallback } from "@/lib/pdfGenerator";
 
 interface AICard {
   id: string;
@@ -30,6 +30,7 @@ export function CircleAICard({ card, circleId, onDelete, onSendToChat, isLatest 
   const [expanded, setExpanded] = useState(isLatest);
   const [savingToFiles, setSavingToFiles] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [pdfError, setPdfError] = useState(false);
   const { toast } = useToast();
 
   const formatDate = (dateStr: string) => {
@@ -41,6 +42,13 @@ export function CircleAICard({ card, circleId, onDelete, onSendToChat, isLatest 
       minute: "2-digit",
     });
   };
+
+  const getPdfOptions = () => ({
+    title: card.title,
+    content: card.content_md,
+    date: formatDate(card.created_at),
+    messageCount: card.source_message_count,
+  });
 
   const handleCopy = async () => {
     try {
@@ -62,25 +70,36 @@ export function CircleAICard({ card, circleId, onDelete, onSendToChat, isLatest 
 
   /**
    * PDF Export using @react-pdf/renderer with proper Unicode support
+   * Includes HTML print fallback for maximum reliability
    */
   const handleExportPdf = async () => {
     setGeneratingPdf(true);
+    setPdfError(false);
+    
     try {
-      await downloadPDF({
-        title: card.title,
-        content: card.content_md,
-        date: formatDate(card.created_at),
-        messageCount: card.source_message_count,
-      });
+      console.log('[AI_PDF_EXPORT] Attempting PDF export from card...');
+      await downloadPDF(getPdfOptions());
       
       haptic("success");
       toast({ title: "PDF yuklandi ✓" });
     } catch (err) {
-      console.error("PDF error:", err);
-      toast({ title: "PDF yaratishda xatolik", variant: "destructive" });
+      console.error("[AI_PDF_EXPORT] PDF error:", err);
+      setPdfError(true);
+      haptic("error");
+      toast({ 
+        title: "PDF yaratilmadi", 
+        description: "Print orqali PDF saqlashingiz mumkin",
+        variant: "destructive" 
+      });
     } finally {
       setGeneratingPdf(false);
     }
+  };
+
+  const handlePrintFallback = () => {
+    openHTMLPrintFallback(getPdfOptions());
+    haptic("light");
+    toast({ title: "HTML ochildi — Print orqali PDF saqlang" });
   };
 
   const handleSaveToFiles = async () => {
@@ -89,12 +108,7 @@ export function CircleAICard({ card, circleId, onDelete, onSendToChat, isLatest 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const pdfBlob = await generatePDF({
-        title: card.title,
-        content: card.content_md,
-        date: formatDate(card.created_at),
-        messageCount: card.source_message_count,
-      });
+      const pdfBlob = await generatePDF(getPdfOptions());
       
       const safeTitle = sanitizeFilename(card.title);
       const filename = `${safeTitle}_${Date.now()}.pdf`;
@@ -180,7 +194,7 @@ export function CircleAICard({ card, circleId, onDelete, onSendToChat, isLatest 
             )}
             <Button 
               size="sm" 
-              variant="ghost" 
+              variant={pdfError ? "destructive" : "ghost"}
               onClick={handleExportPdf} 
               disabled={generatingPdf}
               className="gap-1.5"
@@ -192,6 +206,17 @@ export function CircleAICard({ card, circleId, onDelete, onSendToChat, isLatest 
               )}
               PDF
             </Button>
+            {pdfError && (
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={handlePrintFallback}
+                className="gap-1.5"
+              >
+                <Printer className="h-3.5 w-3.5" />
+                Print
+              </Button>
+            )}
             <Button 
               size="sm" 
               variant="ghost" 
