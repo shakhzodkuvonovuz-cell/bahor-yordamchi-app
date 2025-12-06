@@ -202,18 +202,21 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
   }, [spaceId, userId, fetchProfiles, enrichMessage]);
 
   // Upload single file with retries
+  // Path format: spaces/<space_id>/<user_id>/<timestamp>_<random>_<sanitizedOriginalName>
   const uploadFileWithRetry = useCallback(async (
     file: File,
-    messageId: string,
     fileId: string,
     onProgress: (fileId: string, progress: number) => void
   ): Promise<SpaceMessageAttachment | null> => {
+    if (!userId) throw new Error("Not authenticated");
+    
     if (file.size > MAX_FILE_SIZE) {
       throw new Error(`File too large: ${file.name} (max ${MAX_FILE_SIZE / 1024 / 1024}MB)`);
     }
 
     const sanitized = sanitizeFilename(file.name);
-    const path = `spaces/${spaceId}/messages/${messageId}/${crypto.randomUUID()}-${sanitized}`;
+    // Use the exact path format required by RLS policies: spaces/<space_id>/<user_id>/...
+    const path = `spaces/${spaceId}/${userId}/${Date.now()}_${crypto.randomUUID().slice(0, 8)}_${sanitized}`;
 
     let lastError: Error | null = null;
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -248,7 +251,7 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
     }
 
     throw lastError || new Error("Upload failed");
-  }, [spaceId]);
+  }, [spaceId, userId]);
 
   // Send message with optimistic UI
   const sendMessage = useCallback(
@@ -374,7 +377,7 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
           const fileId = `file-${i}`;
 
           try {
-            const attachment = await uploadFileWithRetry(file, tempMessageId, fileId, updateFileProgress);
+            const attachment = await uploadFileWithRetry(file, fileId, updateFileProgress);
             if (attachment) {
               successfulAttachments.push(attachment);
               setUploadingFiles((prev) =>
