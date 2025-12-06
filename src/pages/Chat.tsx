@@ -1,6 +1,8 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Send, Trash2, Menu, Paperclip, X, FileText, RefreshCw, CheckCircle, AlertCircle, Search, Square, StickyNote, FileStack } from "lucide-react";
+import { FocusCanvas, MessageArea } from "@/components/chat/FocusCanvas";
+import { ContextDock } from "@/components/chat/ContextDock";
 import ChatMessage from "@/components/ChatMessage";
 import QuickSuggestions from "@/components/QuickSuggestions";
 import { DeleteChatModal } from "@/components/DeleteChatModal";
@@ -1662,64 +1664,66 @@ export default function Chat() {
         </div>
       )}
 
-      {/* Main Chat Container */}
-      <div className="flex flex-col h-screen max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="sticky top-0 z-40 glass-strong border-b border-border/20">
-          <div className="flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4">
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <button
-                onClick={() => navigate("/")}
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-secondary/60 hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-[0.97] transition-all duration-200 flex-shrink-0"
-                aria-label={t.chat.back}
-              >
-                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
-              <button
-                onClick={() => setIsHistoryOpen(true)}
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-secondary/60 hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-[0.97] transition-all duration-200 flex-shrink-0"
-                aria-label="Open chat history"
-              >
-                <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
-            </div>
-
-            <div className="flex-1 min-w-0 text-center">
-              <h1 className="text-sm sm:text-base font-semibold text-foreground truncate">
-                {modeTranslation?.title || modeInfo.title}
-              </h1>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">
-                {isDevBypass ? translate('settings.unlimited') : `${usedToday}/${dailyLimit}`} {translate('usage.requests')}
-              </p>
-            </div>
-
-            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-              {messages.length > 0 && (
+      {/* Main Chat Container with Context Dock */}
+      <div className="flex h-screen w-full max-w-7xl mx-auto">
+        {/* Focus Canvas - Main Chat Area */}
+        <FocusCanvas>
+          {/* Header */}
+          <div className="sticky top-0 z-40 glass-strong border-b border-border/20">
+            <div className="flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <button
-                  onClick={() => setShowDeleteModal(true)}
-                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl hover:bg-secondary/60 flex items-center justify-center transition-all duration-200 active:scale-[0.97]"
-                  aria-label={t.chat.clearChat}
-                  title={t.chat.clearChat}
+                  onClick={() => navigate("/")}
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-secondary/60 hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-[0.97] transition-all duration-200 flex-shrink-0"
+                  aria-label={t.chat.back}
                 >
-                  <Trash2 className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
+                  <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
-              )}
-              <LanguageSwitcher variant="compact" />
+                <button
+                  onClick={() => setIsHistoryOpen(true)}
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-secondary/60 hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-[0.97] transition-all duration-200 flex-shrink-0"
+                  aria-label="Open chat history"
+                >
+                  <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+              </div>
+
+              <div className="flex-1 min-w-0 text-center">
+                <h1 className="text-sm sm:text-base font-semibold text-foreground truncate">
+                  {modeTranslation?.title || modeInfo.title}
+                </h1>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">
+                  {isDevBypass ? translate('settings.unlimited') : `${usedToday}/${dailyLimit}`} {translate('usage.requests')}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                {messages.length > 0 && (
+                  <button
+                    onClick={() => setShowDeleteModal(true)}
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl hover:bg-secondary/60 flex items-center justify-center transition-all duration-200 active:scale-[0.97]"
+                    aria-label={t.chat.clearChat}
+                    title={t.chat.clearChat}
+                  >
+                    <Trash2 className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
+                  </button>
+                )}
+                <LanguageSwitcher variant="compact" />
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Messages Area */}
-        <div 
-          ref={messagesContainerRef}
-          className="flex-1 overflow-y-auto px-3 sm:px-6 pb-4 pt-4 sm:pt-6"
-        >
-          {isLoadingMessages ? (
-            <ChatMessagesSkeleton />
-          ) : messages.length === 0 ? (
-            <ChatEmptyState modeInfo={modeInfo} modeTranslation={modeTranslation} />
-          ) : (
-            <div className="space-y-5 max-w-3xl mx-auto">
+          {/* Messages Area */}
+          <div 
+            ref={messagesContainerRef}
+            className="flex-1 overflow-y-auto px-3 sm:px-6 pb-4 pt-4 sm:pt-6"
+          >
+            {isLoadingMessages ? (
+              <ChatMessagesSkeleton />
+            ) : messages.length === 0 ? (
+              <ChatEmptyState modeInfo={modeInfo} modeTranslation={modeTranslation} />
+            ) : (
+              <MessageArea className="space-y-5">
               {/* Load more button */}
               {hasMoreMessages && (
                 <div className="flex justify-center">
@@ -1791,8 +1795,8 @@ export default function Chat() {
               
               
               <div ref={messagesEndRef} className="h-4" />
-            </div>
-          )}
+              </MessageArea>
+            )}
         </div>
 
         <ScrollToBottom 
@@ -1969,6 +1973,19 @@ export default function Chat() {
             </form>
           </div>
         </div>
+        </FocusCanvas>
+
+        {/* Context Dock - Desktop only */}
+        <ContextDock
+          modeInfo={modeInfo ? {
+            icon: modeInfo.icon || '💬',
+            title: modeInfo.title,
+          } : undefined}
+          modeTranslation={modeTranslation ? { title: modeTranslation.title } : undefined}
+          lastAttachment={pendingAttachments.length > 0 ? pendingAttachments[pendingAttachments.length - 1] : undefined}
+          sources={searchUrls}
+          aiActionsAvailable={false}
+        />
       </div>
 
 
