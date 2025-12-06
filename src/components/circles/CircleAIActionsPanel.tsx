@@ -114,6 +114,7 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
   const [renameValue, setRenameValue] = useState("");
   const [renamingCardId, setRenamingCardId] = useState<string | null>(null);
   const [isSavingRename, setIsSavingRename] = useState(false);
+  const [listExpanded, setListExpanded] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -468,16 +469,16 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
         onValueChange={(v) => setActiveTab(v as "amallar" | "natijalar")}
         className="flex flex-col flex-1 overflow-hidden"
       >
-        {/* Tabs Header */}
-        <div className="px-4 pt-2 pb-3 border-b border-border">
-          <TabsList className="w-full grid grid-cols-2 h-10">
-            <TabsTrigger value="amallar" className="text-sm font-medium">
+        {/* Compact Tabs Header */}
+        <div className="px-2 pt-1 pb-1.5 border-b border-border">
+          <TabsList className="w-full grid grid-cols-2 h-8">
+            <TabsTrigger value="amallar" className="text-xs font-medium h-7">
               Amallar
             </TabsTrigger>
-            <TabsTrigger value="natijalar" className="text-sm font-medium gap-1.5">
+            <TabsTrigger value="natijalar" className="text-xs font-medium h-7 gap-1">
               Natijalar
               {cards.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 rounded-full text-xs bg-primary/20 text-primary">
+                <span className="ml-0.5 px-1 py-0 rounded-full text-[10px] bg-primary/20 text-primary">
                   {cards.length}
                 </span>
               )}
@@ -644,53 +645,53 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
         {/* Natijalar Tab */}
         <TabsContent value="natijalar" className="flex-1 overflow-hidden mt-0 flex flex-col data-[state=inactive]:hidden">
           {loadingCards ? (
-            <div className="p-4 space-y-3">
-              <Skeleton className="h-16 w-full" />
-              <Skeleton className="h-16 w-full" />
-              <Skeleton className="h-16 w-full" />
+            <div className="p-2 space-y-2">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
             </div>
           ) : cards.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-              <div className="p-4 rounded-full bg-muted/50 mb-4">
-                <Sparkles className="h-8 w-8 text-muted-foreground" />
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+              <div className="p-3 rounded-full bg-muted/50 mb-3">
+                <Sparkles className="h-6 w-6 text-muted-foreground" />
               </div>
-              <p className="text-muted-foreground mb-4">Hali natijalar yo'q</p>
+              <p className="text-sm text-muted-foreground mb-3">Hali natijalar yo'q</p>
               <Button
                 variant="outline"
+                size="sm"
                 onClick={() => setActiveTab("amallar")}
-                className="gap-2"
+                className="gap-1.5"
               >
-                <Sparkles className="h-4 w-4" />
+                <Sparkles className="h-3.5 w-3.5" />
                 Amal tanlash
               </Button>
             </div>
           ) : (
             <div className="flex flex-col flex-1 overflow-hidden">
-              {/* Search & Filters */}
-              <div className="p-3 border-b border-border space-y-2">
+              {/* Compact Search & Filters */}
+              <div className="px-2 py-1.5 border-b border-border space-y-1.5">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Natijalar ichidan qidirish..."
-                    className="pl-9 pr-8 h-9 text-sm"
+                    placeholder="Qidirish..."
+                    className="pl-8 pr-7 h-8 text-xs"
                   />
                   {searchQuery && (
                     <button
                       onClick={() => setSearchQuery("")}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-muted"
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-muted"
                     >
-                      <X className="h-3.5 w-3.5 text-muted-foreground" />
+                      <X className="h-3 w-3 text-muted-foreground" />
                     </button>
                   )}
                 </div>
-                <div className="flex gap-1.5 overflow-x-auto pb-1">
+                <div className="flex gap-1 overflow-x-auto pb-0.5 -mx-0.5 px-0.5">
                   {FILTER_OPTIONS.map((opt) => (
                     <button
                       key={opt.type}
                       onClick={() => setFilter(opt.type)}
-                      className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap transition-colors ${
                         filter === opt.type
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted hover:bg-muted/80 text-foreground"
@@ -702,116 +703,137 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
                 </div>
               </div>
 
-              {/* Cards List */}
-              <ScrollArea className="flex-1 max-h-48 border-b border-border">
-                <div className="p-2 space-y-1.5">
+              {/* Collapsible Cards List - Show 2 by default */}
+              <div className="border-b border-border">
+                <div className="p-1.5 space-y-1">
                   {filteredCards.length === 0 ? (
-                    <div className="p-4 text-center text-sm text-muted-foreground">
+                    <div className="py-2 text-center text-xs text-muted-foreground">
                       Natija topilmadi
                     </div>
                   ) : (
-                    filteredCards.map((card) => {
-                      const colors = TYPE_COLORS[card.type] || TYPE_COLORS.summary;
-                      const isSelected = selectedCard?.id === card.id;
-                      return (
-                        <div
-                          key={card.id}
-                          className={`flex items-stretch rounded-lg border transition-colors cursor-pointer ${
-                            isSelected
-                              ? "border-primary bg-primary/5 shadow-sm"
-                              : "border-border bg-card hover:bg-accent/30"
-                          }`}
-                        >
-                          {/* Color accent bar */}
-                          <div className={`w-1 rounded-l-lg ${colors.accent}`} />
-                          
-                          <button
-                            onClick={() => setSelectedCard(card)}
-                            className="flex-1 flex items-center gap-2.5 p-2.5 text-left min-w-0"
+                    <>
+                      {(listExpanded || searchQuery ? filteredCards : filteredCards.slice(0, 2)).map((card) => {
+                        const colors = TYPE_COLORS[card.type] || TYPE_COLORS.summary;
+                        const isSelected = selectedCard?.id === card.id;
+                        return (
+                          <div
+                            key={card.id}
+                            className={`flex items-stretch rounded-md border transition-colors cursor-pointer ${
+                              isSelected
+                                ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+                                : "border-border/60 bg-card hover:bg-accent/30"
+                            }`}
                           >
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${colors.bg} ${colors.text}`}>
-                              {TYPE_LABELS[card.type] || card.type}
-                            </span>
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium text-sm truncate">{getDisplayTitle(card)}</div>
-                              <div className="text-xs text-muted-foreground">
-                                {formatDate(card.created_at)} • {card.source_message_count} xabar
-                              </div>
-                            </div>
-                          </button>
+                            {/* Color accent bar */}
+                            <div className={`w-0.5 rounded-l-md ${colors.accent}`} />
+                            
+                            <button
+                              onClick={() => setSelectedCard(card)}
+                              className="flex-1 flex items-center gap-2 p-1.5 text-left min-w-0"
+                            >
+                              <span className={`px-1 py-0.5 rounded text-[9px] font-semibold shrink-0 ${colors.bg} ${colors.text}`}>
+                                {TYPE_LABELS[card.type] || card.type}
+                              </span>
+                              <span className="text-xs font-medium truncate flex-1">{getDisplayTitle(card)}</span>
+                              <span className="text-[10px] text-muted-foreground shrink-0">
+                                {card.source_message_count}
+                              </span>
+                            </button>
 
-                          {/* Actions Menu */}
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <button className="px-2 flex items-center text-muted-foreground hover:text-foreground transition-colors">
-                                <MoreVertical className="h-4 w-4" />
-                              </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-44">
-                              <DropdownMenuItem onClick={() => handleOpenRenameModal(card)}>
-                                <Pencil className="h-4 w-4 mr-2" />
-                                Nomini o'zgartirish
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleDeleteCard(card.id)}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                O'chirish
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      );
-                    })
+                            {/* Actions Menu */}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button className="px-1.5 flex items-center text-muted-foreground hover:text-foreground transition-colors">
+                                  <MoreVertical className="h-3.5 w-3.5" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-40">
+                                <DropdownMenuItem onClick={() => handleOpenRenameModal(card)} className="text-xs">
+                                  <Pencil className="h-3.5 w-3.5 mr-2" />
+                                  Nomini o'zgartirish
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteCard(card.id)}
+                                  className="text-destructive focus:text-destructive text-xs"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 mr-2" />
+                                  O'chirish
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        );
+                      })}
+                      {/* Expand/Collapse toggle */}
+                      {filteredCards.length > 2 && !searchQuery && (
+                        <button
+                          onClick={() => setListExpanded(!listExpanded)}
+                          className="w-full py-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1"
+                        >
+                          {listExpanded ? (
+                            <>
+                              <ChevronUp className="h-3 w-3" />
+                              Yopish
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="h-3 w-3" />
+                              Yana ko'rsatish ({filteredCards.length - 2})
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
-              </ScrollArea>
+              </div>
 
-              {/* Result Viewer */}
-              {selectedCard && (
-                <div className="flex-1 flex flex-col overflow-hidden">
-                  {/* Result Header */}
-                  <div className="px-4 py-3 border-b border-border bg-muted/30">
+              {/* Selected Result Viewer - Main focus area */}
+              {selectedCard ? (
+                <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+                  {/* Compact Result Header */}
+                  <div className="px-2.5 py-2 border-b border-primary/20 bg-primary/5">
                     <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${TYPE_COLORS[selectedCard.type]?.bg || ""} ${TYPE_COLORS[selectedCard.type]?.text || ""}`}>
+                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Tanlangan</span>
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${TYPE_COLORS[selectedCard.type]?.bg || ""} ${TYPE_COLORS[selectedCard.type]?.text || ""}`}>
                           {TYPE_LABELS[selectedCard.type] || selectedCard.type}
                         </span>
-                        <span className="font-medium text-sm truncate">{getDisplayTitle(selectedCard)}</span>
                       </div>
-                      <button
-                        onClick={() => handleOpenRenameModal(selectedCard)}
-                        className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                        title="Nomini o'zgartirish"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleOpenRenameModal(selectedCard)}
+                          className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                          title="Nomini o'zgartirish"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1">
+                    <div className="font-medium text-sm truncate mt-0.5">{getDisplayTitle(selectedCard)}</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">
                       {formatDate(selectedCard.created_at)} • {selectedCard.source_message_count} xabar
-                      {selectedCard.meta?.scope_label && ` • Oxirgi ${selectedCard.meta.scope_label}`}
                     </div>
                   </div>
 
-                  {/* Scrollable Content */}
-                  <ScrollArea ref={resultsRef} className="flex-1">
-                    <div className="p-4">
+                  {/* Scrollable Content - Main focus */}
+                  <ScrollArea ref={resultsRef} className="flex-1 min-h-0">
+                    <div className="p-3">
                       <pre className="text-sm whitespace-pre-wrap font-sans leading-relaxed text-foreground">
                         {selectedCard.content_md}
                       </pre>
                     </div>
                   </ScrollArea>
 
-                  {/* Sticky Action Bar */}
-                  <div className="flex items-center gap-2 p-3 border-t border-border bg-background/95 backdrop-blur-sm shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-                    <Button size="sm" variant="outline" onClick={handleCopy} className="gap-1.5 flex-1">
-                      <Copy className="h-3.5 w-3.5" />
+                  {/* Compact Sticky Action Bar */}
+                  <div className="flex items-center gap-1.5 px-2 py-1.5 border-t border-border bg-background/95 backdrop-blur-sm">
+                    <Button size="sm" variant="outline" onClick={handleCopy} className="h-7 px-2 gap-1 text-xs flex-1">
+                      <Copy className="h-3 w-3" />
                       Nusxa
                     </Button>
                     {onSendToChat && (
-                      <Button size="sm" variant="outline" onClick={handleSendToChat} className="gap-1.5 flex-1">
-                        <Send className="h-3.5 w-3.5" />
+                      <Button size="sm" variant="outline" onClick={handleSendToChat} className="h-7 px-2 gap-1 text-xs flex-1">
+                        <Send className="h-3 w-3" />
                         Chatga
                       </Button>
                     )}
@@ -820,12 +842,12 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
                       variant="outline"
                       onClick={handleExportPdf}
                       disabled={generatingPdf}
-                      className="gap-1.5 flex-1"
+                      className="h-7 px-2 gap-1 text-xs flex-1"
                     >
                       {generatingPdf ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <Loader2 className="h-3 w-3 animate-spin" />
                       ) : (
-                        <FileDown className="h-3.5 w-3.5" />
+                        <FileDown className="h-3 w-3" />
                       )}
                       PDF
                     </Button>
@@ -834,16 +856,20 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
                       variant="outline"
                       onClick={handleSaveToFiles}
                       disabled={savingToFiles}
-                      className="gap-1.5 flex-1"
+                      className="h-7 px-2 gap-1 text-xs flex-1"
                     >
                       {savingToFiles ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <Loader2 className="h-3 w-3 animate-spin" />
                       ) : (
-                        <FolderDown className="h-3.5 w-3.5" />
+                        <FolderDown className="h-3 w-3" />
                       )}
-                      Fayllarga
+                      Fayllar
                     </Button>
                   </div>
+                </div>
+              ) : (
+                <div className="flex-1 flex items-center justify-center p-4 text-xs text-muted-foreground">
+                  Natijani tanlang
                 </div>
               )}
             </div>
