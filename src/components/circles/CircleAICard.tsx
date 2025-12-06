@@ -11,7 +11,8 @@ interface AICard {
   circle_id: string;
   creator_id: string;
   type: string;
-  title: string;
+  title: string | null;
+  auto_title?: string;
   content_md: string;
   created_at: string;
   source_message_count: number;
@@ -33,6 +34,9 @@ export function CircleAICard({ card, circleId, onDelete, onSendToChat, isLatest 
   const [pdfError, setPdfError] = useState(false);
   const { toast } = useToast();
 
+  // Use title with fallback to auto_title
+  const displayTitle = card.title || card.auto_title || "Natija";
+
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString("uz-UZ", {
@@ -44,7 +48,7 @@ export function CircleAICard({ card, circleId, onDelete, onSendToChat, isLatest 
   };
 
   const getPdfOptions = () => ({
-    title: card.title,
+    title: displayTitle,
     content: card.content_md,
     date: formatDate(card.created_at),
     messageCount: card.source_message_count,
@@ -62,7 +66,7 @@ export function CircleAICard({ card, circleId, onDelete, onSendToChat, isLatest 
 
   const handleSendToChat = () => {
     if (onSendToChat) {
-      onSendToChat(card.content_md, card.title);
+      onSendToChat(card.content_md, displayTitle);
       haptic("light");
       toast({ title: "Chatga yuborildi ✓" });
     }
@@ -110,7 +114,7 @@ export function CircleAICard({ card, circleId, onDelete, onSendToChat, isLatest 
 
       const pdfBlob = await generatePDF(getPdfOptions());
       
-      const safeTitle = sanitizeFilename(card.title);
+      const safeTitle = sanitizeFilename(displayTitle);
       const filename = `${safeTitle}_${Date.now()}.pdf`;
       const path = `${user.id}/${filename}`;
 
@@ -122,7 +126,7 @@ export function CircleAICard({ card, circleId, onDelete, onSendToChat, isLatest 
 
       const { error: dbError } = await supabase.from("user_files").insert({
         user_id: user.id,
-        title: `${card.title} - ${formatDate(card.created_at)}`,
+        title: `${displayTitle} - ${formatDate(card.created_at)}`,
         path,
         mime_type: "application/pdf",
         size_bytes: pdfBlob.size,
@@ -161,9 +165,9 @@ export function CircleAICard({ card, circleId, onDelete, onSendToChat, isLatest 
       >
         <div className="flex items-center gap-2 min-w-0">
           <span className={`px-2 py-0.5 rounded text-xs font-medium ${typeColors[card.type] || "bg-muted"}`}>
-            {card.title.split(" ")[0]}
+            {displayTitle.split(" ")[0]}
           </span>
-          <span className="text-sm font-medium truncate">{card.title}</span>
+          <span className="text-sm font-medium truncate">{displayTitle}</span>
         </div>
         <div className="flex items-center gap-2 text-muted-foreground">
           <span className="text-xs hidden sm:inline">{formatDate(card.created_at)}</span>
