@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { haptic } from "@/lib/haptics";
-import { jsPDF } from "jspdf";
+import { downloadPDF, generatePDF, sanitizeFilename } from "@/lib/pdfGenerator";
 
 interface AICard {
   id: string;
@@ -60,45 +60,18 @@ export function CircleAICard({ card, circleId, onDelete, onSendToChat, isLatest 
     }
   };
 
+  /**
+   * PDF Export using @react-pdf/renderer with proper Unicode support
+   */
   const handleExportPdf = async () => {
     setGeneratingPdf(true);
     try {
-      const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const margin = 15;
-      const maxWidth = pageWidth - margin * 2;
-      
-      // Title
-      doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
-      doc.text(card.title, margin, 20);
-      
-      // Date
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(128);
-      doc.text(formatDate(card.created_at), margin, 28);
-      
-      // Content
-      doc.setTextColor(0);
-      doc.setFontSize(11);
-      
-      const lines = doc.splitTextToSize(card.content_md, maxWidth);
-      let yPos = 38;
-      const lineHeight = 6;
-      const pageHeight = doc.internal.pageSize.getHeight();
-      
-      for (const line of lines) {
-        if (yPos > pageHeight - margin) {
-          doc.addPage();
-          yPos = margin;
-        }
-        doc.text(line, margin, yPos);
-        yPos += lineHeight;
-      }
-      
-      const filename = `Doira_${card.type}_${new Date().toISOString().split("T")[0]}.pdf`;
-      doc.save(filename);
+      await downloadPDF({
+        title: card.title,
+        content: card.content_md,
+        date: formatDate(card.created_at),
+        messageCount: card.source_message_count,
+      });
       
       haptic("success");
       toast({ title: "PDF yuklandi ✓" });
@@ -116,50 +89,23 @@ export function CircleAICard({ card, circleId, onDelete, onSendToChat, isLatest 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Generate PDF blob
-      const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const margin = 15;
-      const maxWidth = pageWidth - margin * 2;
+      const pdfBlob = await generatePDF({
+        title: card.title,
+        content: card.content_md,
+        date: formatDate(card.created_at),
+        messageCount: card.source_message_count,
+      });
       
-      doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
-      doc.text(card.title, margin, 20);
-      
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(128);
-      doc.text(formatDate(card.created_at), margin, 28);
-      
-      doc.setTextColor(0);
-      doc.setFontSize(11);
-      
-      const lines = doc.splitTextToSize(card.content_md, maxWidth);
-      let yPos = 38;
-      const lineHeight = 6;
-      const pageHeight = doc.internal.pageSize.getHeight();
-      
-      for (const line of lines) {
-        if (yPos > pageHeight - margin) {
-          doc.addPage();
-          yPos = margin;
-        }
-        doc.text(line, margin, yPos);
-        yPos += lineHeight;
-      }
-      
-      const pdfBlob = doc.output("blob");
-      const filename = `Doira_${card.type}_${Date.now()}.pdf`;
+      const safeTitle = sanitizeFilename(card.title);
+      const filename = `${safeTitle}_${Date.now()}.pdf`;
       const path = `${user.id}/${filename}`;
 
-      // Upload to storage
       const { error: uploadError } = await supabase.storage
         .from("user-files")
         .upload(path, pdfBlob, { contentType: "application/pdf" });
 
       if (uploadError) throw uploadError;
 
-      // Create file record
       const { error: dbError } = await supabase.from("user_files").insert({
         user_id: user.id,
         title: `${card.title} - ${formatDate(card.created_at)}`,

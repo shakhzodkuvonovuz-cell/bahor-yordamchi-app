@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptics";
-import { jsPDF } from "jspdf";
+import { downloadPDF, generatePDF, sanitizeFilename } from "@/lib/pdfGenerator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface CircleAIActionsPanelProps {
@@ -84,14 +84,6 @@ const TYPE_LABELS: Record<string, string> = {
 
 const getStorageKey = (circleId: string) => `bahorai_ai_actions_${circleId}`;
 
-const sanitizeFilename = (title: string): string => {
-  return title
-    .replace(/[^\w\s\u0400-\u04FF-]/g, "")
-    .replace(/\s+/g, "-")
-    .substring(0, 50)
-    .trim();
-};
-
 export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActionsPanelProps) {
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
@@ -115,6 +107,7 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
   const [renamingCardId, setRenamingCardId] = useState<string | null>(null);
   const [isSavingRename, setIsSavingRename] = useState(false);
   const [listExpanded, setListExpanded] = useState(false);
+  const [searchExpanded, setSearchExpanded] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -364,50 +357,24 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
     toast({ title: "Chatga yuborildi ✓" });
   };
 
-  const generatePdfDoc = (card: AICard) => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 15;
-    const maxWidth = pageWidth - margin * 2;
-    const title = getDisplayTitle(card);
-
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "bold");
-    doc.text(title, margin, 20);
-
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(128);
-    doc.text(formatDate(card.created_at), margin, 28);
-
-    doc.setTextColor(0);
-    doc.setFontSize(11);
-
-    const lines = doc.splitTextToSize(card.content_md, maxWidth);
-    let yPos = 38;
-    const lineHeight = 6;
-    const pageHeight = doc.internal.pageSize.getHeight();
-
-    for (const line of lines) {
-      if (yPos > pageHeight - margin) {
-        doc.addPage();
-        yPos = margin;
-      }
-      doc.text(line, margin, yPos);
-      yPos += lineHeight;
-    }
-
-    return { doc, title };
-  };
-
+  /**
+   * PDF Export using @react-pdf/renderer with proper Unicode support
+   * Note: The old jsPDF approach was removed because it had severe Unicode issues:
+   * - Emojis would render as garbage like "Ø=ÜA"
+   * - Some lines would have spaced-out letters
+   * - Uzbek special characters (o', g') wouldn't display correctly
+   */
   const handleExportPdf = async () => {
     if (!selectedCard) return;
     setGeneratingPdf(true);
     try {
-      const { doc, title } = generatePdfDoc(selectedCard);
-      const date = new Date().toISOString().split("T")[0];
-      const filename = `${sanitizeFilename(title)}-${date}.pdf`;
-      doc.save(filename);
+      const title = getDisplayTitle(selectedCard);
+      await downloadPDF({
+        title,
+        content: selectedCard.content_md,
+        date: formatDate(selectedCard.created_at),
+        messageCount: selectedCard.source_message_count,
+      });
 
       haptic("success");
       toast({ title: "PDF yuklandi ✓" });
@@ -426,8 +393,14 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { doc, title } = generatePdfDoc(selectedCard);
-      const pdfBlob = doc.output("blob");
+      const title = getDisplayTitle(selectedCard);
+      const pdfBlob = await generatePDF({
+        title,
+        content: selectedCard.content_md,
+        date: formatDate(selectedCard.created_at),
+        messageCount: selectedCard.source_message_count,
+      });
+      
       const date = new Date().toISOString().split("T")[0];
       const safeTitle = sanitizeFilename(title);
       const filename = `${safeTitle}-${date}-${Date.now()}.pdf`;
@@ -693,39 +666,87 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
           ) : (
             <div className="flex flex-col flex-1 overflow-hidden">
               {/* Compact Search & Filters */}
-              <div className="px-2 py-1.5 border-b border-border space-y-1.5">
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Qidirish..."
-                    className="pl-8 pr-7 h-8 text-xs"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery("")}
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-muted"
-                    >
-                      <X className="h-3 w-3 text-muted-foreground" />
-                    </button>
-                  )}
-                </div>
-                <div className="flex gap-1 overflow-x-auto pb-0.5 -mx-0.5 px-0.5">
-                  {FILTER_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.type}
-                      onClick={() => setFilter(opt.type)}
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap transition-colors ${
-                        filter === opt.type
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted hover:bg-muted/80 text-foreground"
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
+              <div className="px-1.5 py-1 border-b border-border space-y-1">
+                {/* Mobile: collapsible search, Desktop: always visible */}
+                {isMobile ? (
+                  searchExpanded ? (
+                    <div className="relative">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                      <Input
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Qidirish..."
+                        className="pl-7 pr-7 h-7 text-xs"
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => { setSearchQuery(""); setSearchExpanded(false); }}
+                        className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-muted"
+                      >
+                        <X className="h-3 w-3 text-muted-foreground" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <div className="flex gap-1 overflow-x-auto flex-1 pb-0.5">
+                        {FILTER_OPTIONS.map((opt) => (
+                          <button
+                            key={opt.type}
+                            onClick={() => setFilter(opt.type)}
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap transition-colors shrink-0 ${
+                              filter === opt.type
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted hover:bg-muted/80 text-foreground"
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => setSearchExpanded(true)}
+                        className="ml-1 p-1.5 rounded-md hover:bg-muted text-muted-foreground shrink-0"
+                      >
+                        <Search className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )
+                ) : (
+                  <>
+                    <div className="relative">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                      <Input
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Qidirish..."
+                        className="pl-7 pr-7 h-7 text-xs"
+                      />
+                      {searchQuery && (
+                        <button
+                          onClick={() => setSearchQuery("")}
+                          className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-muted"
+                        >
+                          <X className="h-3 w-3 text-muted-foreground" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex gap-1 overflow-x-auto pb-0.5">
+                      {FILTER_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.type}
+                          onClick={() => setFilter(opt.type)}
+                          className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap transition-colors ${
+                            filter === opt.type
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted hover:bg-muted/80 text-foreground"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Collapsible Cards List - Show 2 by default */}
