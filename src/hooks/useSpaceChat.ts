@@ -12,9 +12,24 @@ interface ProfileData {
   avatar: string | null;
 }
 
+interface UploadingFile {
+  id: string;
+  name: string;
+  progress: number;
+  status: "uploading" | "done" | "failed";
+  error?: string;
+}
+
 function generateClientId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
+
+function sanitizeFilename(name: string): string {
+  return name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 100);
+}
+
+const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
+const MAX_RETRIES = 2;
 
 export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
   const [messages, setMessages] = useState<SpaceMessage[]>([]);
@@ -22,6 +37,7 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
   const [isSending, setIsSending] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
 
   // Refs for stable subscriptions
   const profileMapRef = useRef<Record<string, ProfileData>>({});
@@ -32,6 +48,7 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
   const hasFetchedRef = useRef(false);
   const markReadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastMarkedMessageRef = useRef<string | null>(null);
+  const messagesMapRef = useRef<Record<string, SpaceMessage>>({});
 
   // Fetch profiles - memoized with ref
   const fetchProfiles = useCallback(async (userIds: string[]): Promise<Record<string, ProfileData>> => {
@@ -63,11 +80,15 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
       attachments.map(async (att) => {
         if (att.signedUrl) return att;
         
-        const { data } = await supabase.storage
-          .from("space-chat-files")
-          .createSignedUrl(att.path, 60 * 10);
-        
-        return { ...att, signedUrl: data?.signedUrl || undefined };
+        try {
+          const { data } = await supabase.storage
+            .from("space-chat-files")
+            .createSignedUrl(att.path, 60 * 10);
+          
+          return { ...att, signedUrl: data?.signedUrl || undefined };
+        } catch {
+          return att;
+        }
       })
     );
     
@@ -83,7 +104,7 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
     // Get signed URLs for attachments
     const attachments = rawAttachments ? await getSignedUrls(rawAttachments) : null;
 
-    return {
+    const enriched: SpaceMessage = {
       ...msg,
       attachments,
       senderName: profiles[msg.sender_id]?.name || "User",
@@ -91,6 +112,11 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
       readCount: readReceiptsRef.current[msg.id] || 0,
       status: pendingClientIdsRef.current.has(msg.client_id) ? "sending" : "sent",
     };
+    
+    // Store in map for reply lookups
+    messagesMapRef.current[msg.id] = enriched;
+    
+    return enriched;
   }, [getSignedUrls]);
 
   // Fetch initial messages - runs only once
@@ -111,10 +137,15 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
       const userIds = [...new Set(reversed.map((m) => m.sender_id))];
       const profiles = await fetchProfiles(userIds);
 
-      // Fetch reply-to messages
-      const replyIds = reversed.filter((m) => m.reply_to_id).map((m) => m.reply_to_id);
-      let replyMap: Record<string, SpaceMessage> = {};
+      // First pass: enrich all messages
+      const enrichedMessages: SpaceMessage[] = [];
+      for (const m of reversed) {
+        const enriched = await enrichMessage(m, profiles);
+        enrichedMessages.push(enriched);
+      }
 
+      // Second pass: resolve reply_to_id references
+      const replyIds = reversed.filter((m) => m.reply_to_id).map((m) => m.reply_to_id!);
       if (replyIds.length > 0) {
         const { data: replyData } = await supabase
           .from("space_messages")
@@ -126,10 +157,18 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
           await fetchProfiles(replyUserIds);
 
           for (const r of replyData) {
-            replyMap[r.id] = await enrichMessage(r, profileMapRef.current);
+            if (!messagesMapRef.current[r.id]) {
+              await enrichMessage(r, profileMapRef.current);
+            }
           }
         }
       }
+
+      // Add replyToMessage references
+      const finalMessages = enrichedMessages.map((m) => ({
+        ...m,
+        replyToMessage: m.reply_to_id ? messagesMapRef.current[m.reply_to_id] || null : null,
+      }));
 
       // Fetch read receipts for own messages
       const ownMessageIds = reversed.filter((m) => m.sender_id === userId).map((m) => m.id);
@@ -144,16 +183,16 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
             readReceiptsRef.current[r.message_id] = (readReceiptsRef.current[r.message_id] || 0) + 1;
           }
         });
+
+        // Update read counts in final messages
+        finalMessages.forEach((m, idx) => {
+          if (readReceiptsRef.current[m.id]) {
+            finalMessages[idx] = { ...m, readCount: readReceiptsRef.current[m.id] };
+          }
+        });
       }
 
-      const enriched = await Promise.all(
-        reversed.map(async (m) => ({
-          ...(await enrichMessage(m, profiles)),
-          replyToMessage: m.reply_to_id ? replyMap[m.reply_to_id] : null,
-        }))
-      );
-
-      setMessages(enriched);
+      setMessages(finalMessages);
       hasFetchedRef.current = true;
     } catch (err) {
       console.error("Error fetching messages:", err);
@@ -161,6 +200,55 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
       setIsInitialLoading(false);
     }
   }, [spaceId, userId, fetchProfiles, enrichMessage]);
+
+  // Upload single file with retries
+  const uploadFileWithRetry = useCallback(async (
+    file: File,
+    messageId: string,
+    fileId: string,
+    onProgress: (fileId: string, progress: number) => void
+  ): Promise<SpaceMessageAttachment | null> => {
+    if (file.size > MAX_FILE_SIZE) {
+      throw new Error(`File too large: ${file.name} (max ${MAX_FILE_SIZE / 1024 / 1024}MB)`);
+    }
+
+    const sanitized = sanitizeFilename(file.name);
+    const path = `spaces/${spaceId}/messages/${messageId}/${crypto.randomUUID()}-${sanitized}`;
+
+    let lastError: Error | null = null;
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        // Get the file as blob with correct type
+        const blob = new Blob([await file.arrayBuffer()], { type: file.type || "application/octet-stream" });
+        
+        const { error: uploadError } = await supabase.storage
+          .from("space-chat-files")
+          .upload(path, blob, {
+            contentType: file.type || "application/octet-stream",
+            upsert: false,
+          });
+
+        if (uploadError) throw uploadError;
+
+        onProgress(fileId, 100);
+        return {
+          path,
+          mime: file.type || "application/octet-stream",
+          name: file.name,
+          size: file.size,
+        };
+      } catch (err) {
+        lastError = err as Error;
+        if (attempt < MAX_RETRIES) {
+          // Wait before retry
+          await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+          onProgress(fileId, 30 * (attempt + 1));
+        }
+      }
+    }
+
+    throw lastError || new Error("Upload failed");
+  }, [spaceId]);
 
   // Send message with optimistic UI
   const sendMessage = useCallback(
@@ -188,7 +276,7 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
         senderName: profileMapRef.current[userId]?.name || "You",
         senderAvatar: profileMapRef.current[userId]?.avatar || undefined,
         status: "sending",
-        replyToMessage: replyToMessage || null,
+        replyToMessage: replyToMessage || (replyToId ? messagesMapRef.current[replyToId] : null),
       };
 
       setMessages((prev) => [...prev, optimisticMsg]);
@@ -225,7 +313,7 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
     [spaceId, userId]
   );
 
-  // Upload and send
+  // Upload and send with robust error handling
   const uploadAndSend = useCallback(
     async (files: FileList, content: string, replyToId?: string, replyToMessage?: SpaceMessage) => {
       if (!spaceId || !userId || files.length === 0) return;
@@ -233,39 +321,147 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
       setIsUploading(true);
       setUploadProgress(0);
 
-      const attachments: SpaceMessageAttachment[] = [];
+      // Generate a temporary message ID for the path
+      const tempMessageId = crypto.randomUUID();
+      const clientId = generateClientId();
+      
+      // Initialize uploading files state
+      const uploadingFilesInit: UploadingFile[] = Array.from(files).map((f, i) => ({
+        id: `file-${i}`,
+        name: f.name,
+        progress: 0,
+        status: "uploading" as const,
+      }));
+      setUploadingFiles(uploadingFilesInit);
+
+      const successfulAttachments: SpaceMessageAttachment[] = [];
+      const failedFiles: string[] = [];
+
+      // Create optimistic message immediately
+      pendingClientIdsRef.current.add(clientId);
+      const optimisticMsg: SpaceMessage = {
+        id: `temp-${clientId}`,
+        sender_id: userId,
+        content,
+        type: "file",
+        created_at: new Date().toISOString(),
+        reply_to_id: replyToId || null,
+        attachments: null, // Will update as files upload
+        client_id: clientId,
+        deleted_at: null,
+        senderName: profileMapRef.current[userId]?.name || "You",
+        senderAvatar: profileMapRef.current[userId]?.avatar || undefined,
+        status: "sending",
+        replyToMessage: replyToMessage || (replyToId ? messagesMapRef.current[replyToId] : null),
+      };
+      setMessages((prev) => [...prev, optimisticMsg]);
+
+      const updateFileProgress = (fileId: string, progress: number) => {
+        setUploadingFiles((prev) =>
+          prev.map((f) => (f.id === fileId ? { ...f, progress } : f))
+        );
+        // Update overall progress
+        const totalProgress = uploadingFilesInit.reduce((acc, f, i) => {
+          const current = uploadingFilesInit.find((uf) => uf.id === f.id);
+          return acc + (current?.progress || 0);
+        }, 0);
+        setUploadProgress(Math.round(totalProgress / files.length));
+      };
 
       try {
         for (let i = 0; i < files.length; i++) {
           const file = files[i];
-          const now = new Date();
-          const path = `${spaceId}/${userId}/${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, "0")}/${crypto.randomUUID()}_${file.name}`;
+          const fileId = `file-${i}`;
 
-          const { error: uploadError } = await supabase.storage
-            .from("space-chat-files")
-            .upload(path, file);
-
-          if (uploadError) throw uploadError;
-
-          attachments.push({
-            path,
-            mime: file.type,
-            name: file.name,
-            size: file.size,
-          });
-
-          setUploadProgress(Math.round(((i + 1) / files.length) * 100));
+          try {
+            const attachment = await uploadFileWithRetry(file, tempMessageId, fileId, updateFileProgress);
+            if (attachment) {
+              successfulAttachments.push(attachment);
+              setUploadingFiles((prev) =>
+                prev.map((f) => (f.id === fileId ? { ...f, status: "done", progress: 100 } : f))
+              );
+            }
+          } catch (err: any) {
+            failedFiles.push(file.name);
+            setUploadingFiles((prev) =>
+              prev.map((f) =>
+                f.id === fileId ? { ...f, status: "failed", error: err.message } : f
+              )
+            );
+          }
         }
 
-        await sendMessage(content, replyToId, attachments, replyToMessage);
+        if (successfulAttachments.length > 0) {
+          // Get signed URLs for optimistic display
+          const attachmentsWithUrls = await getSignedUrls(successfulAttachments);
+          
+          // Update optimistic message with attachments
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === `temp-${clientId}`
+                ? { ...m, attachments: attachmentsWithUrls, type: attachmentsWithUrls[0].mime.startsWith("image/") ? "image" : "file" }
+                : m
+            )
+          );
+
+          // Insert into DB
+          const msgType = successfulAttachments[0].mime.startsWith("image/") ? "image" : "file";
+          const { error } = await supabase.from("space_messages").insert({
+            space_id: spaceId,
+            sender_id: userId,
+            content: content || null,
+            type: msgType,
+            reply_to_id: replyToId || null,
+            attachments: successfulAttachments as any,
+            client_id: clientId,
+          });
+
+          if (error) throw error;
+        } else if (failedFiles.length > 0) {
+          // All files failed
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === `temp-${clientId}` ? { ...m, status: "failed" as const } : m
+            )
+          );
+          pendingClientIdsRef.current.delete(clientId);
+        }
       } catch (err) {
         console.error("Error uploading files:", err);
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === `temp-${clientId}` ? { ...m, status: "failed" as const } : m
+          )
+        );
+        pendingClientIdsRef.current.delete(clientId);
       } finally {
         setIsUploading(false);
         setUploadProgress(0);
+        // Clear uploading files after a delay
+        setTimeout(() => setUploadingFiles([]), 2000);
       }
     },
-    [spaceId, userId, sendMessage]
+    [spaceId, userId, uploadFileWithRetry, getSignedUrls]
+  );
+
+  // Retry failed message
+  const retryMessage = useCallback(
+    async (messageId: string) => {
+      const message = messages.find((m) => m.id === messageId);
+      if (!message || message.status !== "failed") return;
+
+      // Remove the failed message
+      setMessages((prev) => prev.filter((m) => m.id !== messageId));
+
+      // Resend
+      if (message.attachments && message.attachments.length > 0) {
+        // For attachment messages, we can't retry upload, just show error
+        console.warn("Cannot retry attachment uploads");
+      } else {
+        await sendMessage(message.content || "", message.reply_to_id || undefined, undefined, message.replyToMessage || undefined);
+      }
+    },
+    [messages, sendMessage]
   );
 
   // Delete message (soft delete)
@@ -381,7 +577,7 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
             const enriched = await enrichMessage(newMsg, profileMapRef.current);
             setMessages((prev) => {
               const filtered = prev.filter((m) => m.id !== `temp-${newMsg.client_id}`);
-              return [...filtered, { ...enriched, status: "sent" }];
+              return [...filtered, { ...enriched, status: "sent", replyToMessage: messagesMapRef.current[newMsg.reply_to_id] || null }];
             });
           } else {
             // New message from someone else
@@ -391,7 +587,7 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
             setMessages((prev) => {
               // Dedupe by id
               if (prev.some((m) => m.id === newMsg.id)) return prev;
-              return [...prev, { ...enriched, status: "sent" }];
+              return [...prev, { ...enriched, status: "sent", replyToMessage: messagesMapRef.current[newMsg.reply_to_id] || null }];
             });
           }
         }
@@ -481,6 +677,7 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
     setIsInitialLoading(true);
     profileMapRef.current = {};
     readReceiptsRef.current = {};
+    messagesMapRef.current = {};
     pendingClientIdsRef.current.clear();
   }, [spaceId]);
 
@@ -490,8 +687,10 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
     isSending,
     isUploading,
     uploadProgress,
+    uploadingFiles,
     sendMessage,
     uploadAndSend,
+    retryMessage,
     deleteMessage,
     markAsRead,
     getMessageReaders,
