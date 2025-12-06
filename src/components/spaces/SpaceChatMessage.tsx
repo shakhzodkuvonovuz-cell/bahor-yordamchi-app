@@ -172,14 +172,32 @@ export default function SpaceChatMessage({
     }
   }, []);
 
-  // Get signed URL for attachment
-  const getSignedUrl = async (path: string): Promise<string | null> => {
-    const { data, error } = await supabase.storage
-      .from("space-chat-files")
-      .createSignedUrl(path, 60 * 10); // 10 minutes
-    
-    if (error || !data?.signedUrl) return null;
-    return data.signedUrl;
+  // Get signed URL for attachment via edge function (for proper auth)
+  const getSignedUrlViaEdge = async (path: string, spaceId: string): Promise<string | null> => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) return null;
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/space-file-signed-url`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ path, space_id: spaceId }),
+        }
+      );
+
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data.signedUrl || null;
+    } catch (err) {
+      console.error('Error getting signed URL:', err);
+      return null;
+    }
   };
 
   const renderAttachments = () => {
