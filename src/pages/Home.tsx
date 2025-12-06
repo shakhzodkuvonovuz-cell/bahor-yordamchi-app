@@ -124,9 +124,9 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <LanguageSwitcher variant="compact" />
             <button
-              onClick={() => navigate("/spaces")}
+              onClick={() => navigate("/circles")}
               className="p-2.5 hover:bg-secondary rounded-xl transition-colors"
-              aria-label="Spaces"
+              aria-label="Circles"
             >
               <Users className="w-5 h-5 text-muted-foreground" />
             </button>

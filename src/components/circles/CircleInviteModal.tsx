@@ -110,7 +110,7 @@ export default function SpaceInviteModal({
     }
   };
 
-  const inviteLink = inviteCode ? `${window.location.origin}/spaces/invite/${inviteCode}` : "";
+  const inviteLink = inviteCode ? `${window.location.origin}/circles/invite/${inviteCode}` : "";
 
   const copyLink = () => {
     if (!inviteCode) return;
@@ -125,14 +125,14 @@ export default function SpaceInviteModal({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {language === "uz" ? "Xonaga taklif qilish" : "Invite to Space"}
+            {language === "uz" ? "Doiraga taklif qilish" : "Invite to Circle"}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <p className="text-sm text-muted-foreground">
             {language === "uz"
-              ? `"${spaceName}" xonasiga qo'shilish uchun ushbu linkni ulashing. Har bir kishi avval tasdiqlanishi kerak.`
+              ? `"${spaceName}" doirasiga qo'shilish uchun ushbu linkni ulashing. Har bir kishi avval tasdiqlanishi kerak.`
               : `Share this link to invite people to "${spaceName}". Each person must be approved before joining.`}
           </p>
 

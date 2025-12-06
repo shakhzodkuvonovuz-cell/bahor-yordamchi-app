@@ -2,9 +2,9 @@ import { useState, useRef, useEffect, useCallback, memo } from "react";
 import { ChevronDown, Users, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/i18n/LanguageProvider";
-import { useSpaceChat } from "@/hooks/useSpaceChat";
-import SpaceChatMessage, { type SpaceMessage } from "./SpaceChatMessage";
-import SpaceChatInput from "./SpaceChatInput";
+import { useCircleChat } from "@/hooks/useCircleChat";
+import CircleChatMessage, { type CircleMessage, type SpaceMessage } from "./CircleChatMessage";
+import CircleChatInput from "./CircleChatInput";
 import BahorContextPicker from "./BahorContextPicker";
 import { type PendingAttachment } from "./PendingAttachments";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,21 +13,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
-interface SpaceChatTabProps {
+interface CircleChatTabProps {
   spaceId: string;
 }
 
-const MemoizedMessage = memo(SpaceChatMessage);
+const MemoizedMessage = memo(CircleChatMessage);
 
-function hasBahorHintBeenSeen(spaceId: string, userId: string): boolean {
-  return localStorage.getItem(`space_bahor_hint_seen_${spaceId}_${userId}`) === "true";
+function hasBahorHintBeenSeen(circleId: string, userId: string): boolean {
+  return localStorage.getItem(`circle_bahor_hint_seen_${circleId}_${userId}`) === "true";
 }
 
-function markBahorHintSeen(spaceId: string, userId: string): void {
-  localStorage.setItem(`space_bahor_hint_seen_${spaceId}_${userId}`, "true");
+function markBahorHintSeen(circleId: string, userId: string): void {
+  localStorage.setItem(`circle_bahor_hint_seen_${circleId}_${userId}`, "true");
 }
 
-export default function SpaceChatTab({ spaceId }: SpaceChatTabProps) {
+export default function CircleChatTab({ spaceId }: CircleChatTabProps) {
   const { user } = useAuth();
   const { language } = useTranslation();
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -37,10 +37,10 @@ export default function SpaceChatTab({ spaceId }: SpaceChatTabProps) {
   const {
     messages, isInitialLoading, isSending, isUploading,
     sendMessage, sendWithAttachments, deleteMessage, markAsRead, getMessageReaders,
-  } = useSpaceChat({ spaceId, userId: user?.id });
+  } = useCircleChat({ spaceId, userId: user?.id });
 
   const [messageInput, setMessageInput] = useState("");
-  const [replyTo, setReplyTo] = useState<SpaceMessage | null>(null);
+  const [replyTo, setReplyTo] = useState<CircleMessage | null>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [hasNewMessages, setHasNewMessages] = useState(false);
   const [showBahorPicker, setShowBahorPicker] = useState(false);
@@ -279,7 +279,7 @@ export default function SpaceChatTab({ spaceId }: SpaceChatTabProps) {
       )}
 
       <div className="flex-shrink-0 pb-[env(safe-area-inset-bottom)]">
-        <SpaceChatInput 
+        <CircleChatInput 
           value={messageInput} 
           onChange={setMessageInput} 
           onSend={handleSend} 
