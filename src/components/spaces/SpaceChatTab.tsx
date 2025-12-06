@@ -137,28 +137,97 @@ export default function SpaceChatTab({ spaceId }: SpaceChatTabProps) {
 
   if (isInitialLoading) {
     return (
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto"><div className="max-w-2xl mx-auto px-4 py-4 space-y-3">
-          {[1, 2, 3, 4].map((i) => (<div key={i} className={cn("flex", i % 2 === 0 ? "justify-end" : "justify-start")}>{i % 2 !== 0 && <Skeleton className="w-8 h-8 rounded-full mr-2" />}<div className="space-y-1"><Skeleton className={cn("h-10 rounded-2xl", i % 2 === 0 ? "w-48" : "w-56")} /><Skeleton className="h-3 w-12" /></div></div>))}
-        </div></div>
-        <div className="border-t border-border bg-background/80 backdrop-blur-lg"><div className="max-w-2xl mx-auto px-4 py-3"><Skeleton className="h-11 w-full rounded-xl" /></div></div>
+      <div className="h-full flex flex-col overflow-hidden">
+        {/* Messages skeleton */}
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="max-w-2xl mx-auto px-4 py-4 space-y-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className={cn("flex", i % 2 === 0 ? "justify-end" : "justify-start")}>
+                {i % 2 !== 0 && <Skeleton className="w-8 h-8 rounded-full mr-2" />}
+                <div className="space-y-1">
+                  <Skeleton className={cn("h-10 rounded-2xl", i % 2 === 0 ? "w-48" : "w-56")} />
+                  <Skeleton className="h-3 w-12" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Input skeleton */}
+        <div className="flex-shrink-0 border-t border-border bg-background/80 backdrop-blur-lg pb-[env(safe-area-inset-bottom)]">
+          <div className="max-w-2xl mx-auto px-4 py-3">
+            <Skeleton className="h-11 w-full rounded-xl" />
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto" onScroll={handleScroll}>
+    <div className="h-full flex flex-col overflow-hidden relative">
+      {/* Messages scroller - only this scrolls */}
+      <div 
+        ref={messagesContainerRef} 
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain"
+        style={{ WebkitOverflowScrolling: "touch" }}
+        onScroll={handleScroll}
+      >
         <div className="max-w-2xl mx-auto px-4 py-4 space-y-3">
-          {messages.length === 0 ? (<div className="text-center py-12 text-muted-foreground">{language === "uz" ? "Hali xabarlar yo'q" : "No messages yet"}</div>) : messages.map((msg) => (<MemoizedMessage key={msg.id} message={msg} onReply={setReplyTo} onDelete={deleteMessage} onViewReaders={handleViewReaders} language={language} />))}
+          {messages.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              {language === "uz" ? "Hali xabarlar yo'q" : "No messages yet"}
+            </div>
+          ) : (
+            messages.map((msg) => (
+              <MemoizedMessage 
+                key={msg.id} 
+                message={msg} 
+                onReply={setReplyTo} 
+                onDelete={deleteMessage} 
+                onViewReaders={handleViewReaders} 
+                language={language} 
+              />
+            ))
+          )}
           <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {showInlineHint && <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-10 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm text-primary animate-fade-in">/bahor — AI javob beradi</div>}
-      {showScrollButton && <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-10"><button onClick={() => scrollToBottom()} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground shadow-lg"><ChevronDown className="w-4 h-4" />{hasNewMessages ? (language === "uz" ? "Yangi xabarlar" : "New messages") : "↓"}</button></div>}
+      {/* Inline hint - positioned above input */}
+      {showInlineHint && (
+        <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-10 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm text-primary animate-fade-in">
+          /bahor — AI javob beradi
+        </div>
+      )}
 
-      <SpaceChatInput value={messageInput} onChange={setMessageInput} onSend={handleSend} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} disabled={isSending} uploading={isUploading} uploadProgress={uploadProgress} uploadingFiles={uploadingFiles} onFileSelect={handleFileSelect} language={language} />
+      {/* Scroll to bottom button */}
+      {showScrollButton && (
+        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-10">
+          <button 
+            onClick={() => scrollToBottom()} 
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground shadow-lg"
+          >
+            <ChevronDown className="w-4 h-4" />
+            {hasNewMessages ? (language === "uz" ? "Yangi xabarlar" : "New messages") : "↓"}
+          </button>
+        </div>
+      )}
+
+      {/* Input area - fixed at bottom, never scrolls */}
+      <div className="flex-shrink-0 pb-[env(safe-area-inset-bottom)]">
+        <SpaceChatInput 
+          value={messageInput} 
+          onChange={setMessageInput} 
+          onSend={handleSend} 
+          replyTo={replyTo} 
+          onCancelReply={() => setReplyTo(null)} 
+          disabled={isSending} 
+          uploading={isUploading} 
+          uploadProgress={uploadProgress} 
+          uploadingFiles={uploadingFiles} 
+          onFileSelect={handleFileSelect} 
+          language={language} 
+        />
+      </div>
 
       <Dialog open={showBahorHint} onOpenChange={setShowBahorHint}>
         <DialogContent className="max-w-sm"><DialogHeader><DialogTitle className="flex items-center gap-2"><Sparkles className="w-5 h-5 text-primary" />/bahor nima?</DialogTitle></DialogHeader>
