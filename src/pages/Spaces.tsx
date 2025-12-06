@@ -36,7 +36,10 @@ export default function Spaces() {
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   const fetchSpaces = async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     
     try {
       // Get spaces where user is a member
@@ -46,7 +49,13 @@ export default function Spaces() {
         .eq("user_id", user.id)
         .eq("status", "active");
 
-      if (memberError) throw memberError;
+      if (memberError) {
+        console.error("Error fetching memberships:", memberError);
+        setSpaces([]);
+        setLoading(false);
+        return;
+      }
+      
       if (!memberships?.length) {
         setSpaces([]);
         setLoading(false);
@@ -62,7 +71,12 @@ export default function Spaces() {
         .select("id, name, template, goal")
         .in("id", spaceIds);
 
-      if (spaceError) throw spaceError;
+      if (spaceError) {
+        console.error("Error fetching spaces:", spaceError);
+        setSpaces([]);
+        setLoading(false);
+        return;
+      }
 
       // Get member counts
       const { data: counts, error: countError } = await supabase
@@ -71,7 +85,9 @@ export default function Spaces() {
         .in("space_id", spaceIds)
         .eq("status", "active");
 
-      if (countError) throw countError;
+      if (countError) {
+        console.error("Error fetching member counts:", countError);
+      }
 
       const countMap: Record<string, number> = {};
       counts?.forEach((c) => {
@@ -90,7 +106,6 @@ export default function Spaces() {
       setSpaces(formattedSpaces);
     } catch (err) {
       console.error("Error fetching spaces:", err);
-      toast.error("Xatolik yuz berdi");
     } finally {
       setLoading(false);
     }
