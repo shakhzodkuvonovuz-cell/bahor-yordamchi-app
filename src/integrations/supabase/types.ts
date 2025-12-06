@@ -348,6 +348,188 @@ export type Database = {
         }
         Relationships: []
       }
+      space_invites: {
+        Row: {
+          code: string
+          created_at: string | null
+          created_by: string
+          id: string
+          revoked: boolean | null
+          space_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          created_by: string
+          id?: string
+          revoked?: boolean | null
+          space_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          revoked?: boolean | null
+          space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_invites_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_join_requests: {
+        Row: {
+          created_at: string | null
+          id: string
+          invite_code: string
+          note: string | null
+          requester_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          space_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          invite_code: string
+          note?: string | null
+          requester_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          space_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          invite_code?: string
+          note?: string | null
+          requester_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          space_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_join_requests_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_members: {
+        Row: {
+          id: string
+          joined_at: string | null
+          role: string
+          space_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string | null
+          role?: string
+          space_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string | null
+          role?: string
+          space_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_members_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_messages: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          file_id: string | null
+          id: string
+          kind: string
+          sender_id: string
+          space_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          file_id?: string | null
+          id?: string
+          kind?: string
+          sender_id: string
+          space_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          file_id?: string | null
+          id?: string
+          kind?: string
+          sender_id?: string
+          space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_messages_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spaces: {
+        Row: {
+          created_at: string | null
+          goal: string | null
+          id: string
+          name: string
+          owner_id: string
+          template: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          goal?: string | null
+          id?: string
+          name: string
+          owner_id: string
+          template?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          goal?: string | null
+          id?: string
+          name?: string
+          owner_id?: string
+          template?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       usage_counters: {
         Row: {
           date: string
@@ -483,6 +665,8 @@ export type Database = {
         Args: { p_today: string; p_user_id: string }
         Returns: Json
       }
+      is_space_admin: { Args: { _space_id: string }; Returns: boolean }
+      is_space_member: { Args: { _space_id: string }; Returns: boolean }
       normalize_preview: {
         Args: { content: string; max_length?: number }
         Returns: string
