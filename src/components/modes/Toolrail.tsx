@@ -12,7 +12,7 @@ interface ToolrailItem {
 }
 
 const TOOLRAIL_ITEMS: ToolrailItem[] = [
-  { id: "home", icon: <Home className="w-5 h-5" />, label: "Asosiy", route: "/modes" },
+  { id: "home", icon: <Home className="w-5 h-5" />, label: "Bosh sahifa", route: "/modes" },
   { id: "chat", icon: <MessageCircle className="w-5 h-5" />, label: "Chat", route: "/chat/general" },
   { id: "tools", icon: <Wrench className="w-5 h-5" />, label: "Asboblar", route: "/tools/documents" },
   { id: "circles", icon: <Users className="w-5 h-5" />, label: "Doiralar", route: "/circles" },
