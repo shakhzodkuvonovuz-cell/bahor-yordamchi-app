@@ -12,20 +12,23 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 interface ActionRequest {
   circle_id: string;
-  type: "summary_20" | "summary_100" | "tasks" | "decisions" | "plan" | "meeting_notes";
+  type: "summary" | "tasks" | "decisions" | "plan" | "meeting_notes" | "issues";
+  scope?: number; // 30, 100, or 300
+  include_files?: boolean;
+  extra_note?: string;
 }
 
 const ACTION_TITLES: Record<string, string> = {
-  summary_20: "Xulosa (oxirgi 20 xabar)",
-  summary_100: "Xulosa (oxirgi 100 xabar)",
+  summary: "Xulosa",
   tasks: "Vazifalar",
   decisions: "Qarorlar",
   plan: "Reja",
   meeting_notes: "Uchrashuv bayonnomasi",
+  issues: "Muammolar va yechimlar",
 };
 
 const PROMPTS: Record<string, string> = {
-  summary_20: `Siz professional yordamchisiz. Quyidagi guruh suhbatidan qisqa va aniq xulosa chiqaring.
+  summary: `Siz professional yordamchisiz. Quyidagi guruh suhbatidan qisqa va aniq xulosa chiqaring.
 
 VAZIFA:
 - 5-10 ta asosiy nuqtani bullet point shaklida yozing
@@ -43,35 +46,6 @@ FORMAT:
 
 ### Muhim qarorlar:
 - [qaror 1]
-...
-
-### Ochiq savollar:
-- [savol 1]
-...`,
-
-  summary_100: `Siz professional yordamchisiz. Quyidagi guruh suhbatidan batafsil xulosa chiqaring.
-
-VAZIFA:
-- 10-15 ta asosiy nuqtani bullet point shaklida yozing
-- Muhim qarorlar va natijalarni batafsil ko'rsating
-- Hal qilinmagan masalalarni belgilang
-- Muhokama qilingan mavzularni guruhlab yozing
-- O'zbek tilida javob bering
-
-FORMAT:
-## 📋 Batafsil Xulosa
-
-### Mavzular bo'yicha:
-#### [Mavzu 1]
-- [nuqta]
-...
-
-### Asosiy qarorlar:
-- [qaror 1]
-...
-
-### Keyingi qadamlar:
-- [qadam 1]
 ...
 
 ### Ochiq savollar:
@@ -193,6 +167,37 @@ FORMAT:
 ---
 
 ### Keyingi uchrashuv: [agar aytilgan bo'lsa]`,
+
+  issues: `Siz professional muammolar tahlilchisisiz. Quyidagi guruh suhbatidan muammolar va ularning yechimlarini aniqlang.
+
+VAZIFA:
+- Muhokama qilingan muammolarni aniqlang
+- Har bir muammo uchun taklif qilingan yechimlarni yozing
+- Hal qilingan va hal qilinmagan muammolarni ajrating
+- O'zbek tilida javob bering
+
+FORMAT:
+## 🔧 Muammolar va yechimlar
+
+### Hal qilingan muammolar:
+#### [Muammo 1]
+- **Muammo:** [tavsif]
+- **Yechim:** [qabul qilingan yechim]
+- **Mas'ul:** [kim hal qildi/qiladi]
+...
+
+### Hal qilinmagan muammolar:
+#### [Muammo 1]
+- **Muammo:** [tavsif]
+- **Taklif qilingan yechimlar:**
+  - [Yechim varianti 1]
+  - [Yechim varianti 2]
+- **Keyingi qadam:** [nima qilish kerak]
+...
+
+### Kelajakda e'tibor berish kerak:
+- ⚠️ [Potensial muammo 1]
+...`,
 };
 
 serve(async (req) => {
@@ -225,7 +230,7 @@ serve(async (req) => {
     // Create service client for DB operations
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const { circle_id, type }: ActionRequest = await req.json();
+    const { circle_id, type, scope = 100, include_files = true, extra_note }: ActionRequest = await req.json();
 
     if (!circle_id || !type) {
       return new Response(JSON.stringify({ error: "Missing circle_id or type" }), {
@@ -250,8 +255,8 @@ serve(async (req) => {
       });
     }
 
-    // Determine message count based on type
-    const messageLimit = type === "summary_100" ? 100 : 20;
+    // Validate and normalize scope
+    const messageLimit = Math.min(Math.max(scope, 10), 300);
 
     // Fetch messages
     const { data: messages, error: msgError } = await supabase
@@ -278,7 +283,7 @@ serve(async (req) => {
     }
 
     if (!messages || messages.length === 0) {
-      return new Response(JSON.stringify({ error: "No messages found in this circle" }), {
+      return new Response(JSON.stringify({ error: "Bu doirada xabarlar yo'q" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -297,6 +302,22 @@ serve(async (req) => {
       profileMap[p.user_id] = name;
     });
 
+    // Optionally fetch file metadata if include_files is true
+    let filesContext = "";
+    if (include_files) {
+      const { data: files } = await supabase
+        .from("space_files")
+        .select("original_name, mime_type, created_at")
+        .eq("space_id", circle_id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      
+      if (files && files.length > 0) {
+        filesContext = "\n\n--- Biriktirilgan fayllar ---\n" + 
+          files.map(f => `- ${f.original_name} (${f.mime_type})`).join("\n");
+      }
+    }
+
     // Build context
     const sortedMessages = messages.reverse();
     const contextLines = sortedMessages.map(m => {
@@ -311,8 +332,14 @@ serve(async (req) => {
       return `[${time}] ${sender}: ${m.content || "(bo'sh xabar)"}${attachmentNote}`;
     });
 
-    const chatContext = contextLines.join("\n");
-    const systemPrompt = PROMPTS[type] || PROMPTS.summary_20;
+    let chatContext = contextLines.join("\n") + filesContext;
+    
+    // Add extra note if provided
+    if (extra_note) {
+      chatContext += `\n\n--- Qo'shimcha ko'rsatma ---\n${extra_note}`;
+    }
+
+    const systemPrompt = PROMPTS[type] || PROMPTS.summary;
 
     // Call AI
     if (!LOVABLE_API_KEY) {
@@ -322,7 +349,7 @@ serve(async (req) => {
       });
     }
 
-    console.log(`[circle-ai-actions] Generating ${type} for circle ${circle_id}, ${messages.length} messages`);
+    console.log(`[circle-ai-actions] Generating ${type} for circle ${circle_id}, ${messages.length} messages, scope=${scope}`);
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -336,7 +363,7 @@ serve(async (req) => {
           { role: "system", content: systemPrompt },
           { role: "user", content: `Quyidagi guruh suhbatini tahlil qiling:\n\n${chatContext}` },
         ],
-        max_tokens: 2000,
+        max_tokens: 2500,
       }),
     });
 
@@ -345,13 +372,20 @@ serve(async (req) => {
       console.error("AI error:", aiResponse.status, errText);
       
       if (aiResponse.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
+        return new Response(JSON.stringify({ error: "Limit tugadi. Keyinroq urinib ko'ring." }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       
-      return new Response(JSON.stringify({ error: "AI service error" }), {
+      if (aiResponse.status === 402) {
+        return new Response(JSON.stringify({ error: "AI xizmati uchun to'lov talab qilinadi." }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      
+      return new Response(JSON.stringify({ error: "AI xizmatida xatolik" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -361,7 +395,7 @@ serve(async (req) => {
     const generatedContent = aiData.choices?.[0]?.message?.content || "";
 
     if (!generatedContent) {
-      return new Response(JSON.stringify({ error: "AI returned empty response" }), {
+      return new Response(JSON.stringify({ error: "AI bo'sh javob qaytardi" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -376,7 +410,7 @@ serve(async (req) => {
         circle_id,
         creator_id: user.id,
         type,
-        title: ACTION_TITLES[type] || type,
+        title: `${ACTION_TITLES[type] || type} (${messages.length} xabar)`,
         content_md: generatedContent,
         source_message_count: messages.length,
         source_last_message_at: lastMessageAt,
@@ -386,7 +420,7 @@ serve(async (req) => {
 
     if (insertError) {
       console.error("Error saving card:", insertError);
-      return new Response(JSON.stringify({ error: "Failed to save card" }), {
+      return new Response(JSON.stringify({ error: "Saqlashda xatolik" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
