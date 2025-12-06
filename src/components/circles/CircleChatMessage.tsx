@@ -425,11 +425,11 @@ export default function CircleChatMessage({
 
         {/* Actions dropdown - visible on hover (desktop), always visible on mobile */}
         {!isSending && !isFailed && (
-          <div className="opacity-70 sm:opacity-50 group-hover:opacity-100 transition-opacity ml-1 self-center">
+          <div className="opacity-80 sm:opacity-60 group-hover:opacity-100 transition-opacity ml-1 self-center">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="p-2 min-w-[44px] min-h-[44px] rounded-lg hover:bg-secondary focus:bg-secondary flex items-center justify-center touch-manipulation">
-                  <MoreVertical className="w-5 h-5 text-foreground/70" />
+                <button className="p-2 min-w-[44px] min-h-[44px] rounded-lg bg-secondary/50 hover:bg-secondary focus:bg-secondary flex items-center justify-center touch-manipulation">
+                  <MoreVertical className="w-5 h-5 text-foreground/80" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align={isOwn ? "end" : "start"}>
