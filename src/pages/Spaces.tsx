@@ -185,7 +185,7 @@ export default function Spaces() {
               className="gap-1.5"
             >
               <Link2 className="w-4 h-4" />
-              {language === "uz" ? "Kod" : "Code"}
+              {language === "uz" ? "Kod kiritish" : "Enter Code"}
             </Button>
             <Button
               onClick={() => setShowCreateModal(true)}

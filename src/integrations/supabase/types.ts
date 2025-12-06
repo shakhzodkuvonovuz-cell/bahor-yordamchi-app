@@ -704,6 +704,7 @@ export type Database = {
         Args: { p_trial_days?: number; p_user_id: string }
         Returns: Json
       }
+      get_space_by_invite_code: { Args: { p_code: string }; Returns: Json }
       get_trial_status: { Args: { p_user_id: string }; Returns: Json }
       increment_daily_usage: {
         Args: { p_today: string; p_user_id: string }

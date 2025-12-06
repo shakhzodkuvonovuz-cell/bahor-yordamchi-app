@@ -13,12 +13,13 @@ interface SpaceInfo {
   id: string;
   name: string;
   template: string;
+  owner_name?: string;
 }
 
 export default function JoinSpace() {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { language } = useTranslation();
 
   const [loading, setLoading] = useState(true);
@@ -32,48 +33,71 @@ export default function JoinSpace() {
 
   useEffect(() => {
     const checkInvite = async () => {
-      if (!code || !user) return;
+      if (!code) return;
+
+      // Wait for auth to be determined
+      if (authLoading) return;
+
+      // If not logged in, don't fetch yet - show login prompt
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
       try {
-        // Find the invite
-        const { data: invite, error: inviteError } = await supabase
-          .from("space_invites")
-          .select("space_id, revoked")
-          .eq("code", code.toUpperCase())
-          .single();
+        // Use the RPC function to get space info by invite code
+        // This bypasses RLS and allows non-members to see basic space info
+        const { data: spaceResult, error: rpcError } = await supabase.rpc(
+          "get_space_by_invite_code",
+          { p_code: code.toUpperCase() }
+        );
 
-        if (inviteError || !invite) {
-          setError(language === "uz" ? "Taklif kodi topilmadi" : "Invite code not found");
+        if (rpcError) {
+          console.error("RPC error:", rpcError);
+          setError(language === "uz" ? "Xatolik yuz berdi" : "An error occurred");
           setLoading(false);
           return;
         }
 
-        if (invite.revoked) {
-          setError(language === "uz" ? "Bu taklif kodi bekor qilingan" : "This invite has been revoked");
+        // Handle RPC response
+        const result = spaceResult as { 
+          error?: string; 
+          id?: string; 
+          name?: string; 
+          template?: string;
+          owner_name?: string;
+        };
+
+        if (result.error === "invite_not_found") {
+          setError(language === "uz" ? "Taklif kodi topilmadi yoki bekor qilingan" : "Invite code not found or revoked");
           setLoading(false);
           return;
         }
 
-        // Get space info
-        const { data: spaceData, error: spaceError } = await supabase
-          .from("spaces")
-          .select("id, name, template")
-          .eq("id", invite.space_id)
-          .single();
-
-        if (spaceError || !spaceData) {
+        if (result.error === "space_not_found") {
           setError(language === "uz" ? "Xona topilmadi" : "Space not found");
           setLoading(false);
           return;
         }
 
-        setSpace(spaceData);
+        if (!result.id) {
+          setError(language === "uz" ? "Xatolik yuz berdi" : "An error occurred");
+          setLoading(false);
+          return;
+        }
+
+        setSpace({
+          id: result.id,
+          name: result.name || "Space",
+          template: result.template || "general",
+          owner_name: result.owner_name,
+        });
 
         // Check if already a member
         const { data: membership } = await supabase
           .from("space_members")
           .select("status")
-          .eq("space_id", spaceData.id)
+          .eq("space_id", result.id)
           .eq("user_id", user.id)
           .single();
 
@@ -89,8 +113,10 @@ export default function JoinSpace() {
         const { data: request } = await supabase
           .from("space_join_requests")
           .select("status")
-          .eq("space_id", spaceData.id)
+          .eq("space_id", result.id)
           .eq("requester_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
           .single();
 
         if (request) {
@@ -104,12 +130,8 @@ export default function JoinSpace() {
       }
     };
 
-    if (user) {
-      checkInvite();
-    } else {
-      setLoading(false);
-    }
-  }, [code, user, language]);
+    checkInvite();
+  }, [code, user, authLoading, language]);
 
   const handleSubmitRequest = async () => {
     if (!space || !user || !code) return;
@@ -132,6 +154,7 @@ export default function JoinSpace() {
       console.error("Error submitting request:", err);
       if (err.code === "23505") {
         toast.error(language === "uz" ? "Siz allaqachon so'rov yuborgansiz" : "You already submitted a request");
+        setExistingRequest("pending");
       } else {
         toast.error(language === "uz" ? "Xatolik yuz berdi" : "An error occurred");
       }
@@ -139,6 +162,15 @@ export default function JoinSpace() {
       setSubmitting(false);
     }
   };
+
+  // Wait for auth to be determined
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (!user) {
     return (
@@ -284,6 +316,11 @@ export default function JoinSpace() {
             {language === "uz" ? "Xonaga qo'shilish" : "Join Space"}
           </h1>
           <p className="text-2xl font-bold text-primary">{space?.name}</p>
+          {space?.owner_name && (
+            <p className="text-sm text-muted-foreground">
+              {language === "uz" ? "Yaratuvchi:" : "Owner:"} {space.owner_name}
+            </p>
+          )}
         </div>
 
         <div className="space-y-4 p-4 rounded-xl bg-card border border-border">
