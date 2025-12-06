@@ -1,8 +1,16 @@
 import { useRef } from "react";
-import { Send, Paperclip, Camera, X, Loader2 } from "lucide-react";
+import { Send, Paperclip, Camera, X, Loader2, AlertCircle, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { SpaceMessage } from "./SpaceChatMessage";
+
+interface UploadingFile {
+  id: string;
+  name: string;
+  progress: number;
+  status: "uploading" | "done" | "failed";
+  error?: string;
+}
 
 interface SpaceChatInputProps {
   value: string;
@@ -13,6 +21,7 @@ interface SpaceChatInputProps {
   disabled?: boolean;
   uploading?: boolean;
   uploadProgress?: number;
+  uploadingFiles?: UploadingFile[];
   onFileSelect: (files: FileList) => void;
   language: string;
 }
@@ -26,6 +35,7 @@ export default function SpaceChatInput({
   disabled,
   uploading,
   uploadProgress,
+  uploadingFiles = [],
   onFileSelect,
   language,
 }: SpaceChatInputProps) {
@@ -47,7 +57,7 @@ export default function SpaceChatInput({
   };
 
   return (
-    <div className="border-t border-border bg-background/80 backdrop-blur-lg">
+    <div className="border-t border-border bg-card/80 backdrop-blur-lg shadow-premium-md">
       {/* Reply preview */}
       {replyTo && (
         <div className="px-4 pt-2 max-w-2xl mx-auto">
@@ -58,15 +68,49 @@ export default function SpaceChatInput({
                 {replyTo.content?.slice(0, 60) || (language === "uz" ? "Rasm/Fayl" : "Image/File")}
               </p>
             </div>
-            <button onClick={onCancelReply} className="p-1 hover:bg-secondary rounded">
+            <button onClick={onCancelReply} className="p-1 hover:bg-secondary rounded transition-colors">
               <X className="w-4 h-4 text-muted-foreground" />
             </button>
           </div>
         </div>
       )}
 
-      {/* Upload progress */}
-      {uploading && (
+      {/* Upload progress with per-file status */}
+      {uploadingFiles.length > 0 && (
+        <div className="px-4 pt-2 max-w-2xl mx-auto space-y-1">
+          {uploadingFiles.map((file) => (
+            <div
+              key={file.id}
+              className={cn(
+                "flex items-center gap-2 p-2 rounded-lg text-xs",
+                file.status === "failed" ? "bg-destructive/10" : "bg-secondary/50"
+              )}
+            >
+              {file.status === "uploading" && (
+                <Loader2 className="w-3 h-3 animate-spin text-primary flex-shrink-0" />
+              )}
+              {file.status === "failed" && (
+                <AlertCircle className="w-3 h-3 text-destructive flex-shrink-0" />
+              )}
+              {file.status === "done" && (
+                <div className="w-3 h-3 rounded-full bg-primary flex-shrink-0" />
+              )}
+              <span className={cn("truncate flex-1", file.status === "failed" && "text-destructive")}>
+                {file.name}
+              </span>
+              {file.status === "uploading" && (
+                <span className="text-muted-foreground">{file.progress}%</span>
+              )}
+              {file.status === "failed" && file.error && (
+                <span className="text-destructive text-[10px]">{file.error}</span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Legacy single progress bar */}
+      {uploading && uploadingFiles.length === 0 && (
         <div className="px-4 pt-2 max-w-2xl mx-auto">
           <div className="flex items-center gap-2 p-2 rounded-lg bg-secondary/50">
             <Loader2 className="w-4 h-4 animate-spin text-primary" />
@@ -86,7 +130,7 @@ export default function SpaceChatInput({
               onClick={() => fileInputRef.current?.click()}
               disabled={disabled || uploading}
               className={cn(
-                "p-2.5 rounded-xl bg-secondary hover:bg-secondary/80 transition-colors",
+                "p-2.5 rounded-xl bg-secondary hover:bg-secondary/80 transition-all duration-200 hover:scale-105",
                 (disabled || uploading) && "opacity-50 cursor-not-allowed"
               )}
             >
@@ -96,7 +140,7 @@ export default function SpaceChatInput({
               onClick={() => cameraInputRef.current?.click()}
               disabled={disabled || uploading}
               className={cn(
-                "p-2.5 rounded-xl bg-secondary hover:bg-secondary/80 transition-colors",
+                "p-2.5 rounded-xl bg-secondary hover:bg-secondary/80 transition-all duration-200 hover:scale-105",
                 (disabled || uploading) && "opacity-50 cursor-not-allowed"
               )}
             >
@@ -115,6 +159,7 @@ export default function SpaceChatInput({
             className={cn(
               "flex-1 px-4 py-2.5 rounded-xl bg-secondary border-none outline-none text-foreground",
               "placeholder:text-muted-foreground resize-none min-h-[44px] max-h-[120px]",
+              "focus:ring-1 focus:ring-primary/30 transition-all duration-200",
               (disabled || uploading) && "opacity-50"
             )}
             style={{
@@ -133,7 +178,7 @@ export default function SpaceChatInput({
             onClick={onSend}
             disabled={(!value.trim() && !uploading) || disabled}
             size="icon"
-            className="rounded-xl h-11 w-11"
+            className="rounded-xl h-11 w-11 transition-all duration-200 hover:scale-105"
           >
             <Send className="w-5 h-5" />
           </Button>
