@@ -17,8 +17,9 @@ interface SpaceInviteModalProps {
 
 function generateCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const length = 8 + Math.floor(Math.random() * 5); // 8-12 chars
   let code = "";
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < length; i++) {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return code;
@@ -118,7 +119,7 @@ export default function SpaceInviteModal({
     toast.success(language === "uz" ? "Link nusxalandi" : "Link copied");
   };
 
-  const inviteLink = inviteCode ? `${window.location.origin}/join/${inviteCode}` : "";
+  const inviteLink = inviteCode ? `${window.location.origin}/invite/${inviteCode}` : "";
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
