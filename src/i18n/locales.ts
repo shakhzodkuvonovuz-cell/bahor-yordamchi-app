@@ -218,7 +218,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'thinking.reason.step3': "Sizga tushunarli va aniq javob tayyorlaymiz.",
     'thinking.reason.step4': "Javobni xatolardan tekshirib, tasdiqlaymiz.",
     
-    // Voice Mode
+    // Voice/Dictation
+    'voice.dictation': "Bosib ushlab gapiring",
     'voice.startVoice': "Ovozli rejim",
     'voice.listening': "Tinglayapman...",
     'voice.understanding': "Ovozingizni tushunmoqda...",
@@ -700,7 +701,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'thinking.reason.step3': "We prepare a clear and accurate answer for you.",
     'thinking.reason.step4': "We verify the answer for accuracy and completeness.",
     
-    // Voice Mode
+    // Voice/Dictation
+    'voice.dictation': "Hold to speak",
     'voice.startVoice': "Voice mode",
     'voice.listening': "Listening...",
     'voice.understanding': "Understanding your voice...",
@@ -1178,7 +1180,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'thinking.reason.step3': "Готовим понятный и точный ответ для вас.",
     'thinking.reason.step4': "Проверяем ответ на точность и полноту.",
     
-    // Voice Mode
+    // Voice/Dictation
+    'voice.dictation': "Удерживайте, чтобы говорить",
     'voice.startVoice': "Голосовой режим",
     'voice.listening': "Слушаю...",
     'voice.understanding': "Понимаю ваш голос...",
@@ -1656,7 +1659,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'thinking.reason.step3': "Size net ve doğru bir cevap hazırlıyoruz.",
     'thinking.reason.step4': "Cevabı doğruluk ve bütünlük açısından kontrol ediyoruz.",
     
-    // Voice Mode
+    // Voice/Dictation
+    'voice.dictation': "Konuşmak için basılı tutun",
     'voice.startVoice': "Sesli mod",
     'voice.listening': "Dinliyorum...",
     'voice.understanding': "Sesinizi anlıyorum...",

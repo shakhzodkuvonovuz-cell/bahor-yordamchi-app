@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n/LanguageProvider";
 
 interface VoiceModeButtonProps {
-  onClick: () => void;
   disabled?: boolean;
   className?: string;
   // Push-to-talk props
@@ -17,7 +16,6 @@ const LONG_PRESS_THRESHOLD = 180; // ms
 const CANCEL_DISTANCE = 80; // px
 
 export default function VoiceModeButton({ 
-  onClick, 
   disabled, 
   className,
   onDictationStart,
@@ -37,14 +35,14 @@ export default function VoiceModeButton({
     pressStartRef.current = { x: e.clientX, y: e.clientY };
     didStartDictationRef.current = false;
     
-    // Start timer for long press
+    // Start timer for long press - but also start immediately for push-to-talk feel
     pressTimerRef.current = window.setTimeout(() => {
       didStartDictationRef.current = true;
       onDictationStart?.();
     }, LONG_PRESS_THRESHOLD);
   }, [disabled, onDictationStart]);
   
-  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+  const handlePointerUp = useCallback(() => {
     setIsPressed(false);
     
     // Clear the timer
@@ -56,14 +54,14 @@ export default function VoiceModeButton({
     if (didStartDictationRef.current) {
       // Was a long press - end dictation
       onDictationEnd?.();
-    } else {
-      // Was a short tap - trigger voice mode
-      onClick();
+      // Haptic feedback on release
+      navigator.vibrate?.(10);
     }
+    // Short tap does nothing now (no separate voice mode page)
     
     pressStartRef.current = null;
     didStartDictationRef.current = false;
-  }, [onClick, onDictationEnd]);
+  }, [onDictationEnd]);
   
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     if (!pressStartRef.current || !didStartDictationRef.current) return;
@@ -105,7 +103,7 @@ export default function VoiceModeButton({
       onPointerCancel={handlePointerCancel}
       onPointerLeave={handlePointerCancel}
       disabled={disabled}
-      aria-label={t('voice.startVoice')}
+      aria-label={t('voice.dictation')}
       className={cn(
         // Base styles
         "relative flex items-center justify-center touch-none select-none",
@@ -116,10 +114,10 @@ export default function VoiceModeButton({
         
         // Hover & active states
         "hover:scale-105 hover:border-primary/50",
-        "hover:shadow-[0_0_30px_hsla(175,60%,50%,0.3)]",
+        "hover:shadow-[0_0_30px_hsla(var(--primary)/0.3)]",
         
         // Pressed / dictating state
-        (isPressed || isDictating) && "scale-110 border-primary/70 shadow-[0_0_40px_hsla(175,60%,50%,0.5)]",
+        (isPressed || isDictating) && "scale-110 border-primary/70 shadow-[0_0_40px_hsla(var(--primary)/0.5)]",
         isDictating && "animate-pulse",
         
         // Disabled state
@@ -157,7 +155,7 @@ export default function VoiceModeButton({
       
       {/* Tooltip on hover */}
       <span className="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-lg bg-card/90 backdrop-blur-sm border border-border/50 text-xs text-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
-        {t('voice.startVoice')}
+        {t('voice.dictation')}
       </span>
     </button>
   );

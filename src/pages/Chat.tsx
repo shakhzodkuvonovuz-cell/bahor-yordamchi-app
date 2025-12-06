@@ -7,7 +7,7 @@ import { DeleteChatModal } from "@/components/DeleteChatModal";
 import DailyUsageIndicator from "@/components/DailyUsageIndicator";
 import LimitReachedCard from "@/components/LimitReachedCard";
 
-import { VoiceModeButton, VoiceModePanel } from "@/components/voice";
+import { VoiceModeButton } from "@/components/voice";
 import {
   ScrollToBottom,
   FollowUpSuggestions,
@@ -193,7 +193,7 @@ export default function Chat() {
   const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<string | null>(null);
-  const [isVoiceModeOpen, setIsVoiceModeOpen] = useState(false);
+  // Voice mode panel removed - now using push-to-talk dictation only
   const [searchUsed, setSearchUsed] = useState(false);
   const [searchUrls, setSearchUrls] = useState<string[]>([]);
   const [failedMessageContent, setFailedMessageContent] = useState<string | null>(null);
@@ -1921,7 +1921,6 @@ export default function Chat() {
               </div>
               
               <VoiceModeButton
-                onClick={() => setIsVoiceModeOpen(true)}
                 disabled={isLoading || typing}
                 className="flex-shrink-0"
                 onDictationStart={handleDictationStart}
@@ -1965,16 +1964,6 @@ export default function Chat() {
         onCancel={() => setPendingDeleteThreadId(null)}
       />
 
-      {/* Voice Mode Panel */}
-      <VoiceModePanel
-        isOpen={isVoiceModeOpen}
-        onClose={() => setIsVoiceModeOpen(false)}
-        onTranscriptionComplete={(text) => {
-          setInputValue(text);
-          setIsVoiceModeOpen(false);
-          setTimeout(() => inputRef.current?.focus(), 100);
-        }}
-      />
 
       {/* Trace Sheet */}
       <TraceSheet
