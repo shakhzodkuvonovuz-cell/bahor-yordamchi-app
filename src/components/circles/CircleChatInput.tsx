@@ -84,7 +84,7 @@ export default function CircleChatInput({
   const canSend = value.trim().length > 0 || pendingAttachments.length > 0;
 
   return (
-    <div className="border-t border-border bg-card/80 backdrop-blur-lg shadow-premium-md">
+    <div className="border-t border-border bg-background/95 backdrop-blur-md">
       {/* Reply preview */}
       {replyTo && (
         <div className="px-4 pt-2 max-w-2xl mx-auto">

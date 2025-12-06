@@ -479,3 +479,53 @@ export function openHTMLPrintFallback(options: GeneratePDFOptions): void {
     }, 500);
   }
 }
+
+/**
+ * Export as Markdown (.md) text file - reliable fallback when PDF fails
+ * No encoding issues, preserves formatting
+ */
+export function downloadAsMarkdown(options: GeneratePDFOptions): void {
+  console.log('[AI_EXPORT] Downloading as Markdown...');
+  
+  const header = `# ${sanitizeEmojis(options.title)}\n\n> ${options.date}${options.messageCount ? ` • ${options.messageCount} xabar` : ''}\n\n---\n\n`;
+  const content = header + options.content;
+  
+  const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+  const filename = options.filename || `${sanitizeFilename(options.title)}-${new Date().toISOString().split('T')[0]}.md`;
+  
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  
+  console.log('[AI_EXPORT] Markdown download initiated:', filename);
+}
+
+/**
+ * Export as plain text (.txt) - most reliable fallback
+ */
+export function downloadAsText(options: GeneratePDFOptions): void {
+  console.log('[AI_EXPORT] Downloading as Text...');
+  
+  const sanitizedContent = sanitizeEmojis(options.content);
+  const header = `${sanitizeEmojis(options.title)}\n${options.date}${options.messageCount ? ` • ${options.messageCount} xabar` : ''}\n${'='.repeat(40)}\n\n`;
+  const content = header + sanitizedContent;
+  
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const filename = options.filename || `${sanitizeFilename(options.title)}-${new Date().toISOString().split('T')[0]}.txt`;
+  
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  
+  console.log('[AI_EXPORT] Text download initiated:', filename);
+}

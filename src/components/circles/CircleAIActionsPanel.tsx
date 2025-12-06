@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptics";
-import { downloadPDF, generatePDF, sanitizeFilename, openHTMLPrintFallback } from "@/lib/pdfGenerator";
+import { downloadPDF, generatePDF, sanitizeFilename, openHTMLPrintFallback, downloadAsMarkdown } from "@/lib/pdfGenerator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface CircleAIActionsPanelProps {
@@ -47,12 +47,12 @@ interface AICard {
 }
 
 const ACTION_OPTIONS: { type: ActionType; label: string; icon: React.ReactNode; description: string }[] = [
-  { type: "summary", label: "Xulosa", icon: <FileText className="h-5 w-5" />, description: "Suhbat xulosasi" },
-  { type: "tasks", label: "Vazifalar", icon: <CheckSquare className="h-5 w-5" />, description: "Topshiriqlar va mas'ullar" },
-  { type: "decisions", label: "Qarorlar", icon: <Target className="h-5 w-5" />, description: "Qarorlar va ochiq savollar" },
-  { type: "plan", label: "Reja", icon: <Calendar className="h-5 w-5" />, description: "Bosqichma-bosqich reja" },
-  { type: "meeting_notes", label: "Bayonnoma", icon: <ClipboardList className="h-5 w-5" />, description: "Uchrashuv bayonnomasi" },
-  { type: "issues", label: "Muammolar", icon: <AlertCircle className="h-5 w-5" />, description: "Muammolar va yechimlar" },
+  { type: "summary", label: "Xulosa", icon: <FileText className="h-4 w-4" />, description: "Suhbat xulosasi" },
+  { type: "tasks", label: "Vazifalar", icon: <CheckSquare className="h-4 w-4" />, description: "Topshiriqlar" },
+  { type: "decisions", label: "Qarorlar", icon: <Target className="h-4 w-4" />, description: "Qarorlar" },
+  { type: "plan", label: "Reja", icon: <Calendar className="h-4 w-4" />, description: "Bosqichma-bosqich" },
+  { type: "meeting_notes", label: "Bayonnoma", icon: <ClipboardList className="h-4 w-4" />, description: "Uchrashuv" },
+  { type: "issues", label: "Muammolar", icon: <AlertCircle className="h-4 w-4" />, description: "Yechimlar" },
 ];
 
 const FILTER_OPTIONS: { type: FilterType; label: string }[] = [
@@ -471,11 +471,11 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
         onValueChange={(v) => setActiveTab(v as "amallar" | "natijalar")}
         className="flex flex-col flex-1 overflow-hidden"
       >
-        {/* Compact Segmented Control */}
-        <div className="px-2 pt-1 pb-1.5 border-b border-border z-10">
+        {/* Compact Segmented Control - reduced padding */}
+        <div className="px-1.5 pt-0.5 pb-1 border-b border-border z-20">
           <div
             role="tablist"
-            className="relative grid grid-cols-2 h-9 bg-muted rounded-lg p-1"
+            className="relative grid grid-cols-2 h-8 bg-muted rounded-lg p-0.5"
           >
             {/* Sliding pill background */}
             <div
@@ -900,17 +900,33 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
                     </div>
                   </ScrollArea>
 
-                  {/* PDF Error State */}
+                  {/* PDF Error State with Fallback Options */}
                   {pdfError && (
                     <div className="px-2 py-1.5 bg-destructive/10 border-t border-destructive/20">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] text-destructive">PDF yaratilmadi</span>
+                        <span className="text-[10px] text-destructive truncate">PDF yaratilmadi</span>
                         <div className="flex gap-1">
                           <Button size="sm" variant="ghost" onClick={handleRetryPdf} className="h-6 px-2 text-[10px]">
                             Qayta
                           </Button>
                           <Button size="sm" variant="ghost" onClick={handleOpenHtmlFallback} className="h-6 px-2 text-[10px]">
-                            HTML/Print
+                            HTML
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            onClick={() => {
+                              const options = getPdfOptions();
+                              if (options) {
+                                downloadAsMarkdown(options);
+                                setPdfError(null);
+                                haptic("success");
+                                toast({ title: "Markdown yuklandi ✓" });
+                              }
+                            }} 
+                            className="h-6 px-2 text-[10px]"
+                          >
+                            .md
                           </Button>
                         </div>
                       </div>

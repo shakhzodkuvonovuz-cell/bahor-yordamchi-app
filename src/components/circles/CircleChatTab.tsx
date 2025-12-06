@@ -229,19 +229,20 @@ export default function CircleChatTab({ spaceId, onSendAICardRef }: CircleChatTa
     return (
       <div className="h-full flex flex-col overflow-hidden">
         <div className="flex-1 min-h-0 overflow-y-auto">
-          <div className="max-w-2xl mx-auto px-4 py-4 space-y-3">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className={cn("flex", i % 2 === 0 ? "justify-end" : "justify-start")}>
-                {i % 2 !== 0 && <Skeleton className="w-8 h-8 rounded-full mr-2" />}
-                <div className="space-y-1">
-                  <Skeleton className={cn("h-10 rounded-2xl", i % 2 === 0 ? "w-48" : "w-56")} />
-                  <Skeleton className="h-3 w-12" />
+          <div className="max-w-2xl mx-auto px-4 py-3 space-y-2.5">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className={cn("flex gap-2", i % 2 === 0 ? "justify-end" : "justify-start")}>
+                {i % 2 !== 0 && <Skeleton className="w-7 h-7 rounded-full flex-shrink-0" />}
+                <div className="space-y-1.5 max-w-[75%]">
+                  {i % 2 !== 0 && <Skeleton className="h-3 w-16" />}
+                  <Skeleton className={cn("h-12 rounded-2xl", i % 2 === 0 ? "w-40" : "w-48")} />
+                  <Skeleton className="h-2.5 w-10" />
                 </div>
               </div>
             ))}
           </div>
         </div>
-        <div className="flex-shrink-0 border-t border-border bg-background/80 backdrop-blur-lg pb-[env(safe-area-inset-bottom)]">
+        <div className="flex-shrink-0 border-t border-border bg-background/95 backdrop-blur-md" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
           <div className="max-w-2xl mx-auto px-4 py-3">
             <Skeleton className="h-11 w-full rounded-xl" />
           </div>
@@ -252,13 +253,14 @@ export default function CircleChatTab({ spaceId, onSendAICardRef }: CircleChatTa
 
   return (
     <div className="h-full flex flex-col overflow-hidden relative">
+      {/* Messages container - scrollable area */}
       <div 
         ref={messagesContainerRef} 
-        className="flex-1 min-h-0 overflow-y-auto overscroll-contain"
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain scroll-smooth"
         style={{ WebkitOverflowScrolling: "touch" }}
         onScroll={handleScroll}
       >
-        <div className="max-w-2xl mx-auto px-4 py-4 space-y-3">
+        <div className="max-w-2xl mx-auto px-4 py-3 space-y-2.5">
           {messages.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               {language === "uz" ? "Hali xabarlar yo'q" : "No messages yet"}
@@ -297,7 +299,15 @@ export default function CircleChatTab({ spaceId, onSendAICardRef }: CircleChatTa
         </div>
       )}
 
-      <div className="flex-shrink-0 pb-[env(safe-area-inset-bottom)]">
+      {/* Input container - sticky at bottom with safe area */}
+      <div 
+        className="flex-shrink-0 z-40 bg-background"
+        style={{ 
+          position: 'sticky', 
+          bottom: 0,
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)'
+        }}
+      >
         <CircleChatInput 
           value={messageInput} 
           onChange={setMessageInput} 
