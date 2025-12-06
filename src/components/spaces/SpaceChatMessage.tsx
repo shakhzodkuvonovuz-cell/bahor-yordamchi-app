@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sparkles, Reply, Copy, Trash2, Check, CheckCheck, MoreVertical, Image as ImageIcon, FileText } from "lucide-react";
+import { Sparkles, Reply, Copy, Trash2, Check, CheckCheck, MoreVertical, Image as ImageIcon, FileText, AlertCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -44,7 +44,7 @@ export interface SpaceMessage {
   senderAvatar?: string;
   replyToMessage?: SpaceMessage | null;
   readCount?: number;
-  status?: "sending" | "sent" | "read";
+  status?: "sending" | "sent" | "read" | "failed";
 }
 
 interface SpaceChatMessageProps {
@@ -68,6 +68,8 @@ export default function SpaceChatMessage({
   const isOwn = message.sender_id === user?.id && message.type !== "ai";
   const isAi = message.type === "ai";
   const isDeleted = !!message.deleted_at;
+  const isSending = message.status === "sending";
+  const isFailed = message.status === "failed";
   const hasAttachments = message.attachments && message.attachments.length > 0;
 
   const handleCopy = () => {
@@ -93,7 +95,7 @@ export default function SpaceChatMessage({
       <div className="space-y-2 mt-2">
         {message.attachments!.map((attachment, idx) => {
           const isImage = attachment.mime?.startsWith("image/");
-          
+
           if (isImage && attachment.signedUrl) {
             return (
               <a
@@ -151,11 +153,19 @@ export default function SpaceChatMessage({
     );
   };
 
-  const renderCheckmarks = () => {
-    if (!isOwn || message.status === "sending") {
-      return message.status === "sending" ? (
-        <span className="text-[10px] opacity-50">...</span>
-      ) : null;
+  const renderStatus = () => {
+    if (!isOwn) return null;
+
+    if (isSending) {
+      return <span className="text-[10px] opacity-50 animate-pulse">...</span>;
+    }
+
+    if (isFailed) {
+      return (
+        <span className="text-[10px] text-destructive flex items-center gap-0.5">
+          <AlertCircle className="w-3 h-3" />
+        </span>
+      );
     }
 
     const readCount = message.readCount || 0;
@@ -164,11 +174,12 @@ export default function SpaceChatMessage({
       <button
         onClick={() => readCount > 0 && onViewReaders?.(message.id)}
         className="inline-flex items-center gap-0.5 text-[10px] opacity-70 hover:opacity-100"
+        disabled={readCount === 0}
       >
         {readCount > 0 ? (
           <>
             <CheckCheck className="w-3 h-3 text-primary" />
-            {readCount > 0 && <span>({readCount})</span>}
+            <span>({readCount})</span>
           </>
         ) : (
           <Check className="w-3 h-3" />
@@ -189,7 +200,11 @@ export default function SpaceChatMessage({
 
   return (
     <>
-      <div className={cn("flex group", isAi ? "justify-start" : isOwn ? "justify-end" : "justify-start")}>
+      <div className={cn(
+        "flex group",
+        isAi ? "justify-start" : isOwn ? "justify-end" : "justify-start",
+        isSending && "opacity-70"
+      )}>
         {/* Avatar for others */}
         {!isOwn && !isAi && (
           <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center mr-2 flex-shrink-0 mt-1">
@@ -240,44 +255,46 @@ export default function SpaceChatMessage({
             {/* Attachments */}
             {renderAttachments()}
 
-            {/* Checkmarks for own messages */}
+            {/* Time and status */}
             <div className="flex items-center justify-end gap-1 mt-1">
               <span className="text-[10px] opacity-50">
                 {new Date(message.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
               </span>
-              {renderCheckmarks()}
+              {renderStatus()}
             </div>
           </div>
         </div>
 
-        {/* Actions dropdown */}
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity ml-1 self-center">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="p-1.5 rounded-lg hover:bg-secondary">
-                <MoreVertical className="w-4 h-4 text-muted-foreground" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align={isOwn ? "end" : "start"}>
-              {message.content && (
-                <DropdownMenuItem onClick={handleCopy}>
-                  <Copy className="w-4 h-4 mr-2" />
-                  {language === "uz" ? "Nusxa olish" : "Copy"}
+        {/* Actions dropdown - only show when not sending */}
+        {!isSending && !isFailed && (
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity ml-1 self-center">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="p-1.5 rounded-lg hover:bg-secondary">
+                  <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align={isOwn ? "end" : "start"}>
+                {message.content && (
+                  <DropdownMenuItem onClick={handleCopy}>
+                    <Copy className="w-4 h-4 mr-2" />
+                    {language === "uz" ? "Nusxa olish" : "Copy"}
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => onReply(message)}>
+                  <Reply className="w-4 h-4 mr-2" />
+                  {language === "uz" ? "Javob berish" : "Reply"}
                 </DropdownMenuItem>
-              )}
-              <DropdownMenuItem onClick={() => onReply(message)}>
-                <Reply className="w-4 h-4 mr-2" />
-                {language === "uz" ? "Javob berish" : "Reply"}
-              </DropdownMenuItem>
-              {isOwn && (
-                <DropdownMenuItem onClick={handleDelete} className="text-destructive">
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  {language === "uz" ? "O'chirish" : "Delete"}
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+                {isOwn && (
+                  <DropdownMenuItem onClick={handleDelete} className="text-destructive">
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    {language === "uz" ? "O'chirish" : "Delete"}
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
       </div>
 
       {/* Delete confirmation */}

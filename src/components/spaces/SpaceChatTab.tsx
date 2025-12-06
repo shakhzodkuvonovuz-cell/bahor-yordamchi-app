@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface SpaceChatTabProps {
   spaceId: string;
@@ -24,12 +25,13 @@ export default function SpaceChatTab({ spaceId }: SpaceChatTabProps) {
   const { language } = useTranslation();
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const prevMessagesLengthRef = useRef(0);
 
   const {
     messages,
-    loading,
-    sending,
-    uploading,
+    isInitialLoading,
+    isSending,
+    isUploading,
     uploadProgress,
     sendMessage,
     uploadAndSend,
@@ -53,7 +55,7 @@ export default function SpaceChatTab({ spaceId }: SpaceChatTabProps) {
   const [readers, setReaders] = useState<{ user_name?: string; user_avatar?: string; read_at: string }[]>([]);
   const [loadingReaders, setLoadingReaders] = useState(false);
 
-  // Track if user is near bottom
+  // Check if user is near bottom
   const isNearBottom = useCallback(() => {
     if (!messagesContainerRef.current) return true;
     const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
@@ -72,7 +74,7 @@ export default function SpaceChatTab({ spaceId }: SpaceChatTabProps) {
     const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
     const nearBottom = scrollHeight - scrollTop - clientHeight < 100;
     setShowScrollButton(!nearBottom);
-    
+
     if (nearBottom) {
       setHasNewMessages(false);
     }
@@ -80,7 +82,10 @@ export default function SpaceChatTab({ spaceId }: SpaceChatTabProps) {
 
   // Auto-scroll on new messages if near bottom
   useEffect(() => {
-    if (messages.length > 0) {
+    const newMessagesArrived = messages.length > prevMessagesLengthRef.current;
+    prevMessagesLengthRef.current = messages.length;
+
+    if (newMessagesArrived && messages.length > 0) {
       if (isNearBottom()) {
         scrollToBottom(false);
       } else {
@@ -98,6 +103,13 @@ export default function SpaceChatTab({ spaceId }: SpaceChatTabProps) {
       }
     }
   }, [messages, user?.id, isNearBottom, markAsRead]);
+
+  // Initial scroll to bottom after first load
+  useEffect(() => {
+    if (!isInitialLoading && messages.length > 0) {
+      scrollToBottom(false);
+    }
+  }, [isInitialLoading]);
 
   // Handle send
   const handleSend = async () => {
@@ -208,7 +220,7 @@ export default function SpaceChatTab({ spaceId }: SpaceChatTabProps) {
   const handleViewReaders = async (messageId: string) => {
     setShowReadersModal(true);
     setLoadingReaders(true);
-    
+
     try {
       const messageReaders = await getMessageReaders(messageId);
       setReaders(messageReaders);
@@ -219,11 +231,27 @@ export default function SpaceChatTab({ spaceId }: SpaceChatTabProps) {
     }
   };
 
-  if (loading) {
+  // Loading skeleton - only shown on initial load
+  if (isInitialLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="animate-pulse text-muted-foreground">
-          {language === "uz" ? "Yuklanmoqda..." : "Loading..."}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-2xl mx-auto px-4 py-4 space-y-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}>
+                {i % 2 !== 0 && <Skeleton className="w-8 h-8 rounded-full mr-2" />}
+                <div className="space-y-1">
+                  <Skeleton className={`h-10 ${i % 2 === 0 ? "w-48" : "w-56"} rounded-2xl`} />
+                  <Skeleton className="h-3 w-12" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="border-t border-border bg-background/80 backdrop-blur-lg">
+          <div className="max-w-2xl mx-auto px-4 py-3">
+            <Skeleton className="h-11 w-full rounded-xl" />
+          </div>
         </div>
       </div>
     );
@@ -284,8 +312,8 @@ export default function SpaceChatTab({ spaceId }: SpaceChatTabProps) {
         onSend={handleSend}
         replyTo={replyTo}
         onCancelReply={() => setReplyTo(null)}
-        disabled={sending}
-        uploading={uploading}
+        disabled={isSending}
+        uploading={isUploading}
         uploadProgress={uploadProgress}
         onFileSelect={handleFileSelect}
         language={language}
