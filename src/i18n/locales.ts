@@ -67,6 +67,19 @@ export const translations: Record<Lang, Record<string, string>> = {
     'mode.health.title': "Sog'liq va fitness",
     'mode.health.desc': "Salomatlik, ovqatlanish va sog'lom hayot tarzi bo'yicha maslahatlar.",
     
+    // Context Dock
+    'dock.title': 'Kontekst',
+    'dock.currentMode': 'Joriy rejim',
+    'dock.lastFile': 'Oxirgi fayl',
+    'dock.aiActions': 'AI Amallar',
+    'dock.summary': 'Xulosa',
+    'dock.tasks': 'Vazifalar',
+    'dock.plan': 'Reja',
+    'dock.decisions': 'Qarorlar',
+    'dock.circlesOnly': "Faqat Circles'da mavjud",
+    'dock.sources': 'Manbalar',
+    'dock.more': 'yana',
+    
     // How It Works Section
     'section.howItWorks': 'Bahor AI qanday ishlaydi',
     'section.howItWorks.subtitle': 'Uchta oddiy qadamda boshlang',
@@ -286,19 +299,6 @@ export const translations: Record<Lang, Record<string, string>> = {
     'settings.plan': 'rejasi',
     'settings.unlimited': 'Cheksiz',
     'settings.comingSoon': "Bu funksiya tez orada qo'shiladi",
-    
-    // Context Dock
-    'dock.title': 'Kontekst',
-    'dock.currentMode': 'Joriy rejim',
-    'dock.lastFile': 'Oxirgi fayl',
-    'dock.aiActions': 'AI Amallar',
-    'dock.summary': 'Xulosa',
-    'dock.tasks': 'Vazifalar',
-    'dock.plan': 'Reja',
-    'dock.decisions': 'Qarorlar',
-    'dock.sources': 'Manbalar',
-    'dock.more': 'yana',
-    'dock.circlesOnly': "Circles'da to'liq mavjud",
     'settings.logoutSuccess': 'Barcha qurilmalardan chiqdingiz',
     'settings.error': 'Xatolik yuz berdi',
     'settings.logoutError': 'Chiqishda xatolik yuz berdi',
@@ -628,6 +628,19 @@ export const translations: Record<Lang, Record<string, string>> = {
     'mode.health.title': 'Health & Fitness',
     'mode.health.desc': 'Get advice on wellness, nutrition, and healthy living.',
     
+    // Context Dock
+    'dock.title': 'Context',
+    'dock.currentMode': 'Current mode',
+    'dock.lastFile': 'Last file',
+    'dock.aiActions': 'AI Actions',
+    'dock.summary': 'Summary',
+    'dock.tasks': 'Tasks',
+    'dock.plan': 'Plan',
+    'dock.decisions': 'Decisions',
+    'dock.circlesOnly': 'Only available in Circles',
+    'dock.sources': 'Sources',
+    'dock.more': 'more',
+    
     // How It Works Section
     'section.howItWorks': 'How Bahor AI Works',
     'section.howItWorks.subtitle': 'Get started in three simple steps',
@@ -904,19 +917,6 @@ export const translations: Record<Lang, Record<string, string>> = {
     'settings.plan': 'plan',
     'settings.unlimited': 'Unlimited',
     'settings.comingSoon': 'This feature is coming soon',
-    
-    // Context Dock
-    'dock.title': 'Context',
-    'dock.currentMode': 'Current mode',
-    'dock.lastFile': 'Last file',
-    'dock.aiActions': 'AI Actions',
-    'dock.summary': 'Summary',
-    'dock.tasks': 'Tasks',
-    'dock.plan': 'Plan',
-    'dock.decisions': 'Decisions',
-    'dock.sources': 'Sources',
-    'dock.more': 'more',
-    'dock.circlesOnly': 'Full access in Circles',
     'settings.logoutSuccess': 'Logged out from all devices',
     'settings.error': 'An error occurred',
     'settings.logoutError': 'Error while logging out',
@@ -1180,6 +1180,19 @@ export const translations: Record<Lang, Record<string, string>> = {
     'mode.health.title': 'Здоровье и фитнес',
     'mode.health.desc': 'Советы по здоровью, питанию и здоровому образу жизни.',
     
+    // Context Dock
+    'dock.title': 'Контекст',
+    'dock.currentMode': 'Текущий режим',
+    'dock.lastFile': 'Последний файл',
+    'dock.aiActions': 'AI Действия',
+    'dock.summary': 'Итог',
+    'dock.tasks': 'Задачи',
+    'dock.plan': 'План',
+    'dock.decisions': 'Решения',
+    'dock.circlesOnly': 'Только в Circles',
+    'dock.sources': 'Источники',
+    'dock.more': 'ещё',
+    
     // How It Works Section
     'section.howItWorks': 'Как работает Bahor AI',
     'section.howItWorks.subtitle': 'Начните за три простых шага',
@@ -1396,19 +1409,6 @@ export const translations: Record<Lang, Record<string, string>> = {
     'settings.plan': 'план',
     'settings.unlimited': 'Безлимитно',
     'settings.comingSoon': 'Эта функция скоро появится',
-    
-    // Context Dock
-    'dock.title': 'Контекст',
-    'dock.currentMode': 'Текущий режим',
-    'dock.lastFile': 'Последний файл',
-    'dock.aiActions': 'AI Действия',
-    'dock.summary': 'Итог',
-    'dock.tasks': 'Задачи',
-    'dock.plan': 'План',
-    'dock.decisions': 'Решения',
-    'dock.sources': 'Источники',
-    'dock.more': 'ещё',
-    'dock.circlesOnly': 'Доступно в Circles',
     'settings.logoutSuccess': 'Вы вышли со всех устройств',
     'settings.error': 'Произошла ошибка',
     'settings.logoutError': 'Ошибка при выходе',
@@ -1672,6 +1672,19 @@ export const translations: Record<Lang, Record<string, string>> = {
     'mode.health.title': 'Sağlık ve Fitness',
     'mode.health.desc': 'Sağlık, beslenme ve sağlıklı yaşam hakkında tavsiyeler alın.',
     
+    // Context Dock
+    'dock.title': 'Bağlam',
+    'dock.currentMode': 'Mevcut mod',
+    'dock.lastFile': 'Son dosya',
+    'dock.aiActions': 'AI İşlemler',
+    'dock.summary': 'Özet',
+    'dock.tasks': 'Görevler',
+    'dock.plan': 'Plan',
+    'dock.decisions': 'Kararlar',
+    'dock.circlesOnly': "Sadece Circles'da",
+    'dock.sources': 'Kaynaklar',
+    'dock.more': 'daha',
+    
     // How It Works Section
     'section.howItWorks': 'Bahor AI Nasıl Çalışır',
     'section.howItWorks.subtitle': 'Üç basit adımda başlayın',
@@ -1888,19 +1901,6 @@ export const translations: Record<Lang, Record<string, string>> = {
     'settings.plan': 'plan',
     'settings.unlimited': 'Sınırsız',
     'settings.comingSoon': 'Bu özellik yakında gelecek',
-    
-    // Context Dock
-    'dock.title': 'Bağlam',
-    'dock.currentMode': 'Geçerli mod',
-    'dock.lastFile': 'Son dosya',
-    'dock.aiActions': 'AI İşlemler',
-    'dock.summary': 'Özet',
-    'dock.tasks': 'Görevler',
-    'dock.plan': 'Plan',
-    'dock.decisions': 'Kararlar',
-    'dock.sources': 'Kaynaklar',
-    'dock.more': 'daha',
-    'dock.circlesOnly': "Circles'da tam erişim",
     'settings.logoutSuccess': 'Tüm cihazlardan çıkış yapıldı',
     'settings.error': 'Bir hata oluştu',
     'settings.logoutError': 'Çıkış sırasında hata',
