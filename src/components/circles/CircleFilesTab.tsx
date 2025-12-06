@@ -21,7 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 
-interface SpaceFile {
+interface CircleFile {
   id: string;
   space_id: string;
   uploader_id: string;
@@ -34,7 +34,7 @@ interface SpaceFile {
   uploaderName?: string;
 }
 
-interface SpaceFilesTabProps {
+interface CircleFilesTabProps {
   spaceId: string;
   isAdmin: boolean;
 }
@@ -79,21 +79,21 @@ function isPreviewable(mimeType: string | null): boolean {
   return mimeType === "application/pdf" || mimeType.startsWith("image/");
 }
 
-export default function SpaceFilesTab({ spaceId, isAdmin }: SpaceFilesTabProps) {
+export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps) {
   const { user } = useAuth();
   const { language } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [files, setFiles] = useState<SpaceFile[]>([]);
+  const [files, setFiles] = useState<CircleFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
   // Preview modal
-  const [previewFile, setPreviewFile] = useState<SpaceFile | null>(null);
+  const [previewFile, setPreviewFile] = useState<CircleFile | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
 
   // Delete confirmation
-  const [deleteFile, setDeleteFile] = useState<SpaceFile | null>(null);
+  const [deleteFile, setDeleteFile] = useState<CircleFile | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const fetchFiles = async () => {
@@ -159,7 +159,7 @@ export default function SpaceFilesTab({ spaceId, isAdmin }: SpaceFilesTabProps) 
     setUploading(true);
     try {
       const uuid = crypto.randomUUID();
-      const storagePath = `spaces/${spaceId}/${user.id}/${uuid}-${file.name}`;
+      const storagePath = `circles/${spaceId}/${user.id}/${uuid}-${file.name}`;
 
       // Upload to storage
       const { error: uploadError } = await supabase.storage
@@ -191,7 +191,7 @@ export default function SpaceFilesTab({ spaceId, isAdmin }: SpaceFilesTabProps) 
     }
   };
 
-  const handleDownload = async (file: SpaceFile) => {
+  const handleDownload = async (file: CircleFile) => {
     try {
       const { data, error } = await supabase.storage
         .from("space-files")
@@ -227,7 +227,7 @@ export default function SpaceFilesTab({ spaceId, isAdmin }: SpaceFilesTabProps) 
     }
   };
 
-  const handlePreview = async (file: SpaceFile) => {
+  const handlePreview = async (file: CircleFile) => {
     try {
       const { data, error } = await supabase.storage
         .from("space-files")
@@ -274,7 +274,7 @@ export default function SpaceFilesTab({ spaceId, isAdmin }: SpaceFilesTabProps) 
     }
   };
 
-  const handleTogglePin = async (file: SpaceFile) => {
+  const handleTogglePin = async (file: CircleFile) => {
     try {
       const { error } = await supabase
         .from("space_files")
@@ -294,7 +294,7 @@ export default function SpaceFilesTab({ spaceId, isAdmin }: SpaceFilesTabProps) 
     }
   };
 
-  const canDelete = (file: SpaceFile) => file.uploader_id === user?.id || isAdmin;
+  const canDelete = (file: CircleFile) => file.uploader_id === user?.id || isAdmin;
 
   if (loading) {
     return <CircleTabSkeleton type="files" />;
