@@ -36,34 +36,60 @@ export default function CreateSpaceModal({ open, onClose, onCreated }: CreateSpa
   const [loading, setLoading] = useState(false);
 
   const handleCreate = async () => {
-    if (!user || !name.trim()) return;
+    // Check if user is authenticated
+    if (!user) {
+      toast.error(language === "uz" ? "Xona yaratish uchun kirish kerak" : "Please log in to create a space");
+      return;
+    }
+    
+    if (!name.trim()) {
+      toast.error(language === "uz" ? "Xona nomini kiriting" : "Please enter a space name");
+      return;
+    }
 
     setLoading(true);
     try {
+      // Verify session is still valid
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        toast.error(language === "uz" ? "Xona yaratish uchun kirish kerak" : "Please log in to create a space");
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("spaces")
         .insert({
           name: name.trim(),
           template,
           goal: goal.trim() || null,
-          owner_id: user.id,
+          owner_id: sessionData.session.user.id,
         })
         .select("id")
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Space creation error:", error);
+        if (error.code === '42501' || error.message?.includes('row-level security')) {
+          toast.error(language === "uz" ? "Xona yaratish uchun kirish kerak" : "Please log in to create a space");
+        } else {
+          toast.error(language === "uz" ? "Xatolik yuz berdi: " + error.message : "Error: " + error.message);
+        }
+        return;
+      }
 
       toast.success(language === "uz" ? "Xona yaratildi!" : "Space created!");
       setName("");
       setTemplate("general");
       setGoal("");
+      onClose();
       onCreated();
       
       // Navigate to the new space
       if (data?.id) {
         navigate(`/spaces/${data.id}`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error creating space:", err);
       toast.error(language === "uz" ? "Xatolik yuz berdi" : "Error occurred");
     } finally {
