@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptics";
-import { downloadPDF, generatePDF, sanitizeFilename } from "@/lib/pdfGenerator";
+import { downloadPDF, generatePDF, sanitizeFilename, openHTMLPrintFallback } from "@/lib/pdfGenerator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface CircleAIActionsPanelProps {
@@ -108,6 +108,7 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
   const [isSavingRename, setIsSavingRename] = useState(false);
   const [listExpanded, setListExpanded] = useState(false);
   const [searchExpanded, setSearchExpanded] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -359,31 +360,59 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
 
   /**
    * PDF Export using @react-pdf/renderer with proper Unicode support
-   * Note: The old jsPDF approach was removed because it had severe Unicode issues:
-   * - Emojis would render as garbage like "Ø=ÜA"
-   * - Some lines would have spaced-out letters
-   * - Uzbek special characters (o', g') wouldn't display correctly
+   * Includes HTML print fallback for maximum reliability
    */
+  const getPdfOptions = () => {
+    if (!selectedCard) return null;
+    return {
+      title: getDisplayTitle(selectedCard),
+      content: selectedCard.content_md,
+      date: formatDate(selectedCard.created_at),
+      messageCount: selectedCard.source_message_count,
+    };
+  };
+
   const handleExportPdf = async () => {
     if (!selectedCard) return;
     setGeneratingPdf(true);
+    setPdfError(null);
+    
     try {
-      const title = getDisplayTitle(selectedCard);
-      await downloadPDF({
-        title,
-        content: selectedCard.content_md,
-        date: formatDate(selectedCard.created_at),
-        messageCount: selectedCard.source_message_count,
-      });
+      const options = getPdfOptions();
+      if (!options) throw new Error("No content");
+      
+      console.log('[AI_PDF_EXPORT] Attempting PDF export...');
+      await downloadPDF(options);
 
       haptic("success");
       toast({ title: "PDF yuklandi ✓" });
     } catch (err) {
-      console.error("PDF error:", err);
-      toast({ title: "PDF yaratishda xatolik", variant: "destructive" });
+      console.error("[AI_PDF_EXPORT] PDF error:", err);
+      const errorMsg = err instanceof Error ? err.message : "Unknown error";
+      setPdfError(errorMsg);
+      haptic("error");
+      toast({ 
+        title: "PDF yaratilmadi", 
+        description: "Qayta urinib ko'ring yoki HTML versiyasini oching",
+        variant: "destructive" 
+      });
     } finally {
       setGeneratingPdf(false);
     }
+  };
+
+  const handleRetryPdf = () => {
+    setPdfError(null);
+    handleExportPdf();
+  };
+
+  const handleOpenHtmlFallback = () => {
+    const options = getPdfOptions();
+    if (!options) return;
+    openHTMLPrintFallback(options);
+    setPdfError(null);
+    haptic("light");
+    toast({ title: "HTML ochildi — Print orqali PDF saqlang" });
   };
 
   const handleSaveToFiles = async () => {
@@ -871,6 +900,23 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
                     </div>
                   </ScrollArea>
 
+                  {/* PDF Error State */}
+                  {pdfError && (
+                    <div className="px-2 py-1.5 bg-destructive/10 border-t border-destructive/20">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] text-destructive">PDF yaratilmadi</span>
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="ghost" onClick={handleRetryPdf} className="h-6 px-2 text-[10px]">
+                            Qayta
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={handleOpenHtmlFallback} className="h-6 px-2 text-[10px]">
+                            HTML/Print
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Compact Sticky Action Bar */}
                   <div className="flex items-center gap-1.5 px-2 py-1.5 border-t border-border bg-background/95 backdrop-blur-sm">
                     <Button size="sm" variant="outline" onClick={handleCopy} className="h-7 px-2 gap-1 text-xs flex-1">
@@ -885,17 +931,22 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
                     )}
                     <Button
                       size="sm"
-                      variant="outline"
+                      variant={pdfError ? "destructive" : "outline"}
                       onClick={handleExportPdf}
                       disabled={generatingPdf}
                       className="h-7 px-2 gap-1 text-xs flex-1"
                     >
                       {generatingPdf ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <>
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          <span className="hidden sm:inline">Tayyorlanmoqda</span>
+                        </>
                       ) : (
-                        <FileDown className="h-3 w-3" />
+                        <>
+                          <FileDown className="h-3 w-3" />
+                          PDF
+                        </>
                       )}
-                      PDF
                     </Button>
                     <Button
                       size="sm"
