@@ -325,9 +325,21 @@ serve(async (req) => {
       .gte("created_at", today);
 
     const dailyLimit = isPremium ? toolConfig.premiumDailyLimit : toolConfig.freeDailyLimit;
-    if (count !== null && count >= dailyLimit) {
+    const usedCount = count ?? 0;
+    
+    if (usedCount >= dailyLimit) {
       return new Response(
-        JSON.stringify({ ok: false, error: `Bugungi ${tool} limiti tugadi (${dailyLimit}/${dailyLimit})` }),
+        JSON.stringify({ 
+          ok: false, 
+          error: `Bugungi ${tool} limiti tugadi (${usedCount}/${dailyLimit})`,
+          type: "LIMIT_REACHED",
+          scope: "pdf_monthly",
+          used: usedCount,
+          limit: dailyLimit,
+          period: "daily",
+          resetText: "Ertaga qayta urinib ko'ring",
+          cta: "premium",
+        }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

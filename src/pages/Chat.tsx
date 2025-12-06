@@ -1766,7 +1766,13 @@ export default function Chat() {
               ))}
               
               {showLimitCard && hasReachedLimit && (
-                <LimitReachedCard onDismiss={() => setShowLimitCard(false)} />
+                <LimitReachedCard 
+                  onClose={() => setShowLimitCard(false)} 
+                  scope="chat_daily"
+                  used={usage?.used || 0}
+                  limit={usage?.limit || 5}
+                  period="daily"
+                />
               )}
               
               <div ref={messagesEndRef} className="h-4" />

@@ -12,6 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
+import ToolsUsageBadge from "@/components/ToolsUsageBadge";
+import LimitReachedSheet from "@/components/LimitReachedSheet";
 
 interface UserFile {
   id: string;
@@ -121,6 +123,8 @@ export default function DocumentTools() {
   const [filesLoading, setFilesLoading] = useState(true);
   const [activeFile, setActiveFile] = useState<UserFile | null>(null);
   const [showFileActions, setShowFileActions] = useState(false);
+  const [showLimitSheet, setShowLimitSheet] = useState(false);
+  const [limitData, setLimitData] = useState<{ used: number; limit: number } | null>(null);
   
   // Form states
   const [title, setTitle] = useState("");
@@ -555,13 +559,20 @@ export default function DocumentTools() {
       // Reload files
       await loadFiles();
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Document tool error:", error);
-      toast({
-        title: t("docs.error"),
-        description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive",
-      });
+      
+      // Check if it's a limit error from the response
+      if (error?.message?.includes('limiti tugadi') || error?.type === 'LIMIT_REACHED') {
+        setLimitData({ used: error.used || 0, limit: error.limit || 0 });
+        setShowLimitSheet(true);
+      } else {
+        toast({
+          title: t("docs.error"),
+          description: error instanceof Error ? error.message : "Unknown error",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -592,7 +603,7 @@ export default function DocumentTools() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-lg font-semibold">{t("docs.title")}</h1>
-          <div className="w-10" />
+          <ToolsUsageBadge />
         </div>
       </header>
 
@@ -1012,6 +1023,16 @@ export default function DocumentTools() {
           </TabsContent>
         </Tabs>
       </main>
+
+      <LimitReachedSheet
+        open={showLimitSheet}
+        onClose={() => setShowLimitSheet(false)}
+        reason="pdf_limit_reached"
+        message={t("docs.error") + " - " + (language === "uz" ? "Ertaga qayta urinib ko'ring yoki Premiumga o'ting" : "Try again tomorrow or upgrade to Premium")}
+        scope="pdf_monthly"
+        used={limitData?.used || 0}
+        limit={limitData?.limit || 0}
+      />
     </div>
   );
 }
