@@ -201,39 +201,45 @@ export type Database = {
       }
       circle_ai_cards: {
         Row: {
+          auto_title: string
           circle_id: string
           content_md: string
           created_at: string
           creator_id: string
           id: string
+          meta: Json
           pinned: boolean
           source_last_message_at: string | null
           source_message_count: number
-          title: string
+          title: string | null
           type: string
         }
         Insert: {
+          auto_title?: string
           circle_id: string
           content_md: string
           created_at?: string
           creator_id: string
           id?: string
+          meta?: Json
           pinned?: boolean
           source_last_message_at?: string | null
           source_message_count?: number
-          title: string
+          title?: string | null
           type: string
         }
         Update: {
+          auto_title?: string
           circle_id?: string
           content_md?: string
           created_at?: string
           creator_id?: string
           id?: string
+          meta?: Json
           pinned?: boolean
           source_last_message_at?: string | null
           source_message_count?: number
-          title?: string
+          title?: string | null
           type?: string
         }
         Relationships: [
