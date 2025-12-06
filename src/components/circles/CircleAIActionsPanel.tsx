@@ -118,7 +118,17 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || "Xatolik yuz berdi");
+        const errorMsg = errData.error || "Xatolik yuz berdi";
+        
+        // Better error messages based on status
+        if (response.status === 401) {
+          toast({ title: "Kirish kerak. Iltimos login qiling.", variant: "destructive" });
+        } else if (response.status === 403) {
+          toast({ title: "Siz bu doiraga a'zo emassiz yoki ruxsat yo'q.", variant: "destructive" });
+        } else {
+          toast({ title: errorMsg, variant: "destructive" });
+        }
+        return;
       }
 
       const { card } = await response.json();

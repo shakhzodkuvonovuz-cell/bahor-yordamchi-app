@@ -8,6 +8,7 @@ const corsHeaders = {
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 interface ActionRequest {
@@ -208,24 +209,31 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      console.error("[circle-ai-actions] No Authorization header");
+      return new Response(JSON.stringify({ error: "Kirish kerak. Iltimos login qiling." }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Create user client for auth
-    const supabaseUser = createClient(SUPABASE_URL, authHeader.replace("Bearer ", ""), {
+    // Create user client for auth verification using anon key + auth header
+    const supabaseUser = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: {
+        headers: { Authorization: authHeader },
+      },
       auth: { persistSession: false },
     });
 
     const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      console.error("[circle-ai-actions] Auth error:", authError?.message || "No user");
+      return new Response(JSON.stringify({ error: "Kirish kerak. Iltimos login qiling." }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    console.log(`[circle-ai-actions] Authenticated user: ${user.id}`);
 
     // Create service client for DB operations
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -249,11 +257,14 @@ serve(async (req) => {
       .single();
 
     if (memberError || !membership) {
-      return new Response(JSON.stringify({ error: "Not a member of this circle" }), {
+      console.error("[circle-ai-actions] Membership check failed:", memberError?.message || "Not a member");
+      return new Response(JSON.stringify({ error: "Siz bu doiraga a'zo emassiz yoki ruxsat yo'q." }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    console.log(`[circle-ai-actions] User ${user.id} is member of circle ${circle_id}`);
 
     // Validate and normalize scope
     const messageLimit = Math.min(Math.max(scope, 10), 300);
