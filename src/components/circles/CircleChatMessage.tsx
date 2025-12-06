@@ -295,11 +295,30 @@ export default function CircleChatMessage({
       ? language === "uz" ? "Xabar o'chirildi" : "Message deleted"
       : message.replyToMessage.content?.slice(0, 50) + (message.replyToMessage.content && message.replyToMessage.content.length > 50 ? "..." : "");
 
+    const handleScrollToReply = () => {
+      // Find the reply message element and scroll to it
+      const replyElement = document.getElementById(`msg-${message.replyToMessage?.id}`);
+      if (replyElement) {
+        replyElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Add a brief highlight effect
+        replyElement.classList.add('ring-2', 'ring-primary/50', 'transition-all');
+        setTimeout(() => {
+          replyElement.classList.remove('ring-2', 'ring-primary/50');
+        }, 1500);
+      }
+    };
+
     return (
-      <div className="text-xs opacity-70 border-l-2 border-primary/50 pl-2 mb-1.5">
+      <button 
+        onClick={(e) => {
+          e.stopPropagation();
+          handleScrollToReply();
+        }}
+        className="text-xs opacity-70 border-l-2 border-primary/50 pl-2 mb-1.5 text-left w-full hover:opacity-100 transition-opacity cursor-pointer"
+      >
         <span className="font-medium">{message.replyToMessage.senderName}</span>
         <p className="truncate">{replyContent}</p>
-      </div>
+      </button>
     );
   };
 
@@ -348,18 +367,21 @@ export default function CircleChatMessage({
 
   return (
     <>
-      <div className={cn(
-        "flex group",
-        isAi ? "justify-start" : isOwn ? "justify-end" : "justify-start",
-        isSending && "opacity-70"
-      )}>
+      <div 
+        id={`msg-${message.id}`}
+        className={cn(
+          "flex group transition-all duration-200 rounded-lg",
+          isAi ? "justify-start" : isOwn ? "justify-end" : "justify-start",
+          isSending && "opacity-70"
+        )}
+      >
         {/* Avatar for others */}
         {!isOwn && !isAi && (
-          <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center mr-2 flex-shrink-0 mt-1">
+          <div className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center mr-2 flex-shrink-0 mt-1">
             {message.senderAvatar ? (
-              <img src={message.senderAvatar} alt="" className="w-8 h-8 rounded-full object-cover" />
+              <img src={message.senderAvatar} alt="" className="w-7 h-7 rounded-full object-cover" />
             ) : (
-              <span className="text-xs font-medium text-muted-foreground">
+              <span className="text-[10px] font-medium text-muted-foreground">
                 {message.senderName?.charAt(0).toUpperCase() || "U"}
               </span>
             )}

@@ -444,33 +444,33 @@ export default function SpaceDetail() {
 
       {/* Tabs container */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
-        {/* Tabs bar - sticky with high z-index to ensure it's always clickable */}
-        <div className="flex-shrink-0 sticky top-0 z-30 border-b border-border bg-background backdrop-blur-sm pointer-events-auto">
-          <TabsList className="max-w-2xl mx-auto w-full justify-start px-4 bg-transparent h-12 pointer-events-auto">
+        {/* Tabs bar - sticky with solid background, high z-index, and pointer-events-auto */}
+        <div className="flex-shrink-0 z-50 border-b border-border bg-background/95 backdrop-blur-md" style={{ position: 'sticky', top: 0 }}>
+          <TabsList className="max-w-2xl mx-auto w-full justify-start px-4 bg-transparent h-11">
             <TabsTrigger 
               value="chat" 
-              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-elevation-1 transition-all duration-150 pointer-events-auto"
+              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-sm transition-all duration-150 text-sm"
             >
               <MessageSquare className="w-4 h-4" />
               Chat
             </TabsTrigger>
             <TabsTrigger 
               value="files" 
-              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-elevation-1 transition-all duration-150 pointer-events-auto"
+              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-sm transition-all duration-150 text-sm"
             >
               <FileText className="w-4 h-4" />
               {language === "uz" ? "Fayllar" : "Files"}
             </TabsTrigger>
             <TabsTrigger 
               value="members" 
-              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-elevation-1 transition-all duration-150 pointer-events-auto"
+              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-sm transition-all duration-150 text-sm"
             >
               <Users className="w-4 h-4" />
               {language === "uz" ? "A'zolar" : "Members"}
             </TabsTrigger>
             <TabsTrigger 
               value="natijalar" 
-              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-elevation-1 transition-all duration-150 pointer-events-auto"
+              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-sm transition-all duration-150 text-sm"
             >
               <Sparkles className="w-4 h-4" />
               Natijalar
@@ -478,7 +478,7 @@ export default function SpaceDetail() {
             {isAdmin && (
               <TabsTrigger 
                 value="requests" 
-                className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-elevation-1 transition-all duration-150 pointer-events-auto"
+                className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-sm transition-all duration-150 text-sm"
               >
                 <UserPlus className="w-4 h-4" />
                 {language === "uz" ? "So'rovlar" : "Requests"}
