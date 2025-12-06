@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { LanguageProvider } from "@/i18n/LanguageProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -25,9 +25,9 @@ import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Support from "./pages/Support";
 import DocumentTools from "./pages/DocumentTools";
-import Spaces from "./pages/Spaces";
-import SpaceDetail from "./pages/SpaceDetail";
-import JoinSpace from "./pages/JoinSpace";
+import Circles from "./pages/Circles";
+import CircleDetail from "./pages/CircleDetail";
+import JoinCircle from "./pages/JoinCircle";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -114,25 +114,29 @@ const App = () => (
                     } 
                   />
                   <Route 
-                    path="/spaces" 
+                    path="/circles" 
                     element={
                       <ProtectedRoute>
-                        <Spaces />
+                        <Circles />
                       </ProtectedRoute>
                     } 
                   />
                   <Route 
-                    path="/spaces/:id" 
+                    path="/circles/:id" 
                     element={
                       <ProtectedRoute>
-                        <SpaceDetail />
+                        <CircleDetail />
                       </ProtectedRoute>
                     } 
                   />
-                  {/* Invite routes - support both /spaces/invite/:code and /invite/:code */}
-                  <Route path="/spaces/invite/:code" element={<JoinSpace />} />
-                  <Route path="/invite/:code" element={<JoinSpace />} />
-                  <Route path="/join/:code" element={<JoinSpace />} />
+                  {/* Invite routes - support both /circles/invite/:code and /invite/:code */}
+                  <Route path="/circles/invite/:code" element={<JoinCircle />} />
+                  <Route path="/invite/:code" element={<JoinCircle />} />
+                  <Route path="/join/:code" element={<JoinCircle />} />
+                  {/* Redirects from old /spaces URLs */}
+                  <Route path="/spaces" element={<Navigate to="/circles" replace />} />
+                  <Route path="/spaces/:id" element={<Navigate to="/circles" replace />} />
+                  <Route path="/spaces/invite/:code" element={<Navigate to="/circles" replace />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </TooltipProvider>

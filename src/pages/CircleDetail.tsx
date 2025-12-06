@@ -7,10 +7,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
-import SpaceInviteModal from "@/components/spaces/SpaceInviteModal";
-import SpaceFilesTab from "@/components/spaces/SpaceFilesTab";
-import SpaceChatTab from "@/components/spaces/SpaceChatTab";
-import { SpaceTabSkeleton } from "@/components/spaces/SpaceTabSkeleton";
+import CircleInviteModal from "@/components/circles/CircleInviteModal";
+import CircleFilesTab from "@/components/circles/CircleFilesTab";
+import CircleChatTab from "@/components/circles/CircleChatTab";
+import { CircleTabSkeleton } from "@/components/circles/CircleTabSkeleton";
 
 interface SpaceData {
   id: string;
@@ -88,7 +88,7 @@ export default function SpaceDetail() {
     } catch (err) {
       console.error("Error fetching space:", err);
       toast.error("Xatolik yuz berdi");
-      navigate("/spaces");
+      navigate("/circles");
     } finally {
       setLoading(false);
     }
@@ -283,7 +283,7 @@ export default function SpaceDetail() {
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate("/spaces")}
+              onClick={() => navigate("/circles")}
               className="p-2 -ml-2 hover:bg-secondary rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5 text-foreground" />
@@ -351,18 +351,18 @@ export default function SpaceDetail() {
 
         {/* Chat Tab - takes remaining height */}
         <TabsContent value="chat" className="flex-1 flex flex-col m-0 min-h-0 overflow-hidden tab-panel-transition">
-          <SpaceChatTab spaceId={id || ""} />
+          <CircleChatTab spaceId={id || ""} />
         </TabsContent>
 
         {/* Files Tab */}
         <TabsContent value="files" className="flex-1 min-h-0 m-0 overflow-y-auto tab-panel-transition">
-          <SpaceFilesTab spaceId={id || ""} isAdmin={isAdmin} />
+          <CircleFilesTab spaceId={id || ""} isAdmin={isAdmin} />
         </TabsContent>
 
         {/* Members Tab */}
         <TabsContent value="members" className="flex-1 min-h-0 m-0 overflow-y-auto tab-panel-transition">
           {members.length === 0 && loading ? (
-            <SpaceTabSkeleton type="members" />
+            <CircleTabSkeleton type="members" />
           ) : (
             <div className="max-w-2xl mx-auto px-4 py-4 space-y-2 pb-[env(safe-area-inset-bottom)]">
               {members.map((member) => (
@@ -396,7 +396,7 @@ export default function SpaceDetail() {
         {isAdmin && (
           <TabsContent value="requests" className="flex-1 min-h-0 m-0 overflow-y-auto tab-panel-transition">
             {requests.length === 0 && loading ? (
-              <SpaceTabSkeleton type="requests" />
+              <CircleTabSkeleton type="requests" />
             ) : requests.length === 0 ? (
               <div className="max-w-2xl mx-auto px-4 py-4">
                 <div className="text-center py-12 text-muted-foreground">
@@ -495,7 +495,7 @@ export default function SpaceDetail() {
         )}
       </Tabs>
 
-      <SpaceInviteModal
+      <CircleInviteModal
         open={showInviteModal}
         onClose={() => setShowInviteModal(false)}
         spaceId={id || ""}

@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 
-export interface SpaceMessageAttachment {
+export interface CircleMessageAttachment {
   path: string;
   mime: string;
   name: string;
@@ -36,26 +36,30 @@ export interface SpaceMessageAttachment {
   signedUrl?: string;
 }
 
-export interface SpaceMessage {
+export interface CircleMessage {
   id: string;
   sender_id: string;
   content: string | null;
   type: string;
   created_at: string;
   reply_to_id: string | null;
-  attachments: SpaceMessageAttachment[] | null;
+  attachments: CircleMessageAttachment[] | null;
   client_id: string | null;
   deleted_at: string | null;
   senderName?: string;
   senderAvatar?: string;
-  replyToMessage?: SpaceMessage | null;
+  replyToMessage?: CircleMessage | null;
   readCount?: number;
   status?: "sending" | "sent" | "read" | "failed";
 }
 
-interface SpaceChatMessageProps {
-  message: SpaceMessage;
-  onReply: (message: SpaceMessage) => void;
+// Type aliases for backward compatibility in hooks
+export type SpaceMessage = CircleMessage;
+export type SpaceMessageAttachment = CircleMessageAttachment;
+
+interface CircleChatMessageProps {
+  message: CircleMessage;
+  onReply: (message: CircleMessage) => void;
   onDelete: (messageId: string) => void;
   onViewReaders?: (messageId: string) => void;
   language: string;
@@ -80,13 +84,13 @@ async function downloadFile(url: string, filename: string) {
   }
 }
 
-export default function SpaceChatMessage({
+export default function CircleChatMessage({
   message,
   onReply,
   onDelete,
   onViewReaders,
   language,
-}: SpaceChatMessageProps) {
+}: CircleChatMessageProps) {
   const { user } = useAuth();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showActionSheet, setShowActionSheet] = useState(false);

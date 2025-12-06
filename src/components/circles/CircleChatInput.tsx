@@ -3,20 +3,20 @@ import { Send, Paperclip, Camera, X, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import PendingAttachments, { type PendingAttachment } from "./PendingAttachments";
-import type { SpaceMessage } from "./SpaceChatMessage";
+import type { CircleMessage } from "./CircleChatMessage";
 
-interface SpaceChatInputProps {
+interface CircleChatInputProps {
   value: string;
   onChange: (value: string) => void;
   onSend: (pendingFiles?: PendingAttachment[]) => void;
-  replyTo: SpaceMessage | null;
+  replyTo: CircleMessage | null;
   onCancelReply: () => void;
   disabled?: boolean;
   uploading?: boolean;
   language: string;
 }
 
-export default function SpaceChatInput({
+export default function CircleChatInput({
   value,
   onChange,
   onSend,
@@ -25,7 +25,7 @@ export default function SpaceChatInput({
   disabled,
   uploading,
   language,
-}: SpaceChatInputProps) {
+}: CircleChatInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);

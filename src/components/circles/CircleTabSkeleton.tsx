@@ -1,10 +1,10 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface SpaceTabSkeletonProps {
+interface CircleTabSkeletonProps {
   type: "files" | "members" | "requests";
 }
 
-export function SpaceTabSkeleton({ type }: SpaceTabSkeletonProps) {
+export function CircleTabSkeleton({ type }: CircleTabSkeletonProps) {
   if (type === "files") {
     return (
       <div className="max-w-2xl mx-auto px-4 py-4 space-y-3">

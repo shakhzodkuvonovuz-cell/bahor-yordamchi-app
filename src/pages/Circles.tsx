@@ -13,9 +13,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
-import CreateSpaceModal from "@/components/spaces/CreateSpaceModal";
+import CreateCircleModal from "@/components/circles/CreateCircleModal";
 
-interface Space {
+interface Circle {
   id: string;
   name: string;
   template: string;
@@ -34,24 +34,24 @@ const TEMPLATE_LABELS: Record<string, { uz: string; en: string }> = {
   general: { uz: "Umumiy", en: "General" },
 };
 
-export default function Spaces() {
+export default function Circles() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { language, t } = useTranslation();
-  const [spaces, setSpaces] = useState<Space[]>([]);
+  const [circles, setCircles] = useState<Circle[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showPasteLinkModal, setShowPasteLinkModal] = useState(false);
   const [pasteLink, setPasteLink] = useState("");
 
-  const fetchSpaces = async () => {
+  const fetchCircles = async () => {
     if (!user) {
       setLoading(false);
       return;
     }
     
     try {
-      // Get spaces where user is a member
+      // Get circles where user is a member (DB table still named spaces)
       const { data: memberships, error: memberError } = await supabase
         .from("space_members")
         .select("space_id, role")
@@ -60,29 +60,29 @@ export default function Spaces() {
 
       if (memberError) {
         console.error("Error fetching memberships:", memberError);
-        setSpaces([]);
+        setCircles([]);
         setLoading(false);
         return;
       }
       
       if (!memberships?.length) {
-        setSpaces([]);
+        setCircles([]);
         setLoading(false);
         return;
       }
 
-      const spaceIds = memberships.map((m) => m.space_id);
+      const circleIds = memberships.map((m) => m.space_id);
       const roleMap = Object.fromEntries(memberships.map((m) => [m.space_id, m.role]));
 
-      // Get space details
-      const { data: spaceData, error: spaceError } = await supabase
+      // Get circle details (DB table still named spaces)
+      const { data: circleData, error: circleError } = await supabase
         .from("spaces")
         .select("id, name, template, goal")
-        .in("id", spaceIds);
+        .in("id", circleIds);
 
-      if (spaceError) {
-        console.error("Error fetching spaces:", spaceError);
-        setSpaces([]);
+      if (circleError) {
+        console.error("Error fetching circles:", circleError);
+        setCircles([]);
         setLoading(false);
         return;
       }
@@ -91,7 +91,7 @@ export default function Spaces() {
       const { data: counts, error: countError } = await supabase
         .from("space_members")
         .select("space_id")
-        .in("space_id", spaceIds)
+        .in("space_id", circleIds)
         .eq("status", "active");
 
       if (countError) {
@@ -103,7 +103,7 @@ export default function Spaces() {
         countMap[c.space_id] = (countMap[c.space_id] || 0) + 1;
       });
 
-      const formattedSpaces: Space[] = (spaceData || []).map((s) => ({
+      const formattedCircles: Circle[] = (circleData || []).map((s) => ({
         id: s.id,
         name: s.name,
         template: s.template || "general",
@@ -112,16 +112,16 @@ export default function Spaces() {
         role: roleMap[s.id] || "member",
       }));
 
-      setSpaces(formattedSpaces);
+      setCircles(formattedCircles);
     } catch (err) {
-      console.error("Error fetching spaces:", err);
+      console.error("Error fetching circles:", err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchSpaces();
+    fetchCircles();
   }, [user]);
 
   const getTemplateLabel = (template: string) => {
@@ -129,9 +129,9 @@ export default function Spaces() {
     return language === "uz" ? labels.uz : labels.en;
   };
 
-  const handleSpaceCreated = () => {
+  const handleCircleCreated = () => {
     setShowCreateModal(false);
-    fetchSpaces();
+    fetchCircles();
   };
 
   const handlePasteLinkSubmit = () => {
@@ -140,8 +140,9 @@ export default function Spaces() {
     // Extract token from URL or use directly
     let token = pasteLink.trim();
     
-    // If it's a full URL, extract the token
+    // If it's a full URL, extract the token (support both old and new URLs)
     const urlPatterns = [
+      /\/circles\/invite\/([A-Za-z0-9]+)/,
       /\/spaces\/invite\/([A-Za-z0-9]+)/,
       /\/invite\/([A-Za-z0-9]+)/,
       /\/join\/([A-Za-z0-9]+)/,
@@ -158,7 +159,7 @@ export default function Spaces() {
     // Navigate to invite page
     setShowPasteLinkModal(false);
     setPasteLink("");
-    navigate(`/spaces/invite/${token}`);
+    navigate(`/circles/invite/${token}`);
   };
 
   return (
@@ -174,7 +175,7 @@ export default function Spaces() {
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
             <h1 className="text-xl font-bold text-foreground">
-              {language === "uz" ? "Xonalar" : "Spaces"}
+              {language === "uz" ? "Doiralar" : "Circles"}
             </h1>
           </div>
           <div className="flex items-center gap-2">
@@ -209,49 +210,49 @@ export default function Spaces() {
               />
             ))}
           </div>
-        ) : spaces.length === 0 ? (
+        ) : circles.length === 0 ? (
           <div className="text-center py-16">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-secondary flex items-center justify-center">
               <Users className="w-8 h-8 text-muted-foreground" />
             </div>
             <h3 className="font-semibold text-foreground mb-2">
-              {language === "uz" ? "Xonalar yo'q" : "No spaces yet"}
+              {language === "uz" ? "Doiralar yo'q" : "No circles yet"}
             </h3>
             <p className="text-sm text-muted-foreground mb-4">
               {language === "uz"
-                ? "Birinchi xonangizni yarating"
-                : "Create your first space"}
+                ? "Birinchi doirangizni yarating"
+                : "Create your first circle"}
             </p>
             <Button onClick={() => setShowCreateModal(true)} className="gap-2">
               <Plus className="w-4 h-4" />
-              {language === "uz" ? "Xona yaratish" : "Create Space"}
+              {language === "uz" ? "Doira yaratish" : "Create Circle"}
             </Button>
           </div>
         ) : (
           <div className="space-y-3">
-            {spaces.map((space) => (
+            {circles.map((circle) => (
               <button
-                key={space.id}
-                onClick={() => navigate(`/spaces/${space.id}`)}
+                key={circle.id}
+                onClick={() => navigate(`/circles/${circle.id}`)}
                 className="w-full text-left p-4 rounded-xl bg-card border border-border hover:border-primary/30 hover:shadow-md transition-all group"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-semibold text-foreground truncate">
-                        {space.name}
+                        {circle.name}
                       </h3>
                       <span className="px-2 py-0.5 text-xs rounded-full bg-secondary text-secondary-foreground">
-                        {getTemplateLabel(space.template)}
+                        {getTemplateLabel(circle.template)}
                       </span>
                     </div>
                     <div className="flex items-center gap-3 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Users className="w-3.5 h-3.5" />
-                        {space.memberCount}
+                        {circle.memberCount}
                       </span>
-                      {space.goal && (
-                        <span className="truncate">{space.goal}</span>
+                      {circle.goal && (
+                        <span className="truncate">{circle.goal}</span>
                       )}
                     </div>
                   </div>
@@ -263,10 +264,10 @@ export default function Spaces() {
         )}
       </div>
 
-      <CreateSpaceModal
+      <CreateCircleModal
         open={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        onCreated={handleSpaceCreated}
+        onCreated={handleCircleCreated}
       />
 
       {/* Paste Link Modal */}

@@ -37,7 +37,7 @@ export default function CreateSpaceModal({ open, onClose, onCreated }: CreateSpa
 
   const handleCreate = async () => {
     if (!name.trim()) {
-      toast.error(language === "uz" ? "Xona nomini kiriting" : "Please enter a space name");
+      toast.error(language === "uz" ? "Doira nomini kiriting" : "Please enter a circle name");
       return;
     }
 
@@ -57,11 +57,11 @@ export default function CreateSpaceModal({ open, onClose, onCreated }: CreateSpa
       
       if (!authUser) {
         toast.error(language === "uz" 
-          ? "Xona yaratish uchun kirish kerak" 
+          ? "Doira yaratish uchun kirish kerak" 
           : "Please log in to create a space");
         setLoading(false);
         onClose();
-        navigate("/auth?next=/spaces");
+        navigate("/auth?next=/circles");
         return;
       }
 
@@ -84,7 +84,7 @@ export default function CreateSpaceModal({ open, onClose, onCreated }: CreateSpa
         return;
       }
 
-      toast.success(language === "uz" ? "Xona yaratildi!" : "Space created!");
+      toast.success(language === "uz" ? "Doira yaratildi!" : "Circle created!");
       setName("");
       setTemplate("general");
       setGoal("");
@@ -92,7 +92,7 @@ export default function CreateSpaceModal({ open, onClose, onCreated }: CreateSpa
       onCreated();
       
       if (data?.id) {
-        navigate(`/spaces/${data.id}`);
+        navigate(`/circles/${data.id}`);
       }
     } catch (err: any) {
       console.error("Unexpected error:", err);
@@ -109,14 +109,14 @@ export default function CreateSpaceModal({ open, onClose, onCreated }: CreateSpa
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {language === "uz" ? "Yangi xona yaratish" : "Create New Space"}
+            {language === "uz" ? "Yangi doira yaratish" : "Create New Circle"}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="name">
-              {language === "uz" ? "Xona nomi" : "Space Name"} *
+              {language === "uz" ? "Doira nomi" : "Circle Name"} *
             </Label>
             <Input
               id="name"

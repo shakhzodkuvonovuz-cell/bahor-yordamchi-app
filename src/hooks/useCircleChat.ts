@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import type { SpaceMessage, SpaceMessageAttachment } from "@/components/spaces/SpaceChatMessage";
+import type { CircleMessage, CircleMessageAttachment, SpaceMessage, SpaceMessageAttachment } from "@/components/circles/CircleChatMessage";
 
-interface UseSpaceChatOptions {
+interface UseCircleChatOptions {
   spaceId: string;
   userId: string | undefined;
 }
@@ -31,7 +31,7 @@ function sanitizeFilename(name: string): string {
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
 const MAX_RETRIES = 2;
 
-export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
+export function useCircleChat({ spaceId, userId }: UseCircleChatOptions) {
   const [messages, setMessages] = useState<SpaceMessage[]>([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
