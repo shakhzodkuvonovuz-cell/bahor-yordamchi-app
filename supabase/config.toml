@@ -29,3 +29,9 @@ verify_jwt = false
 
 [functions.space-chat]
 verify_jwt = false
+
+[functions.space-file-signed-url]
+verify_jwt = false
+
+[functions.space-web-search]
+verify_jwt = false

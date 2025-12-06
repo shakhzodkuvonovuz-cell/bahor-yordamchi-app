@@ -1,28 +1,18 @@
-import { useRef } from "react";
-import { Send, Paperclip, Camera, X, Loader2, AlertCircle, RotateCcw } from "lucide-react";
+import { useRef, useState } from "react";
+import { Send, Paperclip, Camera, X, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import PendingAttachments, { type PendingAttachment } from "./PendingAttachments";
 import type { SpaceMessage } from "./SpaceChatMessage";
-
-interface UploadingFile {
-  id: string;
-  name: string;
-  progress: number;
-  status: "uploading" | "done" | "failed";
-  error?: string;
-}
 
 interface SpaceChatInputProps {
   value: string;
   onChange: (value: string) => void;
-  onSend: () => void;
+  onSend: (pendingFiles?: PendingAttachment[]) => void;
   replyTo: SpaceMessage | null;
   onCancelReply: () => void;
   disabled?: boolean;
   uploading?: boolean;
-  uploadProgress?: number;
-  uploadingFiles?: UploadingFile[];
-  onFileSelect: (files: FileList) => void;
   language: string;
 }
 
@@ -34,27 +24,64 @@ export default function SpaceChatInput({
   onCancelReply,
   disabled,
   uploading,
-  uploadProgress,
-  uploadingFiles = [],
-  onFileSelect,
   language,
 }: SpaceChatInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      onSend();
+      handleSend();
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      onFileSelect(e.target.files);
+      const newAttachments: PendingAttachment[] = Array.from(e.target.files).map((file, idx) => {
+        const id = `pending-${Date.now()}-${idx}`;
+        const isImage = file.type.startsWith("image/");
+        return {
+          id,
+          file,
+          previewUrl: isImage ? URL.createObjectURL(file) : undefined,
+          status: "pending" as const,
+          progress: 0,
+        };
+      });
+      setPendingAttachments((prev) => [...prev, ...newAttachments]);
       e.target.value = "";
     }
   };
+
+  const handleRemoveAttachment = (id: string) => {
+    setPendingAttachments((prev) => {
+      const att = prev.find((a) => a.id === id);
+      if (att?.previewUrl) {
+        URL.revokeObjectURL(att.previewUrl);
+      }
+      return prev.filter((a) => a.id !== id);
+    });
+  };
+
+  const handleSend = () => {
+    const trimmed = value.trim();
+    const hasAttachments = pendingAttachments.length > 0;
+    
+    if (!trimmed && !hasAttachments) return;
+    
+    // Pass pending files to parent for upload
+    onSend(hasAttachments ? [...pendingAttachments] : undefined);
+    
+    // Clear pending attachments after sending
+    pendingAttachments.forEach((att) => {
+      if (att.previewUrl) URL.revokeObjectURL(att.previewUrl);
+    });
+    setPendingAttachments([]);
+  };
+
+  const canSend = value.trim().length > 0 || pendingAttachments.length > 0;
 
   return (
     <div className="border-t border-border bg-card/80 backdrop-blur-lg shadow-premium-md">
@@ -75,48 +102,20 @@ export default function SpaceChatInput({
         </div>
       )}
 
-      {/* Upload progress with per-file status */}
-      {uploadingFiles.length > 0 && (
-        <div className="px-4 pt-2 max-w-2xl mx-auto space-y-1">
-          {uploadingFiles.map((file) => (
-            <div
-              key={file.id}
-              className={cn(
-                "flex items-center gap-2 p-2 rounded-lg text-xs",
-                file.status === "failed" ? "bg-destructive/10" : "bg-secondary/50"
-              )}
-            >
-              {file.status === "uploading" && (
-                <Loader2 className="w-3 h-3 animate-spin text-primary flex-shrink-0" />
-              )}
-              {file.status === "failed" && (
-                <AlertCircle className="w-3 h-3 text-destructive flex-shrink-0" />
-              )}
-              {file.status === "done" && (
-                <div className="w-3 h-3 rounded-full bg-primary flex-shrink-0" />
-              )}
-              <span className={cn("truncate flex-1", file.status === "failed" && "text-destructive")}>
-                {file.name}
-              </span>
-              {file.status === "uploading" && (
-                <span className="text-muted-foreground">{file.progress}%</span>
-              )}
-              {file.status === "failed" && file.error && (
-                <span className="text-destructive text-[10px]">{file.error}</span>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Pending attachments preview */}
+      <PendingAttachments
+        attachments={pendingAttachments}
+        onRemove={handleRemoveAttachment}
+        language={language}
+      />
 
-      {/* Legacy single progress bar */}
-      {uploading && uploadingFiles.length === 0 && (
+      {/* Upload progress indicator */}
+      {uploading && (
         <div className="px-4 pt-2 max-w-2xl mx-auto">
           <div className="flex items-center gap-2 p-2 rounded-lg bg-secondary/50">
             <Loader2 className="w-4 h-4 animate-spin text-primary" />
             <span className="text-xs text-muted-foreground">
               {language === "uz" ? "Yuklanmoqda..." : "Uploading..."}
-              {uploadProgress !== undefined && ` ${uploadProgress}%`}
             </span>
           </div>
         </div>
@@ -175,8 +174,8 @@ export default function SpaceChatInput({
 
           {/* Send button */}
           <Button
-            onClick={onSend}
-            disabled={(!value.trim() && !uploading) || disabled}
+            onClick={handleSend}
+            disabled={!canSend || disabled || uploading}
             size="icon"
             className="rounded-xl h-11 w-11 transition-all duration-200 hover:scale-105"
           >
