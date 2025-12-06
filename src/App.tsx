@@ -129,7 +129,7 @@ const App = () => (
                       </ProtectedRoute>
                     } 
                   />
-                  <Route path="/join/:code" element={<JoinSpace />} />
+                  <Route path="/invite/:code" element={<JoinSpace />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </TooltipProvider>

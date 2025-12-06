@@ -153,7 +153,7 @@ export default function JoinSpace() {
               ? "Davom etish uchun avval tizimga kiring"
               : "Please sign in to continue"}
           </p>
-          <Button onClick={() => navigate(`/auth?next=/join/${code}`)}>
+          <Button onClick={() => navigate(`/auth?next=/invite/${code}`)}>
             {language === "uz" ? "Kirish" : "Sign In"}
           </Button>
         </div>
@@ -241,6 +241,29 @@ export default function JoinSpace() {
             {language === "uz"
               ? "Admin so'rovingizni rad etgan."
               : "The admin has rejected your request."}
+          </p>
+          <Button variant="outline" onClick={() => navigate("/spaces")}>
+            {language === "uz" ? "Xonalarga qaytish" : "Back to Spaces"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (existingRequest === "blocked") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="max-w-sm w-full text-center space-y-4">
+          <div className="w-16 h-16 mx-auto rounded-full bg-destructive/20 flex items-center justify-center">
+            <Users className="w-8 h-8 text-destructive" />
+          </div>
+          <h1 className="text-xl font-bold text-foreground">
+            {language === "uz" ? "Kirish taqiqlangan" : "Access Blocked"}
+          </h1>
+          <p className="text-muted-foreground">
+            {language === "uz"
+              ? "Siz bu xonaga qo'shila olmaysiz."
+              : "You cannot join this Space."}
           </p>
           <Button variant="outline" onClick={() => navigate("/spaces")}>
             {language === "uz" ? "Xonalarga qaytish" : "Back to Spaces"}
