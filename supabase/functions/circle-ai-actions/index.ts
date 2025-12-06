@@ -28,6 +28,27 @@ const ACTION_TITLES: Record<string, string> = {
   issues: "Muammolar va yechimlar",
 };
 
+// Generate auto title based on type and context
+function generateAutoTitle(type: string, messageCount: number, scope: number): string {
+  const scopeLabel = scope <= 30 ? "Oxirgi 30" : scope <= 100 ? "Oxirgi 100" : "Oxirgi 300";
+  switch (type) {
+    case "summary":
+      return `Xulosa (${messageCount} xabar)`;
+    case "tasks":
+      return `Vazifalar (${scopeLabel})`;
+    case "decisions":
+      return `Qarorlar va ochiq savollar`;
+    case "plan":
+      return `Bosqichma-bosqich reja`;
+    case "meeting_notes":
+      return `Uchrashuv bayonnomasi (${messageCount} xabar)`;
+    case "issues":
+      return `Muammolar va yechimlar`;
+    default:
+      return `${ACTION_TITLES[type] || type} (${messageCount} xabar)`;
+  }
+}
+
 const PROMPTS: Record<string, string> = {
   summary: `Siz professional yordamchisiz. Quyidagi guruh suhbatidan qisqa va aniq xulosa chiqaring.
 
@@ -414,6 +435,13 @@ serve(async (req) => {
 
     // Save to database
     const lastMessageAt = sortedMessages[sortedMessages.length - 1]?.created_at;
+    const autoTitle = generateAutoTitle(type, messages.length, messageLimit);
+    const meta = {
+      scope: messageLimit,
+      scope_label: messageLimit <= 30 ? "30" : messageLimit <= 100 ? "100" : "300",
+      include_files,
+      extra_note: extra_note || null,
+    };
 
     const { data: card, error: insertError } = await supabase
       .from("circle_ai_cards")
@@ -421,10 +449,12 @@ serve(async (req) => {
         circle_id,
         creator_id: user.id,
         type,
-        title: `${ACTION_TITLES[type] || type} (${messages.length} xabar)`,
+        title: null, // User can rename later
+        auto_title: autoTitle,
         content_md: generatedContent,
         source_message_count: messages.length,
         source_last_message_at: lastMessageAt,
+        meta,
       })
       .select()
       .single();

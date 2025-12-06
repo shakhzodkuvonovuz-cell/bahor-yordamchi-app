@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Sparkles, FileText, CheckSquare, Target, Calendar, ClipboardList, AlertCircle, Loader2, ChevronRight, ChevronDown, ChevronUp, Copy, Send, FileDown, FolderDown, Trash2 } from "lucide-react";
+import { Sparkles, FileText, CheckSquare, Target, Calendar, ClipboardList, AlertCircle, Loader2, ChevronRight, ChevronDown, ChevronUp, Copy, Send, FileDown, FolderDown, Trash2, MoreVertical, Pencil, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
@@ -7,7 +7,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,17 +26,24 @@ interface CircleAIActionsPanelProps {
 
 type ActionType = "summary" | "tasks" | "decisions" | "plan" | "meeting_notes" | "issues";
 type ScopeType = "30" | "100" | "300";
+type FilterType = "all" | ActionType;
 
 interface AICard {
   id: string;
   circle_id: string;
   creator_id: string;
   type: string;
-  title: string;
+  title: string | null;
+  auto_title: string;
   content_md: string;
   created_at: string;
   source_message_count: number;
   pinned: boolean;
+  meta?: {
+    scope?: number;
+    scope_label?: string;
+    include_files?: boolean;
+  };
 }
 
 const ACTION_OPTIONS: { type: ActionType; label: string; icon: React.ReactNode; description: string }[] = [
@@ -45,7 +55,42 @@ const ACTION_OPTIONS: { type: ActionType; label: string; icon: React.ReactNode; 
   { type: "issues", label: "Muammolar", icon: <AlertCircle className="h-5 w-5" />, description: "Muammolar va yechimlar" },
 ];
 
+const FILTER_OPTIONS: { type: FilterType; label: string }[] = [
+  { type: "all", label: "Hammasi" },
+  { type: "tasks", label: "Vazifalar" },
+  { type: "decisions", label: "Qarorlar" },
+  { type: "plan", label: "Reja" },
+  { type: "meeting_notes", label: "Bayonnoma" },
+  { type: "issues", label: "Muammolar" },
+];
+
+const TYPE_COLORS: Record<string, { accent: string; bg: string; text: string }> = {
+  summary: { accent: "bg-blue-500", bg: "bg-blue-500/10", text: "text-blue-600 dark:text-blue-400" },
+  tasks: { accent: "bg-green-500", bg: "bg-green-500/10", text: "text-green-600 dark:text-green-400" },
+  decisions: { accent: "bg-amber-500", bg: "bg-amber-500/10", text: "text-amber-600 dark:text-amber-400" },
+  plan: { accent: "bg-purple-500", bg: "bg-purple-500/10", text: "text-purple-600 dark:text-purple-400" },
+  meeting_notes: { accent: "bg-orange-500", bg: "bg-orange-500/10", text: "text-orange-600 dark:text-orange-400" },
+  issues: { accent: "bg-red-500", bg: "bg-red-500/10", text: "text-red-600 dark:text-red-400" },
+};
+
+const TYPE_LABELS: Record<string, string> = {
+  summary: "Xulosa",
+  tasks: "Vazifalar",
+  decisions: "Qarorlar",
+  plan: "Reja",
+  meeting_notes: "Bayonnoma",
+  issues: "Muammolar",
+};
+
 const getStorageKey = (circleId: string) => `bahorai_ai_actions_${circleId}`;
+
+const sanitizeFilename = (title: string): string => {
+  return title
+    .replace(/[^\w\s\u0400-\u04FF-]/g, "")
+    .replace(/\s+/g, "-")
+    .substring(0, 50)
+    .trim();
+};
 
 export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActionsPanelProps) {
   const isMobile = useIsMobile();
@@ -63,8 +108,17 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
   const [selectedCard, setSelectedCard] = useState<AICard | null>(null);
   const [savingToFiles, setSavingToFiles] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [filter, setFilter] = useState<FilterType>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [renameModalOpen, setRenameModalOpen] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
+  const [renamingCardId, setRenamingCardId] = useState<string | null>(null);
+  const [isSavingRename, setIsSavingRename] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  // Helper to get display title
+  const getDisplayTitle = (card: AICard) => card.title || card.auto_title;
 
   // Load persisted state
   useEffect(() => {
@@ -95,13 +149,12 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
         .select("*")
         .eq("circle_id", circleId)
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(50);
 
       if (error) throw error;
       const fetchedCards = (data as AICard[]) || [];
       setCards(fetchedCards);
-      
-      // Default to natijalar tab if there are results
+
       if (fetchedCards.length > 0) {
         setActiveTab("natijalar");
         setSelectedCard(fetchedCards[0]);
@@ -119,6 +172,15 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
     }
   }, [open, circleId]);
 
+  // Filtered cards
+  const filteredCards = cards.filter((card) => {
+    const matchesFilter = filter === "all" || card.type === filter;
+    const matchesSearch = !searchQuery || 
+      getDisplayTitle(card).toLowerCase().includes(searchQuery.toLowerCase()) ||
+      card.content_md.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesFilter && matchesSearch;
+  });
+
   const handleSelectAction = (type: ActionType) => {
     setSelectedAction(type);
     setShowConfig(true);
@@ -126,7 +188,7 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
 
   const handleGenerate = async () => {
     if (!selectedAction) return;
-    
+
     setGenerating(true);
 
     try {
@@ -144,8 +206,8 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
             "Content-Type": "application/json",
             Authorization: `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({ 
-            circle_id: circleId, 
+          body: JSON.stringify({
+            circle_id: circleId,
             type: selectedAction,
             scope: parseInt(scope),
             include_files: includeFiles,
@@ -157,7 +219,7 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
         const errorMsg = errData.error || "Xatolik yuz berdi";
-        
+
         if (response.status === 401) {
           toast({ title: "Kirish kerak. Iltimos login qiling.", variant: "destructive" });
         } else if (response.status === 403) {
@@ -174,15 +236,14 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
       setShowConfig(false);
       setSelectedAction(null);
       setExtraNote("");
-      
-      // Auto-switch to results and select new card
+
       setActiveTab("natijalar");
       setSelectedCard(newCard);
-      
+      setFilter("all");
+
       haptic("success");
       toast({ title: "✅ Natija yaratildi" });
-      
-      // Scroll to top of results
+
       setTimeout(() => {
         resultsRef.current?.scrollTo({ top: 0, behavior: "smooth" });
       }, 100);
@@ -217,6 +278,44 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
     }
   };
 
+  const handleOpenRenameModal = (card: AICard) => {
+    setRenamingCardId(card.id);
+    setRenameValue(card.title || card.auto_title);
+    setRenameModalOpen(true);
+  };
+
+  const handleSaveRename = async () => {
+    if (!renamingCardId) return;
+    setIsSavingRename(true);
+
+    try {
+      const newTitle = renameValue.trim() || null; // null reverts to auto_title
+      const { error } = await supabase
+        .from("circle_ai_cards")
+        .update({ title: newTitle })
+        .eq("id", renamingCardId);
+
+      if (error) throw error;
+
+      // Update local state
+      setCards(prev => prev.map(c =>
+        c.id === renamingCardId ? { ...c, title: newTitle } : c
+      ));
+      if (selectedCard?.id === renamingCardId) {
+        setSelectedCard(prev => prev ? { ...prev, title: newTitle } : null);
+      }
+
+      haptic("success");
+      toast({ title: "Nomi yangilandi ✅" });
+      setRenameModalOpen(false);
+    } catch (err) {
+      console.error("Rename error:", err);
+      toast({ title: "Xatolik yuz berdi", variant: "destructive" });
+    } finally {
+      setIsSavingRename(false);
+    }
+  };
+
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString("uz-UZ", {
@@ -240,49 +339,56 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
 
   const handleSendToChat = () => {
     if (!selectedCard || !onSendToChat) return;
-    onSendToChat(selectedCard.content_md, selectedCard.title);
+    onSendToChat(selectedCard.content_md, getDisplayTitle(selectedCard));
     haptic("light");
     toast({ title: "Chatga yuborildi ✓" });
+  };
+
+  const generatePdfDoc = (card: AICard) => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 15;
+    const maxWidth = pageWidth - margin * 2;
+    const title = getDisplayTitle(card);
+
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text(title, margin, 20);
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(128);
+    doc.text(formatDate(card.created_at), margin, 28);
+
+    doc.setTextColor(0);
+    doc.setFontSize(11);
+
+    const lines = doc.splitTextToSize(card.content_md, maxWidth);
+    let yPos = 38;
+    const lineHeight = 6;
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    for (const line of lines) {
+      if (yPos > pageHeight - margin) {
+        doc.addPage();
+        yPos = margin;
+      }
+      doc.text(line, margin, yPos);
+      yPos += lineHeight;
+    }
+
+    return { doc, title };
   };
 
   const handleExportPdf = async () => {
     if (!selectedCard) return;
     setGeneratingPdf(true);
     try {
-      const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const margin = 15;
-      const maxWidth = pageWidth - margin * 2;
-      
-      doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
-      doc.text(selectedCard.title, margin, 20);
-      
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(128);
-      doc.text(formatDate(selectedCard.created_at), margin, 28);
-      
-      doc.setTextColor(0);
-      doc.setFontSize(11);
-      
-      const lines = doc.splitTextToSize(selectedCard.content_md, maxWidth);
-      let yPos = 38;
-      const lineHeight = 6;
-      const pageHeight = doc.internal.pageSize.getHeight();
-      
-      for (const line of lines) {
-        if (yPos > pageHeight - margin) {
-          doc.addPage();
-          yPos = margin;
-        }
-        doc.text(line, margin, yPos);
-        yPos += lineHeight;
-      }
-      
-      const filename = `Doira_${selectedCard.type}_${new Date().toISOString().split("T")[0]}.pdf`;
+      const { doc, title } = generatePdfDoc(selectedCard);
+      const date = new Date().toISOString().split("T")[0];
+      const filename = `${sanitizeFilename(title)}-${date}.pdf`;
       doc.save(filename);
-      
+
       haptic("success");
       toast({ title: "PDF yuklandi ✓" });
     } catch (err) {
@@ -300,39 +406,11 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const margin = 15;
-      const maxWidth = pageWidth - margin * 2;
-      
-      doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
-      doc.text(selectedCard.title, margin, 20);
-      
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(128);
-      doc.text(formatDate(selectedCard.created_at), margin, 28);
-      
-      doc.setTextColor(0);
-      doc.setFontSize(11);
-      
-      const lines = doc.splitTextToSize(selectedCard.content_md, maxWidth);
-      let yPos = 38;
-      const lineHeight = 6;
-      const pageHeight = doc.internal.pageSize.getHeight();
-      
-      for (const line of lines) {
-        if (yPos > pageHeight - margin) {
-          doc.addPage();
-          yPos = margin;
-        }
-        doc.text(line, margin, yPos);
-        yPos += lineHeight;
-      }
-      
+      const { doc, title } = generatePdfDoc(selectedCard);
       const pdfBlob = doc.output("blob");
-      const filename = `Doira_${selectedCard.type}_${Date.now()}.pdf`;
+      const date = new Date().toISOString().split("T")[0];
+      const safeTitle = sanitizeFilename(title);
+      const filename = `${safeTitle}-${date}-${Date.now()}.pdf`;
       const path = `${user.id}/${filename}`;
 
       const { error: uploadError } = await supabase.storage
@@ -343,7 +421,7 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
 
       const { error: dbError } = await supabase.from("user_files").insert({
         user_id: user.id,
-        title: `${selectedCard.title} - ${formatDate(selectedCard.created_at)}`,
+        title: `${title} - ${formatDate(selectedCard.created_at)}`,
         path,
         mime_type: "application/pdf",
         size_bytes: pdfBlob.size,
@@ -364,29 +442,11 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
     }
   };
 
-  const typeLabels: Record<string, string> = {
-    summary: "Xulosa",
-    tasks: "Vazifalar", 
-    decisions: "Qarorlar",
-    plan: "Reja",
-    meeting_notes: "Bayonnoma",
-    issues: "Muammolar",
-  };
-
-  const typeColors: Record<string, string> = {
-    summary: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
-    tasks: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20",
-    decisions: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-    plan: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
-    meeting_notes: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
-    issues: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
-  };
-
   const panelContent = (
     <div className="flex flex-col h-full overflow-hidden">
-      <Tabs 
-        value={activeTab} 
-        onValueChange={(v) => setActiveTab(v as "amallar" | "natijalar")} 
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => setActiveTab(v as "amallar" | "natijalar")}
         className="flex flex-col flex-1 overflow-hidden"
       >
         {/* Tabs Header */}
@@ -412,7 +472,6 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
             {!showConfig ? (
               <ScrollArea className="flex-1">
                 <div className="p-4 space-y-2">
-                  {/* Collapse Toggle */}
                   <button
                     onClick={() => {
                       const newVal = !actionsCollapsed;
@@ -426,7 +485,6 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
                   </button>
 
                   {actionsCollapsed ? (
-                    /* Compact Chips View */
                     <div className="flex flex-wrap gap-2">
                       {ACTION_OPTIONS.map((action) => (
                         <button
@@ -440,7 +498,6 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
                       ))}
                     </div>
                   ) : (
-                    /* Full Cards View */
                     <div className="space-y-2">
                       {ACTION_OPTIONS.map((action) => (
                         <button
@@ -463,10 +520,8 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
                 </div>
               </ScrollArea>
             ) : (
-              /* Config Panel */
               <ScrollArea className="flex-1">
                 <div className="p-4">
-                  {/* Selected Action */}
                   <div className="flex items-center gap-3 p-3 rounded-xl border border-primary/30 bg-primary/5 mb-4 shadow-sm">
                     <div className="p-2 rounded-lg bg-primary/10 text-primary">
                       {ACTION_OPTIONS.find(a => a.type === selectedAction)?.icon}
@@ -481,7 +536,6 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
                     </div>
                   </div>
 
-                  {/* Scope Selector */}
                   <div className="mb-4">
                     <Label className="text-sm font-medium mb-2 block">Qamrov</Label>
                     <RadioGroup value={scope} onValueChange={(v) => setScope(v as ScopeType)} className="flex gap-2">
@@ -500,19 +554,17 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
                     </RadioGroup>
                   </div>
 
-                  {/* Include Files */}
                   <div className="flex items-center space-x-2 mb-4">
-                    <Checkbox 
-                      id="include-files" 
-                      checked={includeFiles} 
-                      onCheckedChange={(checked) => setIncludeFiles(checked as boolean)} 
+                    <Checkbox
+                      id="include-files"
+                      checked={includeFiles}
+                      onCheckedChange={(checked) => setIncludeFiles(checked as boolean)}
                     />
                     <Label htmlFor="include-files" className="text-sm cursor-pointer">
                       Fayllarni qo'shish
                     </Label>
                   </div>
 
-                  {/* Extra Note */}
                   <div className="mb-4">
                     <Label className="text-sm font-medium mb-2 block">Qo'shimcha izoh (ixtiyoriy)</Label>
                     <Textarea
@@ -523,7 +575,6 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
                     />
                   </div>
 
-                  {/* Generate Button */}
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
@@ -554,7 +605,6 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
                     </Button>
                   </div>
 
-                  {/* Loading State */}
                   {generating && (
                     <div className="mt-4 p-4 rounded-xl border border-border bg-muted/30 animate-pulse shadow-sm">
                       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
@@ -586,8 +636,8 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
                 <Sparkles className="h-8 w-8 text-muted-foreground" />
               </div>
               <p className="text-muted-foreground mb-4">Hali natijalar yo'q</p>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setActiveTab("amallar")}
                 className="gap-2"
               >
@@ -597,55 +647,131 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
             </div>
           ) : (
             <div className="flex flex-col flex-1 overflow-hidden">
-              {/* Cards List (Left Side / Top on Mobile) */}
-              <div className="border-b border-border">
-                <ScrollArea className="max-h-32">
-                  <div className="p-2 flex gap-2 overflow-x-auto">
-                    {cards.map((card) => (
-                      <button
-                        key={card.id}
-                        onClick={() => setSelectedCard(card)}
-                        className={`flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors text-left ${
-                          selectedCard?.id === card.id 
-                            ? "border-primary bg-primary/10" 
-                            : "border-border bg-card hover:bg-accent/50"
-                        }`}
-                      >
-                        <span className={`px-1.5 py-0.5 rounded text-xs font-medium border ${typeColors[card.type] || "bg-muted"}`}>
-                          {typeLabels[card.type] || card.type}
-                        </span>
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          {formatDate(card.created_at)}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </ScrollArea>
+              {/* Search & Filters */}
+              <div className="p-3 border-b border-border space-y-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Natijalar ichidan qidirish..."
+                    className="pl-9 pr-8 h-9 text-sm"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-muted"
+                    >
+                      <X className="h-3.5 w-3.5 text-muted-foreground" />
+                    </button>
+                  )}
+                </div>
+                <div className="flex gap-1.5 overflow-x-auto pb-1">
+                  {FILTER_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.type}
+                      onClick={() => setFilter(opt.type)}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                        filter === opt.type
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted hover:bg-muted/80 text-foreground"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {/* Result Viewer (Main Content) */}
+              {/* Cards List */}
+              <ScrollArea className="flex-1 max-h-48 border-b border-border">
+                <div className="p-2 space-y-1.5">
+                  {filteredCards.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                      Natija topilmadi
+                    </div>
+                  ) : (
+                    filteredCards.map((card) => {
+                      const colors = TYPE_COLORS[card.type] || TYPE_COLORS.summary;
+                      const isSelected = selectedCard?.id === card.id;
+                      return (
+                        <div
+                          key={card.id}
+                          className={`flex items-stretch rounded-lg border transition-colors cursor-pointer ${
+                            isSelected
+                              ? "border-primary bg-primary/5 shadow-sm"
+                              : "border-border bg-card hover:bg-accent/30"
+                          }`}
+                        >
+                          {/* Color accent bar */}
+                          <div className={`w-1 rounded-l-lg ${colors.accent}`} />
+                          
+                          <button
+                            onClick={() => setSelectedCard(card)}
+                            className="flex-1 flex items-center gap-2.5 p-2.5 text-left min-w-0"
+                          >
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${colors.bg} ${colors.text}`}>
+                              {TYPE_LABELS[card.type] || card.type}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-sm truncate">{getDisplayTitle(card)}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {formatDate(card.created_at)} • {card.source_message_count} xabar
+                              </div>
+                            </div>
+                          </button>
+
+                          {/* Actions Menu */}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button className="px-2 flex items-center text-muted-foreground hover:text-foreground transition-colors">
+                                <MoreVertical className="h-4 w-4" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44">
+                              <DropdownMenuItem onClick={() => handleOpenRenameModal(card)}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Nomini o'zgartirish
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteCard(card.id)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                O'chirish
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </ScrollArea>
+
+              {/* Result Viewer */}
               {selectedCard && (
                 <div className="flex-1 flex flex-col overflow-hidden">
                   {/* Result Header */}
                   <div className="px-4 py-3 border-b border-border bg-muted/30">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className={`px-2 py-1 rounded text-xs font-medium border ${typeColors[selectedCard.type] || "bg-muted"}`}>
-                          {typeLabels[selectedCard.type] || selectedCard.type}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${TYPE_COLORS[selectedCard.type]?.bg || ""} ${TYPE_COLORS[selectedCard.type]?.text || ""}`}>
+                          {TYPE_LABELS[selectedCard.type] || selectedCard.type}
                         </span>
-                        <span className="font-medium text-sm">{selectedCard.title}</span>
+                        <span className="font-medium text-sm truncate">{getDisplayTitle(selectedCard)}</span>
                       </div>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => handleDeleteCard(selectedCard.id)}
-                        className="h-8 w-8 text-destructive hover:text-destructive"
+                      <button
+                        onClick={() => handleOpenRenameModal(selectedCard)}
+                        className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                        title="Nomini o'zgartirish"
                       >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
                       {formatDate(selectedCard.created_at)} • {selectedCard.source_message_count} xabar
+                      {selectedCard.meta?.scope_label && ` • Oxirgi ${selectedCard.meta.scope_label}`}
                     </div>
                   </div>
 
@@ -670,10 +796,10 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
                         Chatga
                       </Button>
                     )}
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={handleExportPdf} 
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleExportPdf}
                       disabled={generatingPdf}
                       className="gap-1.5 flex-1"
                     >
@@ -684,9 +810,9 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
                       )}
                       PDF
                     </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
+                    <Button
+                      size="sm"
+                      variant="outline"
                       onClick={handleSaveToFiles}
                       disabled={savingToFiles}
                       className="gap-1.5 flex-1"
@@ -705,6 +831,35 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Rename Modal */}
+      <Dialog open={renameModalOpen} onOpenChange={setRenameModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nomini o'zgartirish</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              placeholder="Yangi nom..."
+              autoFocus
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              Bo'sh qoldirish avtomatik nomni ishlatadi
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenameModalOpen(false)}>
+              Bekor
+            </Button>
+            <Button onClick={handleSaveRename} disabled={isSavingRename}>
+              {isSavingRename ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Saqlash
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 
@@ -720,7 +875,6 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
     </Button>
   );
 
-  // Use Drawer on mobile, Sheet on desktop
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={setOpen}>
