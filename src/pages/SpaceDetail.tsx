@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Users, FileText, MessageSquare, UserPlus, Send, MoreVertical, Check, X, Ban, Sparkles } from "lucide-react";
+import { ArrowLeft, Users, FileText, MessageSquare, UserPlus, Check, X, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,33 +38,16 @@ interface JoinRequest {
   requester_avatar_url: string | null;
 }
 
-interface Message {
-  id: string;
-  sender_id: string;
-  content: string | null;
-  type: string;
-  created_at: string;
-  senderName?: string;
-  usedFiles?: string[];
-  usedMessages?: boolean;
-}
-
 export default function SpaceDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { language } = useTranslation();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [space, setSpace] = useState<SpaceData | null>(null);
   const [userRole, setUserRole] = useState<string>("member");
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("chat");
-
-  // Chat state
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [messageInput, setMessageInput] = useState("");
-  const [sendingMessage, setSendingMessage] = useState(false);
 
   // Members state
   const [members, setMembers] = useState<Member[]>([]);
@@ -75,18 +58,12 @@ export default function SpaceDetail() {
   // Invite modal
   const [showInviteModal, setShowInviteModal] = useState(false);
 
-  // Bahor context picker
-  const [showBahorPicker, setShowBahorPicker] = useState(false);
-  const [bahorQuestion, setBahorQuestion] = useState("");
-  const [sendingBahor, setSendingBahor] = useState(false);
-
   const isAdmin = userRole === "owner" || userRole === "admin";
 
   const fetchSpace = async () => {
     if (!id || !user) return;
 
     try {
-      // Get space details
       const { data: spaceData, error: spaceError } = await supabase
         .from("spaces")
         .select("*")
@@ -96,7 +73,6 @@ export default function SpaceDetail() {
       if (spaceError) throw spaceError;
       setSpace(spaceData);
 
-      // Get user's role
       const { data: memberData } = await supabase
         .from("space_members")
         .select("role")
@@ -117,43 +93,6 @@ export default function SpaceDetail() {
     }
   };
 
-  const fetchMessages = async () => {
-    if (!id) return;
-
-    const { data, error } = await supabase
-      .from("space_messages")
-      .select("*")
-      .eq("space_id", id)
-      .order("created_at", { ascending: true })
-      .limit(100);
-
-    if (error) {
-      console.error("Error fetching messages:", error);
-      return;
-    }
-
-    // Get sender profiles
-    const senderIds = [...new Set(data?.map((m) => m.sender_id) || [])];
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("user_id, first_name, last_name")
-      .in("user_id", senderIds);
-
-    const profileMap = Object.fromEntries(
-      (profiles || []).map((p) => [
-        p.user_id,
-        `${p.first_name || ""} ${p.last_name || ""}`.trim() || "User",
-      ])
-    );
-
-    setMessages(
-      (data || []).map((m) => ({
-        ...m,
-        senderName: profileMap[m.sender_id] || "User",
-      }))
-    );
-  };
-
   const fetchMembers = async () => {
     if (!id) return;
 
@@ -168,7 +107,6 @@ export default function SpaceDetail() {
       return;
     }
 
-    // Get profiles
     const userIds = data?.map((m) => m.user_id) || [];
     const { data: profiles } = await supabase
       .from("profiles")
@@ -208,11 +146,10 @@ export default function SpaceDetail() {
       return;
     }
 
-    // For requests without snapshot data, fetch from profiles
     const requestsWithMissingData = (data || []).filter(
       (r) => !r.requester_name && !r.requester_avatar_url
     );
-    
+
     if (requestsWithMissingData.length > 0) {
       const requesterIds = requestsWithMissingData.map((r) => r.requester_id);
       const { data: profiles } = await supabase
@@ -230,7 +167,6 @@ export default function SpaceDetail() {
         ])
       );
 
-      // Merge profile data as fallback
       const enrichedData = (data || []).map((req) => ({
         ...req,
         requester_name: req.requester_name || profileMap[req.requester_id]?.name || null,
@@ -248,174 +184,12 @@ export default function SpaceDetail() {
   }, [id, user]);
 
   useEffect(() => {
-    if (space && activeTab === "chat") {
-      fetchMessages();
-    } else if (space && activeTab === "members") {
+    if (space && activeTab === "members") {
       fetchMembers();
     } else if (space && activeTab === "requests" && isAdmin) {
       fetchRequests();
     }
   }, [space, activeTab, isAdmin]);
-
-  // Real-time messages subscription
-  useEffect(() => {
-    if (!id) return;
-
-    const channel = supabase
-      .channel(`space-messages-${id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "space_messages",
-          filter: `space_id=eq.${id}`,
-        },
-        (payload) => {
-          const newMsg = payload.new as Message;
-          // Fetch sender name
-          supabase
-            .from("profiles")
-            .select("first_name, last_name")
-            .eq("user_id", newMsg.sender_id)
-            .single()
-            .then(({ data: profile }) => {
-              setMessages((prev) => [
-                ...prev,
-                {
-                  ...newMsg,
-                  senderName:
-                    `${profile?.first_name || ""} ${profile?.last_name || ""}`.trim() ||
-                    "User",
-                },
-              ]);
-            });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [id]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const sendMessage = async () => {
-    if (!messageInput.trim() || !id || !user || sendingMessage) return;
-
-    const trimmedInput = messageInput.trim();
-    
-    // Check if it's a /bahor command
-    if (trimmedInput.toLowerCase().startsWith("/bahor")) {
-      const question = trimmedInput.replace(/^\/bahor\s*/i, "").trim();
-      if (!question) {
-        toast.error(language === "uz" ? "Savol yozing" : "Please enter a question");
-        return;
-      }
-      setBahorQuestion(question);
-      setShowBahorPicker(true);
-      return;
-    }
-
-    setSendingMessage(true);
-    try {
-      const { error } = await supabase.from("space_messages").insert({
-        space_id: id,
-        sender_id: user.id,
-        content: trimmedInput,
-        type: "text",
-      });
-
-      if (error) throw error;
-      setMessageInput("");
-    } catch (err) {
-      console.error("Error sending message:", err);
-      toast.error("Xabar yuborishda xatolik");
-    } finally {
-      setSendingMessage(false);
-    }
-  };
-
-  const handleBahorSend = async (payload: {
-    question: string;
-    includeLastMessages: boolean;
-    selectedFileIds: string[];
-  }) => {
-    if (!id || !user) return;
-
-    setSendingBahor(true);
-    try {
-      // First, insert the user's question as a message
-      await supabase.from("space_messages").insert({
-        space_id: id,
-        sender_id: user.id,
-        content: `/bahor ${payload.question}`,
-        type: "text",
-      });
-
-      // Call the space-chat edge function
-      const { data: session } = await supabase.auth.getSession();
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/space-chat`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.session?.access_token}`,
-          },
-          body: JSON.stringify({
-            space_id: id,
-            question: payload.question,
-            include_last_messages: payload.includeLastMessages,
-            selected_file_ids: payload.selectedFileIds,
-            ui_language: language,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "AI xizmati xatosi");
-      }
-
-      const data = await response.json();
-
-      // Insert AI response as a message
-      await supabase.from("space_messages").insert({
-        space_id: id,
-        sender_id: user.id,
-        content: data.response,
-        type: "ai",
-      });
-
-      // Show what Bahor used
-      const usedContext: string[] = [];
-      if (data.used_messages) {
-        usedContext.push(language === "uz" ? "oxirgi 30 xabar" : "last 30 messages");
-      }
-      if (data.used_files?.length > 0) {
-        usedContext.push(data.used_files.join(", "));
-      }
-      if (usedContext.length > 0) {
-        toast.success(
-          `Bahor: ${usedContext.join(" + ")}`,
-          { duration: 4000 }
-        );
-      }
-
-      setShowBahorPicker(false);
-      setMessageInput("");
-      setBahorQuestion("");
-    } catch (err: any) {
-      console.error("Bahor error:", err);
-      toast.error(err.message || "Xatolik yuz berdi");
-    } finally {
-      setSendingBahor(false);
-    }
-  };
 
   const handleRequestAction = async (
     requestId: string,
@@ -425,7 +199,6 @@ export default function SpaceDetail() {
     if (!user || !id) return;
 
     try {
-      // Update request status
       const { error: updateError } = await supabase
         .from("space_join_requests")
         .update({
@@ -437,7 +210,6 @@ export default function SpaceDetail() {
 
       if (updateError) throw updateError;
 
-      // If approved, add to members
       if (action === "approved") {
         const { error: memberError } = await supabase
           .from("space_members")
@@ -451,7 +223,6 @@ export default function SpaceDetail() {
         if (memberError) throw memberError;
       }
 
-      // If blocked, create blocked member entry
       if (action === "blocked") {
         await supabase.from("space_members").upsert({
           space_id: id,
@@ -476,7 +247,7 @@ export default function SpaceDetail() {
     }
   };
 
-  const handleBlockMember = async (memberId: string, userId: string) => {
+  const handleBlockMember = async (memberId: string) => {
     try {
       const { error } = await supabase
         .from("space_members")
@@ -592,7 +363,7 @@ export default function SpaceDetail() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleBlockMember(member.id, member.user_id)}
+                    onClick={() => handleBlockMember(member.id)}
                     className="text-destructive hover:text-destructive"
                   >
                     <Ban className="w-4 h-4" />
@@ -615,7 +386,7 @@ export default function SpaceDetail() {
                 requests.map((req) => {
                   const displayName = req.requester_name || "User";
                   const initials = displayName.charAt(0).toUpperCase();
-                  
+
                   return (
                     <div
                       key={req.id}
@@ -623,7 +394,6 @@ export default function SpaceDetail() {
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-3 flex-1">
-                          {/* Avatar */}
                           {req.requester_avatar_url ? (
                             <img
                               src={req.requester_avatar_url}
@@ -709,7 +479,6 @@ export default function SpaceDetail() {
         spaceId={id || ""}
         spaceName={space.name}
       />
-
     </div>
   );
 }

@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { Send, Paperclip, Camera, X, Image as ImageIcon, FileText, Loader2 } from "lucide-react";
+import { useRef } from "react";
+import { Send, Paperclip, Camera, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { SpaceMessage } from "./SpaceChatMessage";
