@@ -202,10 +202,12 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
   }, [spaceId, userId, fetchProfiles, enrichMessage]);
 
   // Upload single file with retries
-  // Path format: spaces/<space_id>/<user_id>/<timestamp>_<random>_<sanitizedOriginalName>
+  // Path format: {spaceId}/{messageId}/{timestamp}-{sanitizedFilename}
+  // This matches the storage RLS policies which extract spaceId from the first path segment
   const uploadFileWithRetry = useCallback(async (
     file: File,
     fileId: string,
+    messageId: string,
     onProgress: (fileId: string, progress: number) => void
   ): Promise<SpaceMessageAttachment | null> => {
     if (!userId) throw new Error("Not authenticated");
@@ -215,8 +217,9 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
     }
 
     const sanitized = sanitizeFilename(file.name);
-    // Use the exact path format required by RLS policies: spaces/<space_id>/<user_id>/...
-    const path = `spaces/${spaceId}/${userId}/${Date.now()}_${crypto.randomUUID().slice(0, 8)}_${sanitized}`;
+    // Path format: {spaceId}/{messageId}/{timestamp}-{filename}
+    // RLS extracts spaceId from segment 1 using regexp_match
+    const path = `${spaceId}/${messageId}/${Date.now()}-${sanitized}`;
 
     let lastError: Error | null = null;
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -377,7 +380,7 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
           const fileId = `file-${i}`;
 
           try {
-            const attachment = await uploadFileWithRetry(file, fileId, updateFileProgress);
+            const attachment = await uploadFileWithRetry(file, fileId, tempMessageId, updateFileProgress);
             if (attachment) {
               successfulAttachments.push(attachment);
               setUploadingFiles((prev) =>

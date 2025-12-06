@@ -512,6 +512,60 @@ export type Database = {
           },
         ]
       }
+      space_message_attachments: {
+        Row: {
+          bucket: string
+          created_at: string | null
+          filename: string
+          id: string
+          message_id: string
+          mime_type: string | null
+          path: string
+          size_bytes: number | null
+          space_id: string
+          uploader_id: string
+        }
+        Insert: {
+          bucket?: string
+          created_at?: string | null
+          filename: string
+          id?: string
+          message_id: string
+          mime_type?: string | null
+          path: string
+          size_bytes?: number | null
+          space_id: string
+          uploader_id: string
+        }
+        Update: {
+          bucket?: string
+          created_at?: string | null
+          filename?: string
+          id?: string
+          message_id?: string
+          mime_type?: string | null
+          path?: string
+          size_bytes?: number | null
+          space_id?: string
+          uploader_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_message_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "space_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_message_attachments_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_message_reads: {
         Row: {
           message_id: string
