@@ -3,16 +3,17 @@ import { Settings } from "lucide-react";
 import ModeCard from "@/components/ModeCard";
 import { PRIMARY_MODES, LEARNING_MODES } from "@/data/modes";
 import { useTranslation } from "@/i18n/LanguageProvider";
+import { AppContainer, AppLayout } from "@/components/layout";
 
 export default function ModeSelection() {
   const navigate = useNavigate();
   const { language, t } = useTranslation();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-primary-glow/10">
+    <AppLayout className="bg-gradient-to-b from-background to-primary-glow/10">
       {/* Header */}
       <div className="sticky top-0 bg-background/95 backdrop-blur-sm border-b border-border z-10">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
+        <AppContainer className="py-4 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">{t('modes.title')}</h1>
           </div>
@@ -23,11 +24,11 @@ export default function ModeSelection() {
           >
             <Settings className="w-6 h-6 text-foreground" />
           </button>
-        </div>
+        </AppContainer>
       </div>
 
       {/* Content */}
-      <div className="max-w-2xl mx-auto px-4 py-8">
+      <AppContainer className="py-8">
         <div className="mb-8 text-center">
           <h2 className="text-2xl font-bold text-foreground mb-2">
             {t('modes.question')}
@@ -78,7 +79,7 @@ export default function ModeSelection() {
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </AppContainer>
+    </AppLayout>
   );
 }

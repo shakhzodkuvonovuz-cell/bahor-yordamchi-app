@@ -5,6 +5,7 @@ import { CHAT_MODES } from "@/data/modes";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import bahorLogo from "@/assets/bahor-logo.png";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { AppContainer, AppLayout } from "@/components/layout";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -101,14 +102,14 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background relative">
+    <AppLayout>
       {/* Background effects */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 right-1/4 w-[400px] h-[400px] bg-primary/5 rounded-full blur-[100px]" />
         <div className="absolute bottom-1/4 left-1/4 w-[300px] h-[300px] bg-primary/3 rounded-full blur-[80px]" />
       </div>
       
-      <div className="max-w-3xl lg:max-w-5xl mx-auto px-4 py-6 space-y-6 relative z-10">
+      <AppContainer className="py-6 space-y-6 relative z-10">
         {/* Header */}
         <header className="flex justify-between items-center px-1 pt-2">
           <div className="flex items-center gap-3">
@@ -236,7 +237,7 @@ export default function Home() {
             );
           })}
         </div>
-      </div>
-    </div>
+      </AppContainer>
+    </AppLayout>
   );
 }
