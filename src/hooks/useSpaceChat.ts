@@ -319,40 +319,27 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
     [spaceId, userId]
   );
 
-  // Upload and send with robust error handling
-  const uploadAndSend = useCallback(
-    async (files: FileList, content: string, replyToId?: string, replyToMessage?: SpaceMessage) => {
+  // Send with attachments - uploads files first, then sends combined message
+  const sendWithAttachments = useCallback(
+    async (content: string, files: File[], replyToId?: string, replyToMessage?: SpaceMessage) => {
       if (!spaceId || !userId || files.length === 0) return;
 
       setIsUploading(true);
-      setUploadProgress(0);
 
-      // Generate a temporary message ID for the path
       const tempMessageId = crypto.randomUUID();
       const clientId = generateClientId();
       
-      // Initialize uploading files state
-      const uploadingFilesInit: UploadingFile[] = Array.from(files).map((f, i) => ({
-        id: `file-${i}`,
-        name: f.name,
-        progress: 0,
-        status: "uploading" as const,
-      }));
-      setUploadingFiles(uploadingFilesInit);
-
-      const successfulAttachments: SpaceMessageAttachment[] = [];
-      const failedFiles: string[] = [];
-
-      // Create optimistic message immediately
       pendingClientIdsRef.current.add(clientId);
+      
+      // Optimistic message with loading state
       const optimisticMsg: SpaceMessage = {
         id: `temp-${clientId}`,
         sender_id: userId,
-        content,
+        content: content || null,
         type: "file",
         created_at: new Date().toISOString(),
         reply_to_id: replyToId || null,
-        attachments: null, // Will update as files upload
+        attachments: null,
         client_id: clientId,
         deleted_at: null,
         senderName: profileMapRef.current[userId]?.name || "You",
@@ -362,43 +349,26 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
       };
       setMessages((prev) => [...prev, optimisticMsg]);
 
-      const updateFileProgress = (fileId: string, progress: number) => {
-        setUploadingFiles((prev) =>
-          prev.map((f) => (f.id === fileId ? { ...f, progress } : f))
-        );
-        // Update overall progress
-        const totalProgress = uploadingFilesInit.reduce((acc, f, i) => {
-          const current = uploadingFilesInit.find((uf) => uf.id === f.id);
-          return acc + (current?.progress || 0);
-        }, 0);
-        setUploadProgress(Math.round(totalProgress / files.length));
-      };
+      const successfulAttachments: SpaceMessageAttachment[] = [];
 
       try {
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          const fileId = `file-${i}`;
-
+        for (const file of files) {
           try {
-            const attachment = await uploadFileWithRetry(file, fileId, tempMessageId, updateFileProgress);
+            const attachment = await uploadFileWithRetry(
+              file, 
+              `file-${Date.now()}`, 
+              tempMessageId, 
+              () => {}
+            );
             if (attachment) {
               successfulAttachments.push(attachment);
-              setUploadingFiles((prev) =>
-                prev.map((f) => (f.id === fileId ? { ...f, status: "done", progress: 100 } : f))
-              );
             }
           } catch (err: any) {
-            failedFiles.push(file.name);
-            setUploadingFiles((prev) =>
-              prev.map((f) =>
-                f.id === fileId ? { ...f, status: "failed", error: err.message } : f
-              )
-            );
+            console.error("Upload failed for file:", file.name, err);
           }
         }
 
         if (successfulAttachments.length > 0) {
-          // Get signed URLs for optimistic display
           const attachmentsWithUrls = await getSignedUrls(successfulAttachments);
           
           // Update optimistic message with attachments
@@ -423,7 +393,7 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
           });
 
           if (error) throw error;
-        } else if (failedFiles.length > 0) {
+        } else {
           // All files failed
           setMessages((prev) =>
             prev.map((m) =>
@@ -442,12 +412,17 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
         pendingClientIdsRef.current.delete(clientId);
       } finally {
         setIsUploading(false);
-        setUploadProgress(0);
-        // Clear uploading files after a delay
-        setTimeout(() => setUploadingFiles([]), 2000);
       }
     },
     [spaceId, userId, uploadFileWithRetry, getSignedUrls]
+  );
+
+  // Legacy uploadAndSend for backwards compatibility
+  const uploadAndSend = useCallback(
+    async (files: FileList, content: string, replyToId?: string, replyToMessage?: SpaceMessage) => {
+      return sendWithAttachments(content, Array.from(files), replyToId, replyToMessage);
+    },
+    [sendWithAttachments]
   );
 
   // Retry failed message
@@ -695,6 +670,7 @@ export function useSpaceChat({ spaceId, userId }: UseSpaceChatOptions) {
     uploadProgress,
     uploadingFiles,
     sendMessage,
+    sendWithAttachments,
     uploadAndSend,
     retryMessage,
     deleteMessage,

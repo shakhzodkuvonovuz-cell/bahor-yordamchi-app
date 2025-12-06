@@ -6,6 +6,7 @@ import { useSpaceChat } from "@/hooks/useSpaceChat";
 import SpaceChatMessage, { type SpaceMessage } from "./SpaceChatMessage";
 import SpaceChatInput from "./SpaceChatInput";
 import BahorContextPicker from "./BahorContextPicker";
+import { type PendingAttachment } from "./PendingAttachments";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -18,12 +19,12 @@ interface SpaceChatTabProps {
 
 const MemoizedMessage = memo(SpaceChatMessage);
 
-function hasBahorHintBeenSeen(userId: string): boolean {
-  return localStorage.getItem(`bahor_hint_seen_v1_${userId}`) === "true";
+function hasBahorHintBeenSeen(spaceId: string, userId: string): boolean {
+  return localStorage.getItem(`space_bahor_hint_seen_${spaceId}_${userId}`) === "true";
 }
 
-function markBahorHintSeen(userId: string): void {
-  localStorage.setItem(`bahor_hint_seen_v1_${userId}`, "true");
+function markBahorHintSeen(spaceId: string, userId: string): void {
+  localStorage.setItem(`space_bahor_hint_seen_${spaceId}_${userId}`, "true");
 }
 
 export default function SpaceChatTab({ spaceId }: SpaceChatTabProps) {
@@ -34,8 +35,8 @@ export default function SpaceChatTab({ spaceId }: SpaceChatTabProps) {
   const prevMessagesLengthRef = useRef(0);
 
   const {
-    messages, isInitialLoading, isSending, isUploading, uploadProgress, uploadingFiles,
-    sendMessage, uploadAndSend, deleteMessage, markAsRead, getMessageReaders,
+    messages, isInitialLoading, isSending, isUploading,
+    sendMessage, sendWithAttachments, deleteMessage, markAsRead, getMessageReaders,
   } = useSpaceChat({ spaceId, userId: user?.id });
 
   const [messageInput, setMessageInput] = useState("");
@@ -87,58 +88,127 @@ export default function SpaceChatTab({ spaceId }: SpaceChatTabProps) {
     if (!isInitialLoading && messages.length > 0) scrollToBottom(false);
   }, [isInitialLoading]);
 
-  const handleSend = async () => {
+  const handleSend = async (pendingFiles?: PendingAttachment[]) => {
     const trimmed = messageInput.trim();
-    if (!trimmed) return;
-
+    
+    // Check for /bahor command
     if (trimmed.toLowerCase().startsWith("/bahor")) {
       const question = trimmed.replace(/^\/bahor\s*/i, "").trim();
-      if (!question) { toast.error(language === "uz" ? "Savol yozing" : "Enter a question"); return; }
-      if (user?.id && !hasBahorHintBeenSeen(user.id)) { setShowBahorHint(true); setBahorQuestion(question); return; }
-      setShowInlineHint(true); setTimeout(() => setShowInlineHint(false), 2000);
-      setBahorQuestion(question); setShowBahorPicker(true); return;
+      if (!question) { 
+        toast.error(language === "uz" ? "Savol yozing" : "Enter a question"); 
+        return; 
+      }
+      if (user?.id && !hasBahorHintBeenSeen(spaceId, user.id)) { 
+        setShowBahorHint(true); 
+        setBahorQuestion(question); 
+        return; 
+      }
+      setShowInlineHint(true); 
+      setTimeout(() => setShowInlineHint(false), 2000);
+      setBahorQuestion(question); 
+      setShowBahorPicker(true); 
+      return;
     }
 
-    await sendMessage(trimmed, replyTo?.id, undefined, replyTo || undefined);
-    setMessageInput(""); setReplyTo(null);
-  };
-
-  const handleFileSelect = async (files: FileList) => {
-    await uploadAndSend(files, messageInput.trim(), replyTo?.id, replyTo || undefined);
-    setMessageInput(""); setReplyTo(null);
+    // Send with attachments if present
+    if (pendingFiles && pendingFiles.length > 0) {
+      await sendWithAttachments(trimmed, pendingFiles.map(p => p.file), replyTo?.id, replyTo || undefined);
+    } else if (trimmed) {
+      await sendMessage(trimmed, replyTo?.id, undefined, replyTo || undefined);
+    }
+    
+    setMessageInput(""); 
+    setReplyTo(null);
   };
 
   const handleBahorHintConfirm = () => {
-    if (user?.id) markBahorHintSeen(user.id);
-    setShowBahorHint(false); setShowBahorPicker(true);
+    if (user?.id) markBahorHintSeen(spaceId, user.id);
+    setShowBahorHint(false); 
+    setShowBahorPicker(true);
   };
 
-  const handleBahorSend = async (payload: { question: string; includeLastMessages: boolean; selectedFileIds: string[] }) => {
+  const handleBahorSend = async (payload: { question: string; includeLastMessages: boolean; selectedFileIds: string[]; searchWeb: boolean }) => {
     if (!user) return;
     setSendingBahor(true);
     try {
+      // Send user's /bahor message
       await sendMessage(`/bahor ${payload.question}`);
+      
+      // Web search if requested
+      let webResults: { title: string; url: string; snippet: string }[] = [];
+      if (payload.searchWeb) {
+        const { data: session } = await supabase.auth.getSession();
+        const searchResp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/space-web-search`, {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json", 
+            Authorization: `Bearer ${session.session?.access_token}` 
+          },
+          body: JSON.stringify({ query: payload.question, space_id: spaceId }),
+        });
+        if (searchResp.ok) {
+          const searchData = await searchResp.json();
+          webResults = searchData.results || [];
+        }
+      }
+      
       const { data: session } = await supabase.auth.getSession();
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/space-chat`, {
-        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.session?.access_token}` },
-        body: JSON.stringify({ space_id: spaceId, question: payload.question, include_last_messages: payload.includeLastMessages, selected_file_ids: payload.selectedFileIds, ui_language: language }),
+        method: "POST", 
+        headers: { 
+          "Content-Type": "application/json", 
+          Authorization: `Bearer ${session.session?.access_token}` 
+        },
+        body: JSON.stringify({ 
+          space_id: spaceId, 
+          question: payload.question, 
+          include_last_messages: payload.includeLastMessages, 
+          selected_file_ids: payload.selectedFileIds, 
+          ui_language: language,
+          web_results: webResults,
+        }),
       });
       if (!response.ok) throw new Error((await response.json()).message || "AI error");
       const data = await response.json();
-      await supabase.from("space_messages").insert({ space_id: spaceId, sender_id: user.id, content: data.response, type: "ai" });
-      setShowBahorPicker(false); setMessageInput(""); setBahorQuestion("");
-    } catch (err: any) { toast.error(err.message || "Xatolik"); } finally { setSendingBahor(false); }
+      
+      // Insert AI response with clickable sources
+      let aiContent = data.response;
+      if (webResults.length > 0) {
+        aiContent += "\n\n**Manbalar:**\n";
+        webResults.forEach((r, i) => {
+          aiContent += `${i + 1}. [${r.title}](${r.url})\n`;
+        });
+      }
+      
+      await supabase.from("space_messages").insert({ 
+        space_id: spaceId, 
+        sender_id: user.id, 
+        content: aiContent, 
+        type: "ai" 
+      });
+      setShowBahorPicker(false); 
+      setMessageInput(""); 
+      setBahorQuestion("");
+    } catch (err: any) { 
+      toast.error(err.message || "Xatolik"); 
+    } finally { 
+      setSendingBahor(false); 
+    }
   };
 
   const handleViewReaders = async (messageId: string) => {
-    setShowReadersModal(true); setLoadingReaders(true);
-    try { setReaders(await getMessageReaders(messageId)); } finally { setLoadingReaders(false); }
+    setShowReadersModal(true); 
+    setLoadingReaders(true);
+    try { 
+      setReaders(await getMessageReaders(messageId)); 
+    } finally { 
+      setLoadingReaders(false); 
+    }
   };
 
   if (isInitialLoading) {
     return (
       <div className="h-full flex flex-col overflow-hidden">
-        {/* Messages skeleton */}
         <div className="flex-1 min-h-0 overflow-y-auto">
           <div className="max-w-2xl mx-auto px-4 py-4 space-y-3">
             {[1, 2, 3, 4].map((i) => (
@@ -152,7 +222,6 @@ export default function SpaceChatTab({ spaceId }: SpaceChatTabProps) {
             ))}
           </div>
         </div>
-        {/* Input skeleton */}
         <div className="flex-shrink-0 border-t border-border bg-background/80 backdrop-blur-lg pb-[env(safe-area-inset-bottom)]">
           <div className="max-w-2xl mx-auto px-4 py-3">
             <Skeleton className="h-11 w-full rounded-xl" />
@@ -164,7 +233,6 @@ export default function SpaceChatTab({ spaceId }: SpaceChatTabProps) {
 
   return (
     <div className="h-full flex flex-col overflow-hidden relative">
-      {/* Messages scroller - only this scrolls */}
       <div 
         ref={messagesContainerRef} 
         className="flex-1 min-h-0 overflow-y-auto overscroll-contain"
@@ -192,14 +260,12 @@ export default function SpaceChatTab({ spaceId }: SpaceChatTabProps) {
         </div>
       </div>
 
-      {/* Inline hint - positioned above input */}
       {showInlineHint && (
         <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-10 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm text-primary animate-fade-in">
           /bahor — AI javob beradi
         </div>
       )}
 
-      {/* Scroll to bottom button */}
       {showScrollButton && (
         <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-10">
           <button 
@@ -212,7 +278,6 @@ export default function SpaceChatTab({ spaceId }: SpaceChatTabProps) {
         </div>
       )}
 
-      {/* Input area - fixed at bottom, never scrolls */}
       <div className="flex-shrink-0 pb-[env(safe-area-inset-bottom)]">
         <SpaceChatInput 
           value={messageInput} 
@@ -222,25 +287,78 @@ export default function SpaceChatTab({ spaceId }: SpaceChatTabProps) {
           onCancelReply={() => setReplyTo(null)} 
           disabled={isSending} 
           uploading={isUploading} 
-          uploadProgress={uploadProgress} 
-          uploadingFiles={uploadingFiles} 
-          onFileSelect={handleFileSelect} 
           language={language} 
         />
       </div>
 
       <Dialog open={showBahorHint} onOpenChange={setShowBahorHint}>
-        <DialogContent className="max-w-sm"><DialogHeader><DialogTitle className="flex items-center gap-2"><Sparkles className="w-5 h-5 text-primary" />/bahor nima?</DialogTitle></DialogHeader>
-          <div className="space-y-3 text-sm text-muted-foreground"><p>{language === "uz" ? "/bahor — Space ichidagi AI yordamchi:" : "/bahor is the Space AI:"}</p><ul className="list-disc list-inside space-y-1"><li>{language === "uz" ? "Xabarlarni o'qiydi" : "Reads messages"}</li><li>{language === "uz" ? "Fayllarni tahlil qiladi" : "Analyzes files"}</li></ul></div>
-          <div className="flex gap-2 pt-2"><button onClick={() => setShowBahorHint(false)} className="flex-1 px-4 py-2 rounded-xl bg-secondary">{language === "uz" ? "Bekor" : "Cancel"}</button><button onClick={handleBahorHintConfirm} className="flex-1 px-4 py-2 rounded-xl bg-primary text-primary-foreground">{language === "uz" ? "Tushundim" : "Got it"}</button></div>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              /bahor nima?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm text-muted-foreground">
+            <p>{language === "uz" ? "/bahor — Space ichidagi AI yordamchi:" : "/bahor is the Space AI:"}</p>
+            <ul className="list-disc list-inside space-y-1">
+              <li>{language === "uz" ? "Xabarlarni o'qiydi" : "Reads messages"}</li>
+              <li>{language === "uz" ? "Fayllarni tahlil qiladi" : "Analyzes files"}</li>
+              <li>{language === "uz" ? "Webdan qidiradi" : "Searches the web"}</li>
+            </ul>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button onClick={() => setShowBahorHint(false)} className="flex-1 px-4 py-2 rounded-xl bg-secondary">
+              {language === "uz" ? "Bekor" : "Cancel"}
+            </button>
+            <button onClick={handleBahorHintConfirm} className="flex-1 px-4 py-2 rounded-xl bg-primary text-primary-foreground">
+              {language === "uz" ? "Tushundim" : "Got it"}
+            </button>
+          </div>
         </DialogContent>
       </Dialog>
 
-      {showBahorPicker && <BahorContextPicker spaceId={spaceId} question={bahorQuestion} onSend={handleBahorSend} onCancel={() => { setShowBahorPicker(false); setBahorQuestion(""); }} sending={sendingBahor} />}
+      {showBahorPicker && (
+        <BahorContextPicker 
+          spaceId={spaceId} 
+          question={bahorQuestion} 
+          onSend={handleBahorSend} 
+          onCancel={() => { setShowBahorPicker(false); setBahorQuestion(""); }} 
+          sending={sendingBahor} 
+        />
+      )}
 
       <Dialog open={showReadersModal} onOpenChange={setShowReadersModal}>
-        <DialogContent><DialogHeader><DialogTitle className="flex items-center gap-2"><Users className="w-5 h-5" />{language === "uz" ? "Kim o'qidi" : "Read by"}</DialogTitle></DialogHeader>
-          <div className="space-y-2 max-h-64 overflow-y-auto">{loadingReaders ? <div className="py-4 text-center animate-pulse">{language === "uz" ? "Yuklanmoqda..." : "Loading..."}</div> : readers.length === 0 ? <div className="py-4 text-center text-muted-foreground">{language === "uz" ? "Hali hech kim o'qimagan" : "No readers"}</div> : readers.map((r, i) => (<div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-secondary/50"><div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">{r.user_avatar ? <img src={r.user_avatar} alt="" className="w-8 h-8 rounded-full object-cover" /> : <span className="text-xs font-medium">{r.user_name?.charAt(0) || "U"}</span>}</div><div className="flex-1"><p className="text-sm font-medium">{r.user_name}</p><p className="text-xs text-muted-foreground">{new Date(r.read_at).toLocaleString()}</p></div></div>))}</div>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              {language === "uz" ? "Kim o'qidi" : "Read by"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {loadingReaders ? (
+              <div className="py-4 text-center animate-pulse">{language === "uz" ? "Yuklanmoqda..." : "Loading..."}</div>
+            ) : readers.length === 0 ? (
+              <div className="py-4 text-center text-muted-foreground">{language === "uz" ? "Hali hech kim o'qimagan" : "No readers"}</div>
+            ) : (
+              readers.map((r, i) => (
+                <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-secondary/50">
+                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
+                    {r.user_avatar ? (
+                      <img src={r.user_avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
+                    ) : (
+                      <span className="text-xs font-medium">{r.user_name?.charAt(0) || "U"}</span>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{r.user_name}</p>
+                    <p className="text-xs text-muted-foreground">{new Date(r.read_at).toLocaleString()}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
