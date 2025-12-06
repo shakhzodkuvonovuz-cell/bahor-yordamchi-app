@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Users, FileText, MessageSquare, UserPlus, Check, X, Ban } from "lucide-react";
+import { ArrowLeft, Users, FileText, MessageSquare, UserPlus, Check, X, Ban, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +11,8 @@ import CircleInviteModal from "@/components/circles/CircleInviteModal";
 import CircleFilesTab from "@/components/circles/CircleFilesTab";
 import CircleChatTab from "@/components/circles/CircleChatTab";
 import { CircleTabSkeleton } from "@/components/circles/CircleTabSkeleton";
-import { CircleAIActionsPanel } from "@/components/circles/CircleAIActionsPanel";
+import { CircleAIActionsPanel, type AICard } from "@/components/circles/CircleAIActionsPanel";
+import { CircleAICard } from "@/components/circles/CircleAICard";
 
 interface SpaceData {
   id: string;
@@ -57,11 +58,44 @@ export default function SpaceDetail() {
   // Requests state
   const [requests, setRequests] = useState<JoinRequest[]>([]);
 
+  // AI Cards state
+  const [aiCards, setAiCards] = useState<AICard[]>([]);
+  const [loadingCards, setLoadingCards] = useState(false);
+
   // Invite modal
   const [showInviteModal, setShowInviteModal] = useState(false);
 
   // Ref to send AI card content to chat
   const sendAICardToChatRef = useRef<((content: string, title: string) => void) | null>(null);
+
+  // Fetch AI cards
+  const fetchAICards = async () => {
+    if (!id) return;
+    setLoadingCards(true);
+    try {
+      const { data, error } = await supabase
+        .from("circle_ai_cards")
+        .select("*")
+        .eq("circle_id", id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (!error) setAiCards((data as AICard[]) || []);
+    } catch (err) {
+      console.error("Error fetching AI cards:", err);
+    } finally {
+      setLoadingCards(false);
+    }
+  };
+
+  const handleDeleteCard = async (cardId: string) => {
+    try {
+      await supabase.from("circle_ai_cards").delete().eq("id", cardId);
+      setAiCards(prev => prev.filter(c => c.id !== cardId));
+      toast.success("O'chirildi ✓");
+    } catch (err) {
+      toast.error("Xatolik");
+    }
+  };
 
   const isAdmin = userRole === "owner" || userRole === "admin";
 
@@ -193,6 +227,8 @@ export default function SpaceDetail() {
       fetchMembers();
     } else if (space && activeTab === "requests" && isAdmin) {
       fetchRequests();
+    } else if (space && activeTab === "natijalar") {
+      fetchAICards();
     }
   }, [space, activeTab, isAdmin]);
 
@@ -351,6 +387,13 @@ export default function SpaceDetail() {
               <Users className="w-4 h-4" />
               {language === "uz" ? "A'zolar" : "Members"}
             </TabsTrigger>
+            <TabsTrigger 
+              value="natijalar" 
+              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-elevation-1 transition-all duration-150"
+            >
+              <Sparkles className="w-4 h-4" />
+              Natijalar
+            </TabsTrigger>
             {isAdmin && (
               <TabsTrigger 
                 value="requests" 
@@ -371,6 +414,47 @@ export default function SpaceDetail() {
         {/* Files Tab */}
         <TabsContent value="files" className="flex-1 min-h-0 m-0 overflow-y-auto tab-panel-transition">
           <CircleFilesTab spaceId={id || ""} isAdmin={isAdmin} />
+        </TabsContent>
+
+        {/* Natijalar (AI Results) Tab */}
+        <TabsContent value="natijalar" className="flex-1 min-h-0 m-0 overflow-y-auto tab-panel-transition">
+          <div className="max-w-2xl mx-auto px-4 py-4 space-y-4 pb-[env(safe-area-inset-bottom)]">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm text-muted-foreground">AI tomonidan yaratilgan natijalar</p>
+              <CircleAIActionsPanel 
+                circleId={id || ""} 
+                onSendToChat={(content, title) => {
+                  if (sendAICardToChatRef.current) {
+                    sendAICardToChatRef.current(content, title);
+                  }
+                }}
+              />
+            </div>
+            {loadingCards ? (
+              <CircleTabSkeleton type="members" />
+            ) : aiCards.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Sparkles className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                <p className="font-medium">Hali natijalar yo'q</p>
+                <p className="text-sm mt-1">AI Amallar tugmasini bosib natija yarating</p>
+              </div>
+            ) : (
+              aiCards.map((card) => (
+                <CircleAICard
+                  key={card.id}
+                  card={card}
+                  circleId={id || ""}
+                  onDelete={() => handleDeleteCard(card.id)}
+                  onSendToChat={(content, title) => {
+                    if (sendAICardToChatRef.current) {
+                      sendAICardToChatRef.current(content, title);
+                    }
+                  }}
+                  isLatest={false}
+                />
+              ))
+            )}
+          </div>
         </TabsContent>
 
         {/* Members Tab */}
