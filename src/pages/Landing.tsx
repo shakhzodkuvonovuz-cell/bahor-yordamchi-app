@@ -430,7 +430,7 @@ export default function Landing() {
       {/* SECTION 3 — Doiralar (Circles) */}
       <section id="circles" className="py-16 sm:py-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div ref={circlesRef.ref} className={`grid lg:grid-cols-2 gap-10 items-center transition-all duration-700 ${circlesRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
+          <div ref={circlesRef.ref} className={`grid lg:grid-cols-2 gap-8 lg:gap-12 items-start transition-all duration-700 ${circlesRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
             {/* Realistic Circles Mockup - Bigger and more detailed */}
             <div className={`order-2 lg:order-1 transition-all duration-700 ${circlesRef.isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}>
               <div className="glass-premium rounded-2xl p-4 sm:p-5 border border-border/40 max-w-lg mx-auto shadow-xl">
@@ -447,15 +447,16 @@ export default function Landing() {
                   {/* Title and member count */}
                   <div className="flex-1 min-w-0">
                     <span className="font-semibold text-sm text-foreground block truncate">{t('landing.circles.mockupTitle')}</span>
-                    <span className="text-[10px] text-muted-foreground">5 {t('landing.circles.members')}</span>
+                    <span className="text-[10px] text-muted-foreground">6 {t('landing.circles.members')}</span>
                   </div>
-                  {/* Online members mini avatars - moved to header */}
+                  {/* Online members mini avatars - Turkic/Central Asian photos */}
                   <div className="flex -space-x-1.5">
-                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=64&h=64&fit=crop&crop=face" alt="" className="w-6 h-6 rounded-full border-2 border-background object-cover hover:scale-110 hover:z-10 transition-transform cursor-pointer" />
-                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=64&h=64&fit=crop&crop=face" alt="" className="w-6 h-6 rounded-full border-2 border-background object-cover hover:scale-110 hover:z-10 transition-transform cursor-pointer" />
+                    <img src="https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=64&h=64&fit=crop&crop=face" alt="" className="w-6 h-6 rounded-full border-2 border-background object-cover hover:scale-110 hover:z-10 transition-transform cursor-pointer" />
+                    <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=64&h=64&fit=crop&crop=face" alt="" className="w-6 h-6 rounded-full border-2 border-background object-cover hover:scale-110 hover:z-10 transition-transform cursor-pointer" />
                     <div className="w-6 h-6 rounded-full bg-orange-500 border-2 border-background flex items-center justify-center text-[8px] text-white font-medium hover:scale-110 hover:z-10 transition-transform cursor-pointer">JA</div>
                     <div className="w-6 h-6 rounded-full bg-green-500 border-2 border-background flex items-center justify-center text-[8px] text-white font-medium hover:scale-110 hover:z-10 transition-transform cursor-pointer">NK</div>
-                    <div className="w-6 h-6 rounded-full bg-pink-500 border-2 border-background flex items-center justify-center text-[8px] text-white font-medium hover:scale-110 hover:z-10 transition-transform cursor-pointer">+2</div>
+                    <div className="w-6 h-6 rounded-full bg-purple-500 border-2 border-background flex items-center justify-center text-[8px] text-white font-medium hover:scale-110 hover:z-10 transition-transform cursor-pointer">SU</div>
+                    <div className="w-6 h-6 rounded-full bg-pink-500 border-2 border-background flex items-center justify-center text-[8px] text-white font-medium hover:scale-110 hover:z-10 transition-transform cursor-pointer">+1</div>
                   </div>
                 </div>
                 
@@ -492,11 +493,11 @@ export default function Landing() {
                 </div>
                 
                 {/* Chat messages area with hover effects */}
-                <div className="space-y-3 mb-3 max-h-64 overflow-y-auto">
-                  {/* User message 1 - with real photo */}
+                <div className="space-y-3 mb-3 max-h-72 overflow-y-auto">
+                  {/* User message 1 - with Turkic photo */}
                   <div className="flex items-start gap-2 group hover:bg-secondary/30 rounded-xl p-1 -m-1 transition-colors">
                     <img 
-                      src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=64&h=64&fit=crop&crop=face" 
+                      src="https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=64&h=64&fit=crop&crop=face" 
                       alt="Asror" 
                       className="w-7 h-7 rounded-full object-cover shrink-0 ring-2 ring-transparent group-hover:ring-primary/30 transition-all"
                     />
@@ -511,10 +512,10 @@ export default function Landing() {
                     </div>
                   </div>
                   
-                  {/* User message 2 - with real photo */}
+                  {/* User message 2 - with Turkic photo */}
                   <div className="flex items-start gap-2 group hover:bg-secondary/30 rounded-xl p-1 -m-1 transition-colors">
                     <img 
-                      src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=64&h=64&fit=crop&crop=face" 
+                      src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=64&h=64&fit=crop&crop=face" 
                       alt="Dilnoza" 
                       className="w-7 h-7 rounded-full object-cover shrink-0 ring-2 ring-transparent group-hover:ring-primary/30 transition-all"
                     />
@@ -529,7 +530,7 @@ export default function Landing() {
                     </div>
                   </div>
                   
-                  {/* /bahor AI request */}
+                  {/* /bahor AI request - fixed typo */}
                   <div className="flex items-start gap-2 group hover:bg-secondary/30 rounded-xl p-1 -m-1 transition-colors">
                     <div className="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center text-[10px] text-white font-medium shrink-0 ring-2 ring-transparent group-hover:ring-primary/30 transition-all">
                       JA
@@ -540,7 +541,7 @@ export default function Landing() {
                         <span className="text-[10px] text-muted-foreground">10:35</span>
                       </div>
                       <div className="bg-secondary/60 rounded-xl rounded-tl-sm px-3 py-2 text-xs text-foreground group-hover:bg-secondary/80 transition-colors">
-                        <span className="text-primary font-medium">/bahor</span> shu hafta qanday vazifalar qoldik?
+                        <span className="text-primary font-medium">/bahor</span> shu hafta qanday vazifalar qoldi?
                       </div>
                     </div>
                   </div>
@@ -593,21 +594,65 @@ export default function Landing() {
               </div>
             </div>
             
-            {/* Content */}
+            {/* Content with key features explanation */}
             <div className="order-1 lg:order-2">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium mb-4">
                 <Users className="w-3.5 h-3.5" />
                 {t('landing.circles.badge')}
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-foreground">{t('landing.circles.title')}</h2>
-              <p className="text-muted-foreground mb-4">{t('landing.circles.desc')}</p>
+              <p className="text-muted-foreground mb-6">{t('landing.circles.desc')}</p>
+              
+              {/* Key Features List */}
+              <div className="space-y-4 mb-6">
+                <div className="flex items-start gap-3 group">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                    <MessageSquare className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground mb-0.5">{t('landing.circles.feature.chat')}</h4>
+                    <p className="text-xs text-muted-foreground">{t('landing.circles.feature.chatDesc')}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3 group">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground mb-0.5">{t('landing.circles.feature.ai')}</h4>
+                    <p className="text-xs text-muted-foreground">{t('landing.circles.feature.aiDesc')}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3 group">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                    <FileText className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground mb-0.5">{t('landing.circles.feature.files')}</h4>
+                    <p className="text-xs text-muted-foreground">{t('landing.circles.feature.filesDesc')}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3 group">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                    <ListTodo className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground mb-0.5">{t('landing.circles.feature.outcomes')}</h4>
+                    <p className="text-xs text-muted-foreground">{t('landing.circles.feature.outcomesDesc')}</p>
+                  </div>
+                </div>
+              </div>
+              
               <p className="text-sm text-muted-foreground mb-2">{t('landing.circles.templates')}</p>
               <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                <span className="px-2 py-1 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">Study</span>
-                <span className="px-2 py-1 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">Work</span>
-                <span className="px-2 py-1 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">Family</span>
-                <span className="px-2 py-1 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">Creator</span>
-                <span className="px-2 py-1 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">Small Biz</span>
+                <span className="px-2 py-1 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">📚 Study</span>
+                <span className="px-2 py-1 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">💼 Work</span>
+                <span className="px-2 py-1 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">👨‍👩‍👧‍👦 Family</span>
+                <span className="px-2 py-1 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">🎨 Creator</span>
+                <span className="px-2 py-1 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">🏪 Small Biz</span>
               </div>
             </div>
           </div>
