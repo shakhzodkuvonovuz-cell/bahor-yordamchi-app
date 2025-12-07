@@ -3,7 +3,7 @@ import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import bahorLogo from "@/assets/bahor-logo.png";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, AlertCircle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { signInWithGoogleUnified, isNativePlatform } from "@/lib/auth/googleAuth";
 import { trackSignupStarted } from "@/lib/analytics";
 
 export default function AuthGoogle() {
@@ -20,12 +20,7 @@ export default function AuthGoogle() {
     trackSignupStarted("google");
     
     try {
-      const { error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`
-        }
-      });
+      const { error: oauthError } = await signInWithGoogleUnified(redirectTo);
       
       if (oauthError) {
         if (oauthError.message?.includes("provider") || oauthError.message?.includes("not enabled")) {
@@ -34,8 +29,16 @@ export default function AuthGoogle() {
           setError("Xatolik yuz berdi. Qayta urinib ko'ring.");
         }
         setLoading(false);
+      } else if (isNativePlatform()) {
+        // On native, browser is opened - user will return via deep link
+        // Keep loading state true until deep link callback
+        // If user cancels, they can press back
+        setTimeout(() => {
+          // Reset loading after 60s if no callback (user likely cancelled)
+          setLoading(false);
+        }, 60000);
       }
-      // If no error, user will be redirected to Google
+      // If no error on web, user will be redirected to Google
     } catch (err) {
       setError("Xatolik yuz berdi. Qayta urinib ko'ring.");
       setLoading(false);
