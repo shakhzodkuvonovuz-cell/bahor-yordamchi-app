@@ -169,6 +169,34 @@ function detectImageGenerationIntent(userMsg: string, hasImageAttachment: boolea
     }
   }
   
+  // NEW: Detect image prompt-like descriptions (descriptive scene prompts)
+  // These typically contain: composition terms, visual terms, camera/lens terms, style terms
+  const imagePromptIndicators = [
+    // Composition & scene types
+    /\b(wide shot|close up|closeup|portrait|landscape|scene|panorama|aerial view|bird's eye|eye level|low angle|high angle)\b/i,
+    // Camera/lens terms
+    /\b(35mm|50mm|85mm|lens|camera|shot|frame|composition|aspect ratio|--ar\s*\d+:\d+)\b/i,
+    // Visual style terms
+    /\b(realistic|photorealistic|hyper realistic|cinematic|dramatic lighting|natural lighting|golden hour|blue hour|studio lighting)\b/i,
+    // Art/render terms
+    /\b(ultra hd|8k|4k|high resolution|detailed|sharp|crisp|bokeh|depth of field|dof)\b/i,
+    // Photo style keywords
+    /\b(documentary photo|street photography|editorial|magazine style|professional photo)\b/i,
+  ];
+  
+  let matchCount = 0;
+  for (const pattern of imagePromptIndicators) {
+    if (pattern.test(qLower)) {
+      matchCount++;
+    }
+  }
+  
+  // If message contains 2+ image prompt indicators AND is descriptive (length > 50 chars), treat as image prompt
+  if (matchCount >= 2 && q.length > 50) {
+    console.log('[Image Detect] Prompt-like description detected, matchCount:', matchCount, ', prompt:', q.slice(0, 80));
+    return { isImageGen: true, prompt: q };
+  }
+  
   console.log('[Image Detect] No image intent found in:', qLower.slice(0, 50));
   return { isImageGen: false, prompt: "" };
 }
