@@ -33,8 +33,8 @@ interface NavItem {
 
 const PRIMARY_NAV: NavItem[] = [
   { id: "new-chat", labelKey: "sidebar.new_chat", icon: PenLine, path: "/chat/general", isNewChat: true },
-  { id: "chat", labelKey: "nav.chat", icon: MessageSquare, path: "/chat/general" },
-  { id: "modes", labelKey: "nav.modes", icon: Sparkles, path: "/modes" },
+  { id: "chat", labelKey: "sidebar.chat", icon: MessageSquare, path: "/modes" },
+  { id: "modes", labelKey: "sidebar.modes", icon: Sparkles, path: "/modes-list" },
   { id: "circles", labelKey: "nav.circles", icon: Users, path: "/circles" },
   { id: "tools", labelKey: "nav.tools", icon: FileText, path: "/tools/documents" },
 ];
@@ -57,8 +57,8 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
     if (path === "/modes") {
       return location.pathname === "/modes";
     }
-    if (path === "/chat/general") {
-      return location.pathname.startsWith("/chat");
+    if (path === "/modes-list") {
+      return location.pathname === "/modes-list";
     }
     if (path === "/circles") {
       return location.pathname.startsWith("/circles");

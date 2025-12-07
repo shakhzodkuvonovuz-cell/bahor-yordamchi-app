@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Send, ChevronDown, Check, AlertCircle } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Send, ChevronDown, Check, AlertCircle, Paperclip, Camera, X, FileText, Image as ImageIcon } from "lucide-react";
 import { CHAT_MODES } from "@/data/modes";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import {
@@ -10,12 +10,39 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+
+interface PendingAttachment {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  file: File;
+  previewUrl?: string;
+}
 
 export default function Home() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { language, t } = useTranslation();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [input, setInput] = useState("");
   const [selectedMode, setSelectedMode] = useState("general");
+  const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  // Handle mode preselection from query param
+  useEffect(() => {
+    const modeParam = searchParams.get("mode");
+    if (modeParam && CHAT_MODES.some(m => m.id === modeParam)) {
+      setSelectedMode(modeParam);
+    }
+  }, [searchParams]);
 
   // Mode icons mapping
   const modeIcons: Record<string, string> = {
@@ -93,9 +120,110 @@ export default function Home() {
     return prompts[language] || prompts.uz;
   };
 
-  const handleSend = () => {
-    if (!input.trim()) return;
-    navigate(`/chat/${selectedMode}`, { state: { initialMessage: input } });
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newAttachments: PendingAttachment[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      
+      // File size check (10MB max)
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: language === "uz" ? "Xatolik" : "Error",
+          description: language === "uz" ? `${file.name}: Fayl hajmi 10MB dan oshmasligi kerak` : `${file.name}: File size must not exceed 10MB`,
+          variant: "destructive",
+        });
+        continue;
+      }
+
+      const isImage = file.type.startsWith("image/");
+      const previewUrl = isImage ? URL.createObjectURL(file) : undefined;
+
+      newAttachments.push({
+        id: crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}-${i}`,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        file,
+        previewUrl,
+      });
+    }
+
+    if (newAttachments.length > 0) {
+      setPendingAttachments(prev => [...prev, ...newAttachments]);
+    }
+    
+    // Reset input
+    e.target.value = "";
+  };
+
+  const removeAttachment = (id: string) => {
+    setPendingAttachments(prev => {
+      const att = prev.find(a => a.id === id);
+      if (att?.previewUrl) {
+        URL.revokeObjectURL(att.previewUrl);
+      }
+      return prev.filter(a => a.id !== id);
+    });
+  };
+
+  const handleSend = async () => {
+    if (!input.trim() && pendingAttachments.length === 0) return;
+
+    // If we have attachments, upload them first then navigate with attachments
+    if (pendingAttachments.length > 0 && user) {
+      setIsUploading(true);
+      try {
+        const uploadedAttachments: Array<{ name: string; url: string; type: string; size: number }> = [];
+        
+        for (const att of pendingAttachments) {
+          const fileExt = att.name.split(".").pop();
+          const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+          const filePath = `${user.id}/${fileName}`;
+
+          const { error } = await supabase.storage
+            .from("chat-attachments")
+            .upload(filePath, att.file);
+
+          if (error) {
+            console.error("Upload error:", error);
+            continue;
+          }
+
+          const { data: { publicUrl } } = supabase.storage
+            .from("chat-attachments")
+            .getPublicUrl(filePath);
+
+          uploadedAttachments.push({
+            name: att.name,
+            url: publicUrl,
+            type: att.type,
+            size: att.size,
+          });
+        }
+
+        navigate(`/chat/${selectedMode}`, { 
+          state: { 
+            initialMessage: input,
+            attachments: uploadedAttachments,
+          } 
+        });
+      } catch (error) {
+        console.error("Upload error:", error);
+        toast({
+          title: language === "uz" ? "Xatolik" : "Error",
+          description: language === "uz" ? "Fayllarni yuklashda xatolik" : "Failed to upload files",
+          variant: "destructive",
+        });
+      } finally {
+        setIsUploading(false);
+      }
+    } else {
+      navigate(`/chat/${selectedMode}`, { state: { initialMessage: input } });
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -174,9 +302,74 @@ export default function Home() {
                 </DropdownMenu>
               </div>
 
+              {/* Pending Attachments Preview */}
+              {pendingAttachments.length > 0 && (
+                <div className="px-3 pt-3 pb-0 flex flex-wrap gap-2">
+                  {pendingAttachments.map((att) => (
+                    <div 
+                      key={att.id}
+                      className="relative group flex items-center gap-2 px-2 py-1.5 bg-secondary/50 border border-border rounded-lg text-sm"
+                    >
+                      {att.previewUrl ? (
+                        <img src={att.previewUrl} alt={att.name} className="w-8 h-8 object-cover rounded" />
+                      ) : (
+                        <FileText className="w-4 h-4 text-muted-foreground" />
+                      )}
+                      <span className="truncate max-w-[100px]">{att.name}</span>
+                      <button
+                        onClick={() => removeAttachment(att.id)}
+                        className="p-0.5 rounded-full hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Input Row */}
               <div className="p-3 sm:p-4">
-                <div className="flex gap-3 items-end">
+                {/* Hidden file inputs */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.txt,.md,.json,.csv,.png,.jpg,.jpeg,.webp,.doc,.docx"
+                  multiple
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                
+                <div className="flex gap-2 items-end">
+                  {/* Attachment Buttons */}
+                  <div className="flex gap-1 flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
+                      className="p-2.5 text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-xl transition-all duration-200 disabled:opacity-40 active:scale-95"
+                      aria-label="Attach file"
+                    >
+                      <Paperclip className="w-5 h-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => cameraInputRef.current?.click()}
+                      disabled={isUploading}
+                      className="p-2.5 text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-xl transition-all duration-200 disabled:opacity-40 active:scale-95"
+                      aria-label="Take photo"
+                    >
+                      <Camera className="w-5 h-5" />
+                    </button>
+                  </div>
+
                   <textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
@@ -187,7 +380,7 @@ export default function Home() {
                   />
                   <button
                     onClick={handleSend}
-                    disabled={!input.trim()}
+                    disabled={(!input.trim() && pendingAttachments.length === 0) || isUploading}
                     className="rounded-xl bg-primary text-primary-foreground w-11 h-11 flex items-center justify-center hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95 shadow-lg shadow-primary/20 flex-shrink-0"
                   >
                     <Send className="w-5 h-5" />

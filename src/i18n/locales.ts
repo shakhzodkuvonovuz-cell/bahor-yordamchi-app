@@ -20,6 +20,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     // Sidebar
     'sidebar.new_chat': 'Yangi chat',
     'sidebar.account': 'Hisob',
+    'sidebar.chat': 'Suhbat',
+    'sidebar.modes': 'Rejimlar',
     
     // Header & Navigation
     'nav.home': 'Bosh sahifa',
@@ -599,6 +601,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     // Sidebar
     'sidebar.new_chat': 'New Chat',
     'sidebar.account': 'Account',
+    'sidebar.chat': 'Chat',
+    'sidebar.modes': 'Modes',
     
     // Header & Navigation
     'nav.home': 'Home',
@@ -1167,6 +1171,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     // Sidebar
     'sidebar.new_chat': 'Новый чат',
     'sidebar.account': 'Аккаунт',
+    'sidebar.chat': 'Чат',
+    'sidebar.modes': 'Режимы',
     'app.tagline.main': 'Первый узбекский искусственный интеллект — для узбеков.',
     'app.tagline.sub': 'Быстрый ИИ-ассистент, созданный специально для узбекского языка и культуры.',
     
@@ -1677,6 +1683,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     // Sidebar
     'sidebar.new_chat': 'Yeni Sohbet',
     'sidebar.account': 'Hesap',
+    'sidebar.chat': 'Sohbet',
+    'sidebar.modes': 'Modlar',
     'app.tagline.main': 'İlk Özbek yapay zekâsı — Özbekler için.',
     'app.tagline.sub': 'Özbek dili ve kültürü için özel olarak tasarlanmış, çok hızlı bir yapay zekâ asistanı.',
     
