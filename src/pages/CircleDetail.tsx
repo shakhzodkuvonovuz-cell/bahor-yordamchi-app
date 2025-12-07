@@ -516,13 +516,13 @@ export default function SpaceDetail() {
           <CircleChatTab spaceId={id || ""} onSendAICardRef={sendAICardToChatRef} />
         </TabsContent>
 
-        {/* Files Tab */}
-        <TabsContent value="files" forceMount className="flex-1 min-h-0 overflow-y-auto mt-0 data-[state=inactive]:hidden">
+        {/* Files Tab - NO forceMount, let Radix handle mount/unmount */}
+        <TabsContent value="files" className="flex-1 min-h-0 overflow-y-auto mt-0">
           <CircleFilesTab spaceId={id || ""} isAdmin={isAdmin} />
         </TabsContent>
 
-        {/* Natijalar (AI Results) Tab - lazy loaded */}
-        <TabsContent value="natijalar" forceMount className="flex-1 min-h-0 overflow-y-auto mt-0 data-[state=inactive]:hidden">
+        {/* Natijalar (AI Results) Tab */}
+        <TabsContent value="natijalar" className="flex-1 min-h-0 overflow-y-auto mt-0">
           <div className="max-w-2xl mx-auto px-4 pt-4 space-y-4 pb-[env(safe-area-inset-bottom)]">
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm text-muted-foreground">AI tomonidan yaratilgan natijalar</p>
@@ -573,7 +573,7 @@ export default function SpaceDetail() {
         </TabsContent>
 
         {/* Members Tab */}
-        <TabsContent value="members" forceMount className="flex-1 min-h-0 overflow-y-auto mt-0 data-[state=inactive]:hidden">
+        <TabsContent value="members" className="flex-1 min-h-0 overflow-y-auto mt-0">
           {membersLoading ? (
             <CircleTabSkeleton type="members" />
           ) : membersError ? (
@@ -642,7 +642,7 @@ export default function SpaceDetail() {
 
         {/* Requests Tab (Admin only) */}
         {isAdmin && (
-          <TabsContent value="requests" forceMount className="flex-1 min-h-0 overflow-y-auto mt-0 data-[state=inactive]:hidden">
+          <TabsContent value="requests" className="flex-1 min-h-0 overflow-y-auto mt-0">
             {requestsLoading ? (
               <CircleTabSkeleton type="requests" />
             ) : requestsError ? (
