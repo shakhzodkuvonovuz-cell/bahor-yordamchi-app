@@ -93,16 +93,16 @@ function HeroMockup() {
         <div className="p-4 min-h-[320px]">
           {/* Slide 1: Web Search */}
           {activeSlide === 0 && (
-            <div className="space-y-3 animate-fade-in">
+            <div className="space-y-3">
               {/* User message */}
-              <div className="flex justify-end">
+              <div className="flex justify-end opacity-0 animate-[fade-in_0.4s_ease-out_0.1s_forwards]">
                 <div className="bg-primary/15 border border-primary/30 text-foreground px-4 py-2.5 rounded-2xl rounded-tr-sm max-w-[85%]">
                   <p className="text-sm">{t('mockup.web.userMessage')}</p>
                 </div>
               </div>
               
               {/* ThinkBar */}
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/50 border border-border/30 w-fit">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/50 border border-border/30 w-fit opacity-0 animate-[fade-in_0.4s_ease-out_0.3s_forwards]">
                 <Sparkles className="w-3.5 h-3.5 text-primary" />
                 <span className="text-xs text-muted-foreground">{t('mockup.web.searching')}</span>
                 <div className="flex items-center gap-0.5">
@@ -113,7 +113,7 @@ function HeroMockup() {
               </div>
               
               {/* Sources row */}
-              <div className="space-y-2">
+              <div className="space-y-2 opacity-0 animate-[fade-in_0.4s_ease-out_0.5s_forwards]">
                 <div className="flex items-center gap-2">
                   <Search className="w-3 h-3 text-primary" />
                   <span className="text-[10px] text-muted-foreground">{t('mockup.web.sourcesFound')}</span>
@@ -132,7 +132,7 @@ function HeroMockup() {
               </div>
               
               {/* AI response - collapsed */}
-              <div className="space-y-2">
+              <div className="space-y-2 opacity-0 animate-[fade-in_0.4s_ease-out_0.7s_forwards]">
                 <p className="text-sm font-medium text-foreground">{t('mockup.web.aiTitle')}</p>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   {t('mockup.web.aiPreview')}
@@ -150,7 +150,7 @@ function HeroMockup() {
                 </button>
                 
                 {/* Action buttons */}
-                <div className="flex items-center gap-1 pt-1">
+                <div className="flex items-center gap-1 pt-1 opacity-0 animate-[fade-in_0.4s_ease-out_0.9s_forwards]">
                   <button className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors text-muted-foreground">
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                   </button>
@@ -170,16 +170,16 @@ function HeroMockup() {
           
           {/* Slide 2: Image Generation */}
           {activeSlide === 1 && (
-            <div className="space-y-3 animate-fade-in">
+            <div className="space-y-3">
               {/* User message */}
-              <div className="flex justify-end">
+              <div className="flex justify-end opacity-0 animate-[fade-in_0.4s_ease-out_0.1s_forwards]">
                 <div className="bg-primary/15 border border-primary/30 text-foreground px-4 py-2.5 rounded-2xl rounded-tr-sm max-w-[85%]">
                   <p className="text-sm">{t('mockup.image.userMessage')}</p>
                 </div>
               </div>
               
               {/* ThinkBar - generating */}
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/50 border border-border/30 w-fit">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/50 border border-border/30 w-fit opacity-0 animate-[fade-in_0.4s_ease-out_0.3s_forwards]">
                 <ImagePlus className="w-3.5 h-3.5 text-primary" />
                 <span className="text-xs text-muted-foreground">{t('mockup.image.generating')}</span>
                 <div className="flex items-center gap-0.5">
@@ -190,11 +190,11 @@ function HeroMockup() {
               </div>
               
               {/* AI response with generated image */}
-              <div className="space-y-2">
+              <div className="space-y-2 opacity-0 animate-[fade-in_0.4s_ease-out_0.5s_forwards]">
                 <p className="text-xs text-muted-foreground">{t('mockup.image.aiResponse')}</p>
                 
                 {/* Generated image preview */}
-                <div className="relative rounded-xl overflow-hidden border border-border/40 bg-secondary/30">
+                <div className="relative rounded-xl overflow-hidden border border-border/40 bg-secondary/30 opacity-0 animate-[scale-in_0.5s_ease-out_0.7s_forwards]">
                   <img 
                     src={samarkandImage} 
                     alt="Generated Registan" 
@@ -212,7 +212,7 @@ function HeroMockup() {
                 </div>
                 
                 {/* Action buttons */}
-                <div className="flex items-center gap-1 pt-1">
+                <div className="flex items-center gap-1 pt-1 opacity-0 animate-[fade-in_0.4s_ease-out_0.9s_forwards]">
                   <button className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors text-muted-foreground">
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                   </button>
@@ -226,7 +226,7 @@ function HeroMockup() {
               </div>
               
               {/* Follow-up suggestions */}
-              <div className="flex gap-2 flex-wrap pt-1">
+              <div className="flex gap-2 flex-wrap pt-1 opacity-0 animate-[fade-in_0.4s_ease-out_1.1s_forwards]">
                 <button className="text-[10px] px-3 py-1.5 rounded-full bg-secondary/50 border border-border/40 text-muted-foreground hover:bg-secondary transition-colors">
                   {t('mockup.image.suggestion1')}
                 </button>
@@ -239,9 +239,9 @@ function HeroMockup() {
           
           {/* Slide 3: Text to PDF */}
           {activeSlide === 2 && (
-            <div className="space-y-3 animate-fade-in">
+            <div className="space-y-3">
               {/* Previous AI response (truncated) */}
-              <div className="space-y-1 pb-2 border-b border-border/30">
+              <div className="space-y-1 pb-2 border-b border-border/30 opacity-0 animate-[fade-in_0.4s_ease-out_0.1s_forwards]">
                 <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
                   {t('mockup.pdf.previousResponse')}
                 </p>
@@ -252,14 +252,14 @@ function HeroMockup() {
               </div>
               
               {/* User message */}
-              <div className="flex justify-end">
+              <div className="flex justify-end opacity-0 animate-[fade-in_0.4s_ease-out_0.3s_forwards]">
                 <div className="bg-primary/15 border border-primary/30 text-foreground px-4 py-2.5 rounded-2xl rounded-tr-sm max-w-[85%]">
                   <p className="text-sm">{t('mockup.pdf.userMessage')}</p>
                 </div>
               </div>
               
               {/* ThinkBar - creating file */}
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/50 border border-border/30 w-fit">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/50 border border-border/30 w-fit opacity-0 animate-[fade-in_0.4s_ease-out_0.5s_forwards]">
                 <FileText className="w-3.5 h-3.5 text-primary" />
                 <span className="text-xs text-muted-foreground">{t('mockup.pdf.creating')}</span>
                 <div className="flex items-center gap-0.5">
@@ -270,11 +270,11 @@ function HeroMockup() {
               </div>
               
               {/* AI response with PDF file */}
-              <div className="space-y-2">
+              <div className="space-y-2 opacity-0 animate-[fade-in_0.4s_ease-out_0.7s_forwards]">
                 <p className="text-xs text-muted-foreground">{t('mockup.pdf.aiResponse')}</p>
                 
                 {/* PDF file card */}
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/40 border border-border/40">
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/40 border border-border/40 opacity-0 animate-[scale-in_0.5s_ease-out_0.9s_forwards]">
                   <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center shrink-0">
                     <FileText className="w-5 h-5 text-red-500" />
                   </div>
@@ -288,7 +288,7 @@ function HeroMockup() {
                 </div>
                 
                 {/* Action buttons */}
-                <div className="flex items-center gap-1 pt-1">
+                <div className="flex items-center gap-1 pt-1 opacity-0 animate-[fade-in_0.4s_ease-out_1.1s_forwards]">
                   <button className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors text-muted-foreground">
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                   </button>
@@ -299,7 +299,7 @@ function HeroMockup() {
               </div>
               
               {/* Follow-up suggestions */}
-              <div className="flex gap-2 flex-wrap pt-1">
+              <div className="flex gap-2 flex-wrap pt-1 opacity-0 animate-[fade-in_0.4s_ease-out_1.3s_forwards]">
                 <button className="text-[10px] px-3 py-1.5 rounded-full bg-secondary/50 border border-border/40 text-muted-foreground hover:bg-secondary transition-colors">
                   {t('mockup.pdf.suggestion1')}
                 </button>
