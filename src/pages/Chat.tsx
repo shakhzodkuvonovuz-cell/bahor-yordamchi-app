@@ -16,6 +16,7 @@ import {
   ChatEmptyState,
   EditingIndicator,
   ExportToPdfModal,
+  ThinkBar,
 } from "@/components/chat";
 import { InputWaveform } from "@/components/chat/InputWaveform";
 import { ChatListSkeleton, ChatMessagesSkeleton } from "@/components/chat/ChatListSkeleton";
@@ -1989,17 +1990,40 @@ export default function Chat() {
                   />
                   
                   
-                  {/* ReasonedChip (status pill) - shows during streaming and persists after completion */}
+                  {/* ThinkBar - shows above assistant message while generating */}
+                  {message.role === 'assistant' && 
+                   message.id === lastAssistantMessageId && 
+                   (isLoading || typing) && 
+                   !message.trace && (
+                    <div className="mb-3">
+                      <ThinkBar
+                        trace={activeTrace}
+                        isGenerating={isLoading || typing}
+                        language={language}
+                        elapsedLive={liveElapsedMs}
+                        modelPreference={modelPreference}
+                        onExpandClick={() => {
+                          if (activeTrace?.isComplete) {
+                            haptic("selection");
+                            setSelectedTraceMessageId(message.id);
+                            setTraceSheetOpen(true);
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
+                  
+                  {/* ReasonedChip (status pill) - shows after completion */}
                   {message.role === 'assistant' && (
                     message.trace ||  // Persisted trace from DB/history
-                    (message.id === lastAssistantMessageId && (activeTrace || isLoading)) // Current message while generating
+                    (message.id === lastAssistantMessageId && activeTrace?.isComplete) // Current message after generating complete
                   ) && (
                     <div className="flex justify-start mt-2 ml-12">
                       <ReasonedChip
                         trace={message.trace || (message.id === lastAssistantMessageId ? activeTrace : null)}
-                        isGenerating={(isLoading || typing) && !message.trace && message.id === lastAssistantMessageId}
+                        isGenerating={false}
                         language={language}
-                        elapsedLive={message.id === lastAssistantMessageId && !message.trace ? liveElapsedMs : undefined}
+                        elapsedLive={undefined}
                         onClick={() => {
                           const traceData = message.trace || (message.id === lastAssistantMessageId ? activeTrace : null);
                           if (traceData?.isComplete) {
