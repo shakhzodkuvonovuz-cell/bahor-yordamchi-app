@@ -8,6 +8,8 @@ import { CollapsibleMessage, OutputFormatButtons } from "@/components/chat";
 import { formatAssistantText } from "@/lib/formatAssistant";
 import { track } from "@/lib/analytics";
 import { ImageLightbox } from "@/components/ImageLightbox";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ChatMessageProps {
   message: Message;
@@ -45,10 +47,28 @@ export default function ChatMessage({
   isMobile = false,
 }: ChatMessageProps) {
   const isUser = message.role === "user";
+  const { profile } = useAuth();
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const [isPressed, setIsPressed] = useState(false);
   const [showMobileSheet, setShowMobileSheet] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+
+  // Get user initials for avatar fallback
+  const getUserInitials = () => {
+    if (profile?.first_name && profile?.last_name) {
+      return `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase();
+    }
+    if (profile?.full_name) {
+      const parts = profile.full_name.split(' ');
+      return parts.length > 1 
+        ? `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+        : parts[0][0].toUpperCase();
+    }
+    if (profile?.email) {
+      return profile.email[0].toUpperCase();
+    }
+    return "U";
+  };
 
   // Parse message for Bahor Cards (only for AI messages)
   const hasCards = !isUser && hasCardContent(message.content);
@@ -263,16 +283,16 @@ export default function ChatMessage({
 
   return (
     <>
-      {/* User message: right-aligned bubble */}
+      {/* User message: right-aligned bubble with avatar */}
       {isUser ? (
         <div
-          className="flex justify-end group animate-fade-in chat-message-user"
+          className="flex justify-end items-end gap-2 group animate-fade-in chat-message-user"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
           onTouchCancel={handleTouchEnd}
           onTouchMove={handleTouchMove}
         >
-          <div className="relative max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] min-w-0">
+          <div className="relative max-w-[80%] sm:max-w-[70%] lg:max-w-[60%] min-w-0">
             {/* Desktop actions button - appears on hover */}
             {showActions && !isMobile && (
               <div className="absolute left-0 -translate-x-full pr-2 top-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -308,6 +328,14 @@ export default function ChatMessage({
               )}
             </div>
           </div>
+          
+          {/* User avatar */}
+          <Avatar className="w-7 h-7 flex-shrink-0 mb-1">
+            <AvatarImage src={profile?.avatar_url || undefined} alt="User" />
+            <AvatarFallback className="bg-secondary text-secondary-foreground text-xs font-medium">
+              {getUserInitials()}
+            </AvatarFallback>
+          </Avatar>
         </div>
       ) : (
         /* AI message: full-width, no bubble, blends with background */
