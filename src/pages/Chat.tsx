@@ -25,6 +25,7 @@ import { TraceSheet } from "@/components/chat/TraceSheet";
 import ChatSearchBar from "@/components/ChatSearchBar";
 import ChatNotesDrawer, { getChatNotes } from "@/components/ChatNotesDrawer";
 import ChatStopButton from "@/components/ChatStopButton";
+import { ModelToggle, getModelPreference, type ModelPreference } from "@/components/ModelToggle";
 import { useNetworkStatus, checkNetwork } from "@/hooks/useNetworkStatus";
 import { Message, ChatAttachment } from "@/types/chat";
 import type { TraceEvent, TraceComplete, MessageTrace, TraceStepData } from "@/types/trace";
@@ -208,6 +209,7 @@ export default function Chat() {
   const [searchUsed, setSearchUsed] = useState(false);
   const [searchUrls, setSearchUrls] = useState<string[]>([]);
   const [failedMessageContent, setFailedMessageContent] = useState<string | null>(null);
+  const [modelPreference, setModelPreference] = useState<ModelPreference>(getModelPreference);
   
   // Trace state for "Reasoned for Xs" feature
   const [activeTrace, setActiveTrace] = useState<MessageTrace | null>(null);
@@ -747,6 +749,7 @@ export default function Chat() {
           body: JSON.stringify({
             messages: conversationMessages,
             mode: mode || "general",
+            modelPreference: modelPreference,
             isVariant: true,
             variantType: variant,
             reply_language: language, // Use UI language for variants since instruction is system-generated
@@ -1219,6 +1222,7 @@ export default function Chat() {
     body: JSON.stringify({
               messages: conversationMessages,
               mode: mode || "general",
+              modelPreference: modelPreference,
               attachments: attachmentsToProcess.map(att => ({
                 name: att.name,
                 type: att.type,
@@ -1863,6 +1867,11 @@ export default function Chat() {
               </div>
 
               <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                <ModelToggle 
+                  value={modelPreference} 
+                  onChange={setModelPreference} 
+                  size="sm" 
+                />
                 {messages.length > 0 && (
                   <button
                     onClick={() => setShowDeleteModal(true)}

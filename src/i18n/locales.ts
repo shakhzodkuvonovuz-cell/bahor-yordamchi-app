@@ -14,6 +14,11 @@ export const translations: Record<Lang, Record<string, string>> = {
     // Chat Mode
     'chat.mode': 'Rejim',
     
+    // Model Toggle
+    'model.label': 'Model',
+    'model.fast': 'Tez',
+    'model.reasoner': 'Reasoner',
+    
     // Subscription
     'subscription.upgrade': "Premiumga o'tish",
     
@@ -595,7 +600,11 @@ export const translations: Record<Lang, Record<string, string>> = {
     // Chat Mode
     'chat.mode': 'Mode',
     
-    // Subscription
+    // Model Toggle
+    'model.label': 'Model',
+    'model.fast': 'Fast',
+    'model.reasoner': 'Reasoner',
+    
     'subscription.upgrade': 'Upgrade to Premium',
     
     // Sidebar
@@ -1165,7 +1174,11 @@ export const translations: Record<Lang, Record<string, string>> = {
     // Chat Mode
     'chat.mode': 'Режим',
     
-    // Subscription
+    // Model Toggle
+    'model.label': 'Модель',
+    'model.fast': 'Быстро',
+    'model.reasoner': 'Reasoner',
+    
     'subscription.upgrade': 'Перейти на Premium',
     
     // Sidebar
@@ -1677,7 +1690,11 @@ export const translations: Record<Lang, Record<string, string>> = {
     // Chat Mode
     'chat.mode': 'Mod',
     
-    // Subscription
+    // Model Toggle
+    'model.label': 'Model',
+    'model.fast': 'Hızlı',
+    'model.reasoner': 'Reasoner',
+    
     'subscription.upgrade': "Premium'a geç",
     
     // Sidebar

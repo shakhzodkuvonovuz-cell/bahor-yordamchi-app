@@ -12,6 +12,12 @@ const corsHeaders = {
 };
 
 // ============================================
+// MODEL CONFIGURATION
+// ============================================
+const DEEPSEEK_CHAT_MODEL = Deno.env.get("DEEPSEEK_CHAT_MODEL") || "deepseek-chat";
+const DEEPSEEK_REASONER_MODEL = Deno.env.get("DEEPSEEK_REASONER_MODEL") || "deepseek-reasoner";
+
+// ============================================
 // BRAND PROTECTION - OUTPUT SANITIZATION
 // ============================================
 
@@ -430,7 +436,7 @@ serve(async (req) => {
   const requestStartTime = Date.now();
 
   try {
-    const { messages, mode, threadSummary, hasAnalysis, analysisType, reply_language, ui_language, attachments, userToneContext } = await req.json();
+    const { messages, mode, modelPreference, threadSummary, hasAnalysis, analysisType, reply_language, ui_language, attachments, userToneContext } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(
@@ -827,14 +833,18 @@ ${searchResults}
       ...recentMessages,
     ];
 
-    // Log request info including attachments
+    // Log request info including attachments and model preference
     const textFilesCount = attachments?.filter((att: any) => att.extractedText)?.length || 0;
     const unsupportedCount = attachments?.filter((att: any) => att.readStatus === 'unsupported')?.length || 0;
-    console.log(`Chat: user=${user.id}, email=${userEmail}, mode=${modeKey}, plan=${effectivePlan}, devBypass=${isDevBypass}, usage=${usageResult.used}/${usageResult.limit}, textFiles=${textFilesCount}, unsupported=${unsupportedCount}`);
+    console.log(`Chat: user=${user.id}, email=${userEmail}, mode=${modeKey}, model=${modelPreference || 'chat'}, plan=${effectivePlan}, devBypass=${isDevBypass}, usage=${usageResult.used}/${usageResult.limit}, textFiles=${textFilesCount}, unsupported=${unsupportedCount}`);
 
     // Call DeepSeek with timeout
     const deepseekController = new AbortController();
     const deepseekTimeout = setTimeout(() => deepseekController.abort(), 60000); // 60 second timeout
+    
+    // Select model based on user preference
+    const selectedModel = modelPreference === "reasoner" ? DEEPSEEK_REASONER_MODEL : DEEPSEEK_CHAT_MODEL;
+    console.log(`[Model Selection] preference=${modelPreference}, model=${selectedModel}`);
     
     let response: Response;
     try {
@@ -845,10 +855,10 @@ ${searchResults}
           "Authorization": `Bearer ${deepseekApiKey}`,
         },
         body: JSON.stringify({
-          model: "deepseek-chat",
+          model: selectedModel,
           messages: finalMessages,
-          temperature: 0.6,
-          max_tokens: 2000,
+          temperature: modelPreference === "reasoner" ? 0 : 0.6,
+          max_tokens: modelPreference === "reasoner" ? 8000 : 2000,
           stream: true,
         }),
         signal: deepseekController.signal,
