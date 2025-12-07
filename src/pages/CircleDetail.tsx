@@ -538,7 +538,7 @@ export default function SpaceDetail() {
             {loadingCards ? (
               <CircleTabSkeleton type="members" />
             ) : cardsError ? (
-              <div className="text-center py-8">
+              <div className="text-center pt-4">
                 <div className="w-12 h-12 mx-auto rounded-full bg-destructive/10 flex items-center justify-center mb-3">
                   <Sparkles className="w-6 h-6 text-destructive" />
                 </div>
@@ -548,7 +548,7 @@ export default function SpaceDetail() {
                 </Button>
               </div>
             ) : aiCards.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center pt-6 text-muted-foreground">
                 <Sparkles className="w-10 h-10 mx-auto mb-3 opacity-40" />
                 <p className="font-medium text-sm">Hali natijalar yo'q</p>
                 <p className="text-xs mt-1">AI Amallar tugmasini bosib natija yarating</p>
@@ -577,7 +577,7 @@ export default function SpaceDetail() {
           {membersLoading ? (
             <CircleTabSkeleton type="members" />
           ) : membersError ? (
-            <div className="max-w-2xl mx-auto px-4 py-8 text-center">
+            <div className="max-w-2xl mx-auto px-4 pt-4 text-center">
               <div className="w-12 h-12 mx-auto rounded-full bg-destructive/10 flex items-center justify-center mb-3">
                 <Users className="w-6 h-6 text-destructive" />
               </div>
@@ -588,7 +588,7 @@ export default function SpaceDetail() {
             </div>
           ) : members.length === 0 ? (
             <div className="max-w-2xl mx-auto px-4 pt-4">
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center pt-4 text-muted-foreground">
                 <Users className="w-10 h-10 mx-auto mb-3 opacity-40" />
                 <p className="text-sm">{language === "uz" ? "A'zolar yo'q" : "No members"}</p>
               </div>
@@ -646,7 +646,7 @@ export default function SpaceDetail() {
             {requestsLoading ? (
               <CircleTabSkeleton type="requests" />
             ) : requestsError ? (
-              <div className="max-w-2xl mx-auto px-4 py-8 text-center">
+              <div className="max-w-2xl mx-auto px-4 pt-4 text-center">
                 <div className="w-12 h-12 mx-auto rounded-full bg-destructive/10 flex items-center justify-center mb-3">
                   <UserPlus className="w-6 h-6 text-destructive" />
                 </div>
@@ -657,7 +657,7 @@ export default function SpaceDetail() {
               </div>
             ) : requests.length === 0 ? (
               <div className="max-w-2xl mx-auto px-4 pt-4">
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center pt-4 text-muted-foreground">
                   <UserPlus className="w-10 h-10 mx-auto mb-3 opacity-40" />
                   <p className="text-sm">{language === "uz" ? "So'rovlar yo'q" : "No requests"}</p>
                 </div>

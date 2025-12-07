@@ -326,7 +326,7 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
 
       {/* Files List */}
       {files.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
+        <div className="text-center pt-4 text-muted-foreground">
           <FileText className="w-10 h-10 mx-auto mb-3 opacity-40" />
           <p className="text-sm">{language === "uz" ? "Hali fayllar yo'q" : "No files yet"}</p>
         </div>
