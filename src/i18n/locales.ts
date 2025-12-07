@@ -17,7 +17,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     // Model Toggle
     'model.label': 'Model',
     'model.fast': 'Tez',
-    'model.reasoner': 'Reasoner',
+    'model.reasoner': 'Aqlli',
     
     // Subscription
     'subscription.upgrade': "Premiumga o'tish",
@@ -603,7 +603,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     // Model Toggle
     'model.label': 'Model',
     'model.fast': 'Fast',
-    'model.reasoner': 'Reasoner',
+    'model.reasoner': 'Smart',
     
     'subscription.upgrade': 'Upgrade to Premium',
     
@@ -1177,7 +1177,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     // Model Toggle
     'model.label': 'Модель',
     'model.fast': 'Быстро',
-    'model.reasoner': 'Reasoner',
+    'model.reasoner': 'Умный',
     
     'subscription.upgrade': 'Перейти на Premium',
     
@@ -1693,7 +1693,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     // Model Toggle
     'model.label': 'Model',
     'model.fast': 'Hızlı',
-    'model.reasoner': 'Reasoner',
+    'model.reasoner': 'Akıllı',
     
     'subscription.upgrade': "Premium'a geç",
     
