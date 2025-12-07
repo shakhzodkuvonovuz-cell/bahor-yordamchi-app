@@ -9,12 +9,14 @@ import {
   Crown,
   HelpCircle,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Languages
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useToast } from "@/hooks/use-toast";
 import bahorLogo from "@/assets/bahor-logo.png";
 
 interface SidebarV2Props {
@@ -29,12 +31,14 @@ interface NavItem {
   icon: React.ElementType;
   path: string;
   isNewChat?: boolean;
+  isPlaceholder?: boolean;
 }
 
 const PRIMARY_NAV: NavItem[] = [
   { id: "new-chat", labelKey: "sidebar.new_chat", icon: PenLine, path: "/chat/general", isNewChat: true },
   { id: "chat", labelKey: "sidebar.chat", icon: MessageSquare, path: "/modes" },
   { id: "modes", labelKey: "sidebar.modes", icon: Sparkles, path: "/modes-list" },
+  { id: "translator", labelKey: "sidebar.translator", icon: Languages, path: "/modes?mode=translator", isPlaceholder: true },
   { id: "circles", labelKey: "nav.circles", icon: Users, path: "/circles" },
   { id: "tools", labelKey: "nav.tools", icon: FileText, path: "/tools/documents" },
 ];
@@ -50,6 +54,7 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
   const location = useLocation();
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const { toast } = useToast();
 
   const isActive = (path: string, isNewChat?: boolean) => {
     // New chat button is never "active" visually
@@ -70,6 +75,12 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
     if (item.isNewChat) {
       // Navigate to chat with new=1 to trigger new chat creation
       navigate("/chat/general?new=1");
+    } else if (item.isPlaceholder) {
+      // For translator, show "coming soon" toast
+      toast({
+        title: t('button.comingSoon'),
+        description: t('settings.comingSoon'),
+      });
     } else {
       navigate(item.path);
     }
@@ -98,18 +109,39 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
       "h-full flex flex-col bg-card border-r border-border transition-all duration-300",
       collapsed ? "w-[72px]" : "w-[260px]"
     )}>
-      {/* Logo Header */}
+      {/* Logo Header with Collapse Toggle */}
       <div className={cn(
-        "flex items-center border-b border-border h-16 px-4",
-        collapsed ? "justify-center" : "gap-3"
+        "flex items-center border-b border-border h-16 px-3",
+        collapsed ? "justify-center" : "justify-between"
       )}>
-        <img 
-          src={bahorLogo} 
-          alt="Bahor AI" 
-          className="h-8 w-8 object-contain flex-shrink-0" 
-        />
-        {!collapsed && (
-          <span className="font-bold text-lg text-foreground">Bahor AI</span>
+        <div className="flex items-center gap-2.5">
+          <img 
+            src={bahorLogo} 
+            alt="Bahor AI" 
+            className="h-8 w-8 object-contain flex-shrink-0" 
+          />
+          {!collapsed && (
+            <span className="font-bold text-lg text-foreground">Bahor AI</span>
+          )}
+        </div>
+        {/* Collapse Toggle in Header */}
+        {onCollapse && !collapsed && (
+          <button
+            onClick={() => onCollapse(!collapsed)}
+            className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            aria-label="Collapse sidebar"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+        )}
+        {onCollapse && collapsed && (
+          <button
+            onClick={() => onCollapse(!collapsed)}
+            className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            aria-label="Expand sidebar"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
         )}
       </div>
 
@@ -129,7 +161,7 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
                 "w-full flex items-center gap-3 rounded-xl transition-all duration-200",
                 collapsed ? "justify-center px-2 py-3" : "px-4 py-3",
                 isNewChatBtn 
-                  ? "bg-primary text-primary-foreground hover:bg-primary/90 font-medium shadow-sm mb-3" 
+                  ? "bg-secondary/60 text-foreground hover:bg-secondary font-medium border border-border/50 mb-2" 
                   : active 
                     ? "bg-accent text-accent-foreground font-medium" 
                     : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
@@ -213,21 +245,6 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
         </button>
       </div>
 
-      {/* Collapse Toggle - Desktop Only */}
-      {onCollapse && (
-        <div className="p-2 border-t border-border">
-          <button
-            onClick={() => onCollapse(!collapsed)}
-            className="w-full flex items-center justify-center p-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-          >
-            {collapsed ? (
-              <ChevronRight className="w-4 h-4" />
-            ) : (
-              <ChevronLeft className="w-4 h-4" />
-            )}
-          </button>
-        </div>
-      )}
     </div>
   );
 }

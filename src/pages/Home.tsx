@@ -14,6 +14,8 @@ import { ModelToggle, getModelPreference, type ModelPreference } from "@/compone
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { AppFooter } from "@/components/layout/AppFooter";
+import bahorLogo from "@/assets/bahor-logo.png";
 
 interface PendingAttachment {
   id: string;
@@ -263,11 +265,18 @@ export default function Home() {
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 sm:py-12">
         <div className="w-full max-w-3xl space-y-6">
           
-          {/* Header */}
-          <div className="text-center space-y-2">
-            <h1 className="text-3xl sm:text-4xl font-bold text-foreground">
-              {t('home.title')}
-            </h1>
+          {/* Header with Logo */}
+          <div className="text-center space-y-3">
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <img 
+                src={bahorLogo} 
+                alt="Bahor AI" 
+                className="h-10 w-10 sm:h-12 sm:w-12 object-contain" 
+              />
+              <h1 className="text-3xl sm:text-4xl font-bold text-foreground">
+                {t('home.title')}
+              </h1>
+            </div>
             <p className="text-muted-foreground text-base sm:text-lg">
               {t('home.subtitle')}
             </p>
@@ -356,41 +365,47 @@ export default function Home() {
                   className="hidden"
                 />
                 
-                <div className="flex gap-2 items-end">
-                  {/* Attachment Buttons */}
-                  <div className="flex gap-1 flex-shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploading}
-                      className="p-2.5 text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-xl transition-all duration-200 disabled:opacity-40 active:scale-95"
-                      aria-label="Attach file"
-                    >
-                      <Paperclip className="w-5 h-5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => cameraInputRef.current?.click()}
-                      disabled={isUploading}
-                      className="p-2.5 text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-xl transition-all duration-200 disabled:opacity-40 active:scale-95"
-                      aria-label="Take photo"
-                    >
-                      <Camera className="w-5 h-5" />
-                    </button>
-                  </div>
+                <div className="flex items-center gap-2">
+                  {/* Attachment Buttons - vertically centered with input */}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-lg transition-all duration-200 disabled:opacity-40 active:scale-95 flex-shrink-0"
+                    aria-label="Attach file"
+                  >
+                    <Paperclip className="w-5 h-5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => cameraInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-lg transition-all duration-200 disabled:opacity-40 active:scale-95 flex-shrink-0"
+                    aria-label="Take photo"
+                  >
+                    <Camera className="w-5 h-5" />
+                  </button>
 
-                  <textarea
+                  {/* Input - single line for cleaner alignment */}
+                  <input
+                    type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    onKeyPress={handleKeyPress}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSend();
+                      }
+                    }}
                     placeholder={t('chat.input.placeholder')}
-                    rows={2}
-                    className="flex-1 border-none outline-none bg-transparent text-base sm:text-lg text-foreground placeholder:text-muted-foreground resize-none leading-relaxed"
+                    className="flex-1 border-none outline-none bg-transparent text-base sm:text-lg text-foreground placeholder:text-muted-foreground min-w-0"
                   />
+                  
+                  {/* Send button */}
                   <button
                     onClick={handleSend}
                     disabled={(!input.trim() && pendingAttachments.length === 0) || isUploading}
-                    className="rounded-xl bg-primary text-primary-foreground w-11 h-11 flex items-center justify-center hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95 shadow-lg shadow-primary/20 flex-shrink-0"
+                    className="rounded-xl bg-primary text-primary-foreground w-10 h-10 flex items-center justify-center hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95 shadow-lg shadow-primary/20 flex-shrink-0"
                   >
                     <Send className="w-5 h-5" />
                   </button>
@@ -413,6 +428,9 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Footer - appears when scrolling down */}
+      <AppFooter />
     </div>
   );
 }
