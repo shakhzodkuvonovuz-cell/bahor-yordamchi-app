@@ -229,20 +229,25 @@ serve(async (req) => {
     const validRenderMode: "photo" | "illustration" = 
       renderMode === "illustration" ? "illustration" : "photo";
 
-    // Check user limits
+    // Check user limits - use DEV_UNLIMITED_EMAILS env var like chat function
+    const userEmail = user.email?.toLowerCase() || '';
+    const devUnlimitedRaw = Deno.env.get('DEV_UNLIMITED_EMAILS') || '';
+    const adminEmailsRaw = Deno.env.get('ADMIN_EMAILS') || '';
+    const devUnlimitedEmails = devUnlimitedRaw.split(',').map((e: string) => e.trim().toLowerCase()).filter(Boolean);
+    const adminEmails = adminEmailsRaw.split(',').map((e: string) => e.trim().toLowerCase()).filter(Boolean);
+    const isDevBypass = devUnlimitedEmails.includes(userEmail) || adminEmails.includes(userEmail);
+
     const { data: profile } = await supabase
       .from("profiles")
       .select("plan")
       .eq("user_id", user.id)
       .maybeSingle();
 
-    // Check if user is dev_unlimited (bypasses all limits)
-    const isDevUnlimited = profile?.plan === "dev_unlimited";
-    const isPremium = profile?.plan && ["premium", "beta_premium", "dev_unlimited"].includes(profile.plan);
-    const dailyLimit = isDevUnlimited ? -1 : (isPremium ? 20 : 5);
+    const isPremium = isDevBypass || (profile?.plan && ["premium", "beta_premium", "dev_unlimited"].includes(profile.plan));
+    const dailyLimit = isDevBypass ? -1 : (isPremium ? 20 : 5);
 
     // Only check limits for non-dev users
-    if (!isDevUnlimited) {
+    if (!isDevBypass) {
       const today = new Date().toISOString().split("T")[0];
       const { count } = await supabase
         .from("image_generations")
