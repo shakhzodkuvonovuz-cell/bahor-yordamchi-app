@@ -103,42 +103,42 @@ export default function Home() {
     <div className="min-h-full bg-background relative">
       {/* Subtle background effects */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-20 right-1/4 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px]" />
-        <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-primary/3 rounded-full blur-[100px]" />
+        <div className="absolute top-10 right-1/4 w-[400px] h-[400px] bg-primary/5 rounded-full blur-[120px]" />
+        <div className="absolute bottom-1/3 left-1/4 w-[300px] h-[300px] bg-primary/3 rounded-full blur-[100px]" />
       </div>
 
-      {/* Main content */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {/* Main content - tighter spacing */}
+      <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 py-4">
         
-        {/* Top right - Language switcher */}
-        <div className="flex justify-end mb-4">
-          <LanguageSwitcher variant="compact" />
+        {/* Top row: Beta banner + Language switcher */}
+        <div className="max-w-7xl mx-auto mb-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1 bg-primary/10 border border-primary/20 rounded-lg px-3 py-2 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-primary flex-shrink-0" />
+              <p className="text-sm text-foreground truncate">
+                <span className="font-medium">{t('beta.title')}</span>
+                <span className="text-muted-foreground ml-1.5 hidden sm:inline">·</span>
+                <button onClick={() => navigate("/feedback")} className="text-primary hover:underline ml-1.5">{t('beta.report')}</button>
+              </p>
+            </div>
+            <LanguageSwitcher variant="compact" />
+          </div>
         </div>
 
-        {/* Beta Banner - Compact */}
-        <div className="bg-primary/10 border border-primary/20 rounded-xl px-4 py-2.5 flex items-center gap-3 mb-8 max-w-3xl mx-auto">
-          <AlertCircle className="w-4 h-4 text-primary flex-shrink-0" />
-          <p className="text-sm text-foreground">
-            <span className="font-medium">{t('beta.title')}</span>
-            <span className="text-muted-foreground ml-2 hidden sm:inline">{t('beta.description')}</span>
-            <button onClick={() => navigate("/feedback")} className="text-primary hover:underline ml-2">{t('beta.report')}</button>
-          </p>
-        </div>
-
-        {/* Hero Section - Centered, Perplexity-style */}
-        <div className="text-center pt-8 sm:pt-12 pb-6">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground leading-tight mb-4">
-            {t('app.tagline.main')}
+        {/* Compact page header */}
+        <div className="max-w-7xl mx-auto mb-5">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">
+            {t('nav.modes')}
           </h1>
-          <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
-            {t('app.tagline.sub')}
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {t('section.exploreModes.subtitle')}
           </p>
         </div>
 
-        {/* Main Chat Input - Centered, Premium */}
-        <div className="max-w-2xl mx-auto mb-6">
-          <div className="glass-premium rounded-2xl p-1.5 shadow-glow hover:shadow-glow-lg transition-all">
-            <div className="bg-card rounded-xl px-4 py-3">
+        {/* Main Chat Input - Centered, narrower than page */}
+        <div className="max-w-2xl mx-auto mb-4">
+          <div className="glass-premium rounded-2xl p-1 shadow-glow hover:shadow-glow-lg transition-all">
+            <div className="bg-card rounded-xl px-4 py-2.5">
               <div className="flex gap-3 items-center">
                 <textarea
                   value={input}
@@ -146,72 +146,69 @@ export default function Home() {
                   onKeyPress={handleKeyPress}
                   placeholder={t('chat.input.placeholder')}
                   rows={1}
-                  className="flex-1 border-none outline-none bg-transparent text-base sm:text-lg text-foreground placeholder:text-muted-foreground resize-none"
-                  style={{ minHeight: "52px" }}
+                  className="flex-1 border-none outline-none bg-transparent text-base text-foreground placeholder:text-muted-foreground resize-none"
+                  style={{ minHeight: "44px" }}
                 />
                 <button
                   onClick={handleSend}
                   disabled={!input.trim()}
-                  className="rounded-xl bg-primary text-primary-foreground w-12 h-12 flex items-center justify-center hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95 shadow-lg shadow-primary/25"
+                  className="rounded-xl bg-primary text-primary-foreground w-10 h-10 flex items-center justify-center hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95 shadow-lg shadow-primary/25"
                 >
-                  <Send className="w-5 h-5" />
+                  <Send className="w-4 h-4" />
                 </button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Quick Prompt Chips - Centered */}
-        <div className="flex flex-wrap gap-2 justify-center mb-10 max-w-3xl mx-auto">
-          {getBetaPrompts().map((item, index) => (
-            <button
-              key={index}
-              onClick={() => handlePromptChip(item.mode, item.prompt)}
-              className="px-3.5 py-2 text-sm bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-full transition-colors"
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Section Divider */}
-        <div className="text-center mb-6">
-          <p className="text-sm text-muted-foreground font-medium">
-            {t('section.exploreModes.subtitle')}
-          </p>
-        </div>
-
-        {/* Mode Cards Grid - Wider, 2x4 on desktop */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-8">
-          {CHAT_MODES.filter((mode) => mode.id !== "general").map((mode, index) => {
-            const modeTranslation = getModeTranslation(mode.id);
-            
-            return (
+        {/* Quick Prompt Chips - Same width as input */}
+        <div className="max-w-2xl mx-auto mb-6">
+          <div className="flex flex-wrap gap-2">
+            {getBetaPrompts().map((item, index) => (
               <button
-                key={mode.id}
-                onClick={() => navigate(`/chat/${mode.id}`)}
-                className="group text-left p-5 rounded-2xl glass-premium hover:shadow-glow hover:border-primary/30 transition-all duration-300 hover-scale animate-fade-in"
-                style={{ animationDelay: `${index * 40}ms` }}
+                key={index}
+                onClick={() => handlePromptChip(item.mode, item.prompt)}
+                className="px-3 py-1.5 text-sm bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-full transition-colors"
               >
-                <div className="flex items-start gap-4">
-                  <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center text-xl flex-shrink-0 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
-                    {modeIcons[mode.id] || mode.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <h3 className="font-semibold text-foreground truncate text-sm">
-                        {modeTranslation?.title || mode.title}
-                      </h3>
-                      <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all flex-shrink-0" />
-                    </div>
-                    <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                      {modeTranslation?.subtitle || mode.subtitle}
-                    </p>
-                  </div>
-                </div>
+                {item.label}
               </button>
-            );
-          })}
+            ))}
+          </div>
+        </div>
+
+        {/* Mode Cards Grid - Full width, starts immediately */}
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 pb-6">
+            {CHAT_MODES.filter((mode) => mode.id !== "general").map((mode, index) => {
+              const modeTranslation = getModeTranslation(mode.id);
+              
+              return (
+                <button
+                  key={mode.id}
+                  onClick={() => navigate(`/chat/${mode.id}`)}
+                  className="group text-left p-4 rounded-xl glass-premium hover:shadow-glow hover:border-primary/30 transition-all duration-200 hover-scale animate-fade-in"
+                  style={{ animationDelay: `${index * 30}ms` }}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-lg flex-shrink-0 group-hover:bg-primary/20 group-hover:scale-105 transition-all duration-200">
+                      {modeIcons[mode.id] || mode.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 mb-0.5">
+                        <h3 className="font-semibold text-foreground truncate text-sm">
+                          {modeTranslation?.title || mode.title}
+                        </h3>
+                        <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+                      </div>
+                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                        {modeTranslation?.subtitle || mode.subtitle}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
