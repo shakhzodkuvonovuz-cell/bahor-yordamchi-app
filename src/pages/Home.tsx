@@ -1,14 +1,50 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Send, ArrowRight, AlertCircle } from "lucide-react";
+import { Send, ChevronDown, Check, AlertCircle } from "lucide-react";
 import { CHAT_MODES } from "@/data/modes";
 import { useTranslation } from "@/i18n/LanguageProvider";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 export default function Home() {
   const navigate = useNavigate();
   const { language, t } = useTranslation();
   const [input, setInput] = useState("");
+  const [selectedMode, setSelectedMode] = useState("general");
+
+  // Mode icons mapping
+  const modeIcons: Record<string, string> = {
+    general: "💬",
+    tech: "💻",
+    daily: "🏠",
+    business: "📈",
+    ielts: "🎓",
+    homework: "📚",
+    job: "💼",
+    financial: "💰",
+    health: "❤️",
+  };
+
+  // Get localized mode title
+  const getModeTitle = (modeId: string) => {
+    const modeKeys: Record<string, string> = {
+      general: 'mode.general.title',
+      tech: 'mode.tech.title',
+      daily: 'mode.life.title',
+      business: 'mode.business.title',
+      ielts: 'mode.english.title',
+      homework: 'mode.homework.title',
+      job: 'mode.job.title',
+      financial: 'mode.finance.title',
+      health: 'mode.health.title',
+    };
+    return t(modeKeys[modeId] || 'mode.general.title');
+  };
 
   // Get localized beta prompt chips
   const getBetaPrompts = () => {
@@ -20,6 +56,8 @@ export default function Home() {
         { label: "🏠 Kundalik maslahat", mode: "daily", prompt: "Bugun qanday foydali ish qilsam bo'ladi?" },
         { label: "💻 Kod yozish", mode: "tech", prompt: "React da button komponenti yozishda yordam ber" },
         { label: "📐 Matematika", mode: "homework", prompt: "Kvadrat tenglama yechishni tushuntir" },
+        { label: "🖼️ Rasm yaratish", mode: "general", prompt: "Samarqand shahri haqida chiroyli rasm yarat" },
+        { label: "📄 PDF yaratish", mode: "general", prompt: "Matnni PDF formatiga o'tkaz" },
       ],
       en: [
         { label: "📝 IELTS essay", mode: "ielts", prompt: "Help me write an IELTS Writing Task 2 essay" },
@@ -28,6 +66,8 @@ export default function Home() {
         { label: "🏠 Daily advice", mode: "daily", prompt: "What useful thing can I do today?" },
         { label: "💻 Coding", mode: "tech", prompt: "Help me write a React button component" },
         { label: "📐 Math", mode: "homework", prompt: "Explain how to solve quadratic equations" },
+        { label: "🖼️ Generate image", mode: "general", prompt: "Create a beautiful image of Samarkand city" },
+        { label: "📄 Create PDF", mode: "general", prompt: "Convert this text to PDF format" },
       ],
       ru: [
         { label: "📝 IELTS эссе", mode: "ielts", prompt: "Помоги написать эссе для IELTS Writing Task 2" },
@@ -36,14 +76,18 @@ export default function Home() {
         { label: "🏠 Совет на день", mode: "daily", prompt: "Что полезного я могу сделать сегодня?" },
         { label: "💻 Код", mode: "tech", prompt: "Помоги написать компонент кнопки в React" },
         { label: "📐 Математика", mode: "homework", prompt: "Объясни как решать квадратные уравнения" },
+        { label: "🖼️ Создать изображение", mode: "general", prompt: "Создай красивое изображение города Самарканд" },
+        { label: "📄 Создать PDF", mode: "general", prompt: "Преобразуй этот текст в PDF формат" },
       ],
       tr: [
         { label: "📝 IELTS kompozisyon", mode: "ielts", prompt: "IELTS Writing Task 2 için kompozisyon yazmama yardım et" },
         { label: "💼 CV hazırlama", mode: "job", prompt: "Profesyonel CV hazırlamama yardım et" },
         { label: "🍳 Tarif", mode: "daily", prompt: "Kolay ve lezzetli bir tarif ver" },
         { label: "🏠 Günlük tavsiye", mode: "daily", prompt: "Bugün ne faydalı yapabilirim?" },
-        { label: "💻 Kodlama", mode: "tech", prompt: "React\'ta bir buton komponenti yazmama yardım et" },
+        { label: "💻 Kodlama", mode: "tech", prompt: "React'ta bir buton komponenti yazmama yardım et" },
         { label: "📐 Matematik", mode: "homework", prompt: "İkinci dereceden denklemleri çözmeyi açıkla" },
+        { label: "🖼️ Görsel oluştur", mode: "general", prompt: "Semerkant şehrinin güzel bir görselini oluştur" },
+        { label: "📄 PDF oluştur", mode: "general", prompt: "Bu metni PDF formatına dönüştür" },
       ],
     };
     return prompts[language] || prompts.uz;
@@ -51,7 +95,7 @@ export default function Home() {
 
   const handleSend = () => {
     if (!input.trim()) return;
-    navigate("/chat/general", { state: { initialMessage: input } });
+    navigate(`/chat/${selectedMode}`, { state: { initialMessage: input } });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -65,151 +109,112 @@ export default function Home() {
     navigate(`/chat/${mode}`, { state: { initialMessage: prompt } });
   };
 
-  // Mode icons mapping
-  const modeIcons: Record<string, string> = {
-    general: "💬",
-    tech: "💻",
-    daily: "🏠",
-    business: "📈",
-    ielts: "🎓",
-    homework: "📚",
-    job: "💼",
-    finance: "💰",
-    health: "❤️",
-  };
-
-  // Get localized mode info
-  const getModeTranslation = (modeId: string) => {
-    const modeKeys: Record<string, { title: string; desc: string }> = {
-      general: { title: 'mode.general.title', desc: 'mode.general.desc' },
-      tech: { title: 'mode.tech.title', desc: 'mode.tech.desc' },
-      daily: { title: 'mode.life.title', desc: 'mode.life.desc' },
-      business: { title: 'mode.business.title', desc: 'mode.business.desc' },
-      ielts: { title: 'mode.english.title', desc: 'mode.english.desc' },
-      homework: { title: 'mode.homework.title', desc: 'mode.homework.desc' },
-      job: { title: 'mode.job.title', desc: 'mode.job.desc' },
-      finance: { title: 'mode.finance.title', desc: 'mode.finance.desc' },
-      health: { title: 'mode.health.title', desc: 'mode.health.desc' },
-    };
-    const keys = modeKeys[modeId];
-    if (!keys) return null;
-    return {
-      title: t(keys.title),
-      subtitle: t(keys.desc),
-    };
-  };
-
   return (
-    <div className="min-h-full bg-background relative">
-      {/* Subtle background effects */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-10 right-1/4 w-[400px] h-[400px] bg-primary/5 rounded-full blur-[120px]" />
-        <div className="absolute bottom-1/3 left-1/4 w-[300px] h-[300px] bg-primary/3 rounded-full blur-[100px]" />
+    <div className="min-h-full bg-background flex flex-col">
+      {/* Top Bar with Beta + Language */}
+      <div className="w-full px-4 sm:px-6 py-3 border-b border-border/50">
+        <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-sm">
+            <AlertCircle className="w-4 h-4 text-primary" />
+            <span className="text-muted-foreground">{t('beta.title')}</span>
+            <span className="text-muted-foreground">·</span>
+            <button 
+              onClick={() => navigate("/feedback")} 
+              className="text-primary hover:underline"
+            >
+              {t('beta.report')}
+            </button>
+          </div>
+          <LanguageSwitcher variant="compact" />
+        </div>
       </div>
 
-      {/* Main content - tighter spacing */}
-      <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 py-4">
-        
-        {/* Top row: Beta banner + Language switcher */}
-        <div className="max-w-7xl mx-auto mb-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex-1 bg-primary/10 border border-primary/20 rounded-lg px-3 py-2 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-primary flex-shrink-0" />
-              <p className="text-sm text-foreground truncate">
-                <span className="font-medium">{t('beta.title')}</span>
-                <span className="text-muted-foreground ml-1.5 hidden sm:inline">·</span>
-                <button onClick={() => navigate("/feedback")} className="text-primary hover:underline ml-1.5">{t('beta.report')}</button>
-              </p>
-            </div>
-            <LanguageSwitcher variant="compact" />
+      {/* Main Content - Centered */}
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 sm:py-12">
+        <div className="w-full max-w-3xl space-y-6">
+          
+          {/* Header */}
+          <div className="text-center space-y-2">
+            <h1 className="text-3xl sm:text-4xl font-bold text-foreground">
+              {t('home.title')}
+            </h1>
+            <p className="text-muted-foreground text-base sm:text-lg">
+              {t('home.subtitle')}
+            </p>
           </div>
-        </div>
 
-        {/* Compact page header */}
-        <div className="max-w-7xl mx-auto mb-5">
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground">
-            {t('nav.modes')}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {t('section.exploreModes.subtitle')}
-          </p>
-        </div>
+          {/* Main Input Area */}
+          <div className="space-y-3">
+            {/* Mode Selector + Input */}
+            <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+              {/* Mode Dropdown Row */}
+              <div className="px-4 py-2 border-b border-border/50 flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">{t('chat.mode')}:</span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-accent transition-colors text-sm font-medium">
+                    <span>{modeIcons[selectedMode]}</span>
+                    <span>{getModeTitle(selectedMode)}</span>
+                    <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-56">
+                    {CHAT_MODES.map((mode) => (
+                      <DropdownMenuItem
+                        key={mode.id}
+                        onClick={() => setSelectedMode(mode.id)}
+                        className="flex items-center gap-2"
+                      >
+                        <span>{modeIcons[mode.id] || mode.icon}</span>
+                        <span className="flex-1">{getModeTitle(mode.id)}</span>
+                        {selectedMode === mode.id && (
+                          <Check className="w-4 h-4 text-primary" />
+                        )}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
 
-        {/* Main Chat Input - Centered, narrower than page */}
-        <div className="max-w-2xl mx-auto mb-4">
-          <div className="glass-premium rounded-2xl p-1 shadow-glow hover:shadow-glow-lg transition-all">
-            <div className="bg-card rounded-xl px-4 py-2.5">
-              <div className="flex gap-3 items-center">
-                <textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder={t('chat.input.placeholder')}
-                  rows={1}
-                  className="flex-1 border-none outline-none bg-transparent text-base text-foreground placeholder:text-muted-foreground resize-none"
-                  style={{ minHeight: "44px" }}
-                />
-                <button
-                  onClick={handleSend}
-                  disabled={!input.trim()}
-                  className="rounded-xl bg-primary text-primary-foreground w-10 h-10 flex items-center justify-center hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95 shadow-lg shadow-primary/25"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
+              {/* Input Row */}
+              <div className="p-3 sm:p-4">
+                <div className="flex gap-3 items-end">
+                  <textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder={t('chat.input.placeholder')}
+                    rows={2}
+                    className="flex-1 border-none outline-none bg-transparent text-base sm:text-lg text-foreground placeholder:text-muted-foreground resize-none leading-relaxed"
+                  />
+                  <button
+                    onClick={handleSend}
+                    disabled={!input.trim()}
+                    className="rounded-xl bg-primary text-primary-foreground w-11 h-11 flex items-center justify-center hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95 shadow-lg shadow-primary/20 flex-shrink-0"
+                  >
+                    <Send className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Quick Prompt Chips - Same width as input */}
-        <div className="max-w-2xl mx-auto mb-6">
-          <div className="flex flex-wrap gap-2">
-            {getBetaPrompts().map((item, index) => (
-              <button
-                key={index}
-                onClick={() => handlePromptChip(item.mode, item.prompt)}
-                className="px-3 py-1.5 text-sm bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-full transition-colors"
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Mode Cards Grid - Full width, starts immediately */}
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 pb-6">
-            {CHAT_MODES.filter((mode) => mode.id !== "general").map((mode, index) => {
-              const modeTranslation = getModeTranslation(mode.id);
-              
-              return (
+            {/* Quick Prompt Chips */}
+            <div className="flex flex-wrap gap-2 justify-center">
+              {getBetaPrompts().map((item, index) => (
                 <button
-                  key={mode.id}
-                  onClick={() => navigate(`/chat/${mode.id}`)}
-                  className="group text-left p-4 rounded-xl glass-premium hover:shadow-glow hover:border-primary/30 transition-all duration-200 hover-scale animate-fade-in"
-                  style={{ animationDelay: `${index * 30}ms` }}
+                  key={index}
+                  onClick={() => handlePromptChip(item.mode, item.prompt)}
+                  className="px-3 py-1.5 text-sm bg-secondary/50 hover:bg-secondary text-secondary-foreground rounded-full transition-colors border border-border/50"
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-lg flex-shrink-0 group-hover:bg-primary/20 group-hover:scale-105 transition-all duration-200">
-                      {modeIcons[mode.id] || mode.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2 mb-0.5">
-                        <h3 className="font-semibold text-foreground truncate text-sm">
-                          {modeTranslation?.title || mode.title}
-                        </h3>
-                        <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all flex-shrink-0" />
-                      </div>
-                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                        {modeTranslation?.subtitle || mode.subtitle}
-                      </p>
-                    </div>
-                  </div>
+                  {item.label}
                 </button>
-              );
-            })}
+              ))}
+            </div>
           </div>
         </div>
+      </div>
+
+      {/* Footer hint */}
+      <div className="text-center py-4 text-xs text-muted-foreground">
+        {t('section.exploreModes.subtitle')}
       </div>
     </div>
   );
