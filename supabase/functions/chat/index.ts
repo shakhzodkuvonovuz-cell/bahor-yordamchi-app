@@ -573,11 +573,15 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({
             type: "image_generated",
-            fileUrl: imageData.fileUrl,
-            fileName: imageData.fileName,
+            fileUrl: imageData.image_url || imageData.fileUrl,
+            fileName: imageData.file_name || imageData.fileName,
+            filePath: imageData.file_path,
             generationId: imageData.generationId,
-            prompt_uz: imageData.prompt_uz,
-            prompt_en: imageData.prompt_en,
+            prompt_uz: imageData.prompt_original || imageData.prompt_uz,
+            prompt_en: imageData.prompt_used || imageData.prompt_en,
+            model: imageData.model,
+            width: imageData.width,
+            height: imageData.height,
           }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
