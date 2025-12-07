@@ -100,7 +100,7 @@ export function AppFooter() {
         {/* Bottom Bar */}
         <div className="mt-10 pt-6 border-t border-border/50 text-center">
           <p className="text-xs text-muted-foreground">
-            {t('footer.rights')}
+            © 2025 Bahor AI. {t('footer.allRightsReserved')}
           </p>
         </div>
       </div>

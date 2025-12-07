@@ -6,6 +6,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'app.name': 'Bahor AI',
     'app.tagline.main': "Birinchi o'zbek sun'iy intellekti — o'zbeklar uchun.",
     'app.tagline.sub': "O'zbek tili va madaniyati uchun maxsus yaratilgan chaqqon sun'iy intellekt yordamchi.",
+    'app.version': 'v0.9 Beta',
     
     // Home Page
     'home.title': 'Bahor AI',
@@ -28,6 +29,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'sidebar.chat': 'Suhbat',
     'sidebar.translator': 'Tarjimon',
     'sidebar.modes': 'Rejimlar',
+    'sidebar.imageGen': 'Rasm yaratish (AI)',
     
     // Header & Navigation
     'nav.home': 'Bosh sahifa',
@@ -153,7 +155,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'faq.4.answer': "Ha. Shaxsiy ma'lumotlar uchinchi tomonlar bilan ulashilmaydi. Maxfiylik siyosatimizni ko'ring.",
     
     // Footer
-    'footer.rights': '© 2024 Bahor AI. Barcha huquqlar himoyalangan.',
+    'footer.rights': '© 2025 Bahor AI. Barcha huquqlar himoyalangan.',
+    'footer.allRightsReserved': 'Barcha huquqlar himoyalangan.',
     'footer.tagline': "O'zbeklar uchun sun'iy intellekt yordamchi",
     'footer.product': 'Mahsulot',
     'footer.support': 'Yordam',
@@ -598,6 +601,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'app.name': 'Bahor AI',
     'app.tagline.main': 'The first Uzbek artificial intelligence — made for Uzbeks.',
     'app.tagline.sub': 'A lightning-fast AI assistant designed for the Uzbek language and culture.',
+    'app.version': 'v0.9 Beta',
     
     // Home Page
     'home.title': 'Bahor AI',
@@ -619,6 +623,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'sidebar.chat': 'Chat',
     'sidebar.translator': 'Translator',
     'sidebar.modes': 'Modes',
+    'sidebar.imageGen': 'Image Generation (AI)',
     
     // Header & Navigation
     'nav.home': 'Home',
@@ -801,7 +806,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'faq.4.answer': 'Yes. No personal data is shared with third parties. See our privacy policy.',
     
     // Footer
-    'footer.rights': '© 2024 Bahor AI. All rights reserved.',
+    'footer.rights': '© 2025 Bahor AI. All rights reserved.',
+    'footer.allRightsReserved': 'All rights reserved.',
     'footer.tagline': 'AI assistant for Uzbek speakers',
     'footer.product': 'Product',
     'footer.support': 'Support',
@@ -1199,8 +1205,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     'sidebar.chat': 'Чат',
     'sidebar.translator': 'Переводчик',
     'sidebar.modes': 'Режимы',
+    'sidebar.imageGen': 'Создание изображений (AI)',
     'app.tagline.main': 'Первый узбекский искусственный интеллект — для узбеков.',
     'app.tagline.sub': 'Быстрый ИИ-ассистент, созданный специально для узбекского языка и культуры.',
+    'app.version': 'v0.9 Beta',
     
     // Header & Navigation
     'nav.home': 'Главная',
@@ -1326,7 +1334,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'faq.4.answer': 'Да. Личные данные не передаются третьим лицам. Смотрите нашу политику конфиденциальности.',
     
     // Footer
-    'footer.rights': '© 2024 Bahor AI. Все права защищены.',
+    'footer.rights': '© 2025 Bahor AI. Все права защищены.',
+    'footer.allRightsReserved': 'Все права защищены.',
     'footer.tagline': 'ИИ-ассистент для узбекоязычных',
     'footer.product': 'Продукт',
     'footer.support': 'Поддержка',
@@ -1721,8 +1730,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     'sidebar.chat': 'Sohbet',
     'sidebar.translator': 'Çevirmen',
     'sidebar.modes': 'Modlar',
+    'sidebar.imageGen': 'Görsel Oluştur (AI)',
     'app.tagline.main': 'İlk Özbek yapay zekâsı — Özbekler için.',
     'app.tagline.sub': 'Özbek dili ve kültürü için özel olarak tasarlanmış, çok hızlı bir yapay zekâ asistanı.',
+    'app.version': 'v0.9 Beta',
     
     // Header & Navigation
     'nav.home': 'Ana sayfa',
@@ -1848,7 +1859,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'faq.4.answer': 'Evet. Kişisel veriler üçüncü taraflarla paylaşılmaz. Gizlilik politikamıza bakın.',
     
     // Footer
-    'footer.rights': '© 2024 Bahor AI. Tüm hakları saklıdır.',
+    'footer.rights': '© 2025 Bahor AI. Tüm hakları saklıdır.',
+    'footer.allRightsReserved': 'Tüm hakları saklıdır.',
     'footer.tagline': 'Özbekler için yapay zeka asistanı',
     'footer.product': 'Ürün',
     'footer.support': 'Destek',
