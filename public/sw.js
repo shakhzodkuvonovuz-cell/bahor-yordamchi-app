@@ -1,7 +1,7 @@
 // Service Worker for Bahor AI PWA
 // CRITICAL: Only cache GET requests, never intercept writes/uploads
 
-const CACHE_NAME = 'bahor-ai-v2';
+const CACHE_NAME = 'bahor-ai-v3';
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
