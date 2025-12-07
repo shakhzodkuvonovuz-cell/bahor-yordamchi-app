@@ -278,13 +278,14 @@ serve(async (req) => {
 
     console.log(`[${requestId}] Fireworks request:`, JSON.stringify(fireworksBody));
 
-    // Use Accept: application/json for easier debugging (returns base64)
+    // CRITICAL: Fireworks FLUX workflow requires Accept: image/png or image/jpeg
+    // It returns raw binary image bytes, NOT JSON
     const fireworksResponse = await fetch(FIREWORKS_API_URL, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${fireworksApiKey}`,
         "Content-Type": "application/json",
-        Accept: "application/json", // Get base64 JSON response for debugging
+        Accept: "image/png", // MUST be image/png or image/jpeg - workflow doesn't support application/json
       },
       body: JSON.stringify(fireworksBody),
     });
@@ -318,58 +319,20 @@ serve(async (req) => {
       );
     }
 
-    // Parse JSON response with base64 image
-    const responseData = await fireworksResponse.json();
-    console.log(`[${requestId}] Fireworks response keys:`, Object.keys(responseData));
+    // Response is raw PNG bytes (not JSON) when Accept: image/png
+    const imageBytes = new Uint8Array(await fireworksResponse.arrayBuffer());
+    console.log(`[${requestId}] Image received, size: ${imageBytes.length} bytes`);
 
-    // Extract base64 image from response
-    // Fireworks returns: { output: { "0": { url: "data:image/png;base64,..." } } } or similar
-    let base64Data: string | null = null;
-    
-    if (responseData.output) {
-      // Handle different response formats
-      if (typeof responseData.output === 'string') {
-        base64Data = responseData.output;
-      } else if (responseData.output["0"]?.url) {
-        base64Data = responseData.output["0"].url;
-      } else if (responseData.output.url) {
-        base64Data = responseData.output.url;
-      } else if (Array.isArray(responseData.output) && responseData.output[0]) {
-        base64Data = responseData.output[0].url || responseData.output[0];
-      }
-    } else if (responseData.image) {
-      base64Data = responseData.image;
-    } else if (responseData.images?.[0]) {
-      base64Data = responseData.images[0];
-    }
-
-    if (!base64Data) {
-      console.error(`[${requestId}] Could not extract image from response:`, JSON.stringify(responseData).slice(0, 1000));
+    if (imageBytes.length === 0) {
+      console.error(`[${requestId}] Empty image response`);
       return new Response(
         JSON.stringify({ ok: false, error: "Rasm ma'lumotlarini olishda xatolik", requestId }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Remove data URL prefix if present
-    const base64Clean = base64Data.replace(/^data:image\/\w+;base64,/, '');
-    
-    // Decode base64 to binary
-    const binaryString = atob(base64Clean);
-    const imageBytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      imageBytes[i] = binaryString.charCodeAt(i);
-    }
-
-    console.log(`[${requestId}] Image decoded, size: ${imageBytes.length} bytes`);
-
-    if (imageBytes.length === 0) {
-      throw new Error("Decoded image is empty");
-    }
-
-    // Determine mime type from base64 header
-    const mimeType = base64Data.startsWith('data:image/jpeg') ? 'image/jpeg' : 'image/png';
-    const extension = mimeType === 'image/jpeg' ? 'jpg' : 'png';
+    const mimeType = "image/png";
+    const extension = 'png'; // We're always requesting image/png
 
     // Generate file path
     const now = new Date();
