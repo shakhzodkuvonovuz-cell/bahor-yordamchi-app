@@ -20,7 +20,24 @@ interface SpaceData {
   template: string;
   goal: string | null;
   owner_id: string;
+  icon_emoji: string | null;
+  icon_color: string | null;
 }
+
+const getColorClass = (color: string | null) => {
+  if (!color) return "bg-secondary";
+  const colorMap: Record<string, string> = {
+    blue: "bg-blue-500/20",
+    green: "bg-green-500/20",
+    purple: "bg-purple-500/20",
+    orange: "bg-orange-500/20",
+    pink: "bg-pink-500/20",
+    cyan: "bg-cyan-500/20",
+    red: "bg-red-500/20",
+    yellow: "bg-yellow-500/20",
+  };
+  return colorMap[color] || "bg-secondary";
+};
 
 interface Member {
   id: string;
@@ -29,6 +46,7 @@ interface Member {
   status: string;
   email?: string;
   name?: string;
+  avatar_url?: string;
 }
 
 interface JoinRequest {
@@ -189,7 +207,7 @@ export default function SpaceDetail() {
 
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id, first_name, last_name, email")
+        .select("user_id, first_name, last_name, email, avatar_url")
         .in("user_id", userIds);
 
       const profileMap = Object.fromEntries(
@@ -198,6 +216,7 @@ export default function SpaceDetail() {
           {
             name: `${p.first_name || ""} ${p.last_name || ""}`.trim() || "User",
             email: p.email || "",
+            avatar_url: p.avatar_url || null,
           },
         ])
       );
@@ -207,6 +226,7 @@ export default function SpaceDetail() {
           ...m,
           name: profileMap[m.user_id]?.name || "User",
           email: profileMap[m.user_id]?.email || "",
+          avatar_url: profileMap[m.user_id]?.avatar_url || null,
         }))
       );
     } catch (err) {
@@ -409,6 +429,10 @@ export default function SpaceDetail() {
             >
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
+            {/* Circle emoji icon */}
+            <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0 ${getColorClass(space.icon_color)}`}>
+              {space.icon_emoji || "💬"}
+            </div>
             <div>
               <h1 className="text-lg font-bold text-foreground">{space.name}</h1>
               {space.goal && (
@@ -568,29 +592,47 @@ export default function SpaceDetail() {
             </div>
           ) : (
             <div className="max-w-2xl mx-auto px-4 py-4 space-y-2 pb-[env(safe-area-inset-bottom)]">
-              {members.map((member) => (
-                <div
-                  key={member.id}
-                  className="flex items-center justify-between p-3 rounded-xl bg-card border border-border shadow-elevation-1 hover:shadow-elevation-2 transition-shadow duration-150"
-                >
-                  <div>
-                    <p className="font-medium text-foreground">{member.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {member.email} · {member.role}
-                    </p>
+              {members.map((member) => {
+                const initials = member.name?.split(" ").map(n => n.charAt(0).toUpperCase()).join("").slice(0, 2) || "U";
+                return (
+                  <div
+                    key={member.id}
+                    className="flex items-center justify-between p-3 rounded-xl bg-card border border-border shadow-elevation-1 hover:shadow-elevation-2 transition-shadow duration-150"
+                  >
+                    <div className="flex items-center gap-3">
+                      {/* Member avatar */}
+                      <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {member.avatar_url ? (
+                          <img src={member.avatar_url} alt={member.name} className="w-10 h-10 rounded-full object-cover" />
+                        ) : (
+                          <span className="text-sm font-medium text-primary">{initials}</span>
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">{member.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {member.role === "owner" 
+                            ? (language === "uz" ? "Egasi" : "Owner")
+                            : member.role === "admin" 
+                            ? (language === "uz" ? "Admin" : "Admin")
+                            : (language === "uz" ? "A'zo" : "Member")
+                          }
+                        </p>
+                      </div>
+                    </div>
+                    {isAdmin && member.user_id !== user?.id && member.role !== "owner" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleBlockMember(member.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Ban className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
-                  {isAdmin && member.user_id !== user?.id && member.role !== "owner" && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleBlockMember(member.id)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Ban className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </TabsContent>

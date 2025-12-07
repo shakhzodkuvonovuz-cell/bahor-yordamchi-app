@@ -22,6 +22,8 @@ interface Circle {
   goal: string | null;
   memberCount: number;
   role: string;
+  icon_emoji: string | null;
+  icon_color: string | null;
 }
 
 const TEMPLATE_LABELS: Record<string, { uz: string; en: string }> = {
@@ -32,6 +34,21 @@ const TEMPLATE_LABELS: Record<string, { uz: string; en: string }> = {
   biz: { uz: "Biznes", en: "Business" },
   gaming: { uz: "O'yin", en: "Gaming" },
   general: { uz: "Umumiy", en: "General" },
+};
+
+const getColorClass = (color: string | null) => {
+  if (!color) return "bg-secondary";
+  const colorMap: Record<string, string> = {
+    blue: "bg-blue-500/20",
+    green: "bg-green-500/20",
+    purple: "bg-purple-500/20",
+    orange: "bg-orange-500/20",
+    pink: "bg-pink-500/20",
+    cyan: "bg-cyan-500/20",
+    red: "bg-red-500/20",
+    yellow: "bg-yellow-500/20",
+  };
+  return colorMap[color] || "bg-secondary";
 };
 
 export default function Circles() {
@@ -77,7 +94,7 @@ export default function Circles() {
       // Get circle details (DB table still named spaces)
       const { data: circleData, error: circleError } = await supabase
         .from("spaces")
-        .select("id, name, template, goal")
+        .select("id, name, template, goal, icon_emoji, icon_color")
         .in("id", circleIds);
 
       if (circleError) {
@@ -103,13 +120,15 @@ export default function Circles() {
         countMap[c.space_id] = (countMap[c.space_id] || 0) + 1;
       });
 
-      const formattedCircles: Circle[] = (circleData || []).map((s) => ({
+      const formattedCircles: Circle[] = (circleData || []).map((s: any) => ({
         id: s.id,
         name: s.name,
         template: s.template || "general",
         goal: s.goal,
         memberCount: countMap[s.id] || 1,
         role: roleMap[s.id] || "member",
+        icon_emoji: s.icon_emoji,
+        icon_color: s.icon_color,
       }));
 
       setCircles(formattedCircles);
@@ -236,7 +255,11 @@ export default function Circles() {
                 onClick={() => navigate(`/circles/${circle.id}`)}
                 className="w-full text-left p-4 rounded-xl bg-card border border-border hover:border-primary/30 hover:shadow-md transition-all group"
               >
-                <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {/* Circle emoji icon */}
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0 ${getColorClass(circle.icon_color)}`}>
+                    {circle.icon_emoji || "💬"}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-semibold text-foreground truncate">
@@ -256,7 +279,7 @@ export default function Circles() {
                       )}
                     </div>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
                 </div>
               </button>
             ))}

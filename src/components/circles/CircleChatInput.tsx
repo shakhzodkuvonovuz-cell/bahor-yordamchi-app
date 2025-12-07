@@ -1,9 +1,10 @@
 import { useRef, useState } from "react";
-import { Send, Paperclip, Camera, X, Loader2, AlertCircle } from "lucide-react";
+import { Send, Paperclip, Camera, X, Loader2, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import PendingAttachments, { type PendingAttachment } from "./PendingAttachments";
 import type { CircleMessage } from "./CircleChatMessage";
+import { toast } from "sonner";
 
 interface CircleChatInputProps {
   value: string;
@@ -29,6 +30,8 @@ export default function CircleChatInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const recordingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -81,6 +84,40 @@ export default function CircleChatInput({
     setPendingAttachments([]);
   };
 
+  // Push-to-talk handlers (UI only for now)
+  const handleMicPointerDown = () => {
+    if (disabled || uploading) return;
+    
+    recordingTimerRef.current = setTimeout(() => {
+      setIsRecording(true);
+      // Haptic feedback
+      if (navigator.vibrate) navigator.vibrate(10);
+    }, 180);
+  };
+
+  const handleMicPointerUp = () => {
+    if (recordingTimerRef.current) {
+      clearTimeout(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+    
+    if (isRecording) {
+      setIsRecording(false);
+      // Show coming soon toast
+      toast.info(language === "uz" ? "Tez orada" : "Coming soon");
+      // Haptic feedback
+      if (navigator.vibrate) navigator.vibrate(10);
+    }
+  };
+
+  const handleMicPointerCancel = () => {
+    if (recordingTimerRef.current) {
+      clearTimeout(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+    setIsRecording(false);
+  };
+
   const canSend = value.trim().length > 0 || pendingAttachments.length > 0;
 
   return (
@@ -116,6 +153,18 @@ export default function CircleChatInput({
             <Loader2 className="w-4 h-4 animate-spin text-primary" />
             <span className="text-xs text-muted-foreground">
               {language === "uz" ? "Yuklanmoqda..." : "Uploading..."}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Recording indicator */}
+      {isRecording && (
+        <div className="px-4 pt-2 max-w-2xl mx-auto">
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-red-500/10 border border-red-500/30">
+            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            <span className="text-xs text-red-500 font-medium">
+              {language === "uz" ? "Yozilmoqda..." : "Recording..."}
             </span>
           </div>
         </div>
@@ -171,6 +220,24 @@ export default function CircleChatInput({
               target.style.height = Math.min(target.scrollHeight, 120) + "px";
             }}
           />
+
+          {/* Mic button (push-to-talk) */}
+          <button
+            onPointerDown={handleMicPointerDown}
+            onPointerUp={handleMicPointerUp}
+            onPointerCancel={handleMicPointerCancel}
+            onPointerLeave={handleMicPointerCancel}
+            disabled={disabled || uploading}
+            className={cn(
+              "p-2.5 rounded-xl transition-all duration-200 touch-none select-none",
+              isRecording 
+                ? "bg-red-500 text-white scale-110" 
+                : "bg-secondary hover:bg-secondary/80 hover:scale-105",
+              (disabled || uploading) && "opacity-50 cursor-not-allowed"
+            )}
+          >
+            <Mic className={cn("w-5 h-5", isRecording ? "text-white" : "text-muted-foreground")} />
+          </button>
 
           {/* Send button */}
           <Button

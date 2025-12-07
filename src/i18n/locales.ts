@@ -380,6 +380,12 @@ export const translations: Record<Lang, Record<string, string>> = {
     'chat.reportSuccess': 'Xabar yuborildi. Rahmat!',
     'chat.reportError': 'Xatolik yuz berdi',
     
+    // Circles
+    'circles.recording': 'Yozilmoqda...',
+    'circles.emojiPicker': 'Emoji tanlang',
+    'circles.colorPicker': 'Rang tanlang',
+    'common.comingSoon': 'Tez orada',
+    
     // Starter Cards
     'chat.starterCards.ielts': 'IELTS Task 2 reja',
     'chat.starterCards.english': 'Inglizcha matn tekshirish',
@@ -1031,6 +1037,12 @@ export const translations: Record<Lang, Record<string, string>> = {
     'chat.reportSuccess': 'Report sent. Thank you!',
     'chat.reportError': 'An error occurred',
     
+    // Circles
+    'circles.recording': 'Recording...',
+    'circles.emojiPicker': 'Choose emoji',
+    'circles.colorPicker': 'Choose color',
+    'common.comingSoon': 'Coming soon',
+    
     // Starter Cards
     'chat.starterCards.ielts': 'IELTS Task 2 outline',
     'chat.starterCards.english': 'Check English text',
@@ -1556,6 +1568,12 @@ export const translations: Record<Lang, Record<string, string>> = {
     'chat.reportSuccess': 'Жалоба отправлена. Спасибо!',
     'chat.reportError': 'Произошла ошибка',
     
+    // Circles
+    'circles.recording': 'Запись...',
+    'circles.emojiPicker': 'Выберите эмодзи',
+    'circles.colorPicker': 'Выберите цвет',
+    'common.comingSoon': 'Скоро',
+    
     // Starter Cards
     'chat.starterCards.ielts': 'План IELTS Task 2',
     'chat.starterCards.english': 'Проверить английский текст',
@@ -2080,6 +2098,12 @@ export const translations: Record<Lang, Record<string, string>> = {
     'chat.reportSubmit': 'Gönder',
     'chat.reportSuccess': 'Rapor gönderildi. Teşekkürler!',
     'chat.reportError': 'Bir hata oluştu',
+    
+    // Circles
+    'circles.recording': 'Kaydediliyor...',
+    'circles.emojiPicker': 'Emoji seç',
+    'circles.colorPicker': 'Renk seç',
+    'common.comingSoon': 'Yakında',
     
     // Starter Cards
     'chat.starterCards.ielts': 'IELTS Task 2 planı',
