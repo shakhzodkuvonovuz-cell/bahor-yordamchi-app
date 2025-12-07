@@ -466,10 +466,10 @@ export default function SpaceDetail() {
         </div>
       </header>
 
-      {/* Tabs container */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+      {/* Tabs container - DEBUG: added red border to see actual size */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden border-2 border-red-500">
         {/* Tabs bar - sticky with solid background, high z-index, and pointer-events-auto */}
-        <div className="flex-shrink-0 z-50 border-b border-border bg-background/95 backdrop-blur-md" style={{ position: 'sticky', top: 0 }}>
+        <div className="flex-shrink-0 z-50 border-b border-border bg-background/95 backdrop-blur-md border-2 border-blue-500" style={{ position: 'sticky', top: 0 }}>
           <TabsList className="max-w-2xl mx-auto w-full justify-start px-4 bg-transparent h-11">
             <TabsTrigger 
               value="chat" 
@@ -511,18 +511,18 @@ export default function SpaceDetail() {
           </TabsList>
         </div>
 
-        {/* Chat Tab - takes remaining height */}
-        <TabsContent value="chat" className="flex-1 flex flex-col min-h-0 overflow-hidden mt-0">
+        {/* Chat Tab - takes remaining height - DEBUG: green border */}
+        <TabsContent value="chat" className="flex-1 flex flex-col min-h-0 overflow-hidden mt-0 border-2 border-green-500">
           <CircleChatTab spaceId={id || ""} onSendAICardRef={sendAICardToChatRef} />
         </TabsContent>
 
-        {/* Files Tab - NO forceMount, let Radix handle mount/unmount */}
-        <TabsContent value="files" className="flex-1 min-h-0 overflow-y-auto mt-0">
+        {/* Files Tab - DEBUG: yellow border */}
+        <TabsContent value="files" className="flex-1 min-h-0 overflow-y-auto mt-0 border-2 border-yellow-500">
           <CircleFilesTab spaceId={id || ""} isAdmin={isAdmin} />
         </TabsContent>
 
-        {/* Natijalar (AI Results) Tab */}
-        <TabsContent value="natijalar" className="flex-1 min-h-0 overflow-y-auto mt-0">
+        {/* Natijalar (AI Results) Tab - DEBUG: purple border */}
+        <TabsContent value="natijalar" className="flex-1 min-h-0 overflow-y-auto mt-0 border-2 border-purple-500">
           <div className="max-w-2xl mx-auto px-4 pt-4 space-y-4 pb-[env(safe-area-inset-bottom)]">
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm text-muted-foreground">AI tomonidan yaratilgan natijalar</p>
