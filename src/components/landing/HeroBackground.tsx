@@ -1,253 +1,187 @@
-import React, { useRef, useMemo } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { Float, MeshDistortMaterial, Sphere, Stars } from '@react-three/drei';
-import * as THREE from 'three';
+import React from 'react';
 
 // ============================================
-// VARIANT 1: Floating Glassmorphic Orbs
+// VARIANT 1: Floating Gradient Orbs (CSS)
 // ============================================
 function FloatingOrbs() {
-  const groupRef = useRef<THREE.Group>(null);
-  
-  useFrame((state) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y = state.clock.elapsedTime * 0.05;
-    }
-  });
-
   return (
-    <group ref={groupRef}>
-      <Float speed={2} rotationIntensity={0.5} floatIntensity={1}>
-        <Sphere args={[1, 32, 32]} position={[-3, 1, -2]}>
-          <MeshDistortMaterial
-            color="#2dd4bf"
-            transparent
-            opacity={0.4}
-            distort={0.3}
-            speed={2}
-          />
-        </Sphere>
-      </Float>
+    <div className="absolute inset-0 overflow-hidden">
+      {/* Large orbs - more visible */}
+      <div className="absolute w-[500px] h-[500px] -top-32 -left-32 rounded-full bg-gradient-to-br from-primary/40 via-primary/20 to-transparent blur-3xl animate-[float-slow_20s_ease-in-out_infinite]" />
+      <div className="absolute w-[400px] h-[400px] top-1/4 -right-20 rounded-full bg-gradient-to-bl from-accent/35 via-primary/25 to-transparent blur-3xl animate-[float-slow_25s_ease-in-out_infinite_reverse]" />
+      <div className="absolute w-[350px] h-[350px] bottom-0 left-1/4 rounded-full bg-gradient-to-tr from-primary/30 via-accent/20 to-transparent blur-3xl animate-[float-slow_18s_ease-in-out_infinite_2s]" />
+      <div className="absolute w-[250px] h-[250px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-radial from-primary/25 via-primary/10 to-transparent blur-2xl animate-pulse" />
       
-      <Float speed={1.5} rotationIntensity={0.3} floatIntensity={0.8}>
-        <Sphere args={[0.6, 32, 32]} position={[3, -1, -1]}>
-          <MeshDistortMaterial
-            color="#14b8a6"
-            transparent
-            opacity={0.5}
-            distort={0.4}
-            speed={3}
-          />
-        </Sphere>
-      </Float>
-      
-      <Float speed={2.5} rotationIntensity={0.4} floatIntensity={1.2}>
-        <Sphere args={[0.4, 32, 32]} position={[1, 2, -3]}>
-          <MeshDistortMaterial
-            color="#5eead4"
-            transparent
-            opacity={0.3}
-            distort={0.5}
-            speed={4}
-          />
-        </Sphere>
-      </Float>
-      
-      <Float speed={1.8} rotationIntensity={0.6} floatIntensity={0.9}>
-        <Sphere args={[0.8, 32, 32]} position={[-2, -2, -2]}>
-          <MeshDistortMaterial
-            color="#0d9488"
-            transparent
-            opacity={0.35}
-            distort={0.25}
-            speed={1.5}
-          />
-        </Sphere>
-      </Float>
-    </group>
+      {/* Small floating particles - more visible */}
+      {[...Array(15)].map((_, i) => (
+        <div
+          key={i}
+          className="absolute rounded-full bg-primary"
+          style={{
+            width: `${6 + Math.random() * 10}px`,
+            height: `${6 + Math.random() * 10}px`,
+            left: `${5 + (i * 6.5)}%`,
+            top: `${15 + Math.random() * 70}%`,
+            animation: `float-slow ${12 + i * 1.5}s ease-in-out infinite ${i * 0.4}s`,
+            opacity: 0.4 + Math.random() * 0.3,
+            filter: 'blur(1px)',
+            boxShadow: '0 0 10px hsl(var(--primary) / 0.5)'
+          }}
+        />
+      ))}
+    </div>
   );
 }
 
 // ============================================
-// VARIANT 2: Particle Network Constellation
+// VARIANT 2: Neural Network Grid
 // ============================================
-function ParticleNetwork() {
-  const pointsRef = useRef<THREE.Points>(null);
-  const linesRef = useRef<THREE.LineSegments>(null);
-  
-  const { positions, linePositions } = useMemo(() => {
-    const count = 80;
-    const positions = new Float32Array(count * 3);
-    const linePositions: number[] = [];
-    
-    for (let i = 0; i < count; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 12;
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 8;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 6 - 2;
-    }
-    
-    // Create connections between nearby points
-    for (let i = 0; i < count; i++) {
-      for (let j = i + 1; j < count; j++) {
-        const dx = positions[i * 3] - positions[j * 3];
-        const dy = positions[i * 3 + 1] - positions[j * 3 + 1];
-        const dz = positions[i * 3 + 2] - positions[j * 3 + 2];
-        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+function NeuralNetwork() {
+  const nodes = Array.from({ length: 20 }, (_, i) => ({
+    id: i,
+    x: 5 + (i % 5) * 22 + Math.random() * 10,
+    y: 10 + Math.floor(i / 5) * 22 + Math.random() * 10,
+    size: 3 + Math.random() * 4,
+    delay: i * 0.2
+  }));
+
+  return (
+    <div className="absolute inset-0 overflow-hidden">
+      <svg className="w-full h-full opacity-40" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+        {/* Connecting lines */}
+        {nodes.map((node, i) => 
+          nodes.slice(i + 1).filter((_, j) => j < 3).map((target, j) => (
+            <line
+              key={`${i}-${j}`}
+              x1={node.x}
+              y1={node.y}
+              x2={target.x}
+              y2={target.y}
+              stroke="hsl(var(--primary))"
+              strokeWidth="0.15"
+              strokeOpacity="0.3"
+              className="animate-pulse"
+              style={{ animationDelay: `${node.delay}s` }}
+            />
+          ))
+        )}
         
-        if (dist < 2.5) {
-          linePositions.push(
-            positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2],
-            positions[j * 3], positions[j * 3 + 1], positions[j * 3 + 2]
-          );
-        }
-      }
-    }
-    
-    return { positions, linePositions: new Float32Array(linePositions) };
-  }, []);
-
-  useFrame((state) => {
-    if (pointsRef.current) {
-      pointsRef.current.rotation.y = state.clock.elapsedTime * 0.03;
-      pointsRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.1) * 0.1;
-    }
-    if (linesRef.current) {
-      linesRef.current.rotation.y = state.clock.elapsedTime * 0.03;
-      linesRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.1) * 0.1;
-    }
-  });
-
-  return (
-    <group>
-      <points ref={pointsRef}>
-        <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            count={positions.length / 3}
-            array={positions}
-            itemSize={3}
-          />
-        </bufferGeometry>
-        <pointsMaterial size={0.08} color="#2dd4bf" transparent opacity={0.8} />
-      </points>
+        {/* Nodes */}
+        {nodes.map((node) => (
+          <g key={node.id}>
+            <circle
+              cx={node.x}
+              cy={node.y}
+              r={node.size}
+              fill="none"
+              stroke="hsl(var(--primary))"
+              strokeWidth="0.2"
+              className="animate-pulse"
+              style={{ animationDelay: `${node.delay}s` }}
+            />
+            <circle
+              cx={node.x}
+              cy={node.y}
+              r={node.size * 0.4}
+              fill="hsl(var(--primary))"
+              className="animate-pulse"
+              style={{ animationDelay: `${node.delay}s` }}
+            />
+          </g>
+        ))}
+      </svg>
       
-      <lineSegments ref={linesRef}>
-        <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            count={linePositions.length / 3}
-            array={linePositions}
-            itemSize={3}
-          />
-        </bufferGeometry>
-        <lineBasicMaterial color="#14b8a6" transparent opacity={0.15} />
-      </lineSegments>
-    </group>
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/30 to-background/60" />
+    </div>
   );
 }
 
 // ============================================
-// VARIANT 3: Animated Wave Mesh
+// VARIANT 3: Wave Mesh Grid
 // ============================================
 function WaveMesh() {
-  const meshRef = useRef<THREE.Mesh>(null);
-  
-  const geometry = useMemo(() => {
-    const geo = new THREE.PlaneGeometry(20, 12, 64, 64);
-    return geo;
-  }, []);
-
-  useFrame((state) => {
-    if (meshRef.current) {
-      const positions = meshRef.current.geometry.attributes.position;
-      const time = state.clock.elapsedTime;
-      
-      for (let i = 0; i < positions.count; i++) {
-        const x = positions.getX(i);
-        const y = positions.getY(i);
-        const z = Math.sin(x * 0.5 + time) * 0.3 + 
-                  Math.sin(y * 0.3 + time * 0.8) * 0.2 +
-                  Math.sin((x + y) * 0.2 + time * 0.5) * 0.15;
-        positions.setZ(i, z);
-      }
-      positions.needsUpdate = true;
-    }
-  });
-
   return (
-    <mesh ref={meshRef} geometry={geometry} rotation={[-Math.PI / 3, 0, 0]} position={[0, -2, -5]}>
-      <meshStandardMaterial
-        color="#0d9488"
-        wireframe
-        transparent
-        opacity={0.15}
-      />
-    </mesh>
+    <div className="absolute inset-0 overflow-hidden">
+      <svg className="w-full h-full opacity-30" viewBox="0 0 100 60" preserveAspectRatio="xMidYMid slice">
+        {/* Horizontal wave lines */}
+        {[...Array(8)].map((_, i) => (
+          <path
+            key={`h-${i}`}
+            d={`M 0 ${10 + i * 7} Q 25 ${8 + i * 7} 50 ${10 + i * 7} T 100 ${10 + i * 7}`}
+            fill="none"
+            stroke="hsl(var(--primary))"
+            strokeWidth="0.15"
+            className="animate-[wave_8s_ease-in-out_infinite]"
+            style={{ 
+              animationDelay: `${i * 0.3}s`,
+              transformOrigin: 'center'
+            }}
+          />
+        ))}
+        
+        {/* Vertical lines creating grid */}
+        {[...Array(12)].map((_, i) => (
+          <line
+            key={`v-${i}`}
+            x1={8 + i * 8}
+            y1="0"
+            x2={8 + i * 8}
+            y2="60"
+            stroke="hsl(var(--primary))"
+            strokeWidth="0.1"
+            strokeOpacity="0.2"
+          />
+        ))}
+      </svg>
+      
+      {/* Glowing accent */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] rounded-full bg-gradient-radial from-primary/10 via-primary/5 to-transparent blur-3xl" />
+    </div>
   );
 }
 
 // ============================================
-// VARIANT 4: Abstract Geometric Shapes
+// VARIANT 4: Geometric Constellation
 // ============================================
-function GeometricShapes() {
-  const group1Ref = useRef<THREE.Mesh>(null);
-  const group2Ref = useRef<THREE.Mesh>(null);
-  const group3Ref = useRef<THREE.Mesh>(null);
-  const torusRef = useRef<THREE.Mesh>(null);
-
-  useFrame((state) => {
-    const t = state.clock.elapsedTime;
-    
-    if (group1Ref.current) {
-      group1Ref.current.rotation.x = t * 0.2;
-      group1Ref.current.rotation.y = t * 0.3;
-      group1Ref.current.position.y = Math.sin(t * 0.5) * 0.5;
-    }
-    if (group2Ref.current) {
-      group2Ref.current.rotation.x = t * 0.15;
-      group2Ref.current.rotation.z = t * 0.25;
-      group2Ref.current.position.y = Math.sin(t * 0.4 + 1) * 0.4;
-    }
-    if (group3Ref.current) {
-      group3Ref.current.rotation.y = t * 0.2;
-      group3Ref.current.rotation.z = t * 0.1;
-      group3Ref.current.position.x = Math.sin(t * 0.3) * 0.3;
-    }
-    if (torusRef.current) {
-      torusRef.current.rotation.x = t * 0.1;
-      torusRef.current.rotation.y = t * 0.15;
-    }
-  });
-
+function GeometricConstellation() {
   return (
-    <group>
-      {/* Icosahedron */}
-      <mesh ref={group1Ref} position={[-4, 1, -3]}>
-        <icosahedronGeometry args={[1, 0]} />
-        <meshStandardMaterial color="#2dd4bf" wireframe transparent opacity={0.4} />
-      </mesh>
+    <div className="absolute inset-0 overflow-hidden">
+      {/* Rotating geometric shapes */}
+      <div className="absolute top-10 left-10 w-32 h-32 border border-primary/20 rotate-45 animate-[spin_30s_linear_infinite]" />
+      <div className="absolute top-20 right-20 w-24 h-24 border border-primary/15 animate-[spin_25s_linear_infinite_reverse]" />
+      <div className="absolute bottom-20 left-1/4 w-40 h-40 border border-primary/10 rotate-12 animate-[spin_35s_linear_infinite]" />
       
-      {/* Octahedron */}
-      <mesh ref={group2Ref} position={[4, 0, -2]}>
-        <octahedronGeometry args={[0.8, 0]} />
-        <meshStandardMaterial color="#14b8a6" wireframe transparent opacity={0.5} />
-      </mesh>
+      {/* Hexagon */}
+      <svg className="absolute top-1/3 right-1/4 w-48 h-48 opacity-20 animate-[spin_40s_linear_infinite]" viewBox="0 0 100 100">
+        <polygon
+          points="50,5 90,25 90,75 50,95 10,75 10,25"
+          fill="none"
+          stroke="hsl(var(--primary))"
+          strokeWidth="0.5"
+        />
+      </svg>
       
-      {/* Dodecahedron */}
-      <mesh ref={group3Ref} position={[0, -2, -4]}>
-        <dodecahedronGeometry args={[0.6, 0]} />
-        <meshStandardMaterial color="#5eead4" wireframe transparent opacity={0.35} />
-      </mesh>
+      {/* Stars/dots */}
+      {[...Array(30)].map((_, i) => (
+        <div
+          key={i}
+          className="absolute rounded-full bg-primary animate-pulse"
+          style={{
+            width: `${1 + Math.random() * 3}px`,
+            height: `${1 + Math.random() * 3}px`,
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            animationDelay: `${Math.random() * 3}s`,
+            opacity: 0.3 + Math.random() * 0.4
+          }}
+        />
+      ))}
       
-      {/* Large Torus */}
-      <mesh ref={torusRef} position={[0, 0, -6]}>
-        <torusGeometry args={[3, 0.02, 16, 100]} />
-        <meshStandardMaterial color="#0d9488" transparent opacity={0.2} />
-      </mesh>
-      
-      {/* Stars */}
-      <Stars radius={50} depth={30} count={500} factor={3} fade speed={0.5} />
-    </group>
+      {/* Gradient orbs */}
+      <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-gradient-to-br from-primary/15 to-transparent blur-3xl animate-pulse" />
+      <div className="absolute -bottom-10 -left-10 w-60 h-60 rounded-full bg-gradient-to-tr from-accent/10 to-transparent blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+    </div>
   );
 }
 
@@ -260,21 +194,11 @@ interface HeroBackgroundProps {
 
 export function HeroBackground({ variant }: HeroBackgroundProps) {
   return (
-    <div className="absolute inset-0 -z-10" key={`bg-${variant}`}>
-      <Canvas
-        camera={{ position: [0, 0, 6], fov: 60 }}
-        gl={{ alpha: true, antialias: true }}
-        style={{ background: 'transparent' }}
-      >
-        <ambientLight intensity={0.5} />
-        <directionalLight position={[5, 5, 5]} intensity={0.5} />
-        <pointLight position={[-5, -5, -5]} intensity={0.3} color="#2dd4bf" />
-        
-        {variant === 1 && <FloatingOrbs />}
-        {variant === 2 && <ParticleNetwork />}
-        {variant === 3 && <WaveMesh />}
-        {variant === 4 && <GeometricShapes />}
-      </Canvas>
+    <div className="absolute inset-0 pointer-events-none -z-10">
+      {variant === 1 && <FloatingOrbs />}
+      {variant === 2 && <NeuralNetwork />}
+      {variant === 3 && <WaveMesh />}
+      {variant === 4 && <GeometricConstellation />}
     </div>
   );
 }
