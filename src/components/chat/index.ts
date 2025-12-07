@@ -12,6 +12,7 @@ export { default as CollapsibleMessage } from "./CollapsibleMessage";
 export { ChatListSkeleton, ChatMessagesSkeleton } from "./ChatListSkeleton";
 export { ReasonedChip } from "./ReasonedChip";
 export { TraceSheet } from "./TraceSheet";
+export { ThinkBar } from "./ThinkBar";
 export { default as UsageBadge } from "./UsageBadge";
 export type { CardType, ParsedSection } from "./BahorCard";
 
