@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { ModelToggle, getModelPreference, type ModelPreference } from "@/components/ModelToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -33,6 +34,7 @@ export default function Home() {
   const [selectedMode, setSelectedMode] = useState("general");
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [modelPreference, setModelPreference] = useState<ModelPreference>(getModelPreference);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -275,31 +277,38 @@ export default function Home() {
           <div className="space-y-3">
             {/* Mode Selector + Input */}
             <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
-              {/* Mode Dropdown Row */}
-              <div className="px-4 py-2 border-b border-border/50 flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">{t('chat.mode')}:</span>
-                <DropdownMenu>
-                  <DropdownMenuTrigger className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-accent transition-colors text-sm font-medium">
-                    <span>{modeIcons[selectedMode]}</span>
-                    <span>{getModeTitle(selectedMode)}</span>
-                    <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-56">
-                    {CHAT_MODES.map((mode) => (
-                      <DropdownMenuItem
-                        key={mode.id}
-                        onClick={() => setSelectedMode(mode.id)}
-                        className="flex items-center gap-2"
-                      >
-                        <span>{modeIcons[mode.id] || mode.icon}</span>
-                        <span className="flex-1">{getModeTitle(mode.id)}</span>
-                        {selectedMode === mode.id && (
-                          <Check className="w-4 h-4 text-primary" />
-                        )}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+              {/* Mode Dropdown + Model Toggle Row */}
+              <div className="px-4 py-2 border-b border-border/50 flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">{t('chat.mode')}:</span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-accent transition-colors text-sm font-medium">
+                      <span>{modeIcons[selectedMode]}</span>
+                      <span>{getModeTitle(selectedMode)}</span>
+                      <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-56">
+                      {CHAT_MODES.map((mode) => (
+                        <DropdownMenuItem
+                          key={mode.id}
+                          onClick={() => setSelectedMode(mode.id)}
+                          className="flex items-center gap-2"
+                        >
+                          <span>{modeIcons[mode.id] || mode.icon}</span>
+                          <span className="flex-1">{getModeTitle(mode.id)}</span>
+                          {selectedMode === mode.id && (
+                            <Check className="w-4 h-4 text-primary" />
+                          )}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                <ModelToggle 
+                  value={modelPreference} 
+                  onChange={setModelPreference} 
+                  size="sm" 
+                />
               </div>
 
               {/* Pending Attachments Preview */}
