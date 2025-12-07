@@ -119,13 +119,13 @@ function HeroMockup() {
                   <span className="text-[10px] text-muted-foreground">{t('mockup.web.sourcesFound')}</span>
                 </div>
                 <div className="flex gap-1.5 flex-wrap">
-                  <span className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center gap-1">
+                  <span className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center gap-1 cursor-pointer hover:bg-primary/20 hover:scale-105 transition-all duration-200">
                     <ExternalLink className="w-2.5 h-2.5" />gazeta.uz
                   </span>
-                  <span className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center gap-1">
+                  <span className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center gap-1 cursor-pointer hover:bg-primary/20 hover:scale-105 transition-all duration-200">
                     <ExternalLink className="w-2.5 h-2.5" />review.uz
                   </span>
-                  <span className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center gap-1">
+                  <span className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center gap-1 cursor-pointer hover:bg-primary/20 hover:scale-105 transition-all duration-200">
                     <ExternalLink className="w-2.5 h-2.5" />lex.uz
                   </span>
                 </div>
@@ -144,23 +144,23 @@ function HeroMockup() {
                 </div>
                 
                 {/* Expand button */}
-                <button className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 -mt-2">
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                <button className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 hover:translate-y-0.5 transition-all duration-200 -mt-2">
+                  <svg className="w-3.5 h-3.5 transition-transform group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                   {t('mockup.web.showMore')}
                 </button>
                 
                 {/* Action buttons */}
                 <div className="flex items-center gap-1 pt-1 opacity-0 animate-[fade-in_0.4s_ease-out_0.9s_forwards]">
-                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors text-muted-foreground">
+                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 hover:scale-110 transition-all duration-200 text-muted-foreground hover:text-foreground">
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                   </button>
-                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors text-muted-foreground">
+                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 hover:scale-110 transition-all duration-200 text-muted-foreground hover:text-foreground">
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                   </button>
-                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors text-muted-foreground">
+                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 hover:scale-110 transition-all duration-200 text-muted-foreground hover:text-foreground">
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" /></svg>
                   </button>
-                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors text-muted-foreground">
+                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 hover:scale-110 transition-all duration-200 text-muted-foreground hover:text-foreground">
                     <FileText className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -202,10 +202,10 @@ function HeroMockup() {
                   />
                   {/* Image overlay actions */}
                   <div className="absolute bottom-2 right-2 flex gap-1.5">
-                    <button className="p-1.5 rounded-lg bg-black/50 backdrop-blur-sm text-white hover:bg-black/70 transition-colors">
+                    <button className="p-1.5 rounded-lg bg-black/50 backdrop-blur-sm text-white hover:bg-black/70 hover:scale-110 transition-all duration-200">
                       <Download className="w-3.5 h-3.5" />
                     </button>
-                    <button className="p-1.5 rounded-lg bg-black/50 backdrop-blur-sm text-white hover:bg-black/70 transition-colors">
+                    <button className="p-1.5 rounded-lg bg-black/50 backdrop-blur-sm text-white hover:bg-black/70 hover:scale-110 transition-all duration-200">
                       <ExternalLink className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -213,13 +213,13 @@ function HeroMockup() {
                 
                 {/* Action buttons */}
                 <div className="flex items-center gap-1 pt-1 opacity-0 animate-[fade-in_0.4s_ease-out_0.9s_forwards]">
-                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors text-muted-foreground">
+                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 hover:scale-110 transition-all duration-200 text-muted-foreground hover:text-foreground">
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                   </button>
-                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors text-muted-foreground">
+                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 hover:scale-110 transition-all duration-200 text-muted-foreground hover:text-foreground">
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" /></svg>
                   </button>
-                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors text-muted-foreground">
+                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 hover:scale-110 transition-all duration-200 text-muted-foreground hover:text-foreground">
                     <FileText className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -227,10 +227,10 @@ function HeroMockup() {
               
               {/* Follow-up suggestions */}
               <div className="flex gap-2 flex-wrap pt-1 opacity-0 animate-[fade-in_0.4s_ease-out_1.1s_forwards]">
-                <button className="text-[10px] px-3 py-1.5 rounded-full bg-secondary/50 border border-border/40 text-muted-foreground hover:bg-secondary transition-colors">
+                <button className="text-[10px] px-3 py-1.5 rounded-full bg-secondary/50 border border-border/40 text-muted-foreground hover:bg-secondary hover:text-foreground hover:scale-105 transition-all duration-200">
                   {t('mockup.image.suggestion1')}
                 </button>
-                <button className="text-[10px] px-3 py-1.5 rounded-full bg-secondary/50 border border-border/40 text-muted-foreground hover:bg-secondary transition-colors">
+                <button className="text-[10px] px-3 py-1.5 rounded-full bg-secondary/50 border border-border/40 text-muted-foreground hover:bg-secondary hover:text-foreground hover:scale-105 transition-all duration-200">
                   {t('mockup.image.suggestion2')}
                 </button>
               </div>
@@ -245,7 +245,7 @@ function HeroMockup() {
                 <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
                   {t('mockup.pdf.previousResponse')}
                 </p>
-                <button className="inline-flex items-center gap-1 text-[10px] text-primary">
+                <button className="inline-flex items-center gap-1 text-[10px] text-primary hover:text-primary/80 hover:translate-y-0.5 transition-all duration-200">
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                   {t('mockup.web.showMore')}
                 </button>
@@ -274,25 +274,25 @@ function HeroMockup() {
                 <p className="text-xs text-muted-foreground">{t('mockup.pdf.aiResponse')}</p>
                 
                 {/* PDF file card */}
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/40 border border-border/40 opacity-0 animate-[scale-in_0.5s_ease-out_0.9s_forwards]">
-                  <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center shrink-0">
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/40 border border-border/40 opacity-0 animate-[scale-in_0.5s_ease-out_0.9s_forwards] hover:bg-secondary/60 transition-colors cursor-pointer group">
+                  <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-200">
                     <FileText className="w-5 h-5 text-red-500" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{t('mockup.pdf.fileName')}</p>
                     <p className="text-[10px] text-muted-foreground">PDF • 24 KB</p>
                   </div>
-                  <button className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+                  <button className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 hover:scale-110 transition-all duration-200">
                     <Download className="w-4 h-4" />
                   </button>
                 </div>
                 
                 {/* Action buttons */}
                 <div className="flex items-center gap-1 pt-1 opacity-0 animate-[fade-in_0.4s_ease-out_1.1s_forwards]">
-                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors text-muted-foreground">
+                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 hover:scale-110 transition-all duration-200 text-muted-foreground hover:text-foreground">
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                   </button>
-                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors text-muted-foreground">
+                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 hover:scale-110 transition-all duration-200 text-muted-foreground hover:text-foreground">
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" /></svg>
                   </button>
                 </div>
@@ -300,10 +300,10 @@ function HeroMockup() {
               
               {/* Follow-up suggestions */}
               <div className="flex gap-2 flex-wrap pt-1 opacity-0 animate-[fade-in_0.4s_ease-out_1.3s_forwards]">
-                <button className="text-[10px] px-3 py-1.5 rounded-full bg-secondary/50 border border-border/40 text-muted-foreground hover:bg-secondary transition-colors">
+                <button className="text-[10px] px-3 py-1.5 rounded-full bg-secondary/50 border border-border/40 text-muted-foreground hover:bg-secondary hover:text-foreground hover:scale-105 transition-all duration-200">
                   {t('mockup.pdf.suggestion1')}
                 </button>
-                <button className="text-[10px] px-3 py-1.5 rounded-full bg-secondary/50 border border-border/40 text-muted-foreground hover:bg-secondary transition-colors">
+                <button className="text-[10px] px-3 py-1.5 rounded-full bg-secondary/50 border border-border/40 text-muted-foreground hover:bg-secondary hover:text-foreground hover:scale-105 transition-all duration-200">
                   {t('mockup.pdf.suggestion2')}
                 </button>
               </div>
@@ -317,10 +317,10 @@ function HeroMockup() {
             <button
               key={slide.id}
               onClick={() => setActiveSlide(idx)}
-              className={`px-2.5 py-1 rounded-full text-[9px] font-medium transition-all ${
+              className={`px-2.5 py-1 rounded-full text-[9px] font-medium transition-all duration-200 hover:scale-105 ${
                 activeSlide === idx
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'
+                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30'
+                  : 'bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground'
               }`}
             >
               {slide.label}
