@@ -195,6 +195,7 @@ export default function Chat() {
   const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<string | null>(null);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   // Voice mode panel removed - now using push-to-talk dictation only
   const [searchUsed, setSearchUsed] = useState(false);
   const [searchUrls, setSearchUrls] = useState<string[]>([]);
@@ -1139,11 +1140,30 @@ export default function Chat() {
         return;
       }
 
+      // Detect if this is an image generation request (for showing appropriate loading status)
+      const contentLower = content.trim().toLowerCase();
+      const isImageRequest = 
+        contentLower.startsWith('/image ') || 
+        contentLower.startsWith('/rasm ') ||
+        ["rasm yarat", "rasm chiz", "surat yarat", "tasvir yarat", "generate an image", "create an image", "make an image"]
+          .some(kw => contentLower.includes(kw));
+      
+      if (isImageRequest) {
+        setIsGeneratingImage(true);
+        setProcessingStatus(
+          language === "uz" ? "Rasm yaratilmoqda..." :
+          language === "ru" ? "Создание изображения..." :
+          language === "tr" ? "Görsel oluşturuluyor..." :
+          "Generating image..."
+        );
+      }
+
       console.log('[Chat] About to call chat API with:', {
         messageCount: conversationMessages.length,
         lastMessageLength: conversationMessages[conversationMessages.length - 1]?.content?.length || 0,
         hasAnalysis: !!analysisContent,
         analysisType,
+        isImageRequest,
       });
 
       // Add timeout with AbortController (40 seconds)
@@ -1209,6 +1229,102 @@ export default function Chat() {
         }
         
         throw new Error(errorData.message || "Failed to get response from server");
+      }
+      
+      // Check if response is JSON (image generation) or SSE stream (regular chat)
+      const contentType = response.headers.get('Content-Type') || '';
+      
+      if (contentType.includes('application/json')) {
+        // Image generation or error response
+        const jsonData = await response.json();
+        
+        if (jsonData.type === 'image_generated') {
+          // Handle successful image generation
+          console.log('[Chat] Image generated:', jsonData);
+          
+          const imageAttachment: ChatAttachment = {
+            id: crypto.randomUUID?.() ?? `img-${Date.now()}`,
+            name: jsonData.fileName,
+            size: 0,
+            type: 'image/png',
+            url: jsonData.fileUrl,
+            previewUrl: jsonData.fileUrl,
+          };
+          
+          const imageMessage: Message = {
+            id: assistantId,
+            role: "assistant",
+            content: language === "uz" 
+              ? `✨ Mana rasm tayyor!\n\n**Prompt:** ${jsonData.prompt_uz}`
+              : language === "ru"
+              ? `✨ Изображение готово!\n\n**Prompt:** ${jsonData.prompt_uz}`
+              : language === "tr"
+              ? `✨ Görsel hazır!\n\n**Prompt:** ${jsonData.prompt_uz}`
+              : `✨ Image ready!\n\n**Prompt:** ${jsonData.prompt_uz}`,
+            timestamp: new Date(),
+            attachments: [imageAttachment],
+          };
+          
+          setMessages((prev) => [...prev, imageMessage]);
+          setTyping(false);
+          setIsLoading(false);
+          setIsGeneratingImage(false);
+          setProcessingStatus(null);
+          
+          // Save to DB
+          if (user) {
+            try {
+              const savedAssistant = await chatStore.addMessage(user.id, {
+                threadId: currentThreadId,
+                role: "assistant",
+                content: imageMessage.content,
+              });
+              
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantId ? { ...m, id: savedAssistant.id } : m
+                )
+              );
+              setLastAssistantMessageId(savedAssistant.id);
+            } catch (e) {
+              console.error('Error saving image message:', e);
+            }
+          }
+          
+          toast({
+            description: language === "uz" ? "Rasm tayyor!" : "Image generated!",
+          });
+          
+          return;
+        }
+        
+        if (jsonData.type === 'image_error') {
+          // Handle image generation error
+          console.error('[Chat] Image generation error:', jsonData);
+          
+          const errorMessage: Message = {
+            id: assistantId,
+            role: "assistant",
+            content: jsonData.message || (language === "uz" 
+              ? "Rasm yaratishda xatolik yuz berdi. Qayta urinib ko'ring."
+              : "Failed to generate image. Please try again."),
+            timestamp: new Date(),
+          };
+          
+          setMessages((prev) => [...prev, errorMessage]);
+          setTyping(false);
+          setIsLoading(false);
+          setIsGeneratingImage(false);
+          setProcessingStatus(null);
+          
+          toast({
+            title: language === "uz" ? "Xatolik" : "Error",
+            description: jsonData.message,
+            variant: "destructive",
+          });
+          
+          return;
+        }
       }
 
       let assistantContent = "";
@@ -1415,6 +1531,7 @@ export default function Chat() {
       setTyping(false);
       setIsLoading(false);
       setProcessingStatus(null);
+      setIsGeneratingImage(false);
       setActiveTrace(null);
       inputRef.current?.focus();
       
@@ -1793,6 +1910,35 @@ export default function Chat() {
                 </div>
               ))}
               
+              {/* Image Generation Placeholder */}
+              {isGeneratingImage && (
+                <div className="flex gap-3 justify-start chat-message-ai group animate-fade-in">
+                  <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-card border border-border/40 flex items-center justify-center mt-0.5 shadow-[0_0_12px_rgba(45,212,191,0.3)]">
+                    <img src={bahorLogo} alt="Bahor AI" className="w-8 h-8 object-contain" />
+                  </div>
+                  <div className="rounded-2xl bg-card border border-border/40 rounded-tl-md shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.06)] px-5 py-4">
+                    <div className="flex items-center gap-3 text-muted-foreground">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center animate-pulse">
+                        <span className="text-lg">🎨</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">
+                          {language === "uz" ? "Rasm yaratilmoqda..." :
+                           language === "ru" ? "Создание изображения..." :
+                           language === "tr" ? "Görsel oluşturuluyor..." :
+                           "Generating image..."}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {language === "uz" ? "10-15 soniya..." :
+                           language === "ru" ? "10-15 секунд..." :
+                           language === "tr" ? "10-15 saniye..." :
+                           "10-15 seconds..."}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
               
               <div ref={messagesEndRef} className="h-4" />
               </MessageArea>

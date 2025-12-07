@@ -90,6 +90,71 @@ function shouldUseSearch(userMsg: string): boolean {
 }
 
 // ============================================
+// IMAGE GENERATION INTENT DETECTION
+// ============================================
+
+function detectImageGenerationIntent(userMsg: string, hasImageAttachment: boolean): { isImageGen: boolean; prompt: string } {
+  const q = userMsg.trim();
+  const qLower = q.toLowerCase();
+  
+  // If user uploaded an image attachment, they want analysis, not generation
+  if (hasImageAttachment) {
+    return { isImageGen: false, prompt: "" };
+  }
+  
+  // Check for explicit commands
+  if (qLower.startsWith('/image ') || qLower.startsWith('/rasm ')) {
+    const prompt = q.slice(7).trim(); // Remove /image or /rasm
+    return { isImageGen: prompt.length > 0, prompt };
+  }
+  
+  // Check for Uzbek keywords for image generation
+  const uzKeywords = [
+    "rasm yarat", "rasm chiz", "surat yarat", "surat chiz", "tasvir yarat", "tasvir chiz",
+    "generatsiya qil", "rasm qil", "chizib ber", "rasmini yarat", "rasmini chiz",
+    "suratini yarat", "tasvirini yarat", "rasm yasab ber", "rasm yasat"
+  ];
+  
+  // Check for English keywords for image generation
+  const enKeywords = [
+    "generate an image", "generate image", "create an image", "create image",
+    "make an image", "make image", "draw an image", "draw image",
+    "render an image", "render image", "generate a picture", "create a picture"
+  ];
+  
+  for (const kw of uzKeywords) {
+    if (qLower.includes(kw)) {
+      // Extract the prompt (remove the keyword)
+      const prompt = q.replace(new RegExp(kw, 'gi'), '').trim();
+      return { isImageGen: true, prompt: prompt || q };
+    }
+  }
+  
+  for (const kw of enKeywords) {
+    if (qLower.includes(kw)) {
+      const prompt = q.replace(new RegExp(kw, 'gi'), '').trim();
+      return { isImageGen: true, prompt: prompt || q };
+    }
+  }
+  
+  // Special case: message starts with explicit image request word + "of"
+  const simplePatterns = [
+    /^rasm:?\s+(.+)/i,
+    /^surat:?\s+(.+)/i,
+    /^tasvir:?\s+(.+)/i,
+  ];
+  
+  for (const pattern of simplePatterns) {
+    const match = q.match(pattern);
+    if (match) {
+      return { isImageGen: true, prompt: match[1].trim() };
+    }
+  }
+  
+  return { isImageGen: false, prompt: "" };
+}
+
+// ============================================
 // TRACE EVENT HELPER
 // ============================================
 
@@ -406,6 +471,90 @@ serve(async (req) => {
     const isPremium = usageResult?.is_premium || isDevBypass;
     const isTrialActive = usageResult?.is_trial_active || false;
     const effectivePlan = isPremium ? 'premium' : (isTrialActive ? 'trial' : 'free');
+
+    // ===========================================
+    // IMAGE GENERATION INTENT DETECTION
+    // ===========================================
+    const lastUserMsg = messages.filter((m: any) => m.role === "user").pop()?.content || "";
+    const imageIntent = detectImageGenerationIntent(lastUserMsg, hasImageAttachment);
+    
+    if (imageIntent.isImageGen) {
+      console.log('[Image Gen] Detected image generation intent:', imageIntent.prompt);
+      
+      try {
+        // Call the fireworks-generate-image edge function internally
+        const imageResponse = await fetch(`${supabaseUrl}/functions/v1/fireworks-generate-image`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            prompt: imageIntent.prompt,
+            aspectRatio: '1:1',
+            attachToChat: false,
+          }),
+        });
+        
+        if (!imageResponse.ok) {
+          const errorData = await imageResponse.json().catch(() => ({}));
+          console.error('[Image Gen] Fireworks error:', errorData);
+          
+          // Return error as regular JSON (not stream)
+          const lang = ui_language || 'uz';
+          const errorMessages: Record<string, string> = {
+            uz: "Rasm yaratishda xatolik yuz berdi. Qayta urinib ko'ring.",
+            en: "Failed to generate image. Please try again.",
+            ru: "Ошибка при создании изображения. Попробуйте снова.",
+            tr: "Görsel oluşturulamadı. Lütfen tekrar deneyin.",
+          };
+          
+          return new Response(
+            JSON.stringify({
+              type: "image_error",
+              error: errorData.error || "IMAGE_ERROR",
+              message: errorMessages[lang] || errorMessages.uz,
+            }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        const imageData = await imageResponse.json();
+        console.log('[Image Gen] Success:', { fileUrl: imageData.fileUrl, fileName: imageData.fileName });
+        
+        // Return image generation result as JSON (not a stream)
+        return new Response(
+          JSON.stringify({
+            type: "image_generated",
+            fileUrl: imageData.fileUrl,
+            fileName: imageData.fileName,
+            generationId: imageData.generationId,
+            prompt_uz: imageData.prompt_uz,
+            prompt_en: imageData.prompt_en,
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+        
+      } catch (err) {
+        console.error('[Image Gen] Exception:', err);
+        const lang = ui_language || 'uz';
+        const errorMessages: Record<string, string> = {
+          uz: "Rasm yaratishda xatolik yuz berdi. Qayta urinib ko'ring.",
+          en: "Failed to generate image. Please try again.",
+          ru: "Ошибка при создании изображения. Попробуйте снова.",
+          tr: "Görsel oluşturulamadı. Lütfen tekrar deneyin.",
+        };
+        
+        return new Response(
+          JSON.stringify({
+            type: "image_error",
+            error: "IMAGE_ERROR",
+            message: errorMessages[lang] || errorMessages.uz,
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
 
     const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
     if (!deepseekApiKey) {
