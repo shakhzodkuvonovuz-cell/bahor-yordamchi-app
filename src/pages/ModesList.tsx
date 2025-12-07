@@ -47,7 +47,7 @@ export default function ModesList() {
               {t('modes.primary')}
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {PRIMARY_MODES.map((mode) => (
+              {PRIMARY_MODES.filter((mode) => mode.id !== "general").map((mode) => (
                 <ModeCard
                   key={mode.id}
                   mode={mode}
