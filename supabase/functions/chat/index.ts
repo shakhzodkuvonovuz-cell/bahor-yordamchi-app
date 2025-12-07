@@ -129,7 +129,9 @@ function detectImageGenerationIntent(userMsg: string, hasImageAttachment: boolea
     "generate an image", "generate image", "create an image", "create image",
     "make an image", "make image", "draw an image", "draw image",
     "render an image", "render image", "generate a picture", "create a picture",
-    "make a picture", "draw a picture", "generate photo", "create photo"
+    "make a picture", "draw a picture", "generate photo", "create photo",
+    "create a photo", "generate a photo", "make a photo", "make photo",
+    "draw a photo", "draw photo", "render a photo", "render photo"
   ];
   
   for (const kw of uzKeywords) {
