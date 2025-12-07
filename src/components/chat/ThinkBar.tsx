@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react";
-import { ChevronDown, ChevronUp, Check, Loader2, Sparkles, FileText, Search, Cpu, Image, Save, Clock, Globe, Zap } from "lucide-react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { ChevronDown, ChevronUp, Check, Sparkles, FileText, Image, Clock, Globe, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getTraceStepLabel, getUILabels } from "@/lib/traceLabels";
-import type { MessageTrace, TraceStep, TraceStepDetail } from "@/types/trace";
+import type { MessageTrace, TraceStepDetail } from "@/types/trace";
 import { haptic } from "@/lib/haptics";
 
 interface ThinkBarProps {
@@ -17,6 +17,44 @@ interface ThinkBarProps {
 function formatDuration(ms: number): string {
   if (ms < 1000) return `${Math.round(ms)}ms`;
   return `${(ms / 1000).toFixed(1)}s`;
+}
+
+// Typewriter text component
+function TypewriterText({ text, speed = 30 }: { text: string; speed?: number }) {
+  const [displayText, setDisplayText] = useState("");
+  const [isTyping, setIsTyping] = useState(true);
+  const prevTextRef = useRef(text);
+  
+  useEffect(() => {
+    // If text changed, start typing new text
+    if (text !== prevTextRef.current) {
+      setDisplayText("");
+      setIsTyping(true);
+      prevTextRef.current = text;
+    }
+  }, [text]);
+  
+  useEffect(() => {
+    if (!isTyping || displayText === text) {
+      setIsTyping(false);
+      return;
+    }
+    
+    const timeout = setTimeout(() => {
+      setDisplayText(text.slice(0, displayText.length + 1));
+    }, speed);
+    
+    return () => clearTimeout(timeout);
+  }, [displayText, text, speed, isTyping]);
+  
+  return (
+    <span className="inline-flex items-center">
+      <span>{displayText}</span>
+      {isTyping && (
+        <span className="inline-block w-[2px] h-[14px] bg-primary ml-0.5 animate-[pulse_0.8s_ease-in-out_infinite]" />
+      )}
+    </span>
+  );
 }
 
 // Shimmer animation for loading state
@@ -182,10 +220,14 @@ export function ThinkBar({
         {isGenerating && !isComplete ? (
           <div className="flex items-center gap-2">
             <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
-            <span className="text-foreground/70 font-medium">
-              {activeStep && getTraceStepLabel(activeStep, language)}
+            <span className="text-foreground/70 font-medium min-w-[80px]">
+              {activeStep && (
+                <TypewriterText 
+                  text={getTraceStepLabel(activeStep, language)} 
+                  speed={25}
+                />
+              )}
             </span>
-            <ShimmerDots />
           </div>
         ) : (
           <div className="flex items-center gap-2">
