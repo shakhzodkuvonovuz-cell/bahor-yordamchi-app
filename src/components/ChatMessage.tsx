@@ -232,6 +232,12 @@ export default function ChatMessage({
                             src={attachment.url}
                             alt={attachment.name}
                             className="max-w-full max-h-64 rounded-xl transition-opacity"
+                            onError={(e) => {
+                              console.error('[ChatMessage] Image failed to load:', attachment.url);
+                              // Show fallback
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                            onLoad={() => console.log('[ChatMessage] Image loaded successfully')}
                           />
                           <div className="absolute bottom-2 right-2 flex gap-1.5 opacity-0 group-hover/img:opacity-100 transition-opacity">
                             <a
