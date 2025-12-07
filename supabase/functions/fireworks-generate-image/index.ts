@@ -7,8 +7,33 @@ const corsHeaders = {
 };
 
 const FIREWORKS_API_URL = "https://api.fireworks.ai/inference/v1/workflows/accounts/fireworks/models/flux-1-schnell-fp8/text_to_image";
-const ALLOWED_ASPECT_RATIOS = ["1:1", "16:9", "9:16", "4:5", "5:4", "3:4", "4:3", "3:2", "2:3"];
-const MAX_PROMPT_LENGTH = 250;
+const MAX_PROMPT_LENGTH = 300;
+
+// Aspect ratio to width/height mapping
+const ASPECT_DIMENSIONS: Record<string, { width: number; height: number }> = {
+  "1:1": { width: 1024, height: 1024 },
+  "4:5": { width: 1024, height: 1280 },
+  "5:4": { width: 1280, height: 1024 },
+  "16:9": { width: 1344, height: 768 },
+  "9:16": { width: 768, height: 1344 },
+  "3:4": { width: 960, height: 1280 },
+  "4:3": { width: 1280, height: 960 },
+  "3:2": { width: 1216, height: 832 },
+  "2:3": { width: 832, height: 1216 },
+};
+
+// Content guardrails - block inappropriate content
+const BLOCKED_PATTERNS = [
+  /\b(nude|naked|sex|porn|explicit|nsfw|erotic|xxx)\b/i,
+  /\b(trump|biden|putin|xi jinping|obama|zelensky|merkel)\b/i,
+  /\b(celebrity|famous person|real person)\b/i,
+  /\b(gore|violence|blood|murder|kill)\b/i,
+  /\b(mirziyoyev|karimov|shavkat)\b/i,
+];
+
+function isBlockedPrompt(prompt: string): boolean {
+  return BLOCKED_PATTERNS.some(p => p.test(prompt));
+}
 
 // Detect if text contains non-English characters
 function needsTranslation(text: string): boolean {
@@ -36,12 +61,12 @@ async function translateToEnglish(prompt: string, requestId: string): Promise<st
         messages: [
           {
             role: "system",
-            content: "You are a translator. Translate the user's text to natural English for an image generation model. Keep the meaning. Don't add new content. Return ONLY the translated text, nothing else.",
+            content: "You are a translator. Translate the user's text to natural English for an image generation model. Keep the meaning exactly. Don't add or remove any details. Return ONLY the translated text, nothing else.",
           },
           { role: "user", content: prompt },
         ],
         max_tokens: 500,
-        temperature: 0.3,
+        temperature: 0.2,
       }),
     });
 
@@ -58,6 +83,30 @@ async function translateToEnglish(prompt: string, requestId: string): Promise<st
     console.error(`[${requestId}] Translation failed:`, error);
     return prompt;
   }
+}
+
+// Compose the final prompt with quality blocks
+function composePrompt(
+  translatedPrompt: string,
+  renderMode: "photo" | "illustration"
+): { finalPrompt: string; negativePrompt: string } {
+  // STYLE BLOCK based on mode
+  const styleBlock = renderMode === "illustration"
+    ? "Clean modern illustration, crisp lines, balanced colors, consistent style, no text, no watermark."
+    : "Ultra realistic documentary photo, natural colors, high detail, coherent scene, accurate anatomy, no text, no watermarks.";
+
+  // USER BLOCK
+  const userBlock = `Subject: ${translatedPrompt}.`;
+
+  // COMPOSITION BLOCK
+  const compositionBlock = "Composition: wide shot if scene or places, medium shot if single object, avoid centered portrait framing unless explicitly requested, realistic lighting, consistent perspective, background matches location and context, sharp focus, no unnatural blur.";
+
+  // NEGATIVE PROMPT (always applied)
+  const negativePrompt = "portrait, close-up face, centered headshot, studio lighting, fashion editorial, bokeh, text, watermark, logo, deformed hands, extra fingers, disfigured face, lowres, blurry, oversaturated, plastic skin, duplicated people, bad anatomy, cropped";
+
+  const finalPrompt = `${styleBlock} ${userBlock} ${compositionBlock}`;
+  
+  return { finalPrompt, negativePrompt };
 }
 
 serve(async (req) => {
@@ -114,16 +163,14 @@ serve(async (req) => {
     const body = await req.json();
     const {
       prompt,
-      negativePrompt = "",
       aspectRatio = "1:1",
-      guidanceScale = 3.5,
-      steps = 4,
-      seed = 0,
+      renderMode = "photo",
+      qualityBoost = false,
       chatId,
       attachToChat = false,
     } = body;
 
-    console.log(`[${requestId}] Prompt: "${prompt}", aspectRatio: ${aspectRatio}`);
+    console.log(`[${requestId}] Prompt: "${prompt}", aspectRatio: ${aspectRatio}, renderMode: ${renderMode}, qualityBoost: ${qualityBoost}`);
 
     if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
       return new Response(
@@ -132,8 +179,55 @@ serve(async (req) => {
       );
     }
 
+    // Clean and limit prompt
+    let promptOriginal = prompt.trim();
+    promptOriginal = promptOriginal.replace(/--ar\s*\d+:\d+/gi, "").trim();
+    promptOriginal = promptOriginal.replace(/Style:\s*/gi, "").trim();
+
+    if (promptOriginal.length > MAX_PROMPT_LENGTH) {
+      promptOriginal = promptOriginal.slice(0, MAX_PROMPT_LENGTH).trim();
+      console.log(`[${requestId}] Prompt truncated to ${MAX_PROMPT_LENGTH} chars`);
+    }
+
+    // Check for blocked content BEFORE translation
+    if (isBlockedPrompt(promptOriginal)) {
+      console.log(`[${requestId}] Blocked content detected in original`);
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          error: "Bu turdagi rasm yaratib bo'lmaydi. Iltimos, boshqa mavzu tanlang.",
+          requestId,
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Translate if needed
+    let promptEn = promptOriginal;
+    if (needsTranslation(promptOriginal)) {
+      promptEn = await translateToEnglish(promptOriginal, requestId);
+    }
+
+    // Check for blocked content AFTER translation
+    if (isBlockedPrompt(promptEn)) {
+      console.log(`[${requestId}] Blocked content detected in translation`);
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          error: "Bu turdagi rasm yaratib bo'lmaydi. Iltimos, boshqa mavzu tanlang.",
+          requestId,
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Validate aspect ratio
-    const validAspectRatio = ALLOWED_ASPECT_RATIOS.includes(aspectRatio) ? aspectRatio : "1:1";
+    const validAspectRatio = ASPECT_DIMENSIONS[aspectRatio] ? aspectRatio : "1:1";
+    const dimensions = ASPECT_DIMENSIONS[validAspectRatio];
+
+    // Validate render mode
+    const validRenderMode: "photo" | "illustration" = 
+      renderMode === "illustration" ? "illustration" : "photo";
 
     // Check user limits
     const { data: profile } = await supabase
@@ -168,43 +262,25 @@ serve(async (req) => {
       );
     }
 
-    // Clean and limit prompt
-    let promptUz = prompt.trim();
-    promptUz = promptUz.replace(/--ar\s*\d+:\d+/gi, "").trim();
-    promptUz = promptUz.replace(/Style:\s*/gi, "").trim();
-
-    if (promptUz.length > MAX_PROMPT_LENGTH) {
-      promptUz = promptUz.slice(0, MAX_PROMPT_LENGTH).trim();
-      console.log(`[${requestId}] Prompt truncated to ${MAX_PROMPT_LENGTH} chars`);
-    }
-
-    // Translate if needed
-    let promptEn = promptUz;
-    if (needsTranslation(promptUz)) {
-      promptEn = await translateToEnglish(promptUz, requestId);
-    }
-
-    if (promptEn.length > MAX_PROMPT_LENGTH) {
-      promptEn = promptEn.slice(0, MAX_PROMPT_LENGTH).trim();
-      console.log(`[${requestId}] Translated prompt truncated`);
-    }
-
-    console.log(`[${requestId}] Calling Fireworks API with prompt: "${promptEn}"`);
+    // Compose final prompt with quality blocks
+    const { finalPrompt, negativePrompt } = composePrompt(promptEn, validRenderMode);
+    
+    console.log(`[${requestId}] Final prompt (${finalPrompt.length} chars): "${finalPrompt.slice(0, 150)}..."`);
+    console.log(`[${requestId}] Negative prompt: "${negativePrompt.slice(0, 80)}..."`);
 
     // Build Fireworks request
+    const steps = qualityBoost ? 6 : 4;
+    const guidanceScale = qualityBoost ? 4.5 : 3.5;
+
     const fireworksBody: Record<string, unknown> = {
-      prompt: promptEn,
+      prompt: finalPrompt,
+      negative_prompt: negativePrompt,
       aspect_ratio: validAspectRatio,
-      guidance_scale: Math.min(Math.max(guidanceScale, 1), 10),
-      num_inference_steps: Math.min(Math.max(steps, 1), 8),
+      guidance_scale: guidanceScale,
+      num_inference_steps: steps,
     };
 
-    if (negativePrompt) {
-      fireworksBody.negative_prompt = negativePrompt;
-    }
-    if (seed > 0) {
-      fireworksBody.seed = seed;
-    }
+    console.log(`[${requestId}] Calling Fireworks API - steps: ${steps}, guidance: ${guidanceScale}, dimensions: ${dimensions.width}x${dimensions.height}`);
 
     // Call Fireworks API
     const fireworksResponse = await fetch(FIREWORKS_API_URL, {
@@ -273,13 +349,13 @@ serve(async (req) => {
       .from("image_generations")
       .insert({
         user_id: user.id,
-        prompt_uz: promptUz,
-        prompt_en: promptEn,
-        negative_prompt_en: negativePrompt || null,
+        prompt_uz: promptOriginal,
+        prompt_en: finalPrompt,
+        negative_prompt_en: negativePrompt,
         aspect_ratio: validAspectRatio,
         guidance_scale: guidanceScale,
         num_inference_steps: steps,
-        seed: seed > 0 ? seed : null,
+        seed: null,
         status: "done",
         file_path: filePath,
         mime_type: "image/png",
@@ -303,9 +379,14 @@ serve(async (req) => {
         path: filePath,
         status: "success",
         meta: {
-          prompt_uz: promptUz,
+          prompt_original: promptOriginal,
           prompt_en: promptEn,
+          prompt_composed: finalPrompt,
+          render_mode: validRenderMode,
+          quality_boost: qualityBoost,
           aspect_ratio: validAspectRatio,
+          width: dimensions.width,
+          height: dimensions.height,
         },
       });
 
@@ -336,7 +417,7 @@ serve(async (req) => {
       }
     }
 
-    // Generate signed URL
+    // Generate signed URL (1 hour expiry)
     const { data: signedUrlData } = await supabase.storage
       .from("user-files")
       .createSignedUrl(filePath, 3600);
@@ -346,12 +427,16 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         ok: true,
-        fileUrl: signedUrlData?.signedUrl || "",
-        fileName,
-        generationId: imageId,
-        prompt_en: promptEn,
-        prompt_uz: promptUz,
-        filePath,
+        image_url: signedUrlData?.signedUrl || "",
+        prompt_used: finalPrompt,
+        prompt_original: promptOriginal,
+        model: "flux-schnell",
+        width: dimensions.width,
+        height: dimensions.height,
+        render_mode: validRenderMode,
+        quality_boost: qualityBoost,
+        file_path: filePath,
+        file_name: fileName,
         requestId,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
