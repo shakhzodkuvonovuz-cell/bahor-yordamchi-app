@@ -31,13 +31,22 @@ const DrawerContent = React.forwardRef<
     <DrawerPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-[10px] border bg-background",
+        // Base styles
+        "fixed z-50 flex flex-col bg-background border",
+        // Mobile: full width bottom sheet, capped height
+        "inset-x-0 bottom-0 mt-24 h-auto max-h-[75vh] rounded-t-2xl",
+        // Desktop/tablet: centered with constrained width, rounded corners
+        "md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:max-w-2xl md:w-[calc(100%-2rem)] md:rounded-2xl md:mb-4",
         className,
       )}
       {...props}
     >
-      <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
-      {children}
+      {/* Drag handle */}
+      <div className="mx-auto mt-3 h-1.5 w-12 rounded-full bg-muted-foreground/20 flex-shrink-0" />
+      {/* Scrollable content container */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        {children}
+      </div>
     </DrawerPrimitive.Content>
   </DrawerPortal>
 ));
