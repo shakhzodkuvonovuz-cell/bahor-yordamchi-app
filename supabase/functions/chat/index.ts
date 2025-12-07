@@ -99,33 +99,38 @@ function detectImageGenerationIntent(userMsg: string, hasImageAttachment: boolea
   
   // If user uploaded an image attachment, they want analysis, not generation
   if (hasImageAttachment) {
+    console.log('[Image Detect] Has image attachment, skipping image gen');
     return { isImageGen: false, prompt: "" };
   }
   
   // Check for explicit commands
   if (qLower.startsWith('/image ') || qLower.startsWith('/rasm ')) {
     const prompt = q.slice(7).trim(); // Remove /image or /rasm
+    console.log('[Image Detect] Explicit command detected, prompt:', prompt);
     return { isImageGen: prompt.length > 0, prompt };
   }
   
-  // Check for Uzbek keywords for image generation
+  // Check for Uzbek keywords for image generation (more flexible)
   const uzKeywords = [
     "rasm yarat", "rasm chiz", "surat yarat", "surat chiz", "tasvir yarat", "tasvir chiz",
     "generatsiya qil", "rasm qil", "chizib ber", "rasmini yarat", "rasmini chiz",
-    "suratini yarat", "tasvirini yarat", "rasm yasab ber", "rasm yasat"
+    "suratini yarat", "tasvirini yarat", "rasm yasab ber", "rasm yasat",
+    "rasmini chizib ber", "rasmini yasab ber", "rasm genera", "foto yarat"
   ];
   
   // Check for English keywords for image generation
   const enKeywords = [
     "generate an image", "generate image", "create an image", "create image",
     "make an image", "make image", "draw an image", "draw image",
-    "render an image", "render image", "generate a picture", "create a picture"
+    "render an image", "render image", "generate a picture", "create a picture",
+    "make a picture", "draw a picture", "generate photo", "create photo"
   ];
   
   for (const kw of uzKeywords) {
     if (qLower.includes(kw)) {
       // Extract the prompt (remove the keyword)
       const prompt = q.replace(new RegExp(kw, 'gi'), '').trim();
+      console.log('[Image Detect] UZ keyword matched:', kw, ', prompt:', prompt);
       return { isImageGen: true, prompt: prompt || q };
     }
   }
@@ -133,24 +138,38 @@ function detectImageGenerationIntent(userMsg: string, hasImageAttachment: boolea
   for (const kw of enKeywords) {
     if (qLower.includes(kw)) {
       const prompt = q.replace(new RegExp(kw, 'gi'), '').trim();
+      console.log('[Image Detect] EN keyword matched:', kw, ', prompt:', prompt);
       return { isImageGen: true, prompt: prompt || q };
     }
   }
   
-  // Special case: message starts with explicit image request word + "of"
+  // Special case: message starts with explicit image request word + "of" or just the word
   const simplePatterns = [
     /^rasm:?\s+(.+)/i,
     /^surat:?\s+(.+)/i,
     /^tasvir:?\s+(.+)/i,
+    /^image:?\s+(.+)/i,
+    /^picture:?\s+(.+)/i,
   ];
   
   for (const pattern of simplePatterns) {
     const match = q.match(pattern);
     if (match) {
+      console.log('[Image Detect] Simple pattern matched:', pattern, ', prompt:', match[1].trim());
       return { isImageGen: true, prompt: match[1].trim() };
     }
   }
   
+  // Check for just the word "rasm" at the end with content before it (like "cat rasm")
+  if (qLower.endsWith(' rasm') || qLower.endsWith(' surat') || qLower.endsWith(' tasvir')) {
+    const prompt = q.slice(0, -5).trim(); // Remove last word and space
+    if (prompt.length > 2) {
+      console.log('[Image Detect] Trailing keyword matched, prompt:', prompt);
+      return { isImageGen: true, prompt };
+    }
+  }
+  
+  console.log('[Image Detect] No image intent found in:', qLower.slice(0, 50));
   return { isImageGen: false, prompt: "" };
 }
 
