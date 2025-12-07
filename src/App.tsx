@@ -10,6 +10,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PublicRoute } from "@/components/PublicRoute";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import OfflineBanner from "@/components/OfflineBanner";
+import { AppShell } from "@/components/layout";
 import Home from "./pages/Home";
 import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
@@ -67,12 +68,14 @@ const App = () => (
                   <Route path="/auth/phone" element={<PublicRoute><AuthPhone /></PublicRoute>} />
                   <Route path="/auth/callback" element={<AuthCallback />} />
                   
-                  {/* Protected routes */}
+                  {/* Protected routes - wrapped in AppShell */}
                   <Route 
                     path="/modes" 
                     element={
                       <ProtectedRoute>
-                        <Home />
+                        <AppShell>
+                          <Home />
+                        </AppShell>
                       </ProtectedRoute>
                     } 
                   />
@@ -80,7 +83,9 @@ const App = () => (
                     path="/support" 
                     element={
                       <ProtectedRoute>
-                        <Support />
+                        <AppShell>
+                          <Support />
+                        </AppShell>
                       </ProtectedRoute>
                     } 
                   />
@@ -88,7 +93,9 @@ const App = () => (
                     path="/chat/:mode" 
                     element={
                       <ProtectedRoute>
-                        <Chat />
+                        <AppShell>
+                          <Chat />
+                        </AppShell>
                       </ProtectedRoute>
                     } 
                   />
@@ -96,7 +103,9 @@ const App = () => (
                     path="/settings" 
                     element={
                       <ProtectedRoute>
-                        <Settings />
+                        <AppShell>
+                          <Settings />
+                        </AppShell>
                       </ProtectedRoute>
                     } 
                   />
@@ -104,7 +113,9 @@ const App = () => (
                     path="/feedback" 
                     element={
                       <ProtectedRoute>
-                        <Feedback />
+                        <AppShell>
+                          <Feedback />
+                        </AppShell>
                       </ProtectedRoute>
                     } 
                   />
@@ -112,7 +123,9 @@ const App = () => (
                     path="/admin/entitlements" 
                     element={
                       <ProtectedRoute>
-                        <AdminEntitlements />
+                        <AppShell>
+                          <AdminEntitlements />
+                        </AppShell>
                       </ProtectedRoute>
                     } 
                   />
@@ -120,7 +133,9 @@ const App = () => (
                     path="/tools/documents" 
                     element={
                       <ProtectedRoute>
-                        <DocumentTools />
+                        <AppShell>
+                          <DocumentTools />
+                        </AppShell>
                       </ProtectedRoute>
                     } 
                   />
@@ -128,7 +143,9 @@ const App = () => (
                     path="/circles" 
                     element={
                       <ProtectedRoute>
-                        <Circles />
+                        <AppShell>
+                          <Circles />
+                        </AppShell>
                       </ProtectedRoute>
                     } 
                   />
@@ -136,9 +153,11 @@ const App = () => (
                     path="/circles/:id" 
                     element={
                       <ProtectedRoute>
-                        <ErrorBoundary>
-                          <CircleDetail />
-                        </ErrorBoundary>
+                        <AppShell>
+                          <ErrorBoundary>
+                            <CircleDetail />
+                          </ErrorBoundary>
+                        </AppShell>
                       </ProtectedRoute>
                     } 
                   />
