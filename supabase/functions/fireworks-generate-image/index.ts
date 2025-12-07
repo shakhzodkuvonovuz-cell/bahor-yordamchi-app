@@ -98,11 +98,11 @@ function composePrompt(
   // USER BLOCK
   const userBlock = `Subject: ${translatedPrompt}.`;
 
-  // COMPOSITION BLOCK
-  const compositionBlock = "Composition: wide shot if scene or places, medium shot if single object, avoid centered portrait framing unless explicitly requested, realistic lighting, consistent perspective, background matches location and context, sharp focus, no unnatural blur.";
+  // COMPOSITION BLOCK - neutral, let user prompt guide framing
+  const compositionBlock = "Composition: appropriate framing based on subject, realistic lighting, consistent perspective, background matches location and context, sharp focus.";
 
-  // NEGATIVE PROMPT (always applied)
-  const negativePrompt = "portrait, close-up face, centered headshot, studio lighting, fashion editorial, bokeh, text, watermark, logo, deformed hands, extra fingers, disfigured face, lowres, blurry, oversaturated, plastic skin, duplicated people, bad anatomy, cropped";
+  // NEGATIVE PROMPT - only technical quality issues, no subject bias
+  const negativePrompt = "text, watermark, logo, deformed hands, extra fingers, disfigured face, lowres, blurry, oversaturated, plastic skin, duplicated people, bad anatomy, cropped, artifacts";
 
   const finalPrompt = `${styleBlock} ${userBlock} ${compositionBlock}`;
   
