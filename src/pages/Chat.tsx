@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Send, Trash2, Menu, Paperclip, X, FileText, RefreshCw, CheckCircle, AlertCircle, Search, Square, StickyNote, FileStack } from "lucide-react";
+import { ArrowLeft, Send, Trash2, Menu, Paperclip, X, FileText, RefreshCw, CheckCircle, AlertCircle, Search, Square, StickyNote, FileStack, Camera } from "lucide-react";
 import { FocusCanvas, MessageArea } from "@/components/chat/FocusCanvas";
 import { ContextDock } from "@/components/chat/ContextDock";
 import ChatMessage from "@/components/ChatMessage";
@@ -2083,7 +2083,8 @@ export default function Chat() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="flex items-end gap-2">
+            <form onSubmit={handleSubmit} className="flex items-end gap-1.5 sm:gap-2">
+              {/* File input for general files */}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -2092,14 +2093,36 @@ export default function Chat() {
                 onChange={handleFileSelect}
                 className="hidden"
               />
+              {/* Camera input for mobile camera capture */}
+              <input
+                id="camera-input"
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              
+              {/* Paperclip - File upload */}
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isLoading || typing || isUploading}
-                className="p-3 text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-xl transition-all duration-200 disabled:opacity-40 flex-shrink-0 active:scale-95"
+                className="p-2.5 sm:p-3 text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-xl transition-all duration-200 disabled:opacity-40 flex-shrink-0 active:scale-95"
                 aria-label="Attach file"
               >
                 <Paperclip className="w-5 h-5" />
+              </button>
+              
+              {/* Camera - Image capture (shows camera on mobile) */}
+              <button
+                type="button"
+                onClick={() => document.getElementById('camera-input')?.click()}
+                disabled={isLoading || typing || isUploading}
+                className="p-2.5 sm:p-3 text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-xl transition-all duration-200 disabled:opacity-40 flex-shrink-0 active:scale-95"
+                aria-label="Take photo"
+              >
+                <Camera className="w-5 h-5" />
               </button>
               
               <button
