@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,6 +44,7 @@ import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { AppFooter } from "@/components/layout/AppFooter";
+import { HeroBackground } from "@/components/landing/HeroBackground";
 
 // Hero mockup with 3-page carousel showing real use cases
 function HeroMockup() {
@@ -422,6 +423,7 @@ export default function Landing() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { user } = useAuth();
+  const [bgVariant, setBgVariant] = useState<1 | 2 | 3 | 4>(1);
   
   const handleOpenApp = () => {
     if (user) {
@@ -573,7 +575,28 @@ export default function Landing() {
       </header>
 
       {/* HERO — 2-column, less words */}
-      <section className="relative py-10 sm:py-16 lg:py-20">
+      <section className="relative py-10 sm:py-16 lg:py-20 overflow-hidden">
+        {/* 3D Animated Background */}
+        <Suspense fallback={null}>
+          <HeroBackground variant={bgVariant} />
+        </Suspense>
+        
+        {/* Background Variant Toggle - for testing */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 p-1 rounded-full bg-background/80 backdrop-blur-md border border-border/50 shadow-lg">
+          {([1, 2, 3, 4] as const).map((num) => (
+            <button
+              key={num}
+              onClick={() => setBgVariant(num)}
+              className={`w-8 h-8 rounded-full text-sm font-bold transition-all duration-200 ${
+                bgVariant === num
+                  ? 'bg-primary text-primary-foreground shadow-md'
+                  : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+              }`}
+            >
+              {num}
+            </button>
+          ))}
+        </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
             ref={heroRef.ref}
