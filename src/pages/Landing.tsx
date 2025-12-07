@@ -33,6 +33,9 @@ import {
   Download,
 } from "lucide-react";
 import bahorLogo from "@/assets/bahor-logo.png";
+import samarkandImage from "@/assets/landing/samarkand-registan.jpg";
+import tashkentImage from "@/assets/landing/tashkent-night.jpg";
+import suzaniImage from "@/assets/landing/uzbek-suzani.jpg";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
@@ -200,11 +203,11 @@ export default function Landing() {
     },
   ];
 
-  // Sample image gallery placeholders
+  // Real AI-generated image gallery
   const imageGallery = [
-    { label: "Samarqand", emoji: "🏛️" },
-    { label: "Toshkent", emoji: "🌆" },
-    { label: "Study Poster", emoji: "📚" },
+    { label: "Samarqand", image: samarkandImage },
+    { label: "Toshkent", image: tashkentImage },
+    { label: "Suzani", image: suzaniImage },
   ];
 
   // Source chips
@@ -395,18 +398,24 @@ export default function Landing() {
               </Button>
             </div>
             
-            {/* Mini gallery */}
+            {/* Mini gallery with real AI-generated images */}
             <div className="flex gap-3 justify-center lg:justify-end">
               {imageGallery.map((img, i) => (
                 <div
                   key={i}
-                  className={`w-24 h-28 sm:w-28 sm:h-32 rounded-xl bg-gradient-to-br from-secondary to-secondary/50 border border-border/40 flex flex-col items-center justify-center transition-all duration-500 ${
+                  className={`w-24 h-28 sm:w-28 sm:h-32 rounded-xl overflow-hidden border border-border/40 relative group transition-all duration-500 hover:scale-105 hover:shadow-lg ${
                     imageGenRef.isVisible ? "opacity-100 scale-100" : "opacity-0 scale-90"
                   }`}
                   style={{ transitionDelay: `${200 + i * 100}ms` }}
                 >
-                  <span className="text-2xl mb-1">{img.emoji}</span>
-                  <span className="text-xs text-muted-foreground">{img.label}</span>
+                  <img 
+                    src={img.image} 
+                    alt={img.label} 
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                    <span className="text-xs text-white font-medium">{img.label}</span>
+                  </div>
                 </div>
               ))}
             </div>
