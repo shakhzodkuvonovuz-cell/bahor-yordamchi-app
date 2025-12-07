@@ -53,6 +53,7 @@ import { detectReplyLanguage } from "@/lib/languageDetect";
 import { extractTextFromFile, isImageFile, isPdfFile, getFileReadStatusLabel } from "@/lib/fileTextExtractor";
 import { getPreferencesPromptContext } from "@/components/UserPreferencesSection";
 import { usePushToTalkDictation } from "@/hooks/usePushToTalkDictation";
+import { useRealtimeChat, useRealtimeThreads } from "@/hooks/useRealtimeChat";
 
 // Helper to format relative time
 function formatRelativeTime(dateString: string, lang: string): string {
@@ -298,6 +299,121 @@ export default function Chat() {
     return () => container.removeEventListener("scroll", onScroll);
   }, [handleScroll]);
 
+  // ============= REALTIME SYNC =============
+  
+  // Callback: handle new message from realtime
+  const handleRealtimeNewMessage = useCallback((newMessage: Message) => {
+    // Only add if not currently loading/streaming (avoid conflicts)
+    if (isLoading || typing) {
+      console.log("[Realtime] Skipping new message during streaming");
+      return;
+    }
+    
+    setMessages((prev) => {
+      // Double-check dedupe in state
+      if (prev.some(m => m.id === newMessage.id)) {
+        return prev;
+      }
+      
+      // Insert in correct order by timestamp
+      const updated = [...prev, newMessage].sort((a, b) => 
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      );
+      return updated;
+    });
+    
+    // If at bottom, scroll to show new message
+    if (isAtBottom) {
+      setTimeout(() => scrollToBottom(), 100);
+    }
+    
+    // Update last assistant message id if applicable
+    if (newMessage.role === "assistant") {
+      setLastAssistantMessageId(newMessage.id);
+    }
+  }, [isLoading, typing, isAtBottom]);
+
+  // Callback: handle message update from realtime
+  const handleRealtimeMessageUpdate = useCallback((messageId: string, content: string) => {
+    setMessages((prev) =>
+      prev.map(m => m.id === messageId ? { ...m, content } : m)
+    );
+  }, []);
+
+  // Callback: handle new attachment from realtime
+  const handleRealtimeNewAttachment = useCallback((messageId: string, attachment: ChatAttachment) => {
+    setMessages((prev) =>
+      prev.map(m => {
+        if (m.id === messageId) {
+          const existingAttachments = m.attachments || [];
+          // Dedupe
+          if (existingAttachments.some(a => a.id === attachment.id)) {
+            return m;
+          }
+          return { ...m, attachments: [...existingAttachments, attachment] };
+        }
+        return m;
+      })
+    );
+  }, []);
+
+  // Callback: handle new thread from realtime
+  const handleRealtimeThreadInsert = useCallback((thread: chatStore.ChatThread) => {
+    setThreads((prev) => {
+      if (prev.some(t => t.id === thread.id)) {
+        return prev;
+      }
+      return [thread, ...prev];
+    });
+  }, []);
+
+  // Callback: handle thread update from realtime
+  const handleRealtimeThreadUpdate = useCallback((threadId: string, updates: Partial<chatStore.ChatThread>) => {
+    setThreads((prev) =>
+      prev.map(t => t.id === threadId ? { ...t, ...updates } : t)
+    );
+  }, []);
+
+  // Setup realtime chat sync
+  const {
+    markMessageSeen,
+    markAttachmentSeen,
+    initializeSeenIds,
+  } = useRealtimeChat({
+    userId: user?.id,
+    threadId: currentThreadId,
+    enabled: !!user && !!currentThreadId && !isLoading,
+    onNewMessage: handleRealtimeNewMessage,
+    onMessageUpdate: handleRealtimeMessageUpdate,
+    onNewAttachment: handleRealtimeNewAttachment,
+  });
+
+  // Setup realtime threads sync
+  const {
+    markThreadSeen,
+    initializeSeenThreads,
+  } = useRealtimeThreads({
+    userId: user?.id,
+    mode,
+    enabled: !!user,
+    onThreadInsert: handleRealtimeThreadInsert,
+    onThreadUpdate: handleRealtimeThreadUpdate,
+  });
+
+  // Initialize seen IDs when messages load
+  useEffect(() => {
+    if (messages.length > 0) {
+      initializeSeenIds(messages);
+    }
+  }, [currentThreadId]); // Only on thread change, not every message update
+
+  // Initialize seen threads when threads load
+  useEffect(() => {
+    if (threads.length > 0) {
+      initializeSeenThreads(threads);
+    }
+  }, [threads.length > 0]); // Only when threads first load
+
   // Check for migration on mount (only for logged in users)
   useEffect(() => {
     if (user && checkMigrationNeeded()) {
@@ -332,6 +448,7 @@ export default function Chat() {
         setThreads([newThread]);
         setCurrentThreadId(newThread.id);
         setMessages([]);
+        markThreadSeen(newThread.id);
       } else {
         // Select most recent thread
         const mostRecent = fetchedThreads[0];
@@ -468,6 +585,7 @@ export default function Chat() {
           setCurrentThreadId(newThread.id);
           setMessages([]);
           setInputValue("");
+          markThreadSeen(newThread.id);
           // Mark session as initialized since we're starting fresh
           markSessionInitialized();
           // Clear the query param
@@ -944,6 +1062,8 @@ export default function Chat() {
               originalName: file.name,
             });
             attachment.dbId = dbAttachment.id; // Store DB ID for later linking
+            // Mark as seen for realtime dedupe
+            markAttachmentSeen(dbAttachment.id);
           } catch (err) {
             console.error("Error saving attachment to DB:", err);
           }
@@ -994,6 +1114,7 @@ export default function Chat() {
         setCurrentThreadId(newThread.id);
         setMessages([]);
         markSessionInitialized();
+        markThreadSeen(newThread.id);
         // Wait a tick for state to update, then re-call handleSendMessage
         setTimeout(() => handleSendMessage(content), 50);
         return;
@@ -1059,6 +1180,9 @@ export default function Chat() {
         content: content.trim(),
       });
       savedUserMessageId = savedUserMessage.id;
+      
+      // Mark as seen for realtime dedupe
+      markMessageSeen(savedUserMessage.id);
       
       // Update optimistic message with real ID
       setMessages((prev) => 
@@ -1380,7 +1504,7 @@ export default function Chat() {
               
               // Also save the attachment reference with correct storage path
               if (jsonData.fileUrl && jsonData.filePath) {
-                await chatStore.attachFile(user.id, {
+                const imgAttachment = await chatStore.attachFile(user.id, {
                   threadId: currentThreadId,
                   messageId: savedAssistant.id,
                   bucket: "user-files",
@@ -1388,6 +1512,8 @@ export default function Chat() {
                   mimeType: "image/png",
                   originalName: jsonData.fileName,
                 });
+                // Mark as seen for realtime dedupe
+                markAttachmentSeen(imgAttachment.id);
               }
               
               setMessages((prev) =>
@@ -1570,6 +1696,9 @@ export default function Chat() {
               );
               setLastAssistantMessageId(savedAssistant.id);
               
+              // Mark as seen for realtime dedupe
+              markMessageSeen(savedAssistant.id);
+              
               if (session?.access_token) {
                 chatStore.maybeGenerateSummary(currentThreadId, session.access_token)
                   .then(result => {
@@ -1684,6 +1813,7 @@ export default function Chat() {
       setThreads(prev => prev.filter(t => t.id !== currentThreadId).concat([newThread]));
       setCurrentThreadId(newThread.id);
       setMessages([]);
+      markThreadSeen(newThread.id);
     } catch (error) {
       console.error("Error clearing chat:", error);
       toast({
@@ -1707,6 +1837,7 @@ export default function Chat() {
       setCurrentThreadId(newThread.id);
       setMessages([]);
       setIsHistoryOpen(false);
+      markThreadSeen(newThread.id);
     } catch (error) {
       console.error("Error creating new thread:", error);
       toast({
@@ -1739,6 +1870,7 @@ export default function Chat() {
         setThreads([newThread]);
         setCurrentThreadId(newThread.id);
         setMessages([]);
+        markThreadSeen(newThread.id);
       } else {
         setThreads(updatedThreads);
         
