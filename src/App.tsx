@@ -10,7 +10,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PublicRoute } from "@/components/PublicRoute";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import OfflineBanner from "@/components/OfflineBanner";
-import { AppShell } from "@/components/layout";
+import { AppShellV2 } from "@/components/layout/AppShellV2";
 import Home from "./pages/Home";
 import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
@@ -73,9 +73,9 @@ const App = () => (
                     path="/modes" 
                     element={
                       <ProtectedRoute>
-                        <AppShell>
+                        <AppShellV2>
                           <Home />
-                        </AppShell>
+                        </AppShellV2>
                       </ProtectedRoute>
                     } 
                   />
@@ -83,9 +83,9 @@ const App = () => (
                     path="/support" 
                     element={
                       <ProtectedRoute>
-                        <AppShell>
+                        <AppShellV2>
                           <Support />
-                        </AppShell>
+                        </AppShellV2>
                       </ProtectedRoute>
                     } 
                   />
@@ -93,9 +93,9 @@ const App = () => (
                     path="/chat/:mode" 
                     element={
                       <ProtectedRoute>
-                        <AppShell>
+                        <AppShellV2>
                           <Chat />
-                        </AppShell>
+                        </AppShellV2>
                       </ProtectedRoute>
                     } 
                   />
@@ -103,9 +103,9 @@ const App = () => (
                     path="/settings" 
                     element={
                       <ProtectedRoute>
-                        <AppShell>
+                        <AppShellV2>
                           <Settings />
-                        </AppShell>
+                        </AppShellV2>
                       </ProtectedRoute>
                     } 
                   />
@@ -113,9 +113,9 @@ const App = () => (
                     path="/feedback" 
                     element={
                       <ProtectedRoute>
-                        <AppShell>
+                        <AppShellV2>
                           <Feedback />
-                        </AppShell>
+                        </AppShellV2>
                       </ProtectedRoute>
                     } 
                   />
@@ -123,9 +123,9 @@ const App = () => (
                     path="/admin/entitlements" 
                     element={
                       <ProtectedRoute>
-                        <AppShell>
+                        <AppShellV2>
                           <AdminEntitlements />
-                        </AppShell>
+                        </AppShellV2>
                       </ProtectedRoute>
                     } 
                   />
@@ -133,9 +133,9 @@ const App = () => (
                     path="/tools/documents" 
                     element={
                       <ProtectedRoute>
-                        <AppShell>
+                        <AppShellV2>
                           <DocumentTools />
-                        </AppShell>
+                        </AppShellV2>
                       </ProtectedRoute>
                     } 
                   />
@@ -143,9 +143,9 @@ const App = () => (
                     path="/circles" 
                     element={
                       <ProtectedRoute>
-                        <AppShell>
+                        <AppShellV2>
                           <Circles />
-                        </AppShell>
+                        </AppShellV2>
                       </ProtectedRoute>
                     } 
                   />
@@ -153,11 +153,11 @@ const App = () => (
                     path="/circles/:id" 
                     element={
                       <ProtectedRoute>
-                        <AppShell>
+                        <AppShellV2>
                           <ErrorBoundary>
                             <CircleDetail />
                           </ErrorBoundary>
-                        </AppShell>
+                        </AppShellV2>
                       </ProtectedRoute>
                     } 
                   />
