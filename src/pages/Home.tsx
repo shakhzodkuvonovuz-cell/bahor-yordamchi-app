@@ -242,23 +242,25 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Top Bar with page label + Language */}
-      <div className="w-full px-4 sm:px-6 py-3 border-b border-border/50">
-        <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-sm">
-            <MessageSquare className="w-4 h-4 text-primary" />
-            <span className="font-medium text-foreground">{t('sidebar.chat')}</span>
-            <span className="text-muted-foreground">·</span>
-            <span className="text-muted-foreground text-xs">{t('beta.title')}</span>
+    <div className="bg-background flex flex-col">
+      {/* Main content wrapper - ensures footer is below the fold */}
+      <div className="min-h-screen flex flex-col">
+        {/* Top Bar with page label + Language */}
+        <div className="w-full px-4 sm:px-6 py-3 border-b border-border/50">
+          <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-sm">
+              <MessageSquare className="w-4 h-4 text-primary" />
+              <span className="font-medium text-foreground">{t('sidebar.chat')}</span>
+              <span className="text-muted-foreground">·</span>
+              <span className="text-muted-foreground text-xs">{t('beta.title')}</span>
+            </div>
+            <LanguageSwitcher variant="compact" />
           </div>
-          <LanguageSwitcher variant="compact" />
         </div>
-      </div>
 
-      {/* Main Content - Centered */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 sm:py-12">
-        <div className="w-full max-w-3xl space-y-6">
+        {/* Main Content - Centered */}
+        <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 sm:py-12">
+          <div className="w-full max-w-3xl space-y-6">
           
           {/* Header with Logo - Bigger logo */}
           <div className="text-center space-y-3">
@@ -421,10 +423,12 @@ export default function Home() {
               ))}
             </div>
           </div>
+          </div>
         </div>
       </div>
-
-      {/* Footer hidden on /modes to keep hero clean - only visible on other pages */}
+      
+      {/* Footer - only visible after scrolling past min-h-screen content */}
+      <AppFooter />
     </div>
   );
 }
