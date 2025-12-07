@@ -69,10 +69,35 @@ export const translations: Record<Lang, Record<string, string>> = {
     'builtFor.title': "O'zbekiston uchun maxsus yaratilgan",
     'builtFor.description': "Bahor AI o'zbek tili, madaniyati va mahalliy ehtiyojlarni tushunadi. Biz o'zbek tilida so'zlashuvchilar uchun eng yaxshi AI tajribasini yaratmoqdamiz.",
     
-    // Mockup
-    'mockup.userMessage': "Ingliz tilida essay yozishga yordam bering",
-    'mockup.aiMessage': "Albatta! Essay mavzusi nima bo'ladi?",
+    // Mockup - Slide indicators
+    'mockup.slide.web': "Web qidiruv",
+    'mockup.slide.image': "Rasm yaratish",
+    'mockup.slide.pdf': "PDF eksport",
     
+    // Mockup - Web Search scenario
+    'mockup.web.userMessage': "2024 yilda O'zbekistonda qanday iqtisodiy islohotlar bo'ldi?",
+    'mockup.web.searching': "Web qidirilmoqda...",
+    'mockup.web.sourcesFound': "4 ta manba topildi",
+    'mockup.web.aiTitle': "2024-yilgi asosiy iqtisodiy islohotlar",
+    'mockup.web.aiPreview': "2024-yilda O'zbekistonda bir qator muhim iqtisodiy islohotlar amalga oshirildi. Birinchidan, soliq tizimi isloh qilindi va kichik biznes uchun soliq stavkalari pasaytirildi [1]. Ikkinchidan, xorijiy investitsiyalar uchun yangi imtiyozlar...",
+    'mockup.web.showMore': "Davomini ko'rsatish",
+    
+    // Mockup - Image Generation scenario
+    'mockup.image.userMessage': "Samarqand Registon maydoni rasmini yarat",
+    'mockup.image.generating': "Rasm yaratilmoqda...",
+    'mockup.image.aiResponse': "Mana, Registon maydoni rasmi tayyor:",
+    'mockup.image.suggestion1': "Kechqurun versiyasini yarat",
+    'mockup.image.suggestion2': "Boshqa burchakdan ko'rsat",
+    
+    // Mockup - PDF Export scenario
+    'mockup.pdf.previousResponse': "2024-yilda O'zbekistonda bir qator muhim iqtisodiy islohotlar amalga oshirildi. Birinchidan, soliq tizimi isloh qilindi...",
+    'mockup.pdf.userMessage': "Bu javobni PDF faylga aylantir",
+    'mockup.pdf.creating': "PDF tayyorlanmoqda...",
+    'mockup.pdf.aiResponse': "PDF fayl tayyor! Yuklab olishingiz mumkin:",
+    'mockup.pdf.fileName': "Iqtisodiy_islohotlar_2024.pdf",
+    'mockup.pdf.suggestion1': "Word formatida ham bering",
+    'mockup.pdf.suggestion2': "Qisqaroq versiyasini yozing",
+
     // Modes Section
     'section.exploreModes': 'Bahor AI rejimlarini kashf qiling',
     'section.exploreModes.subtitle': 'Har bir ehtiyoj uchun maxsus AI yordamchilar',
@@ -742,10 +767,35 @@ export const translations: Record<Lang, Record<string, string>> = {
     'builtFor.title': 'Built specifically for Uzbekistan',
     'builtFor.description': 'Bahor AI understands Uzbek language, culture, and local needs. We are creating the best AI experience for Uzbek speakers.',
     
-    // Mockup
-    'mockup.userMessage': 'Help me write an essay in English',
-    'mockup.aiMessage': 'Of course! What topic would you like?',
+    // Mockup - Slide indicators
+    'mockup.slide.web': "Web Search",
+    'mockup.slide.image': "Image Gen",
+    'mockup.slide.pdf': "PDF Export",
     
+    // Mockup - Web Search scenario
+    'mockup.web.userMessage': "What economic reforms happened in Uzbekistan in 2024?",
+    'mockup.web.searching': "Searching the web...",
+    'mockup.web.sourcesFound': "4 sources found",
+    'mockup.web.aiTitle': "Key Economic Reforms in 2024",
+    'mockup.web.aiPreview': "In 2024, Uzbekistan implemented several significant economic reforms. First, the tax system was reformed and tax rates for small businesses were reduced [1]. Second, new incentives for foreign investments...",
+    'mockup.web.showMore': "Show more",
+    
+    // Mockup - Image Generation scenario
+    'mockup.image.userMessage': "Create an image of Registan Square in Samarkand",
+    'mockup.image.generating': "Generating image...",
+    'mockup.image.aiResponse': "Here's the Registan Square image:",
+    'mockup.image.suggestion1': "Create evening version",
+    'mockup.image.suggestion2': "Show from another angle",
+    
+    // Mockup - PDF Export scenario
+    'mockup.pdf.previousResponse': "In 2024, Uzbekistan implemented several significant economic reforms. First, the tax system was reformed...",
+    'mockup.pdf.userMessage': "Convert this response to a PDF file",
+    'mockup.pdf.creating': "Creating PDF...",
+    'mockup.pdf.aiResponse': "PDF file is ready! You can download it:",
+    'mockup.pdf.fileName': "Economic_Reforms_2024.pdf",
+    'mockup.pdf.suggestion1': "Also give me Word format",
+    'mockup.pdf.suggestion2': "Write a shorter version",
+
     // Modes Section
     'section.exploreModes': 'Explore Bahor AI Modes',
     'section.exploreModes.subtitle': 'Specialized AI assistants for every need',
@@ -1406,10 +1456,35 @@ export const translations: Record<Lang, Record<string, string>> = {
     'builtFor.title': 'Создан специально для Узбекистана',
     'builtFor.description': 'Bahor AI понимает узбекский язык, культуру и местные потребности. Мы создаём лучший AI-опыт для узбекоязычных пользователей.',
     
-    // Mockup
-    'mockup.userMessage': 'Помогите написать эссе на английском',
-    'mockup.aiMessage': 'Конечно! Какая тема эссе?',
+    // Mockup - Slide indicators
+    'mockup.slide.web': "Веб-поиск",
+    'mockup.slide.image': "Генерация",
+    'mockup.slide.pdf': "PDF экспорт",
     
+    // Mockup - Web Search scenario
+    'mockup.web.userMessage': "Какие экономические реформы произошли в Узбекистане в 2024 году?",
+    'mockup.web.searching': "Поиск в интернете...",
+    'mockup.web.sourcesFound': "Найдено 4 источника",
+    'mockup.web.aiTitle': "Основные экономические реформы 2024 года",
+    'mockup.web.aiPreview': "В 2024 году в Узбекистане был проведён ряд важных экономических реформ. Во-первых, была реформирована налоговая система и снижены ставки для малого бизнеса [1]. Во-вторых, новые льготы для иностранных инвестиций...",
+    'mockup.web.showMore': "Показать больше",
+    
+    // Mockup - Image Generation scenario
+    'mockup.image.userMessage': "Создай изображение площади Регистан в Самарканде",
+    'mockup.image.generating': "Создание изображения...",
+    'mockup.image.aiResponse': "Вот изображение площади Регистан:",
+    'mockup.image.suggestion1': "Создай вечернюю версию",
+    'mockup.image.suggestion2': "Покажи с другого ракурса",
+    
+    // Mockup - PDF Export scenario
+    'mockup.pdf.previousResponse': "В 2024 году в Узбекистане был проведён ряд важных экономических реформ. Во-первых, была реформирована налоговая система...",
+    'mockup.pdf.userMessage': "Преобразуй этот ответ в PDF файл",
+    'mockup.pdf.creating': "Создание PDF...",
+    'mockup.pdf.aiResponse': "PDF файл готов! Вы можете скачать:",
+    'mockup.pdf.fileName': "Экономические_реформы_2024.pdf",
+    'mockup.pdf.suggestion1': "Дай также в формате Word",
+    'mockup.pdf.suggestion2': "Напиши более короткую версию",
+
     // Modes Section
     'section.exploreModes': 'Изучите режимы Bahor AI',
     'section.exploreModes.subtitle': 'Специализированные ИИ-ассистенты для каждой потребности',
@@ -2010,9 +2085,35 @@ export const translations: Record<Lang, Record<string, string>> = {
     'builtFor.title': 'Özbekistan için özel olarak tasarlandı',
     'builtFor.description': 'Bahor AI, Özbekçe dili, kültürü ve yerel ihtiyaçları anlar. Özbekçe konuşanlar için en iyi AI deneyimini oluşturuyoruz.',
     
-    // Mockup
-    'mockup.userMessage': "İngilizce bir kompozisyon yazmama yardım et",
-    'mockup.aiMessage': 'Tabii! Hangi konuda olsun?',
+    // Mockup - Slide indicators
+    'mockup.slide.web': "Web Arama",
+    'mockup.slide.image': "Görsel Oluştur",
+    'mockup.slide.pdf': "PDF Dışa Aktar",
+    
+    // Mockup - Web Search scenario
+    'mockup.web.userMessage': "2024'te Özbekistan'da hangi ekonomik reformlar yapıldı?",
+    'mockup.web.searching': "Web'de aranıyor...",
+    'mockup.web.sourcesFound': "4 kaynak bulundu",
+    'mockup.web.aiTitle': "2024'ün Temel Ekonomik Reformları",
+    'mockup.web.aiPreview': "2024 yılında Özbekistan'da bir dizi önemli ekonomik reform gerçekleştirildi. Birincisi, vergi sistemi reforme edildi ve küçük işletmeler için vergi oranları düşürüldü [1]. İkincisi, yabancı yatırımlar için yeni teşvikler...",
+    'mockup.web.showMore': "Daha fazla göster",
+    
+    // Mockup - Image Generation scenario
+    'mockup.image.userMessage': "Semerkant Registan Meydanı görseli oluştur",
+    'mockup.image.generating': "Görsel oluşturuluyor...",
+    'mockup.image.aiResponse': "İşte Registan Meydanı görseli:",
+    'mockup.image.suggestion1': "Akşam versiyonunu oluştur",
+    'mockup.image.suggestion2': "Başka bir açıdan göster",
+    
+    // Mockup - PDF Export scenario
+    'mockup.pdf.previousResponse': "2024 yılında Özbekistan'da bir dizi önemli ekonomik reform gerçekleştirildi. Birincisi, vergi sistemi reforme edildi...",
+    'mockup.pdf.userMessage': "Bu yanıtı PDF dosyasına dönüştür",
+    'mockup.pdf.creating': "PDF oluşturuluyor...",
+    'mockup.pdf.aiResponse': "PDF dosyası hazır! İndirebilirsiniz:",
+    'mockup.pdf.fileName': "Ekonomik_Reformlar_2024.pdf",
+    'mockup.pdf.suggestion1': "Word formatında da ver",
+    'mockup.pdf.suggestion2': "Daha kısa versiyonunu yaz",
+
     
     // Modes Section
     'section.exploreModes': 'Bahor AI Modlarını Keşfedin',
