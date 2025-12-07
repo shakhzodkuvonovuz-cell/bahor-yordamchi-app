@@ -9,7 +9,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     
     // Home Page
     'home.title': 'Bahor AI',
-    'home.subtitle': "Savolingizni yozing — kerakli rejimni tanlang.",
+    'home.subtitle': "Kerakli rejimni tanlang va savolingizni yozing.",
     
     // Chat Mode
     'chat.mode': 'Rejim',
@@ -26,6 +26,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'sidebar.new_chat': 'Yangi chat',
     'sidebar.account': 'Hisob',
     'sidebar.chat': 'Suhbat',
+    'sidebar.translator': 'Tarjimon',
     'sidebar.modes': 'Rejimlar',
     
     // Header & Navigation
@@ -153,6 +154,11 @@ export const translations: Record<Lang, Record<string, string>> = {
     
     // Footer
     'footer.rights': '© 2024 Bahor AI. Barcha huquqlar himoyalangan.',
+    'footer.tagline': "O'zbeklar uchun sun'iy intellekt yordamchi",
+    'footer.product': 'Mahsulot',
+    'footer.support': 'Yordam',
+    'footer.legal': 'Huquqiy',
+    'footer.contact': 'Kontakt',
     
     // Language
     'lang.uz': "O'zbekcha",
@@ -595,7 +601,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     
     // Home Page
     'home.title': 'Bahor AI',
-    'home.subtitle': 'Ask anything — choose a mode when needed.',
+    'home.subtitle': 'Choose a mode and type your question.',
     
     // Chat Mode
     'chat.mode': 'Mode',
@@ -611,6 +617,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'sidebar.new_chat': 'New Chat',
     'sidebar.account': 'Account',
     'sidebar.chat': 'Chat',
+    'sidebar.translator': 'Translator',
     'sidebar.modes': 'Modes',
     
     // Header & Navigation
@@ -795,6 +802,11 @@ export const translations: Record<Lang, Record<string, string>> = {
     
     // Footer
     'footer.rights': '© 2024 Bahor AI. All rights reserved.',
+    'footer.tagline': 'AI assistant for Uzbek speakers',
+    'footer.product': 'Product',
+    'footer.support': 'Support',
+    'footer.legal': 'Legal',
+    'footer.contact': 'Contact',
     
     // Language
     'lang.uz': 'Uzbek',
@@ -1169,7 +1181,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     
     // Home Page
     'home.title': 'Bahor AI',
-    'home.subtitle': 'Задайте вопрос — при необходимости выберите режим.',
+    'home.subtitle': 'Выберите режим и задайте вопрос.',
     
     // Chat Mode
     'chat.mode': 'Режим',
@@ -1185,6 +1197,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'sidebar.new_chat': 'Новый чат',
     'sidebar.account': 'Аккаунт',
     'sidebar.chat': 'Чат',
+    'sidebar.translator': 'Переводчик',
     'sidebar.modes': 'Режимы',
     'app.tagline.main': 'Первый узбекский искусственный интеллект — для узбеков.',
     'app.tagline.sub': 'Быстрый ИИ-ассистент, созданный специально для узбекского языка и культуры.',
@@ -1314,6 +1327,11 @@ export const translations: Record<Lang, Record<string, string>> = {
     
     // Footer
     'footer.rights': '© 2024 Bahor AI. Все права защищены.',
+    'footer.tagline': 'ИИ-ассистент для узбекоязычных',
+    'footer.product': 'Продукт',
+    'footer.support': 'Поддержка',
+    'footer.legal': 'Правовая информация',
+    'footer.contact': 'Контакты',
     
     // Language
     'lang.uz': 'Узбекский',
@@ -1685,7 +1703,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     
     // Home Page
     'home.title': 'Bahor AI',
-    'home.subtitle': 'Bir şey sor — gerekirse bir mod seç.',
+    'home.subtitle': 'Bir mod seç ve sorunu yaz.',
     
     // Chat Mode
     'chat.mode': 'Mod',
@@ -1701,6 +1719,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'sidebar.new_chat': 'Yeni Sohbet',
     'sidebar.account': 'Hesap',
     'sidebar.chat': 'Sohbet',
+    'sidebar.translator': 'Çevirmen',
     'sidebar.modes': 'Modlar',
     'app.tagline.main': 'İlk Özbek yapay zekâsı — Özbekler için.',
     'app.tagline.sub': 'Özbek dili ve kültürü için özel olarak tasarlanmış, çok hızlı bir yapay zekâ asistanı.',
@@ -1830,6 +1849,11 @@ export const translations: Record<Lang, Record<string, string>> = {
     
     // Footer
     'footer.rights': '© 2024 Bahor AI. Tüm hakları saklıdır.',
+    'footer.tagline': 'Özbekler için yapay zeka asistanı',
+    'footer.product': 'Ürün',
+    'footer.support': 'Destek',
+    'footer.legal': 'Yasal',
+    'footer.contact': 'İletişim',
     
     // Language
     'lang.uz': 'Özbekçe',
