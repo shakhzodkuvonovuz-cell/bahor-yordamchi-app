@@ -227,6 +227,15 @@ function detectImageGenerationIntent(userMsg: string, hasImageAttachment: boolea
     return { isImageGen: true, prompt: qClean };
   }
   
+  // Check for comma-separated visual scene descriptions (no colon)
+  // e.g., "qishloq yo'li, quyosh botishi" - short visual phrases with nature/scene words
+  const commaCount = (qClean.match(/,/g) || []).length;
+  const visualSceneWords = /\b(yo'l|ko'cha|tog'|daryo|suv|osmon|quyosh|oy|yulduz|bulut|daraxt|gul|qush|ot|uy|masjid|maktab|bozor|maydon|bog'|dalalar|dala|kecha|tong|oqshom|bahor|yoz|kuz|qish|qor|yomg'ir|shamol|manzara|tabiat|shahri|qishloq|botishi|chiqishi|nuri|nurlar|hovli|ayvon|choyxona|ko'prik)\b/i;
+  if (commaCount >= 1 && qClean.length >= 15 && qClean.length <= 80 && visualSceneWords.test(qClean) && !qClean.includes('?')) {
+    console.log('[Image Detect] Comma-separated visual scene detected, prompt:', qClean);
+    return { isImageGen: true, prompt: qClean };
+  }
+  
   // Check for Uzbek possessive endings that suggest "image of X" (hovlisi = its courtyard, etc.)
   // These are short descriptive phrases that typically request images in Uzbek context
   const uzPossessivePattern = /^[A-Za-zА-Яа-яЎўҚқҒғҲҳ'\s]+(?:ning\s+)?[A-Za-zА-Яа-яЎўҚқҒғҲҳ']+(?:si|i|lari)\.?$/i;
