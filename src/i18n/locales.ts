@@ -7,6 +7,16 @@ export const translations: Record<Lang, Record<string, string>> = {
     'app.tagline.main': "Birinchi o'zbek sun'iy intellekti — o'zbeklar uchun.",
     'app.tagline.sub': "O'zbek tili va madaniyati uchun maxsus yaratilgan chaqqon sun'iy intellekt yordamchi.",
     
+    // Home Page
+    'home.title': 'Bahor AI',
+    'home.subtitle': "Savolingizni yozing — kerakli rejimni tanlang.",
+    
+    // Chat Mode
+    'chat.mode': 'Rejim',
+    
+    // Subscription
+    'subscription.upgrade': "Premiumga o'tish",
+    
     // Header & Navigation
     'nav.home': 'Bosh sahifa',
     'nav.features': 'Imkoniyatlar',
@@ -572,6 +582,16 @@ export const translations: Record<Lang, Record<string, string>> = {
     'app.tagline.main': 'The first Uzbek artificial intelligence — made for Uzbeks.',
     'app.tagline.sub': 'A lightning-fast AI assistant designed for the Uzbek language and culture.',
     
+    // Home Page
+    'home.title': 'Bahor AI',
+    'home.subtitle': 'Ask anything — choose a mode when needed.',
+    
+    // Chat Mode
+    'chat.mode': 'Mode',
+    
+    // Subscription
+    'subscription.upgrade': 'Upgrade to Premium',
+    
     // Header & Navigation
     'nav.home': 'Home',
     'nav.features': 'Features',
@@ -1125,6 +1145,16 @@ export const translations: Record<Lang, Record<string, string>> = {
   ru: {
     // App
     'app.name': 'Bahor AI',
+    
+    // Home Page
+    'home.title': 'Bahor AI',
+    'home.subtitle': 'Задайте вопрос — при необходимости выберите режим.',
+    
+    // Chat Mode
+    'chat.mode': 'Режим',
+    
+    // Subscription
+    'subscription.upgrade': 'Перейти на Premium',
     'app.tagline.main': 'Первый узбекский искусственный интеллект — для узбеков.',
     'app.tagline.sub': 'Быстрый ИИ-ассистент, созданный специально для узбекского языка и культуры.',
     
@@ -1621,6 +1651,16 @@ export const translations: Record<Lang, Record<string, string>> = {
   tr: {
     // App
     'app.name': 'Bahor AI',
+    
+    // Home Page
+    'home.title': 'Bahor AI',
+    'home.subtitle': 'Bir şey sor — gerekirse bir mod seç.',
+    
+    // Chat Mode
+    'chat.mode': 'Mod',
+    
+    // Subscription
+    'subscription.upgrade': "Premium'a geç",
     'app.tagline.main': 'İlk Özbek yapay zekâsı — Özbekler için.',
     'app.tagline.sub': 'Özbek dili ve kültürü için özel olarak tasarlanmış, çok hızlı bir yapay zekâ asistanı.',
     
