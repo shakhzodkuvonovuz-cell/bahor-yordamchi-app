@@ -260,7 +260,7 @@ interface HeroBackgroundProps {
 
 export function HeroBackground({ variant }: HeroBackgroundProps) {
   return (
-    <div className="absolute inset-0 -z-10">
+    <div className="absolute inset-0 -z-10" key={`bg-${variant}`}>
       <Canvas
         camera={{ position: [0, 0, 6], fov: 60 }}
         gl={{ alpha: true, antialias: true }}
