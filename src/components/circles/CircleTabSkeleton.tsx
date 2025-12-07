@@ -7,7 +7,7 @@ interface CircleTabSkeletonProps {
 export function CircleTabSkeleton({ type }: CircleTabSkeletonProps) {
   if (type === "files") {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-4 space-y-3">
+      <div className="max-w-2xl mx-auto px-4 pt-4 space-y-3">
         {/* Upload button skeleton */}
         <Skeleton className="h-10 w-32 rounded-lg" />
         
@@ -31,7 +31,7 @@ export function CircleTabSkeleton({ type }: CircleTabSkeletonProps) {
 
   if (type === "members") {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-4 space-y-2">
+      <div className="max-w-2xl mx-auto px-4 pt-4 space-y-2">
         {[1, 2, 3, 4, 5].map((i) => (
           <div
             key={i}
@@ -53,7 +53,7 @@ export function CircleTabSkeleton({ type }: CircleTabSkeletonProps) {
 
   if (type === "requests") {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-4 space-y-2">
+      <div className="max-w-2xl mx-auto px-4 pt-4 space-y-2">
         {[1, 2, 3].map((i) => (
           <div
             key={i}
