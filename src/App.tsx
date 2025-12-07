@@ -29,6 +29,7 @@ import DocumentTools from "./pages/DocumentTools";
 import Circles from "./pages/Circles";
 import CircleDetail from "./pages/CircleDetail";
 import JoinCircle from "./pages/JoinCircle";
+import ModesList from "./pages/ModesList";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -75,6 +76,16 @@ const App = () => (
                       <ProtectedRoute>
                         <AppShellV2>
                           <Home />
+                        </AppShellV2>
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/modes-list" 
+                    element={
+                      <ProtectedRoute>
+                        <AppShellV2>
+                          <ModesList />
                         </AppShellV2>
                       </ProtectedRoute>
                     } 

@@ -17,13 +17,14 @@ export function AppShellV2({ children }: AppShellV2Props) {
   // Get page title based on current route
   const getPageTitle = () => {
     const path = location.pathname;
-    if (path === "/modes") return "Bahor AI";
+    if (path === "/modes") return "Suhbat";
+    if (path === "/modes-list") return "Rejimlar";
     if (path.startsWith("/chat")) return "Chat";
-    if (path.startsWith("/circles")) return "Circles";
-    if (path.startsWith("/tools")) return "Tools";
-    if (path === "/settings") return "Settings";
-    if (path === "/feedback") return "Feedback";
-    if (path === "/support") return "Support";
+    if (path.startsWith("/circles")) return "Doiralar";
+    if (path.startsWith("/tools")) return "Asboblar";
+    if (path === "/settings") return "Sozlamalar";
+    if (path === "/feedback") return "Fikr bildirish";
+    if (path === "/support") return "Yordam";
     return "Bahor AI";
   };
 
