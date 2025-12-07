@@ -190,12 +190,15 @@ export const signInWithGoogleUnified = async (
 
   if (isNativePlatform()) {
     // NATIVE (Capacitor) FLOW
-    // Use skipBrowserRedirect + open system browser + wait for deep link
+    // Use web callback URL - the callback page will detect Capacitor and handle session
+    // This avoids needing custom scheme in Supabase allowed URLs
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'bahorai://auth-callback',
+          // Use web URL - Lovable Cloud doesn't support custom schemes in redirect URLs
+          // The AuthCallback page will handle the session for Capacitor
+          redirectTo: 'https://www.bahorai.com/auth/callback?native=true',
           skipBrowserRedirect: true,
         },
       });

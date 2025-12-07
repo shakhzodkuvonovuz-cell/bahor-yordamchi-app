@@ -5,25 +5,20 @@ import bahorLogo from "@/assets/bahor-logo.png";
 import { Button } from "@/components/ui/button";
 import { Loader2, AlertCircle } from "lucide-react";
 import { trackLoginCompleted } from "@/lib/analytics";
+import { Capacitor } from "@capacitor/core";
+import { Browser } from "@capacitor/browser";
 
 export default function AuthCallback() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('next') || '/modes';
+  const isNativeCallback = searchParams.get('native') === 'true';
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // Check if we already have a session
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session) {
-          navigate(redirectTo, { replace: true });
-          return;
-        }
-
-        // Get the code from URL
+        // Get the code from URL first
         const params = new URLSearchParams(window.location.search);
         const code = params.get("code");
         const errorParam = params.get("error");
@@ -34,34 +29,61 @@ export default function AuthCallback() {
           return;
         }
 
+        // Exchange code for session if we have one
         if (code) {
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
           
           if (exchangeError) {
             setError("Sessiya yaratishda xatolik yuz berdi. Qayta urinib ko'ring.");
-          } else {
-            trackLoginCompleted("google");
-            navigate(redirectTo, { replace: true });
+            return;
           }
-        } else {
-          // No code and no error, try to get session from hash fragment
-          const { data, error: sessionError } = await supabase.auth.getSession();
-          
-          if (sessionError) {
-            setError("Xatolik yuz berdi. Qayta urinib ko'ring.");
-          } else if (data.session) {
+
+          trackLoginCompleted("google");
+
+          // If this is a native app callback, close the browser
+          // The app will pick up the session via onAuthStateChange
+          if (isNativeCallback && Capacitor.isNativePlatform()) {
+            console.log('[AuthCallback] Native callback - closing browser');
+            try {
+              await Browser.close();
+            } catch (e) {
+              console.log('[AuthCallback] Browser close failed:', e);
+            }
+            // Navigate within the app
             navigate(redirectTo, { replace: true });
-          } else {
-            setError("Sessiya topilmadi. Qayta kiring.");
+            return;
           }
+
+          // Web flow - just navigate
+          navigate(redirectTo, { replace: true });
+          return;
         }
+
+        // No code - check if we already have a session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
+          if (isNativeCallback && Capacitor.isNativePlatform()) {
+            try {
+              await Browser.close();
+            } catch (e) {
+              console.log('[AuthCallback] Browser close failed:', e);
+            }
+          }
+          navigate(redirectTo, { replace: true });
+          return;
+        }
+
+        // No code, no session, no error - something went wrong
+        setError("Sessiya topilmadi. Qayta kiring.");
       } catch (err) {
+        console.error('[AuthCallback] Error:', err);
         setError("Kutilmagan xatolik yuz berdi.");
       }
     };
 
     handleCallback();
-  }, [navigate, redirectTo]);
+  }, [navigate, redirectTo, isNativeCallback]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-b from-background via-background to-primary/5">
