@@ -427,29 +427,118 @@ export default function Landing() {
       <section id="circles" className="py-16 sm:py-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div ref={circlesRef.ref} className={`grid lg:grid-cols-2 gap-10 items-center transition-all duration-700 ${circlesRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
-            {/* Mockup */}
+            {/* Realistic Circles Mockup */}
             <div className={`order-2 lg:order-1 transition-all duration-700 ${circlesRef.isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}>
-              <div className="glass-premium rounded-2xl p-5 border border-border/40 max-w-sm mx-auto">
-                <div className="flex items-center gap-2 pb-3 border-b border-border/30 mb-3">
-                  <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-                    <Users className="w-4 h-4 text-primary" />
+              <div className="glass-premium rounded-2xl p-4 sm:p-5 border border-border/40 max-w-md mx-auto">
+                {/* Header with emoji, title, members */}
+                <div className="flex items-center gap-3 pb-3 border-b border-border/30 mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-lg">
+                    📊
                   </div>
-                  <span className="font-semibold text-sm text-foreground">{t('landing.circles.mockupTitle')}</span>
-                  <span className="ml-auto text-xs text-muted-foreground">5 {t('landing.circles.members')}</span>
+                  <div className="flex-1">
+                    <span className="font-semibold text-sm text-foreground">{t('landing.circles.mockupTitle')}</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">5 {t('landing.circles.members')}</span>
                 </div>
-                <div className="flex gap-1 p-1 rounded-lg bg-secondary/50 mb-3">
+                
+                {/* Tabs: Chat, Files, AI */}
+                <div className="flex gap-1 p-1 rounded-xl bg-secondary/50 mb-3">
                   {['Chat', 'Files', 'AI'].map((tab, i) => (
-                    <div key={tab} className={`flex-1 py-1.5 rounded-md text-center text-xs ${i === 0 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
+                    <div key={tab} className={`flex-1 py-2 rounded-lg text-center text-xs font-medium transition-all ${i === 0 ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
                       {tab}
                     </div>
                   ))}
                 </div>
-                <div className="flex flex-wrap gap-2">
+                
+                {/* AI Action buttons */}
+                <div className="flex flex-wrap gap-2 mb-4">
                   {circleOutcomes.map((outcome) => (
-                    <span key={outcome} className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                    <span key={outcome} className="px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/20">
                       {outcome}
                     </span>
                   ))}
+                </div>
+                
+                {/* Chat messages area */}
+                <div className="space-y-3 mb-3">
+                  {/* User message 1 */}
+                  <div className="flex items-start gap-2">
+                    <div className="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center text-[10px] text-white font-medium shrink-0">
+                      AS
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-xs font-medium text-foreground">Asror</span>
+                        <span className="text-[10px] text-muted-foreground">10:32</span>
+                      </div>
+                      <div className="bg-secondary/60 rounded-xl rounded-tl-sm px-3 py-2 text-xs text-foreground">
+                        Ertangi uchrashuv uchun prezentatsiya tayyor bo'ldimi?
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* User message 2 */}
+                  <div className="flex items-start gap-2">
+                    <div className="w-7 h-7 rounded-full bg-purple-500 flex items-center justify-center text-[10px] text-white font-medium shrink-0">
+                      DM
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-xs font-medium text-foreground">Dilnoza</span>
+                        <span className="text-[10px] text-muted-foreground">10:34</span>
+                      </div>
+                      <div className="bg-secondary/60 rounded-xl rounded-tl-sm px-3 py-2 text-xs text-foreground">
+                        Ha, faylga yuklab qo'ydim ✓
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* /bahor AI request */}
+                  <div className="flex items-start gap-2">
+                    <div className="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center text-[10px] text-white font-medium shrink-0">
+                      JA
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-xs font-medium text-foreground">Jamshid</span>
+                        <span className="text-[10px] text-muted-foreground">10:35</span>
+                      </div>
+                      <div className="bg-secondary/60 rounded-xl rounded-tl-sm px-3 py-2 text-xs text-foreground">
+                        <span className="text-primary font-medium">/bahor</span> shu hafta qanday vazifalar qoldik?
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Bahor AI response */}
+                  <div className="flex items-start gap-2">
+                    <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                      <img src={bahorLogo} alt="Bahor AI" className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-xs font-medium text-primary">Bahor AI</span>
+                        <span className="text-[10px] text-muted-foreground">10:35</span>
+                      </div>
+                      <div className="bg-primary/10 border border-primary/20 rounded-xl rounded-tl-sm px-3 py-2 text-xs text-foreground">
+                        📋 Shu hafta uchun 3 ta vazifa:<br/>
+                        1. Prezentatsiya tayyorlash ✅<br/>
+                        2. Byudjet hisob-kitobi<br/>
+                        3. Mijoz uchun taklif yuborish
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Mini avatars row - who's online */}
+                <div className="flex items-center gap-1 pt-2 border-t border-border/30">
+                  <div className="flex -space-x-2">
+                    <div className="w-6 h-6 rounded-full bg-blue-500 border-2 border-background flex items-center justify-center text-[8px] text-white font-medium">AS</div>
+                    <div className="w-6 h-6 rounded-full bg-purple-500 border-2 border-background flex items-center justify-center text-[8px] text-white font-medium">DM</div>
+                    <div className="w-6 h-6 rounded-full bg-orange-500 border-2 border-background flex items-center justify-center text-[8px] text-white font-medium">JA</div>
+                    <div className="w-6 h-6 rounded-full bg-green-500 border-2 border-background flex items-center justify-center text-[8px] text-white font-medium">NK</div>
+                    <div className="w-6 h-6 rounded-full bg-pink-500 border-2 border-background flex items-center justify-center text-[8px] text-white font-medium">SM</div>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground ml-2">5 ta a'zo onlayn</span>
                 </div>
               </div>
             </div>
