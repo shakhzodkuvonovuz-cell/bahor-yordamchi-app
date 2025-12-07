@@ -1458,15 +1458,16 @@ export default function Chat() {
       
       await processStreamingResponse(response, {
         onTrace: (event) => {
-          const { step, status, t, data } = event;
+          const { step, status, t, detail, data } = event;
+          const stepDetail = detail || data; // Support both new and legacy field names
           if (status === 'start') {
-            traceStepsRef.current.set(step, { step, startMs: t });
-          } else if (status === 'end') {
+            traceStepsRef.current.set(step, { step, startMs: t, detail: stepDetail });
+          } else if (status === 'end' || status === 'done') {
             const existing = traceStepsRef.current.get(step);
             if (existing) {
               existing.endMs = t;
               existing.durMs = t - existing.startMs;
-              if (data) existing.data = data;
+              if (stepDetail) existing.detail = { ...existing.detail, ...stepDetail };
             }
             setActiveTrace(prev => prev ? {
               ...prev,

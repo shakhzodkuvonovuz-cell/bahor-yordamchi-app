@@ -260,33 +260,62 @@ function detectImageGenerationIntent(userMsg: string, hasImageAttachment: boolea
 }
 
 // ============================================
-// TRACE EVENT HELPER
+// TRACE EVENT HELPER - Enhanced with safe metadata
 // ============================================
 
-type TraceStep = 'thinking' | 'analyzing_request' | 'image_analysis' | 'web_search' | 
-                 'reading_files' | 'drafting_answer' | 'safety_check' | 'formatting' | 'saving';
+type TraceStep = 'preparing' | 'new_chat' | 'uploading' | 'parsing_files' | 'web_search' | 
+                 'selecting_model' | 'thinking' | 'writing' | 'saving' | 'generating_image' | 'delivering' |
+                 // Legacy steps for backwards compatibility
+                 'analyzing_request' | 'image_analysis' | 'reading_files' | 'drafting_answer' | 'safety_check' | 'formatting';
 
 interface TraceSource {
   title: string;
   url: string;
 }
 
-function createTraceEvent(step: TraceStep, status: 'start' | 'end', startTime: number, data?: { sources?: TraceSource[] }): string {
+interface TraceDetail {
+  // Safe metadata only - no content
+  filesCount?: number;
+  extractedChars?: number;
+  sourcesCount?: number;
+  modelPreference?: string;
+  modelName?: string;
+  imageEngine?: string;
+  imageModel?: string;
+  imageDurationMs?: number;
+  translated?: boolean;
+  localSaved?: boolean;
+  cloudSaved?: boolean;
+  sources?: TraceSource[];
+  [key: string]: any;
+}
+
+function createTraceEvent(
+  step: TraceStep, 
+  status: 'start' | 'end', 
+  startTime: number, 
+  detail?: TraceDetail
+): string {
   const event = {
     type: 'trace',
     step,
     status,
     t: Date.now() - startTime,
-    ...(data && { data }),
+    ...(detail && { detail, data: detail }), // Include as both for backwards compat
   };
   return `data: ${JSON.stringify(event)}\n\n`;
 }
 
-function createTraceComplete(startTime: number, sources: TraceSource[]): string {
+function createTraceComplete(
+  startTime: number, 
+  sources: TraceSource[],
+  detail?: TraceDetail
+): string {
   const event = {
     type: 'trace_complete',
     elapsed_ms: Date.now() - startTime,
     sources,
+    ...(detail && { detail }),
   };
   return `data: ${JSON.stringify(event)}\n\n`;
 }
@@ -884,43 +913,71 @@ ${searchResults}
       );
     }
 
-    // Stream with trace events
+    // Stream with enhanced trace events (ThinkBar)
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
     const reader = response.body!.getReader();
     
+    // Calculate safe metadata for trace events
+    const textFilesWithContent = attachments?.filter((att: any) => att.extractedText) || [];
+    const totalExtractedChars = textFilesWithContent.reduce((sum: number, att: any) => 
+      sum + (att.extractedText?.length || 0), 0
+    );
+    
     const stream = new ReadableStream({
       async start(controller) {
-        // Emit initial trace: thinking
+        // Emit preparing step (always first)
+        controller.enqueue(encoder.encode(createTraceEvent('preparing', 'start', requestStartTime)));
+        controller.enqueue(encoder.encode(createTraceEvent('preparing', 'end', requestStartTime)));
+        
+        // Emit model selection with safe metadata
+        controller.enqueue(encoder.encode(createTraceEvent('selecting_model', 'start', requestStartTime, {
+          modelPreference: modelPreference || 'chat',
+          modelName: selectedModel,
+        })));
+        controller.enqueue(encoder.encode(createTraceEvent('selecting_model', 'end', requestStartTime, {
+          modelPreference: modelPreference || 'chat',
+          modelName: selectedModel,
+        })));
+        
+        // Emit thinking start
         controller.enqueue(encoder.encode(createTraceEvent('thinking', 'start', requestStartTime)));
         
         // If we did image/document analysis, emit that trace
         if (hasAnalysis) {
           controller.enqueue(encoder.encode(createTraceEvent('thinking', 'end', requestStartTime)));
+          const analysisStep = analysisType === 'vision' ? 'image_analysis' : 'parsing_files';
           controller.enqueue(encoder.encode(
-            createTraceEvent(analysisType === 'vision' ? 'image_analysis' : 'reading_files', 'start', requestStartTime)
+            createTraceEvent(analysisStep, 'start', requestStartTime, { filesCount: 1 })
           ));
           controller.enqueue(encoder.encode(
-            createTraceEvent(analysisType === 'vision' ? 'image_analysis' : 'reading_files', 'end', requestStartTime)
+            createTraceEvent(analysisStep, 'end', requestStartTime, { filesCount: 1 })
           ));
           controller.enqueue(encoder.encode(createTraceEvent('thinking', 'start', requestStartTime)));
         }
         
-        // If text files were attached and read, emit reading trace
-        const hasTextFileContent = attachments?.some((att: any) => att.extractedText);
-        if (hasTextFileContent && !hasAnalysis) {
+        // If text files were attached and read, emit reading trace with safe counts
+        if (textFilesWithContent.length > 0 && !hasAnalysis) {
           controller.enqueue(encoder.encode(createTraceEvent('thinking', 'end', requestStartTime)));
-          controller.enqueue(encoder.encode(createTraceEvent('reading_files', 'start', requestStartTime)));
-          controller.enqueue(encoder.encode(createTraceEvent('reading_files', 'end', requestStartTime)));
+          controller.enqueue(encoder.encode(createTraceEvent('parsing_files', 'start', requestStartTime, {
+            filesCount: textFilesWithContent.length,
+          })));
+          controller.enqueue(encoder.encode(createTraceEvent('parsing_files', 'end', requestStartTime, {
+            filesCount: textFilesWithContent.length,
+            extractedChars: totalExtractedChars,
+          })));
           controller.enqueue(encoder.encode(createTraceEvent('thinking', 'start', requestStartTime)));
         }
         
-        // If web search was used, emit search trace
+        // If web search was used, emit search trace with source count
         if (didSearch) {
           controller.enqueue(encoder.encode(createTraceEvent('thinking', 'end', requestStartTime)));
           controller.enqueue(encoder.encode(createTraceEvent('web_search', 'start', requestStartTime)));
           controller.enqueue(encoder.encode(
-            createTraceEvent('web_search', 'end', requestStartTime, { sources: collectedSources })
+            createTraceEvent('web_search', 'end', requestStartTime, { 
+              sources: collectedSources,
+              sourcesCount: collectedSources.length,
+            })
           ));
           controller.enqueue(encoder.encode(createTraceEvent('thinking', 'start', requestStartTime)));
         }
@@ -934,9 +991,9 @@ ${searchResults}
         };
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(metadata)}\n\n`));
         
-        // End thinking, start drafting
+        // End thinking, start writing
         controller.enqueue(encoder.encode(createTraceEvent('thinking', 'end', requestStartTime)));
-        controller.enqueue(encoder.encode(createTraceEvent('drafting_answer', 'start', requestStartTime)));
+        controller.enqueue(encoder.encode(createTraceEvent('writing', 'start', requestStartTime)));
         
         let firstChunkSent = false;
         
@@ -960,11 +1017,26 @@ ${searchResults}
             controller.enqueue(encoder.encode(sanitizedChunk));
           }
           
-          // End drafting
-          controller.enqueue(encoder.encode(createTraceEvent('drafting_answer', 'end', requestStartTime)));
+          // End writing
+          controller.enqueue(encoder.encode(createTraceEvent('writing', 'end', requestStartTime)));
           
-          // Emit trace complete with total time and sources
-          controller.enqueue(encoder.encode(createTraceComplete(requestStartTime, collectedSources)));
+          // Emit saving step (indicates dual-write happening on client)
+          controller.enqueue(encoder.encode(createTraceEvent('saving', 'start', requestStartTime)));
+          controller.enqueue(encoder.encode(createTraceEvent('saving', 'end', requestStartTime, {
+            cloudSaved: true, // Server-side saving is implicit via DB triggers
+          })));
+          
+          // Emit delivering (finalization)
+          controller.enqueue(encoder.encode(createTraceEvent('delivering', 'start', requestStartTime)));
+          controller.enqueue(encoder.encode(createTraceEvent('delivering', 'end', requestStartTime)));
+          
+          // Emit trace complete with total time, sources, and aggregated safe metadata
+          controller.enqueue(encoder.encode(createTraceComplete(requestStartTime, collectedSources, {
+            modelPreference: modelPreference || 'chat',
+            filesCount: textFilesWithContent.length || 0,
+            extractedChars: totalExtractedChars || 0,
+            sourcesCount: collectedSources.length,
+          })));
           
           controller.close();
           console.log('[Stream] Response stream closed successfully');
