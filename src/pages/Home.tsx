@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Send, ChevronDown, Check, AlertCircle, Paperclip, Camera, X, FileText, Image as ImageIcon } from "lucide-react";
+import { Send, ChevronDown, Check, Paperclip, Camera, X, FileText, Image as ImageIcon, MessageSquare } from "lucide-react";
 import { CHAT_MODES } from "@/data/modes";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import {
@@ -242,20 +242,15 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-full bg-background flex flex-col">
-      {/* Top Bar with Beta + Language */}
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Top Bar with page label + Language */}
       <div className="w-full px-4 sm:px-6 py-3 border-b border-border/50">
         <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-sm">
-            <AlertCircle className="w-4 h-4 text-primary" />
-            <span className="text-muted-foreground">{t('beta.title')}</span>
+            <MessageSquare className="w-4 h-4 text-primary" />
+            <span className="font-medium text-foreground">{t('sidebar.chat')}</span>
             <span className="text-muted-foreground">·</span>
-            <button 
-              onClick={() => navigate("/feedback")} 
-              className="text-primary hover:underline"
-            >
-              {t('beta.report')}
-            </button>
+            <span className="text-muted-foreground text-xs">{t('beta.title')}</span>
           </div>
           <LanguageSwitcher variant="compact" />
         </div>
@@ -265,13 +260,13 @@ export default function Home() {
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 sm:py-12">
         <div className="w-full max-w-3xl space-y-6">
           
-          {/* Header with Logo */}
+          {/* Header with Logo - Bigger logo */}
           <div className="text-center space-y-3">
-            <div className="flex items-center justify-center gap-3 mb-2">
+            <div className="flex items-center justify-center gap-4 mb-2">
               <img 
                 src={bahorLogo} 
                 alt="Bahor AI" 
-                className="h-10 w-10 sm:h-12 sm:w-12 object-contain" 
+                className="h-16 w-16 sm:h-20 sm:w-20 object-contain" 
               />
               <h1 className="text-3xl sm:text-4xl font-bold text-foreground">
                 {t('home.title')}

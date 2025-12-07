@@ -10,7 +10,8 @@ import {
   HelpCircle,
   ChevronLeft,
   ChevronRight,
-  Languages
+  Languages,
+  Image as ImageIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n/LanguageProvider";
@@ -38,8 +39,9 @@ const PRIMARY_NAV: NavItem[] = [
   { id: "new-chat", labelKey: "sidebar.new_chat", icon: PenLine, path: "/chat/general", isNewChat: true },
   { id: "chat", labelKey: "sidebar.chat", icon: MessageSquare, path: "/modes" },
   { id: "modes", labelKey: "sidebar.modes", icon: Sparkles, path: "/modes-list" },
-  { id: "translator", labelKey: "sidebar.translator", icon: Languages, path: "/modes?mode=translator", isPlaceholder: true },
+  { id: "image-gen", labelKey: "sidebar.imageGen", icon: ImageIcon, path: "/tools/documents" },
   { id: "circles", labelKey: "nav.circles", icon: Users, path: "/circles" },
+  { id: "translator", labelKey: "sidebar.translator", icon: Languages, path: "/modes?mode=translator", isPlaceholder: true },
   { id: "tools", labelKey: "nav.tools", icon: FileText, path: "/tools/documents" },
 ];
 
@@ -239,6 +241,10 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
               </p>
               <p className="text-xs text-muted-foreground truncate">
                 {profile?.email || ""}
+              </p>
+              {/* Version under profile */}
+              <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+                {t('app.version')}
               </p>
             </div>
           )}
