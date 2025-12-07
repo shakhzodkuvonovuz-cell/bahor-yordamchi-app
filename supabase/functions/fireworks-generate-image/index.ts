@@ -145,12 +145,28 @@ serve(async (req) => {
       );
     }
 
-    // Translate prompt if needed
-    const promptUz = prompt.trim();
+    // Clean and limit prompt length (FLUX schnell has token limits)
+    const MAX_PROMPT_LENGTH = 500;
+    let promptUz = prompt.trim();
+    
+    // Remove any --ar or similar flags from the prompt
+    promptUz = promptUz.replace(/--ar\s*\d+:\d+/gi, "").trim();
+    
+    // Truncate if too long
+    if (promptUz.length > MAX_PROMPT_LENGTH) {
+      promptUz = promptUz.slice(0, MAX_PROMPT_LENGTH).trim();
+      console.log("[fireworks] Prompt truncated to", MAX_PROMPT_LENGTH, "chars");
+    }
+    
     let promptEn = promptUz;
     
     if (needsTranslation(promptUz)) {
       promptEn = await translateToEnglish(promptUz);
+    }
+    
+    // Also limit translated prompt
+    if (promptEn.length > MAX_PROMPT_LENGTH) {
+      promptEn = promptEn.slice(0, MAX_PROMPT_LENGTH).trim();
     }
 
     // Call Fireworks API
