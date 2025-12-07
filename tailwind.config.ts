@@ -143,10 +143,6 @@ export default {
           "50%": { transform: "translateY(-4px) translateX(-4px)" },
           "75%": { transform: "translateY(-12px) translateX(2px)" },
         },
-        "wave": {
-          "0%, 100%": { transform: "translateY(0)" },
-          "50%": { transform: "translateY(-5px)" },
-        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -157,7 +153,6 @@ export default {
         "slide-in-right": "slide-in-right 0.3s ease-out",
         "shimmer": "shimmer 2s linear infinite",
         "float-slow": "float-slow 6s ease-in-out infinite",
-        "wave": "wave 3s ease-in-out infinite",
       },
       spacing: {
         "18": "4.5rem",
