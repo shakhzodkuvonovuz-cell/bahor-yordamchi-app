@@ -227,12 +227,14 @@ function detectImageGenerationIntent(userMsg: string, hasImageAttachment: boolea
     return { isImageGen: true, prompt: qClean };
   }
   
-  // Check for comma-separated visual scene descriptions (no colon)
-  // e.g., "qishloq yo'li, quyosh botishi" - short visual phrases with nature/scene words
+  // Check for comma or period-separated visual scene descriptions (no colon)
+  // e.g., "qishloq yo'li, quyosh botishi" or "Registon maydoni tunda. Chiroqlar yorug'ligi."
   const commaCount = (qClean.match(/,/g) || []).length;
-  const visualSceneWords = /\b(yo'l|ko'cha|tog'|daryo|suv|osmon|quyosh|oy|yulduz|bulut|daraxt|gul|qush|ot|uy|masjid|maktab|bozor|maydon|maydoni|bog'|dalalar|dala|kecha|tong|oqshom|tunda|tun|kechasi|bahor|yoz|kuz|qish|qor|yomg'ir|shamol|manzara|tabiat|shahri|qishloq|botishi|chiqishi|nuri|nurlar|hovli|ayvon|choyxona|ko'prik|chiroq|chiroqlar|yorug'|yorug'lik|registon|samarqand|buxoro|xiva|toshkent|andijon|farg'ona|namangan|qo'qon|shahrisabz|nukus|urganch)\b/i;
-  if (commaCount >= 1 && qClean.length >= 15 && qClean.length <= 100 && visualSceneWords.test(qClean) && !qClean.includes('?')) {
-    console.log('[Image Detect] Comma-separated visual scene detected, prompt:', qClean);
+  const periodCount = (qClean.match(/\./g) || []).length;
+  const visualSceneWords = /\b(yo'l|ko'cha|tog'|daryo|suv|osmon|quyosh|oy|yulduz|bulut|daraxt|gul|qush|ot|uy|masjid|maktab|bozor|maydon|maydoni|bog'|dalalar|dala|kecha|tong|oqshom|tunda|tun|kechasi|bahor|yoz|kuz|qish|qor|yomg'ir|shamol|manzara|tabiat|shahri|qishloq|botishi|chiqishi|nuri|nurlar|hovli|ayvon|choyxona|ko'prik|chiroq|chiroqlar|yorug'|yorug'lik|yoruqligi|registon|samarqand|buxoro|xiva|toshkent|andijon|farg'ona|namangan|qo'qon|shahrisabz|nukus|urganch|gavjum|odamlar|odam|masofada|yaqin|uzoq|keng|panorama)\b/i;
+  const hasSeparators = commaCount >= 1 || periodCount >= 1;
+  if (hasSeparators && qClean.length >= 15 && qClean.length <= 120 && visualSceneWords.test(qClean) && !qClean.includes('?')) {
+    console.log('[Image Detect] Multi-phrase visual scene detected, prompt:', qClean);
     return { isImageGen: true, prompt: qClean };
   }
   
