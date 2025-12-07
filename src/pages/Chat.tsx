@@ -1289,15 +1289,13 @@ export default function Chat() {
                 content: imageMessage.content,
               });
               
-              // Also save the attachment reference
-              if (jsonData.fileUrl) {
-                // Extract storage path from signed URL or use the path directly
-                const storagePath = jsonData.filePath || `generated/${jsonData.fileName}`;
+              // Also save the attachment reference with correct storage path
+              if (jsonData.fileUrl && jsonData.filePath) {
                 await chatStore.attachFile(user.id, {
                   threadId: currentThreadId,
                   messageId: savedAssistant.id,
                   bucket: "user-files",
-                  path: storagePath,
+                  path: jsonData.filePath,
                   mimeType: "image/png",
                   originalName: jsonData.fileName,
                 });
