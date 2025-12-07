@@ -35,19 +35,44 @@ function isBlockedPrompt(prompt: string): boolean {
   return BLOCKED_PATTERNS.some(p => p.test(prompt));
 }
 
-// Detect if text contains non-English characters
-function needsTranslation(text: string): boolean {
-  const nonEnglishPattern = /[а-яА-ЯёЁ\u0400-\u04FF'ʻʼğüşöçıİ]/;
-  return nonEnglishPattern.test(text);
-}
 
-// Translate prompt to English using Lovable AI Gateway
-async function translateToEnglish(prompt: string, requestId: string): Promise<string> {
+// Compose high-quality English prompt using Lovable AI Gateway
+// This acts as Bahor AI's Image Prompt Composer for FLUX.1 Schnell
+async function composeEnglishPrompt(prompt: string, renderMode: "photo" | "illustration", requestId: string): Promise<string> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!LOVABLE_API_KEY) {
-    console.log(`[${requestId}] No LOVABLE_API_KEY, skipping translation`);
+    console.log(`[${requestId}] No LOVABLE_API_KEY, skipping prompt composition`);
     return prompt;
   }
+
+  const styleHint = renderMode === "illustration" 
+    ? "The user wants illustration/art style." 
+    : "The user wants photo-realistic style.";
+
+  const composerPrompt = `You are Bahor AI's Image Prompt Composer for FLUX.1 Schnell.
+
+Goal:
+Turn the user's request (Uzbek/Russian/English) into a single, high-quality ENGLISH prompt that produces the best possible image quality on FLUX.1 Schnell.
+
+Rules:
+- Preserve the user's intent exactly: subject, location, era, mood, style, and any constraints. Do not change the request.
+- Do NOT add new main subjects (e.g., don't invent "a man" or "a portrait") unless the user explicitly asked for it.
+- If the user asked for a portrait, make it a portrait. If the user asked for a landscape/city/scene, keep it a scene.
+- Add helpful cinematic/photographic/art-direction details ONLY when they improve clarity and quality (lighting, time of day, atmosphere, materials, camera/lens, realism level, color mood).
+- Keep place names and proper nouns exactly (Samarkand, Registon, Amir Temur, Tashkent, etc.).
+- Keep it concise but rich: usually 1–3 sentences.
+- If the user prompt is very short (3–6 words), expand it slightly into a strong prompt while staying faithful.
+- Output ONLY the final English prompt text. No labels, no markdown, no quotes, no JSON.
+
+Quality defaults to weave in (only when not conflicting):
+- "high detail, natural lighting, strong composition, realistic textures"
+- If photo-like: "documentary / cinematic photo, 35mm or 50mm, sharp focus, natural colors"
+- If art-like: "highly detailed illustration / concept art, dramatic lighting, coherent anatomy, clean edges"
+- If architecture/location: include time of day + atmosphere + materials + scale + reflections/shadows.
+
+${styleHint}
+
+User's request: ${prompt}`;
 
   try {
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -59,54 +84,31 @@ async function translateToEnglish(prompt: string, requestId: string): Promise<st
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          {
-            role: "system",
-            content: "You are a translator. Translate the user's text to natural English for an image generation model. Keep the meaning exactly. Don't add or remove any details. Return ONLY the translated text, nothing else.",
-          },
-          { role: "user", content: prompt },
+          { role: "user", content: composerPrompt },
         ],
-        max_tokens: 500,
-        temperature: 0.2,
+        max_tokens: 600,
+        temperature: 0.3,
       }),
     });
 
     if (!response.ok) {
-      console.error(`[${requestId}] Translation API error:`, response.status);
+      console.error(`[${requestId}] Prompt composer API error:`, response.status);
       return prompt;
     }
 
     const data = await response.json();
-    const translated = data.choices?.[0]?.message?.content?.trim();
-    console.log(`[${requestId}] Translated: "${prompt}" -> "${translated}"`);
-    return translated || prompt;
+    const composed = data.choices?.[0]?.message?.content?.trim();
+    console.log(`[${requestId}] Composed prompt: "${prompt}" -> "${composed}"`);
+    return composed || prompt;
   } catch (error) {
-    console.error(`[${requestId}] Translation failed:`, error);
+    console.error(`[${requestId}] Prompt composition failed:`, error);
     return prompt;
   }
 }
 
-// Compose the final prompt with quality blocks
-function composePrompt(
-  translatedPrompt: string,
-  renderMode: "photo" | "illustration"
-): { finalPrompt: string; negativePrompt: string } {
-  // STYLE BLOCK based on mode
-  const styleBlock = renderMode === "illustration"
-    ? "Clean modern illustration, crisp lines, balanced colors, consistent style, no text, no watermark."
-    : "Ultra realistic documentary photo, natural colors, high detail, coherent scene, accurate anatomy, no text, no watermarks.";
-
-  // USER BLOCK
-  const userBlock = `Subject: ${translatedPrompt}.`;
-
-  // COMPOSITION BLOCK - neutral, let user prompt guide framing
-  const compositionBlock = "Composition: appropriate framing based on subject, realistic lighting, consistent perspective, background matches location and context, sharp focus.";
-
-  // NEGATIVE PROMPT - only technical quality issues, no subject bias
-  const negativePrompt = "text, watermark, logo, deformed hands, extra fingers, disfigured face, lowres, blurry, oversaturated, plastic skin, duplicated people, bad anatomy, cropped, artifacts";
-
-  const finalPrompt = `${styleBlock} ${userBlock} ${compositionBlock}`;
-  
-  return { finalPrompt, negativePrompt };
+// Build negative prompt for technical quality issues only
+function buildNegativePrompt(): string {
+  return "text, watermark, logo, signature, deformed hands, extra fingers, disfigured face, lowres, blurry, oversaturated, plastic skin, duplicated people, bad anatomy, cropped, artifacts, distorted proportions";
 }
 
 serve(async (req) => {
@@ -202,15 +204,12 @@ serve(async (req) => {
       );
     }
 
-    // Translate if needed
-    let promptEn = promptOriginal;
-    if (needsTranslation(promptOriginal)) {
-      promptEn = await translateToEnglish(promptOriginal, requestId);
-    }
-
-    // Check for blocked content AFTER translation
-    if (isBlockedPrompt(promptEn)) {
-      console.log(`[${requestId}] Blocked content detected in translation`);
+    // Compose high-quality English prompt using AI
+    const finalPrompt = await composeEnglishPrompt(promptOriginal, renderMode === "illustration" ? "illustration" : "photo", requestId);
+    
+    // Check for blocked content AFTER composition
+    if (isBlockedPrompt(finalPrompt)) {
+      console.log(`[${requestId}] Blocked content detected in composed prompt`);
       return new Response(
         JSON.stringify({
           ok: false,
@@ -274,11 +273,11 @@ serve(async (req) => {
       console.log(`[${requestId}] Dev unlimited user - bypassing limits`);
     }
 
-    // Compose final prompt with quality blocks
-    const { finalPrompt, negativePrompt } = composePrompt(promptEn, validRenderMode);
+    // Get negative prompt
+    const negativePrompt = buildNegativePrompt();
     
     console.log(`[${requestId}] Final prompt (${finalPrompt.length} chars): "${finalPrompt.slice(0, 150)}..."`);
-    console.log(`[${requestId}] Negative prompt: "${negativePrompt.slice(0, 80)}..."`);
+    console.log(`[${requestId}] Negative prompt: "${negativePrompt.slice(0, 80)}..."`)
 
     // Build Fireworks request
     const steps = qualityBoost ? 6 : 4;
@@ -392,7 +391,6 @@ serve(async (req) => {
         status: "success",
         meta: {
           prompt_original: promptOriginal,
-          prompt_en: promptEn,
           prompt_composed: finalPrompt,
           render_mode: validRenderMode,
           quality_boost: qualityBoost,
