@@ -42,6 +42,16 @@ export const PRIMARY_MODES: ModeInfo[] = [
       "Biznes g'oya taklif qil",
     ],
   },
+  {
+    id: "health",
+    title: "Sog'liq va fitness",
+    subtitle: "Sog'lom ovqatlanish va mashg'ulotlar bo'yicha yordam",
+    icon: "💪",
+    quickSuggestions: [
+      "Menga mashg'ulot rejasi tuzib ber",
+      "Sog'lom ovqatlanish bo'yicha maslahat ber",
+    ],
+  },
 ];
 
 // Learning and development modes - shown in "O'qish va rivojlanish" section
@@ -84,16 +94,6 @@ export const LEARNING_MODES: ModeInfo[] = [
     quickSuggestions: [
       "Oylik byudjet tuzishda yordam ber",
       "Oddiy qilib foiz stavkasi nima ekanini tushuntirib ber",
-    ],
-  },
-  {
-    id: "health",
-    title: "Sog'liq va fitness",
-    subtitle: "Sog'lom ovqatlanish va mashg'ulotlar bo'yicha yordam",
-    icon: "💪",
-    quickSuggestions: [
-      "Menga mashg'ulot rejasi tuzib ber",
-      "Sog'lom ovqatlanish bo'yicha maslahat ber",
     ],
   },
 ];
