@@ -75,8 +75,9 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
 
   const handleNavClick = (item: NavItem) => {
     if (item.isNewChat) {
-      // Navigate to chat with new=1 to trigger new chat creation
-      navigate("/chat/general?new=1");
+      // Generate unique ID each click to ensure a brand-new chat is created every time
+      const newChatId = crypto.randomUUID?.() ?? Date.now().toString();
+      navigate(`/chat/general?new=${newChatId}`);
     } else if (item.isPlaceholder) {
       // For translator, show "coming soon" toast
       toast({
