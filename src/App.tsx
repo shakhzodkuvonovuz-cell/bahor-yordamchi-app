@@ -1,8 +1,9 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate } from "react-router-dom";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { LanguageProvider } from "@/i18n/LanguageProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -11,6 +12,8 @@ import { PublicRoute } from "@/components/PublicRoute";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import OfflineBanner from "@/components/OfflineBanner";
 import { AppShellV2 } from "@/components/layout/AppShellV2";
+import { setupOAuthDeepLinkListener, isNativePlatform } from "@/lib/auth/googleAuth";
+import { toast } from "sonner";
 import Home from "./pages/Home";
 import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
@@ -45,6 +48,39 @@ const SpaceInviteRedirect = () => {
   return <Navigate to={`/circles/invite/${code}`} replace />;
 };
 
+// OAuth Deep Link Handler for Capacitor
+const OAuthDeepLinkHandler = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isNativePlatform()) {
+      return;
+    }
+
+    console.log('[App] Setting up OAuth deep link listener');
+
+    const onSuccess = () => {
+      console.log('[App] OAuth success, navigating to /modes');
+      toast.success('Muvaffaqiyatli kirdingiz!');
+      navigate('/modes', { replace: true });
+    };
+
+    const onError = (error: string) => {
+      console.error('[App] OAuth error:', error);
+      toast.error('Kirishda xatolik: ' + error);
+      navigate('/auth', { replace: true });
+    };
+
+    const cleanup = setupOAuthDeepLinkListener(onSuccess, onError);
+
+    return () => {
+      cleanup();
+    };
+  }, [navigate]);
+
+  return null;
+};
+
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
@@ -53,6 +89,8 @@ const App = () => (
           <BrowserRouter>
             <AuthProvider>
               <TooltipProvider>
+                {/* OAuth Deep Link Handler for Capacitor */}
+                <OAuthDeepLinkHandler />
                 <OfflineBanner />
                 <Toaster />
                 <Sonner />

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
+import { signInWithGoogleUnified } from '@/lib/auth/googleAuth';
 
 export interface UserProfile {
   id: string;
@@ -29,7 +30,7 @@ interface AuthContextType {
   profileLoading: boolean;
   signUpWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signInWithGoogle: () => Promise<{ error: Error | null }>;
+  signInWithGoogle: (redirectPath?: string) => Promise<{ error: Error | null }>;
   sendPhoneOtp: (phone: string) => Promise<{ error: Error | null }>;
   verifyPhoneOtp: (phone: string, token: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<{ error: Error | null }>;
@@ -190,12 +191,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error as Error | null };
   };
 
-  const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/` }
-    });
-    return { error: error as Error | null };
+  const signInWithGoogle = async (redirectPath: string = '/modes') => {
+    // Use unified Google auth that handles both Web and Capacitor
+    return signInWithGoogleUnified(redirectPath);
   };
 
   const sendPhoneOtp = async (phone: string) => {
