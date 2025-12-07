@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Message } from "@/types/chat";
-import { ExternalLink, FileText, User } from "lucide-react";
+import { ExternalLink, FileText, User, Download } from "lucide-react";
 import { MessageActionsPopover } from "@/components/chat/MessageActions";
 import { MessageActionsBar, MessageActionsSheet, MessageVariant } from "@/components/chat/MessageActionsBar";
 import BahorCard, { parseMessageForCards, hasCardContent } from "@/components/chat/BahorCard";
@@ -227,18 +227,49 @@ export default function ChatMessage({
                   {message.attachments.map((attachment) => (
                     <div key={attachment.id} className="rounded-xl overflow-hidden">
                       {attachment.type.startsWith("image/") && attachment.url ? (
-                        <a
-                          href={attachment.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block group/img"
-                        >
+                        <div className="relative group/img">
                           <img
                             src={attachment.url}
                             alt={attachment.name}
-                            className="max-w-full max-h-64 rounded-xl group-hover/img:opacity-95 transition-opacity"
+                            className="max-w-full max-h-64 rounded-xl transition-opacity"
                           />
-                        </a>
+                          <div className="absolute bottom-2 right-2 flex gap-1.5 opacity-0 group-hover/img:opacity-100 transition-opacity">
+                            <a
+                              href={attachment.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-8 h-8 rounded-lg bg-black/60 hover:bg-black/80 flex items-center justify-center text-white transition-colors"
+                              title="Open in new tab"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                            <button
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                try {
+                                  const response = await fetch(attachment.url!);
+                                  const blob = await response.blob();
+                                  const blobUrl = URL.createObjectURL(blob);
+                                  const a = document.createElement('a');
+                                  a.href = blobUrl;
+                                  a.download = attachment.name || 'image.png';
+                                  document.body.appendChild(a);
+                                  a.click();
+                                  document.body.removeChild(a);
+                                  URL.revokeObjectURL(blobUrl);
+                                } catch (err) {
+                                  console.error('Download error:', err);
+                                  // Fallback: open in new tab
+                                  window.open(attachment.url, '_blank');
+                                }
+                              }}
+                              className="w-8 h-8 rounded-lg bg-black/60 hover:bg-black/80 flex items-center justify-center text-white transition-colors"
+                              title="Download"
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
                       ) : (
                         <a
                           href={attachment.url}
