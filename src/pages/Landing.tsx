@@ -1,4 +1,4 @@
-import React, { useState, Suspense } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -575,11 +575,9 @@ export default function Landing() {
       </header>
 
       {/* HERO — 2-column, less words */}
-      <section className="relative py-10 sm:py-16 lg:py-20 overflow-hidden">
-        {/* 3D Animated Background */}
-        <Suspense fallback={null}>
-          <HeroBackground variant={bgVariant} />
-        </Suspense>
+      <section className="relative py-10 sm:py-16 lg:py-20 overflow-visible min-h-[600px]">
+        {/* Animated Background */}
+        <HeroBackground variant={bgVariant} />
         
         {/* Advanced Holographic Background Selector */}
         <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20">
@@ -652,7 +650,7 @@ export default function Landing() {
             ))}
           </div>
         </div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div
             ref={heroRef.ref}
             className={`grid lg:grid-cols-2 gap-10 lg:gap-14 items-center transition-all duration-700 ${
