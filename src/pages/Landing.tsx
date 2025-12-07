@@ -341,20 +341,18 @@ function HeroMockup() {
           )}
         </div>
         
-        {/* Slide indicators */}
-        <div className="flex items-center justify-center gap-2 pb-3">
-          {slides.map((slide, idx) => (
+        {/* Small dot indicators inside card */}
+        <div className="flex items-center justify-center gap-1.5 pb-3">
+          {slides.map((_, idx) => (
             <button
-              key={slide.id}
+              key={idx}
               onClick={() => setActiveSlide(idx)}
-              className={`px-2.5 py-1 rounded-full text-[9px] font-medium transition-all duration-200 hover:scale-105 ${
+              className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
                 activeSlide === idx
-                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30'
-                  : 'bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground'
+                  ? 'bg-primary w-4'
+                  : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
               }`}
-            >
-              {slide.label}
-            </button>
+            />
           ))}
         </div>
         
@@ -378,6 +376,23 @@ function HeroMockup() {
             </button>
           </div>
         </div>
+      </div>
+      
+      {/* Feature tabs below mockup */}
+      <div className="flex items-center justify-center gap-2 mt-6">
+        {slides.map((slide, idx) => (
+          <button
+            key={slide.id}
+            onClick={() => setActiveSlide(idx)}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+              activeSlide === idx
+                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30'
+                : 'bg-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {slide.label}
+          </button>
+        ))}
       </div>
     </div>
   );
