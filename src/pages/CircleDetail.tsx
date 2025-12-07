@@ -512,7 +512,7 @@ export default function SpaceDetail() {
         </div>
 
         {/* Chat Tab - takes remaining height */}
-        <TabsContent value="chat" className="flex-1 flex flex-col m-0 min-h-0 overflow-hidden tab-panel-transition">
+        <TabsContent value="chat" className="flex-1 m-0 min-h-0 overflow-hidden tab-panel-transition" style={{ display: 'flex', flexDirection: 'column' }}>
           <CircleChatTab spaceId={id || ""} onSendAICardRef={sendAICardToChatRef} />
         </TabsContent>
 
