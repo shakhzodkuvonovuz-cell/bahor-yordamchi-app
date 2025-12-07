@@ -581,21 +581,76 @@ export default function Landing() {
           <HeroBackground variant={bgVariant} />
         </Suspense>
         
-        {/* Background Variant Toggle - for testing */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 p-1 rounded-full bg-background/80 backdrop-blur-md border border-border/50 shadow-lg">
-          {([1, 2, 3, 4] as const).map((num) => (
-            <button
-              key={num}
-              onClick={() => setBgVariant(num)}
-              className={`w-8 h-8 rounded-full text-sm font-bold transition-all duration-200 ${
-                bgVariant === num
-                  ? 'bg-primary text-primary-foreground shadow-md'
-                  : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-              }`}
-            >
-              {num}
-            </button>
-          ))}
+        {/* Advanced Holographic Background Selector */}
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20">
+          <div className="relative flex items-center gap-0">
+            {/* Connecting beam */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-full h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+            </div>
+            
+            {([1, 2, 3, 4] as const).map((num, idx) => (
+              <button
+                key={num}
+                onClick={() => setBgVariant(num)}
+                className="relative group"
+              >
+                {/* Outer ring */}
+                <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-500 ${
+                  bgVariant === num 
+                    ? 'scale-110' 
+                    : 'scale-90 opacity-60 hover:opacity-100 hover:scale-100'
+                }`}>
+                  {/* Spinning outer ring for active */}
+                  {bgVariant === num && (
+                    <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary border-r-primary/50 animate-spin" style={{ animationDuration: '3s' }} />
+                  )}
+                  
+                  {/* Pulsing glow for active */}
+                  {bgVariant === num && (
+                    <div className="absolute inset-1 rounded-full bg-primary/20 animate-pulse" />
+                  )}
+                  
+                  {/* Inner hexagon container */}
+                  <div className={`relative w-10 h-10 transition-all duration-300 ${
+                    bgVariant === num ? 'rotate-0' : 'rotate-45 group-hover:rotate-0'
+                  }`}>
+                    {/* Glass container */}
+                    <div className={`absolute inset-0 rounded-lg backdrop-blur-md transition-all duration-300 ${
+                      bgVariant === num 
+                        ? 'bg-primary/30 shadow-lg shadow-primary/50 border border-primary/60' 
+                        : 'bg-background/40 border border-border/30 group-hover:border-primary/40 group-hover:bg-primary/10'
+                    }`} />
+                    
+                    {/* Number */}
+                    <span className={`relative z-10 flex items-center justify-center w-full h-full font-mono text-lg font-bold transition-all duration-300 ${
+                      bgVariant === num 
+                        ? 'text-primary-foreground drop-shadow-lg' 
+                        : 'text-muted-foreground group-hover:text-primary'
+                    }`} style={{ transform: bgVariant === num ? 'rotate(0deg)' : 'rotate(-45deg)' }}>
+                      {num}
+                    </span>
+                  </div>
+                  
+                  {/* Bottom indicator */}
+                  <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 transition-all duration-300 ${
+                    bgVariant === num ? 'opacity-100' : 'opacity-0'
+                  }`}>
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-lg shadow-primary/50" />
+                  </div>
+                </div>
+                
+                {/* Label that appears on hover/active */}
+                <div className={`absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-medium transition-all duration-300 ${
+                  bgVariant === num 
+                    ? 'opacity-100 translate-y-0 text-primary' 
+                    : 'opacity-0 translate-y-2 group-hover:opacity-70 group-hover:translate-y-0 text-muted-foreground'
+                }`}>
+                  {['Orbs', 'Network', 'Waves', 'Shapes'][idx]}
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
