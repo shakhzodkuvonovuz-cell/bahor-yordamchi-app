@@ -19,6 +19,7 @@ import {
   Sparkles,
   MessageSquare,
   ArrowRight,
+  ArrowLeft,
   Check,
   Send,
   Wallet,
@@ -31,6 +32,9 @@ import {
   ExternalLink,
   ImagePlus,
   Download,
+  Paperclip,
+  Camera,
+  Mic,
 } from "lucide-react";
 import bahorLogo from "@/assets/bahor-logo.png";
 import samarkandImage from "@/assets/landing/samarkand-registan.jpg";
@@ -427,25 +431,50 @@ export default function Landing() {
       <section id="circles" className="py-16 sm:py-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div ref={circlesRef.ref} className={`grid lg:grid-cols-2 gap-10 items-center transition-all duration-700 ${circlesRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
-            {/* Realistic Circles Mockup */}
+            {/* Realistic Circles Mockup - Bigger and more detailed */}
             <div className={`order-2 lg:order-1 transition-all duration-700 ${circlesRef.isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}>
-              <div className="glass-premium rounded-2xl p-4 sm:p-5 border border-border/40 max-w-md mx-auto">
-                {/* Header with emoji, title, members */}
-                <div className="flex items-center gap-3 pb-3 border-b border-border/30 mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-lg">
+              <div className="glass-premium rounded-2xl p-4 sm:p-5 border border-border/40 max-w-lg mx-auto shadow-xl">
+                {/* Header with back button, emoji, title, members, and avatars */}
+                <div className="flex items-center gap-2 pb-3 border-b border-border/30 mb-3">
+                  {/* Back button */}
+                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors group">
+                    <ArrowLeft className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  </button>
+                  {/* Circle emoji icon */}
+                  <div className="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center text-base hover:scale-110 transition-transform cursor-pointer">
                     📊
                   </div>
-                  <div className="flex-1">
-                    <span className="font-semibold text-sm text-foreground">{t('landing.circles.mockupTitle')}</span>
+                  {/* Title and member count */}
+                  <div className="flex-1 min-w-0">
+                    <span className="font-semibold text-sm text-foreground block truncate">{t('landing.circles.mockupTitle')}</span>
+                    <span className="text-[10px] text-muted-foreground">5 {t('landing.circles.members')}</span>
                   </div>
-                  <span className="text-xs text-muted-foreground">5 {t('landing.circles.members')}</span>
+                  {/* Online members mini avatars - moved to header */}
+                  <div className="flex -space-x-1.5">
+                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=64&h=64&fit=crop&crop=face" alt="" className="w-6 h-6 rounded-full border-2 border-background object-cover hover:scale-110 hover:z-10 transition-transform cursor-pointer" />
+                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=64&h=64&fit=crop&crop=face" alt="" className="w-6 h-6 rounded-full border-2 border-background object-cover hover:scale-110 hover:z-10 transition-transform cursor-pointer" />
+                    <div className="w-6 h-6 rounded-full bg-orange-500 border-2 border-background flex items-center justify-center text-[8px] text-white font-medium hover:scale-110 hover:z-10 transition-transform cursor-pointer">JA</div>
+                    <div className="w-6 h-6 rounded-full bg-green-500 border-2 border-background flex items-center justify-center text-[8px] text-white font-medium hover:scale-110 hover:z-10 transition-transform cursor-pointer">NK</div>
+                    <div className="w-6 h-6 rounded-full bg-pink-500 border-2 border-background flex items-center justify-center text-[8px] text-white font-medium hover:scale-110 hover:z-10 transition-transform cursor-pointer">+2</div>
+                  </div>
                 </div>
                 
-                {/* Tabs: Chat, Files, AI */}
+                {/* Tabs: Chat, Fayllar, AI natijalar */}
                 <div className="flex gap-1 p-1 rounded-xl bg-secondary/50 mb-3">
-                  {['Chat', 'Files', 'AI'].map((tab, i) => (
-                    <div key={tab} className={`flex-1 py-2 rounded-lg text-center text-xs font-medium transition-all ${i === 0 ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
-                      {tab}
+                  {[
+                    { label: 'Chat', active: true },
+                    { label: 'Fayllar', active: false },
+                    { label: t('landing.circles.aiResults'), active: false }
+                  ].map((tab) => (
+                    <div 
+                      key={tab.label} 
+                      className={`flex-1 py-2 rounded-lg text-center text-xs font-medium transition-all cursor-pointer ${
+                        tab.active 
+                          ? 'bg-primary text-primary-foreground shadow-sm' 
+                          : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
+                      }`}
+                    >
+                      {tab.label}
                     </div>
                   ))}
                 </div>
@@ -453,73 +482,81 @@ export default function Landing() {
                 {/* AI Action buttons */}
                 <div className="flex flex-wrap gap-2 mb-4">
                   {circleOutcomes.map((outcome) => (
-                    <span key={outcome} className="px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/20">
+                    <span 
+                      key={outcome} 
+                      className="px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/20 cursor-pointer hover:bg-primary/20 hover:scale-105 transition-all"
+                    >
                       {outcome}
                     </span>
                   ))}
                 </div>
                 
-                {/* Chat messages area */}
-                <div className="space-y-3 mb-3">
-                  {/* User message 1 */}
-                  <div className="flex items-start gap-2">
-                    <div className="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center text-[10px] text-white font-medium shrink-0">
-                      AS
-                    </div>
-                    <div className="flex-1">
+                {/* Chat messages area with hover effects */}
+                <div className="space-y-3 mb-3 max-h-64 overflow-y-auto">
+                  {/* User message 1 - with real photo */}
+                  <div className="flex items-start gap-2 group hover:bg-secondary/30 rounded-xl p-1 -m-1 transition-colors">
+                    <img 
+                      src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=64&h=64&fit=crop&crop=face" 
+                      alt="Asror" 
+                      className="w-7 h-7 rounded-full object-cover shrink-0 ring-2 ring-transparent group-hover:ring-primary/30 transition-all"
+                    />
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className="text-xs font-medium text-foreground">Asror</span>
                         <span className="text-[10px] text-muted-foreground">10:32</span>
                       </div>
-                      <div className="bg-secondary/60 rounded-xl rounded-tl-sm px-3 py-2 text-xs text-foreground">
+                      <div className="bg-secondary/60 rounded-xl rounded-tl-sm px-3 py-2 text-xs text-foreground group-hover:bg-secondary/80 transition-colors">
                         Ertangi uchrashuv uchun prezentatsiya tayyor bo'ldimi?
                       </div>
                     </div>
                   </div>
                   
-                  {/* User message 2 */}
-                  <div className="flex items-start gap-2">
-                    <div className="w-7 h-7 rounded-full bg-purple-500 flex items-center justify-center text-[10px] text-white font-medium shrink-0">
-                      DM
-                    </div>
-                    <div className="flex-1">
+                  {/* User message 2 - with real photo */}
+                  <div className="flex items-start gap-2 group hover:bg-secondary/30 rounded-xl p-1 -m-1 transition-colors">
+                    <img 
+                      src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=64&h=64&fit=crop&crop=face" 
+                      alt="Dilnoza" 
+                      className="w-7 h-7 rounded-full object-cover shrink-0 ring-2 ring-transparent group-hover:ring-primary/30 transition-all"
+                    />
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className="text-xs font-medium text-foreground">Dilnoza</span>
                         <span className="text-[10px] text-muted-foreground">10:34</span>
                       </div>
-                      <div className="bg-secondary/60 rounded-xl rounded-tl-sm px-3 py-2 text-xs text-foreground">
+                      <div className="bg-secondary/60 rounded-xl rounded-tl-sm px-3 py-2 text-xs text-foreground group-hover:bg-secondary/80 transition-colors">
                         Ha, faylga yuklab qo'ydim ✓
                       </div>
                     </div>
                   </div>
                   
                   {/* /bahor AI request */}
-                  <div className="flex items-start gap-2">
-                    <div className="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center text-[10px] text-white font-medium shrink-0">
+                  <div className="flex items-start gap-2 group hover:bg-secondary/30 rounded-xl p-1 -m-1 transition-colors">
+                    <div className="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center text-[10px] text-white font-medium shrink-0 ring-2 ring-transparent group-hover:ring-primary/30 transition-all">
                       JA
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className="text-xs font-medium text-foreground">Jamshid</span>
                         <span className="text-[10px] text-muted-foreground">10:35</span>
                       </div>
-                      <div className="bg-secondary/60 rounded-xl rounded-tl-sm px-3 py-2 text-xs text-foreground">
+                      <div className="bg-secondary/60 rounded-xl rounded-tl-sm px-3 py-2 text-xs text-foreground group-hover:bg-secondary/80 transition-colors">
                         <span className="text-primary font-medium">/bahor</span> shu hafta qanday vazifalar qoldik?
                       </div>
                     </div>
                   </div>
                   
                   {/* Bahor AI response */}
-                  <div className="flex items-start gap-2">
-                    <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                  <div className="flex items-start gap-2 group hover:bg-primary/5 rounded-xl p-1 -m-1 transition-colors">
+                    <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0 ring-2 ring-transparent group-hover:ring-primary/30 transition-all">
                       <img src={bahorLogo} alt="Bahor AI" className="w-5 h-5" />
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className="text-xs font-medium text-primary">Bahor AI</span>
+                        <Sparkles className="w-3 h-3 text-primary" />
                         <span className="text-[10px] text-muted-foreground">10:35</span>
                       </div>
-                      <div className="bg-primary/10 border border-primary/20 rounded-xl rounded-tl-sm px-3 py-2 text-xs text-foreground">
+                      <div className="bg-primary/10 border border-primary/20 rounded-xl rounded-tl-sm px-3 py-2 text-xs text-foreground group-hover:bg-primary/15 transition-colors">
                         📋 Shu hafta uchun 3 ta vazifa:<br/>
                         1. Prezentatsiya tayyorlash ✅<br/>
                         2. Byudjet hisob-kitobi<br/>
@@ -529,16 +566,29 @@ export default function Landing() {
                   </div>
                 </div>
                 
-                {/* Mini avatars row - who's online */}
-                <div className="flex items-center gap-1 pt-2 border-t border-border/30">
-                  <div className="flex -space-x-2">
-                    <div className="w-6 h-6 rounded-full bg-blue-500 border-2 border-background flex items-center justify-center text-[8px] text-white font-medium">AS</div>
-                    <div className="w-6 h-6 rounded-full bg-purple-500 border-2 border-background flex items-center justify-center text-[8px] text-white font-medium">DM</div>
-                    <div className="w-6 h-6 rounded-full bg-orange-500 border-2 border-background flex items-center justify-center text-[8px] text-white font-medium">JA</div>
-                    <div className="w-6 h-6 rounded-full bg-green-500 border-2 border-background flex items-center justify-center text-[8px] text-white font-medium">NK</div>
-                    <div className="w-6 h-6 rounded-full bg-pink-500 border-2 border-background flex items-center justify-center text-[8px] text-white font-medium">SM</div>
+                {/* Input area - matching actual circles input */}
+                <div className="pt-3 border-t border-border/30">
+                  <div className="flex items-center gap-2">
+                    {/* Attachment buttons */}
+                    <button className="p-2 rounded-xl bg-secondary/60 hover:bg-secondary transition-colors group">
+                      <Paperclip className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                    </button>
+                    <button className="p-2 rounded-xl bg-secondary/60 hover:bg-secondary transition-colors group">
+                      <Camera className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                    </button>
+                    {/* Input field */}
+                    <div className="flex-1 px-3 py-2 rounded-xl bg-secondary/50 hover:bg-secondary/70 transition-colors cursor-text">
+                      <span className="text-xs text-muted-foreground">{t('landing.circles.inputPlaceholder')}</span>
+                    </div>
+                    {/* Mic button */}
+                    <button className="p-2 rounded-xl bg-secondary/60 hover:bg-secondary transition-colors group">
+                      <Mic className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                    </button>
+                    {/* Send button */}
+                    <button className="p-2 rounded-xl bg-primary hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20">
+                      <Send className="w-4 h-4 text-primary-foreground" />
+                    </button>
                   </div>
-                  <span className="text-[10px] text-muted-foreground ml-2">5 ta a'zo onlayn</span>
                 </div>
               </div>
             </div>
@@ -553,11 +603,11 @@ export default function Landing() {
               <p className="text-muted-foreground mb-4">{t('landing.circles.desc')}</p>
               <p className="text-sm text-muted-foreground mb-2">{t('landing.circles.templates')}</p>
               <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                <span className="px-2 py-1 rounded-lg bg-secondary/50">Study</span>
-                <span className="px-2 py-1 rounded-lg bg-secondary/50">Work</span>
-                <span className="px-2 py-1 rounded-lg bg-secondary/50">Family</span>
-                <span className="px-2 py-1 rounded-lg bg-secondary/50">Creator</span>
-                <span className="px-2 py-1 rounded-lg bg-secondary/50">Small Biz</span>
+                <span className="px-2 py-1 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">Study</span>
+                <span className="px-2 py-1 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">Work</span>
+                <span className="px-2 py-1 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">Family</span>
+                <span className="px-2 py-1 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">Creator</span>
+                <span className="px-2 py-1 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">Small Biz</span>
               </div>
             </div>
           </div>
