@@ -199,6 +199,94 @@ export async function getMessages(
   return (data || []) as ChatMessage[];
 }
 
+// Extended message type with attachments for UI
+export interface ChatMessageWithAttachments extends ChatMessage {
+  attachments?: {
+    id: string;
+    name: string;
+    size: number;
+    type: string;
+    url?: string;
+    path: string;
+    bucket: string;
+  }[];
+}
+
+// Get messages with their attachments and generate signed URLs
+export async function getMessagesWithAttachments(
+  threadId: string,
+  options?: { limit?: number; offset?: number }
+): Promise<ChatMessageWithAttachments[]> {
+  const limit = options?.limit || 30;
+  const offset = options?.offset || 0;
+
+  // Fetch messages
+  const { data: messages, error: msgError } = await supabase
+    .from("chat_messages")
+    .select("*")
+    .eq("thread_id", threadId)
+    .order("created_at", { ascending: true })
+    .range(offset, offset + limit - 1);
+
+  if (msgError) {
+    console.error("Error getting messages:", msgError);
+    throw msgError;
+  }
+
+  if (!messages || messages.length === 0) {
+    return [];
+  }
+
+  // Get message IDs
+  const messageIds = messages.map(m => m.id);
+
+  // Fetch attachments for these messages
+  const { data: attachments, error: attError } = await supabase
+    .from("chat_attachments")
+    .select("*")
+    .in("message_id", messageIds);
+
+  if (attError) {
+    console.error("Error getting attachments:", attError);
+    // Continue without attachments
+  }
+
+  // Generate signed URLs for attachments
+  const attachmentMap = new Map<string, ChatMessageWithAttachments["attachments"]>();
+  
+  if (attachments && attachments.length > 0) {
+    for (const att of attachments) {
+      if (!att.message_id) continue;
+      
+      // Generate signed URL
+      const { data: signedData } = await supabase.storage
+        .from(att.bucket || "chat-attachments")
+        .createSignedUrl(att.path, 3600); // 1 hour
+      
+      const attachmentItem = {
+        id: att.id,
+        name: att.original_name || att.path.split("/").pop() || "file",
+        size: att.size_bytes || 0,
+        type: att.mime_type || "application/octet-stream",
+        url: signedData?.signedUrl,
+        path: att.path,
+        bucket: att.bucket || "chat-attachments",
+      };
+      
+      if (!attachmentMap.has(att.message_id)) {
+        attachmentMap.set(att.message_id, []);
+      }
+      attachmentMap.get(att.message_id)!.push(attachmentItem);
+    }
+  }
+
+  // Merge attachments into messages
+  return messages.map(msg => ({
+    ...(msg as ChatMessage),
+    attachments: attachmentMap.get(msg.id) || undefined,
+  }));
+}
+
 export async function getMessageCount(threadId: string): Promise<number> {
   const { count, error } = await supabase
     .from("chat_messages")

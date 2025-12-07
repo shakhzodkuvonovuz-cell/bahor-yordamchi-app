@@ -153,7 +153,7 @@ async function processStreamingResponse(
 }
 
 // Convert DB message to UI Message type
-function dbMessageToUI(msg: chatStore.ChatMessage): Message {
+function dbMessageToUI(msg: chatStore.ChatMessageWithAttachments): Message {
   return {
     id: msg.id,
     role: msg.role as "user" | "assistant",
@@ -161,6 +161,14 @@ function dbMessageToUI(msg: chatStore.ChatMessage): Message {
     timestamp: new Date(msg.created_at),
     reaction: msg.reaction,
     meta: msg.meta,
+    attachments: msg.attachments?.map(att => ({
+      id: att.id,
+      name: att.name,
+      size: att.size,
+      type: att.type,
+      url: att.url,
+      previewUrl: att.url,
+    })),
   };
 }
 
@@ -346,7 +354,8 @@ export default function Chat() {
     setIsLoadingMessages(true);
     try {
       const offset = append ? messageOffset : 0;
-      const fetchedMessages = await chatStore.getMessages(threadId, { limit: 30, offset });
+      // Use getMessagesWithAttachments to include image attachments
+      const fetchedMessages = await chatStore.getMessagesWithAttachments(threadId, { limit: 30, offset });
       const uiMessages = fetchedMessages.map(dbMessageToUI);
       
       if (append) {
@@ -1271,7 +1280,7 @@ export default function Chat() {
           setIsGeneratingImage(false);
           setProcessingStatus(null);
           
-          // Save to DB
+          // Save to DB with attachment
           if (user) {
             try {
               const savedAssistant = await chatStore.addMessage(user.id, {
@@ -1279,6 +1288,20 @@ export default function Chat() {
                 role: "assistant",
                 content: imageMessage.content,
               });
+              
+              // Also save the attachment reference
+              if (jsonData.fileUrl) {
+                // Extract storage path from signed URL or use the path directly
+                const storagePath = jsonData.filePath || `generated/${jsonData.fileName}`;
+                await chatStore.attachFile(user.id, {
+                  threadId: currentThreadId,
+                  messageId: savedAssistant.id,
+                  bucket: "user-files",
+                  path: storagePath,
+                  mimeType: "image/png",
+                  originalName: jsonData.fileName,
+                });
+              }
               
               setMessages((prev) =>
                 prev.map((m) =>
