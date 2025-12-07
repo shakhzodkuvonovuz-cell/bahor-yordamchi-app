@@ -584,7 +584,7 @@ serve(async (req) => {
         }
         
         const imageData = await imageResponse.json();
-        console.log('[Image Gen] Success:', { fileUrl: imageData.fileUrl, fileName: imageData.fileName });
+        console.log('[Image Gen] Success:', { image_url: imageData.image_url, file_name: imageData.file_name, file_path: imageData.file_path });
         
         // Return image generation result as JSON (not a stream)
         return new Response(
