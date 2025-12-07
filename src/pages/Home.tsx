@@ -256,36 +256,34 @@ export default function Home() {
     <div className="bg-background flex flex-col">
       {/* Main content wrapper - ensures footer is below the fold */}
       <div className="min-h-screen flex flex-col">
-        {/* Top Bar with page label + Language */}
-        <div className="w-full px-4 sm:px-6 py-3 border-b border-border/50">
-          <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-sm">
+        {/* Top Bar with page label + Language - subtle, not sticky */}
+        <div className="w-full px-4 sm:px-6 py-2.5 border-b border-border/40">
+          <div className="max-w-3xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-2">
               <MessageSquare className="w-4 h-4 text-primary" />
-              <span className="font-medium text-foreground">{t('sidebar.chat')}</span>
-              <span className="text-muted-foreground">·</span>
-              <span className="text-muted-foreground text-xs">{t('beta.title')}</span>
+              <span className="text-sm font-medium text-foreground">{t('sidebar.chat')}</span>
             </div>
             <LanguageSwitcher variant="compact" />
           </div>
         </div>
 
-        {/* Main Content - Centered */}
-        <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 sm:py-12">
-          <div className="w-full max-w-3xl space-y-6">
+        {/* Main Content - Centered with proper vertical balance */}
+        <div className="flex-1 flex flex-col items-center justify-center px-4 py-6 sm:py-10">
+          <div className="w-full max-w-3xl space-y-5">
           
-          {/* Header with Logo - Bigger logo */}
-          <div className="text-center space-y-3">
-            <div className="flex items-center justify-center gap-4 mb-2">
+          {/* Brand Block - Logo + Title centered, larger logo */}
+          <div className="text-center space-y-2">
+            <div className="flex items-center justify-center gap-3">
               <img 
                 src={bahorLogo} 
                 alt="Bahor AI" 
-                className="h-16 w-16 sm:h-20 sm:w-20 object-contain" 
+                className="h-14 w-14 sm:h-16 sm:w-16 object-contain" 
               />
-              <h1 className="text-3xl sm:text-4xl font-bold text-foreground">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
                 {t('home.title')}
               </h1>
             </div>
-            <p className="text-muted-foreground text-base sm:text-lg">
+            <p className="text-muted-foreground text-sm sm:text-base max-w-md mx-auto">
               {t('home.subtitle')}
             </p>
           </div>
@@ -353,7 +351,7 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Input Row */}
+              {/* Input Row - Icons and placeholder on same baseline */}
               <div className="p-3 sm:p-4">
                 {/* Hidden file inputs */}
                 <input
@@ -373,28 +371,31 @@ export default function Home() {
                   className="hidden"
                 />
                 
-                <div className="flex items-center gap-2">
-                  {/* Attachment Buttons - vertically centered with input */}
+                {/* Flex row with consistent vertical alignment */}
+                <div className="flex items-center gap-1.5">
+                  {/* Paperclip button */}
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploading}
-                    className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-lg transition-all duration-200 disabled:opacity-40 active:scale-95 flex-shrink-0"
+                    className="flex items-center justify-center w-9 h-9 text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-lg transition-all duration-200 disabled:opacity-40 active:scale-95 flex-shrink-0"
                     aria-label="Attach file"
                   >
                     <Paperclip className="w-5 h-5" />
                   </button>
+                  
+                  {/* Camera button */}
                   <button
                     type="button"
                     onClick={() => cameraInputRef.current?.click()}
                     disabled={isUploading}
-                    className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-lg transition-all duration-200 disabled:opacity-40 active:scale-95 flex-shrink-0"
+                    className="flex items-center justify-center w-9 h-9 text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-lg transition-all duration-200 disabled:opacity-40 active:scale-95 flex-shrink-0"
                     aria-label="Take photo"
                   >
                     <Camera className="w-5 h-5" />
                   </button>
 
-                  {/* Input - single line for cleaner alignment */}
+                  {/* Text input - grows to fill, aligned baseline with icons */}
                   <input
                     type="text"
                     value={input}
@@ -406,16 +407,21 @@ export default function Home() {
                       }
                     }}
                     placeholder={t('chat.input.placeholder')}
-                    className="flex-1 border-none outline-none bg-transparent text-base sm:text-lg text-foreground placeholder:text-muted-foreground min-w-0"
+                    className="flex-1 h-9 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground text-sm sm:text-base min-w-0 leading-9"
                   />
-                  
+
                   {/* Send button */}
                   <button
                     onClick={handleSend}
-                    disabled={(!input.trim() && pendingAttachments.length === 0) || isUploading}
-                    className="rounded-xl bg-primary text-primary-foreground w-10 h-10 flex items-center justify-center hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95 shadow-lg shadow-primary/20 flex-shrink-0"
+                    disabled={isUploading || (!input.trim() && pendingAttachments.length === 0)}
+                    className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 flex-shrink-0"
+                    aria-label="Send"
                   >
-                    <Send className="w-5 h-5" />
+                    {isUploading ? (
+                      <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
               </div>
