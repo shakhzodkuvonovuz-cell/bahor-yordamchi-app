@@ -1,29 +1,42 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 // ============================================
 // VARIANT 1: Floating Gradient Orbs (CSS)
 // ============================================
 function FloatingOrbs() {
+  const particles = useMemo(() => 
+    Array.from({ length: 15 }, (_, i) => ({
+      id: i,
+      width: 6 + (i * 0.8),
+      height: 6 + (i * 0.8),
+      left: 5 + (i * 6.5),
+      top: 15 + ((i * 17) % 70),
+      duration: 12 + i * 1.5,
+      delay: i * 0.4,
+      opacity: 0.4 + (i % 5) * 0.06
+    })), []
+  );
+
   return (
     <div className="absolute inset-0 overflow-hidden">
-      {/* Large orbs - more visible */}
+      {/* Large orbs */}
       <div className="absolute w-[500px] h-[500px] -top-32 -left-32 rounded-full bg-gradient-to-br from-primary/40 via-primary/20 to-transparent blur-3xl animate-[float-slow_20s_ease-in-out_infinite]" />
       <div className="absolute w-[400px] h-[400px] top-1/4 -right-20 rounded-full bg-gradient-to-bl from-accent/35 via-primary/25 to-transparent blur-3xl animate-[float-slow_25s_ease-in-out_infinite_reverse]" />
       <div className="absolute w-[350px] h-[350px] bottom-0 left-1/4 rounded-full bg-gradient-to-tr from-primary/30 via-accent/20 to-transparent blur-3xl animate-[float-slow_18s_ease-in-out_infinite_2s]" />
       <div className="absolute w-[250px] h-[250px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-radial from-primary/25 via-primary/10 to-transparent blur-2xl animate-pulse" />
       
-      {/* Small floating particles - more visible */}
-      {[...Array(15)].map((_, i) => (
+      {/* Small floating particles */}
+      {particles.map((p) => (
         <div
-          key={i}
+          key={p.id}
           className="absolute rounded-full bg-primary"
           style={{
-            width: `${6 + Math.random() * 10}px`,
-            height: `${6 + Math.random() * 10}px`,
-            left: `${5 + (i * 6.5)}%`,
-            top: `${15 + Math.random() * 70}%`,
-            animation: `float-slow ${12 + i * 1.5}s ease-in-out infinite ${i * 0.4}s`,
-            opacity: 0.4 + Math.random() * 0.3,
+            width: `${p.width}px`,
+            height: `${p.height}px`,
+            left: `${p.left}%`,
+            top: `${p.top}%`,
+            animation: `float-slow ${p.duration}s ease-in-out infinite ${p.delay}s`,
+            opacity: p.opacity,
             filter: 'blur(1px)',
             boxShadow: '0 0 10px hsl(var(--primary) / 0.5)'
           }}
@@ -37,13 +50,15 @@ function FloatingOrbs() {
 // VARIANT 2: Neural Network Grid
 // ============================================
 function NeuralNetwork() {
-  const nodes = Array.from({ length: 20 }, (_, i) => ({
-    id: i,
-    x: 5 + (i % 5) * 22 + Math.random() * 10,
-    y: 10 + Math.floor(i / 5) * 22 + Math.random() * 10,
-    size: 3 + Math.random() * 4,
-    delay: i * 0.2
-  }));
+  const nodes = useMemo(() => 
+    Array.from({ length: 20 }, (_, i) => ({
+      id: i,
+      x: 5 + (i % 5) * 22 + (i * 2) % 10,
+      y: 10 + Math.floor(i / 5) * 22 + (i * 3) % 10,
+      size: 3 + (i % 4),
+      delay: i * 0.2
+    })), []
+  );
 
   return (
     <div className="absolute inset-0 overflow-hidden">
@@ -105,7 +120,7 @@ function WaveMesh() {
     <div className="absolute inset-0 overflow-hidden">
       <svg className="w-full h-full opacity-30" viewBox="0 0 100 60" preserveAspectRatio="xMidYMid slice">
         {/* Horizontal wave lines */}
-        {[...Array(8)].map((_, i) => (
+        {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
           <path
             key={`h-${i}`}
             d={`M 0 ${10 + i * 7} Q 25 ${8 + i * 7} 50 ${10 + i * 7} T 100 ${10 + i * 7}`}
@@ -121,7 +136,7 @@ function WaveMesh() {
         ))}
         
         {/* Vertical lines creating grid */}
-        {[...Array(12)].map((_, i) => (
+        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((i) => (
           <line
             key={`v-${i}`}
             x1={8 + i * 8}
@@ -145,6 +160,18 @@ function WaveMesh() {
 // VARIANT 4: Geometric Constellation
 // ============================================
 function GeometricConstellation() {
+  const stars = useMemo(() => 
+    Array.from({ length: 30 }, (_, i) => ({
+      id: i,
+      width: 1 + (i % 3),
+      height: 1 + (i % 3),
+      left: (i * 3.3) % 100,
+      top: (i * 7.7) % 100,
+      delay: (i * 0.1) % 3,
+      opacity: 0.3 + (i % 4) * 0.1
+    })), []
+  );
+
   return (
     <div className="absolute inset-0 overflow-hidden">
       {/* Rotating geometric shapes */}
@@ -163,17 +190,17 @@ function GeometricConstellation() {
       </svg>
       
       {/* Stars/dots */}
-      {[...Array(30)].map((_, i) => (
+      {stars.map((star) => (
         <div
-          key={i}
+          key={star.id}
           className="absolute rounded-full bg-primary animate-pulse"
           style={{
-            width: `${1 + Math.random() * 3}px`,
-            height: `${1 + Math.random() * 3}px`,
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-            animationDelay: `${Math.random() * 3}s`,
-            opacity: 0.3 + Math.random() * 0.4
+            width: `${star.width}px`,
+            height: `${star.height}px`,
+            left: `${star.left}%`,
+            top: `${star.top}%`,
+            animationDelay: `${star.delay}s`,
+            opacity: star.opacity
           }}
         />
       ))}
