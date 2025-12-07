@@ -162,6 +162,8 @@ function detectImageGenerationIntent(userMsg: string, hasImageAttachment: boolea
   
   // Check for just the word "rasm" at the end with content before it (like "cat rasm")
   // Also check for Uzbek suffixes: rasmi (of image), surati (of photo), tasviri (of picture)
+  // Strip trailing punctuation for matching
+  const qClean = q.replace(/[.!?,;:]+$/, '').trim();
   const trailingPatterns = [
     { pattern: / rasm$/i, len: 5 },
     { pattern: / rasmi$/i, len: 6 },
@@ -177,8 +179,8 @@ function detectImageGenerationIntent(userMsg: string, hasImageAttachment: boolea
   ];
   
   for (const { pattern, len } of trailingPatterns) {
-    if (pattern.test(q)) {
-      const prompt = q.slice(0, -len).trim();
+    if (pattern.test(qClean)) {
+      const prompt = qClean.slice(0, -len).trim();
       if (prompt.length > 2) {
         console.log('[Image Detect] Trailing keyword matched:', pattern.toString(), ', prompt:', prompt);
         return { isImageGen: true, prompt };
@@ -212,6 +214,15 @@ function detectImageGenerationIntent(userMsg: string, hasImageAttachment: boolea
   if (matchCount >= 2 && q.length > 50) {
     console.log('[Image Detect] Prompt-like description detected, matchCount:', matchCount, ', prompt:', q.slice(0, 80));
     return { isImageGen: true, prompt: q };
+  }
+  
+  // Check for Uzbek possessive endings that suggest "image of X" (hovlisi = its courtyard, etc.)
+  // These are short descriptive phrases that typically request images in Uzbek context
+  const uzPossessivePattern = /^[A-Za-zА-Яа-яЎўҚқҒғҲҳ'\s]+(?:ning\s+)?[A-Za-zА-Яа-яЎўҚқҒғҲҳ']+(?:si|i|lari)\.?$/i;
+  if (uzPossessivePattern.test(qClean) && qClean.length >= 15 && qClean.length <= 60 && !qClean.includes('?')) {
+    // Short Uzbek phrase with possessive ending, likely an image request
+    console.log('[Image Detect] Uzbek possessive phrase detected, prompt:', qClean);
+    return { isImageGen: true, prompt: qClean };
   }
   
   console.log('[Image Detect] No image intent found in:', qLower.slice(0, 50));
