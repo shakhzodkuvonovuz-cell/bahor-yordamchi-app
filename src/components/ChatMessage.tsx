@@ -1,12 +1,11 @@
 import { useState, useRef } from "react";
 import { Message } from "@/types/chat";
-import { ExternalLink, FileText, User, Download } from "lucide-react";
+import { ExternalLink, FileText, Download } from "lucide-react";
 import { MessageActionsPopover } from "@/components/chat/MessageActions";
 import { MessageActionsBar, MessageActionsSheet, MessageVariant } from "@/components/chat/MessageActionsBar";
 import BahorCard, { parseMessageForCards, hasCardContent } from "@/components/chat/BahorCard";
 import { CollapsibleMessage, OutputFormatButtons } from "@/components/chat";
 import { formatAssistantText } from "@/lib/formatAssistant";
-import bahorLogo from "@/assets/bahor-logo.png";
 import { track } from "@/lib/analytics";
 
 interface ChatMessageProps {
@@ -125,6 +124,86 @@ export default function ChatMessage({
     onExportPdf?.(message.id, message.content);
   };
 
+  // Render attachments with clean inline card styling (no Telegram bubbles)
+  const renderAttachments = () => {
+    if (!message.attachments || message.attachments.length === 0) return null;
+
+    return (
+      <div className={`space-y-2 ${message.content ? (isUser ? "mb-3" : "mb-4") : ""}`}>
+        {message.attachments.map((attachment) => (
+          <div key={attachment.id} className="rounded-xl overflow-hidden">
+            {attachment.type.startsWith("image/") && attachment.url ? (
+              <div className="relative group/img">
+                <img
+                  src={attachment.url}
+                  alt={attachment.name}
+                  className="max-w-full max-h-72 rounded-xl"
+                  onError={(e) => {
+                    console.error('[ChatMessage] Image failed to load:', attachment.url);
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+                <div className="absolute bottom-2 right-2 flex gap-1.5 opacity-0 group-hover/img:opacity-100 transition-opacity">
+                  <a
+                    href={attachment.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-8 h-8 rounded-lg bg-black/60 hover:bg-black/80 flex items-center justify-center text-white transition-colors"
+                    title="Open in new tab"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                  <button
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      try {
+                        const response = await fetch(attachment.url!);
+                        const blob = await response.blob();
+                        const blobUrl = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = blobUrl;
+                        a.download = attachment.name || 'image.png';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(blobUrl);
+                      } catch (err) {
+                        console.error('Download error:', err);
+                        window.open(attachment.url, '_blank');
+                      }
+                    }}
+                    className="w-8 h-8 rounded-lg bg-black/60 hover:bg-black/80 flex items-center justify-center text-white transition-colors"
+                    title="Download"
+                  >
+                    <Download className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <a
+                href={attachment.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50 hover:bg-secondary/70 border border-border/30 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{attachment.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {(attachment.size / 1024).toFixed(1)} KB
+                  </p>
+                </div>
+                <ExternalLink className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
+              </a>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   // Format and render content with Bahor Cards
   const renderContent = () => {
     // Apply formatter to assistant messages
@@ -134,7 +213,7 @@ export default function ChatMessage({
       const contentElement = (
         <div
           className={`text-[15px] leading-[1.75] whitespace-pre-wrap [overflow-wrap:anywhere] [word-break:break-word] [&_pre]:mt-3 [&_pre]:rounded-xl [&_pre]:bg-secondary/80 [&_pre]:text-foreground [&_pre]:text-[13px] [&_pre]:p-4 [&_pre]:overflow-x-auto [&_pre]:max-w-full [&_code]:font-mono [&_code]:text-[13px] [&_a]:text-primary [&_a]:underline [&_a]:break-all ${
-            isUser ? "" : "text-card-foreground"
+            isUser ? "text-primary-foreground" : "text-foreground"
           }`}
         >
           {displayContent}
@@ -170,7 +249,7 @@ export default function ChatMessage({
           return (
             <div
               key={idx}
-              className="text-[15px] leading-[1.75] whitespace-pre-wrap [overflow-wrap:anywhere] [word-break:break-word] text-card-foreground"
+              className="text-[15px] leading-[1.75] whitespace-pre-wrap [overflow-wrap:anywhere] [word-break:break-word] text-foreground"
             >
               {section.content}
             </div>
@@ -182,202 +261,126 @@ export default function ChatMessage({
 
   return (
     <>
-      <div
-        className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"} ${
-          isUser ? "chat-message-user" : "chat-message-ai"
-        } group animate-fade-in`}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        onTouchCancel={handleTouchEnd}
-        onTouchMove={handleTouchMove}
-      >
-        {/* AI Avatar */}
-        {!isUser && (
-          <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-card border border-border/40 flex items-center justify-center mt-0.5 shadow-[0_0_12px_rgba(45,212,191,0.3)]">
-            <img src={bahorLogo} alt="Bahor AI" className="w-8 h-8 object-contain" />
-          </div>
-        )}
+      {/* User message: right-aligned bubble */}
+      {isUser ? (
+        <div
+          className="flex justify-end group animate-fade-in chat-message-user"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd}
+          onTouchMove={handleTouchMove}
+        >
+          <div className="relative max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] min-w-0">
+            {/* Desktop actions button - appears on hover */}
+            {showActions && !isMobile && (
+              <div className="absolute left-0 -translate-x-full pr-2 top-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <MessageActionsPopover
+                  messageRole={message.role}
+                  onCopy={handleCopy}
+                  onEdit={handleEdit}
+                />
+              </div>
+            )}
 
-        <div className="relative max-w-[88%] sm:max-w-[80%] lg:max-w-[75%] min-w-0">
-          {/* Desktop actions button - appears on hover */}
-          {showActions && !isMobile && isUser && (
-            <div className="absolute left-0 -translate-x-full pr-2 top-1">
-              <MessageActionsPopover
-                messageRole={message.role}
-                onCopy={handleCopy}
-                onEdit={handleEdit}
-              />
-            </div>
-          )}
+            <div
+              className={`rounded-2xl rounded-tr-md bg-primary text-primary-foreground shadow-md transition-transform duration-150 no-ios-callout ${
+                isPressed ? "scale-[0.98]" : ""
+              }`}
+              onContextMenu={(e) => e.preventDefault()}
+            >
+              <div className="px-4 py-3">
+                {renderAttachments()}
+                {message.content && renderContent()}
+              </div>
 
-          <div
-            className={`rounded-2xl transition-transform duration-150 no-ios-callout ${
-              isPressed ? "scale-[0.98]" : ""
-            } ${
-              isUser
-                ? "bg-primary text-primary-foreground rounded-tr-md shadow-lg"
-                : "bg-card border border-border/40 rounded-tl-md shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.06)]"
-            }`}
-            onContextMenu={(e) => e.preventDefault()}
-          >
-            <div className={isUser ? "px-5 py-4" : "px-5 py-4"}>
-              {/* Attachments */}
-              {message.attachments && message.attachments.length > 0 && (
-                <div className="mb-3 space-y-2">
-                  {message.attachments.map((attachment) => (
-                    <div key={attachment.id} className="rounded-xl overflow-hidden">
-                      {attachment.type.startsWith("image/") && attachment.url ? (
-                        <div className="relative group/img">
-                          <img
-                            src={attachment.url}
-                            alt={attachment.name}
-                            className="max-w-full max-h-64 rounded-xl transition-opacity"
-                            onError={(e) => {
-                              console.error('[ChatMessage] Image failed to load:', attachment.url);
-                              // Show fallback
-                              (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                            onLoad={() => console.log('[ChatMessage] Image loaded successfully')}
-                          />
-                          <div className="absolute bottom-2 right-2 flex gap-1.5 opacity-0 group-hover/img:opacity-100 transition-opacity">
-                            <a
-                              href={attachment.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="w-8 h-8 rounded-lg bg-black/60 hover:bg-black/80 flex items-center justify-center text-white transition-colors"
-                              title="Open in new tab"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </a>
-                            <button
-                              onClick={async (e) => {
-                                e.preventDefault();
-                                try {
-                                  const response = await fetch(attachment.url!);
-                                  const blob = await response.blob();
-                                  const blobUrl = URL.createObjectURL(blob);
-                                  const a = document.createElement('a');
-                                  a.href = blobUrl;
-                                  a.download = attachment.name || 'image.png';
-                                  document.body.appendChild(a);
-                                  a.click();
-                                  document.body.removeChild(a);
-                                  URL.revokeObjectURL(blobUrl);
-                                } catch (err) {
-                                  console.error('Download error:', err);
-                                  // Fallback: open in new tab
-                                  window.open(attachment.url, '_blank');
-                                }
-                              }}
-                              className="w-8 h-8 rounded-lg bg-black/60 hover:bg-black/80 flex items-center justify-center text-white transition-colors"
-                              title="Download"
-                            >
-                              <Download className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <a
-                          href={attachment.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${
-                            isUser
-                              ? "bg-primary-foreground/10 hover:bg-primary-foreground/15"
-                              : "bg-secondary/60 hover:bg-secondary"
-                          }`}
-                        >
-                          <div
-                            className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                              isUser ? "bg-primary-foreground/10" : "bg-muted"
-                            }`}
-                          >
-                            <FileText className="w-5 h-5" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{attachment.name}</p>
-                            <p className={`text-xs ${isUser ? "opacity-70" : "text-muted-foreground"}`}>
-                              {(attachment.size / 1024).toFixed(1)} KB
-                            </p>
-                          </div>
-                          <ExternalLink
-                            className={`w-4 h-4 flex-shrink-0 ${
-                              isUser ? "opacity-60" : "text-muted-foreground"
-                            }`}
-                          />
-                        </a>
-                      )}
-                    </div>
-                  ))}
+              {/* Timestamp */}
+              {!hasCards && (
+                <div className="px-4 pb-2 -mt-1">
+                  <span className="text-[11px] text-primary-foreground/60">
+                    {new Date(message.timestamp).toLocaleTimeString("uz-UZ", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* AI message: full-width, no bubble, blends with background */
+        <div
+          className="flex justify-start group animate-fade-in chat-message-ai"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd}
+          onTouchMove={handleTouchMove}
+        >
+          <div className="relative w-full max-w-none min-w-0">
+            <div
+              className={`transition-transform duration-150 no-ios-callout ${
+                isPressed ? "scale-[0.99]" : ""
+              }`}
+              onContextMenu={(e) => e.preventDefault()}
+            >
+              <div className="py-3">
+                {renderAttachments()}
+                {message.content && renderContent()}
+              </div>
 
-              {message.content && renderContent()}
+              {/* Timestamp for AI - subtle, inline */}
+              {!hasCards && (
+                <div className="-mt-1 mb-1">
+                  <span className="text-[11px] text-muted-foreground/60">
+                    {new Date(message.timestamp).toLocaleTimeString("uz-UZ", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+              )}
             </div>
 
-            {/* Timestamp - only show for messages without cards (cards have their own timestamps) */}
-            {!hasCards && (
-              <div className="px-4 pb-2.5 -mt-1">
-                <span
-                  className={`text-[11px] ${
-                    isUser ? "text-primary-foreground/60" : "text-muted-foreground"
-                  }`}
-                >
-                  {new Date(message.timestamp).toLocaleTimeString("uz-UZ", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
+            {/* Action bar for assistant messages (desktop only) */}
+            {showActionBar && !isMobile && (
+              <MessageActionsBar
+                messageId={message.id}
+                messageContent={message.content}
+                reaction={message.reaction}
+                isStreaming={isStreaming}
+                isActionLoading={isActionLoading}
+                onReaction={handleReaction}
+                onCopy={handleCopy}
+                onShare={handleShare}
+                onContinue={handleContinue}
+                onRegenerate={handleRegenerate}
+                onVariant={handleVariant}
+                onExportPdf={onExportPdf ? handleExportPdf : undefined}
+              />
+            )}
+
+            {/* Output Format Buttons for assistant messages */}
+            {showActionBar && !isStreaming && onFormatRequest && (
+              <OutputFormatButtons
+                onFormatRequest={handleFormatRequest}
+                disabled={isActionLoading}
+              />
+            )}
+
+            {/* Variant label if this is a variant message */}
+            {message.meta?.variant && (
+              <div className="mt-1.5 text-[10px] text-muted-foreground/60 uppercase tracking-wide">
+                {message.meta.variant === "regen" ? "Yangi javob" :
+                 message.meta.variant === "continue" ? "Davomi" :
+                 message.meta.variant === "shorter" ? "Qisqa versiya" :
+                 message.meta.variant === "longer" ? "Kengaytirilgan" :
+                 message.meta.variant === "simplify" ? "Soddalashtirilgan" :
+                 message.meta.variant === "detailed" ? "Batafsil" : ""}
               </div>
             )}
           </div>
-
-          {/* Action bar for assistant messages (desktop only) */}
-          {!isUser && showActionBar && !isMobile && (
-            <MessageActionsBar
-              messageId={message.id}
-              messageContent={message.content}
-              reaction={message.reaction}
-              isStreaming={isStreaming}
-              isActionLoading={isActionLoading}
-              onReaction={handleReaction}
-              onCopy={handleCopy}
-              onShare={handleShare}
-              onContinue={handleContinue}
-              onRegenerate={handleRegenerate}
-              onVariant={handleVariant}
-              onExportPdf={onExportPdf ? handleExportPdf : undefined}
-            />
-          )}
-
-          {/* Output Format Buttons for assistant messages */}
-          {!isUser && showActionBar && !isStreaming && onFormatRequest && (
-            <OutputFormatButtons
-              onFormatRequest={handleFormatRequest}
-              disabled={isActionLoading}
-            />
-          )}
-
-          {/* Variant label if this is a variant message */}
-          {!isUser && message.meta?.variant && (
-            <div className="mt-1.5 text-[10px] text-muted-foreground/60 uppercase tracking-wide">
-              {message.meta.variant === "regen" ? "Yangi javob" :
-               message.meta.variant === "continue" ? "Davomi" :
-               message.meta.variant === "shorter" ? "Qisqa versiya" :
-               message.meta.variant === "longer" ? "Kengaytirilgan" :
-               message.meta.variant === "simplify" ? "Soddalashtirilgan" :
-               message.meta.variant === "detailed" ? "Batafsil" : ""}
-            </div>
-          )}
         </div>
-
-        {/* User Avatar */}
-        {isUser && (
-          <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center mt-0.5 shadow-lg glow-primary-subtle">
-            <User className="w-4 h-4 text-primary-foreground" />
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Mobile action sheet - single source of truth for all messages */}
       {isMobile && (
