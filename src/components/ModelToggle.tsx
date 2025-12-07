@@ -67,15 +67,18 @@ export function ModelToggle({ value, onChange, className, size = "md" }: ModelTo
         type="button"
         onClick={() => handleChange("reasoner")}
         className={cn(
-          "flex items-center gap-1.5 rounded-md transition-all duration-200",
+          "flex items-center gap-1.5 rounded-md transition-all duration-200 relative",
           isSmall ? "px-2 py-1 text-xs" : "px-3 py-1.5 text-sm",
           currentValue === "reasoner"
-            ? "bg-primary text-primary-foreground shadow-sm"
+            ? "bg-amber-500 text-white shadow-sm"
             : "text-muted-foreground hover:text-foreground hover:bg-secondary"
         )}
       >
         <Brain className={cn(isSmall ? "w-3 h-3" : "w-3.5 h-3.5")} />
         <span className="font-medium">{t('model.reasoner')}</span>
+        {currentValue === "reasoner" && (
+          <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
+        )}
       </button>
     </div>
   );
