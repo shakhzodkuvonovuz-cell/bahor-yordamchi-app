@@ -236,30 +236,37 @@ serve(async (req) => {
       .eq("user_id", user.id)
       .maybeSingle();
 
+    // Check if user is dev_unlimited (bypasses all limits)
+    const isDevUnlimited = profile?.plan === "dev_unlimited";
     const isPremium = profile?.plan && ["premium", "beta_premium", "dev_unlimited"].includes(profile.plan);
-    const dailyLimit = isPremium ? 20 : 5;
+    const dailyLimit = isDevUnlimited ? -1 : (isPremium ? 20 : 5);
 
-    const today = new Date().toISOString().split("T")[0];
-    const { count } = await supabase
-      .from("image_generations")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .gte("created_at", today);
+    // Only check limits for non-dev users
+    if (!isDevUnlimited) {
+      const today = new Date().toISOString().split("T")[0];
+      const { count } = await supabase
+        .from("image_generations")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("created_at", today);
 
-    const usedCount = count ?? 0;
-    if (usedCount >= dailyLimit) {
-      console.log(`[${requestId}] Daily limit reached: ${usedCount}/${dailyLimit}`);
-      return new Response(
-        JSON.stringify({
-          ok: false,
-          error: `Bugungi rasm yaratish limiti tugadi (${usedCount}/${dailyLimit})`,
-          type: "LIMIT_REACHED",
-          used: usedCount,
-          limit: dailyLimit,
-          requestId,
-        }),
-        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      const usedCount = count ?? 0;
+      if (usedCount >= dailyLimit) {
+        console.log(`[${requestId}] Daily limit reached: ${usedCount}/${dailyLimit}`);
+        return new Response(
+          JSON.stringify({
+            ok: false,
+            error: `Bugungi rasm yaratish limiti tugadi (${usedCount}/${dailyLimit})`,
+            type: "LIMIT_REACHED",
+            used: usedCount,
+            limit: dailyLimit,
+            requestId,
+          }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } else {
+      console.log(`[${requestId}] Dev unlimited user - bypassing limits`);
     }
 
     // Compose final prompt with quality blocks
