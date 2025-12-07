@@ -338,6 +338,54 @@ export type Database = {
         }
         Relationships: []
       }
+      image_generations: {
+        Row: {
+          aspect_ratio: string | null
+          created_at: string
+          file_path: string
+          guidance_scale: number | null
+          id: string
+          mime_type: string
+          negative_prompt_en: string | null
+          num_inference_steps: number | null
+          prompt_en: string
+          prompt_uz: string
+          seed: number | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          aspect_ratio?: string | null
+          created_at?: string
+          file_path: string
+          guidance_scale?: number | null
+          id?: string
+          mime_type?: string
+          negative_prompt_en?: string | null
+          num_inference_steps?: number | null
+          prompt_en: string
+          prompt_uz: string
+          seed?: number | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          aspect_ratio?: string | null
+          created_at?: string
+          file_path?: string
+          guidance_scale?: number | null
+          id?: string
+          mime_type?: string
+          negative_prompt_en?: string | null
+          num_inference_steps?: number | null
+          prompt_en?: string
+          prompt_uz?: string
+          seed?: number | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

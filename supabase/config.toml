@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.circle-ai-actions]
 verify_jwt = false
+
+[functions.fireworks-generate-image]
+verify_jwt = false
