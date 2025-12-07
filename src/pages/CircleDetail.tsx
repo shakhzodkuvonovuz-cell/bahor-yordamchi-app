@@ -467,7 +467,7 @@ export default function SpaceDetail() {
       </header>
 
       {/* Tabs container */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col items-stretch min-h-0 overflow-hidden">
         {/* Tabs bar - sticky with solid background, high z-index, and pointer-events-auto */}
         <div className="flex-shrink-0 z-50 border-b border-border bg-background/95 backdrop-blur-md" style={{ position: 'sticky', top: 0 }}>
           <TabsList className="max-w-2xl mx-auto w-full justify-start px-4 bg-transparent h-11">
@@ -512,17 +512,17 @@ export default function SpaceDetail() {
         </div>
 
         {/* Chat Tab - takes remaining height */}
-        <TabsContent value="chat" className="flex-1 !mt-0 min-h-0 overflow-hidden tab-panel-transition" style={{ display: 'flex', flexDirection: 'column' }}>
+        <TabsContent value="chat" className="flex-1 min-h-0 overflow-hidden" style={{ display: 'flex', flexDirection: 'column' }}>
           <CircleChatTab spaceId={id || ""} onSendAICardRef={sendAICardToChatRef} />
         </TabsContent>
 
         {/* Files Tab */}
-        <TabsContent value="files" className="flex-1 min-h-0 !mt-0 overflow-y-auto tab-panel-transition">
+        <TabsContent value="files" forceMount className="flex-1 min-h-0 overflow-y-auto data-[state=inactive]:hidden">
           <CircleFilesTab spaceId={id || ""} isAdmin={isAdmin} />
         </TabsContent>
 
         {/* Natijalar (AI Results) Tab - lazy loaded */}
-        <TabsContent value="natijalar" className="flex-1 min-h-0 !mt-0 overflow-y-auto tab-panel-transition">
+        <TabsContent value="natijalar" forceMount className="flex-1 min-h-0 overflow-y-auto data-[state=inactive]:hidden">
           <div className="max-w-2xl mx-auto px-4 pt-4 space-y-4 pb-[env(safe-area-inset-bottom)]">
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm text-muted-foreground">AI tomonidan yaratilgan natijalar</p>
@@ -573,7 +573,7 @@ export default function SpaceDetail() {
         </TabsContent>
 
         {/* Members Tab */}
-        <TabsContent value="members" className="flex-1 min-h-0 !mt-0 overflow-y-auto tab-panel-transition">
+        <TabsContent value="members" forceMount className="flex-1 min-h-0 overflow-y-auto data-[state=inactive]:hidden">
           {membersLoading ? (
             <CircleTabSkeleton type="members" />
           ) : membersError ? (
@@ -642,7 +642,7 @@ export default function SpaceDetail() {
 
         {/* Requests Tab (Admin only) */}
         {isAdmin && (
-          <TabsContent value="requests" className="flex-1 min-h-0 !mt-0 overflow-y-auto tab-panel-transition">
+          <TabsContent value="requests" forceMount className="flex-1 min-h-0 overflow-y-auto data-[state=inactive]:hidden">
             {requestsLoading ? (
               <CircleTabSkeleton type="requests" />
             ) : requestsError ? (
