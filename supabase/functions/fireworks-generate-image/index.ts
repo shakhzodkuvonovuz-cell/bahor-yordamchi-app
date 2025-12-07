@@ -1,5 +1,5 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,21 +7,20 @@ const corsHeaders = {
 };
 
 const FIREWORKS_API_URL = "https://api.fireworks.ai/inference/v1/workflows/accounts/fireworks/models/flux-1-schnell-fp8/text_to_image";
-
 const ALLOWED_ASPECT_RATIOS = ["1:1", "16:9", "9:16", "4:5", "5:4", "3:4", "4:3", "3:2", "2:3"];
+const MAX_PROMPT_LENGTH = 250;
 
-// Detect if text contains non-English characters (Uzbek, Russian, Turkish, etc.)
+// Detect if text contains non-English characters
 function needsTranslation(text: string): boolean {
-  // Check for Cyrillic, Uzbek special chars, Turkish chars, or common non-ASCII
   const nonEnglishPattern = /[а-яА-ЯёЁ\u0400-\u04FF'ʻʼğüşöçıİ]/;
   return nonEnglishPattern.test(text);
 }
 
-// Translate prompt to English using DeepSeek
-async function translateToEnglish(prompt: string): Promise<string> {
+// Translate prompt to English using Lovable AI Gateway
+async function translateToEnglish(prompt: string, requestId: string): Promise<string> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!LOVABLE_API_KEY) {
-    console.log("[fireworks] No LOVABLE_API_KEY, returning original prompt");
+    console.log(`[${requestId}] No LOVABLE_API_KEY, skipping translation`);
     return prompt;
   }
 
@@ -47,49 +46,71 @@ async function translateToEnglish(prompt: string): Promise<string> {
     });
 
     if (!response.ok) {
-      console.error("[fireworks] Translation API error:", response.status);
+      console.error(`[${requestId}] Translation API error:`, response.status);
       return prompt;
     }
 
     const data = await response.json();
     const translated = data.choices?.[0]?.message?.content?.trim();
-    console.log("[fireworks] Translated:", prompt, "->", translated);
+    console.log(`[${requestId}] Translated: "${prompt}" -> "${translated}"`);
     return translated || prompt;
   } catch (error) {
-    console.error("[fireworks] Translation failed:", error);
+    console.error(`[${requestId}] Translation failed:`, error);
     return prompt;
   }
 }
 
 serve(async (req) => {
+  const requestId = crypto.randomUUID().slice(0, 8);
+  console.log(`[${requestId}] fireworks-generate-image start`);
+
+  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
   try {
+    // Validate required env vars early
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const fireworksApiKey = Deno.env.get("FIREWORKS_API_KEY");
+
+    if (!supabaseUrl) {
+      throw new Error("Missing env: SUPABASE_URL");
+    }
+    if (!supabaseServiceKey) {
+      throw new Error("Missing env: SUPABASE_SERVICE_ROLE_KEY");
+    }
+    if (!fireworksApiKey) {
+      throw new Error("Missing env: FIREWORKS_API_KEY");
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
     // Auth check
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ ok: false, error: "Avtorizatsiya talab qilinadi" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.log(`[${requestId}] No auth header`);
+      return new Response(
+        JSON.stringify({ ok: false, error: "Avtorizatsiya talab qilinadi", requestId }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
+
     if (authError || !user) {
-      return new Response(JSON.stringify({ ok: false, error: "Avtorizatsiya xatosi" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.log(`[${requestId}] Auth error:`, authError?.message);
+      return new Response(
+        JSON.stringify({ ok: false, error: "Avtorizatsiya xatosi", requestId }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
+    console.log(`[${requestId}] User authenticated: ${user.id}`);
+
+    // Parse request body
     const body = await req.json();
     const {
       prompt,
@@ -102,19 +123,19 @@ serve(async (req) => {
       attachToChat = false,
     } = body;
 
-    console.log(`[fireworks] User ${user.id}, prompt: "${prompt}", aspectRatio: ${aspectRatio}`);
+    console.log(`[${requestId}] Prompt: "${prompt}", aspectRatio: ${aspectRatio}`);
 
     if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
-      return new Response(JSON.stringify({ ok: false, error: "Prompt kiriting" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ ok: false, error: "Prompt kiriting", requestId }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Validate aspect ratio
     const validAspectRatio = ALLOWED_ASPECT_RATIOS.includes(aspectRatio) ? aspectRatio : "1:1";
 
-    // Check user limits (simple: 10/day for beta_premium, 3/day for free)
+    // Check user limits
     const { data: profile } = await supabase
       .from("profiles")
       .select("plan")
@@ -133,6 +154,7 @@ serve(async (req) => {
 
     const usedCount = count ?? 0;
     if (usedCount >= dailyLimit) {
+      console.log(`[${requestId}] Daily limit reached: ${usedCount}/${dailyLimit}`);
       return new Response(
         JSON.stringify({
           ok: false,
@@ -140,50 +162,36 @@ serve(async (req) => {
           type: "LIMIT_REACHED",
           used: usedCount,
           limit: dailyLimit,
+          requestId,
         }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Clean and limit prompt length (FLUX schnell has strict token limits ~77 tokens)
-    const MAX_PROMPT_LENGTH = 250;
+    // Clean and limit prompt
     let promptUz = prompt.trim();
-    
-    // Remove any --ar or similar flags from the prompt
     promptUz = promptUz.replace(/--ar\s*\d+:\d+/gi, "").trim();
-    // Remove Style: prefix text that makes prompts too long
     promptUz = promptUz.replace(/Style:\s*/gi, "").trim();
-    
-    // Truncate if too long
+
     if (promptUz.length > MAX_PROMPT_LENGTH) {
       promptUz = promptUz.slice(0, MAX_PROMPT_LENGTH).trim();
-      console.log("[fireworks] Prompt truncated to", MAX_PROMPT_LENGTH, "chars");
+      console.log(`[${requestId}] Prompt truncated to ${MAX_PROMPT_LENGTH} chars`);
     }
-    
+
+    // Translate if needed
     let promptEn = promptUz;
-    
     if (needsTranslation(promptUz)) {
-      promptEn = await translateToEnglish(promptUz);
+      promptEn = await translateToEnglish(promptUz, requestId);
     }
-    
-    // Also limit translated prompt (strict limit for FLUX)
+
     if (promptEn.length > MAX_PROMPT_LENGTH) {
       promptEn = promptEn.slice(0, MAX_PROMPT_LENGTH).trim();
-      console.log("[fireworks] Translated prompt truncated to", MAX_PROMPT_LENGTH, "chars");
+      console.log(`[${requestId}] Translated prompt truncated`);
     }
 
-    // Call Fireworks API
-    const FIREWORKS_API_KEY = Deno.env.get("FIREWORKS_API_KEY");
-    if (!FIREWORKS_API_KEY) {
-      console.error("[fireworks] FIREWORKS_API_KEY not configured");
-      return new Response(JSON.stringify({ ok: false, error: "API konfiguratsiyasi xatosi" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    console.log(`[${requestId}] Calling Fireworks API with prompt: "${promptEn}"`);
 
-    console.log("[fireworks] Calling Fireworks API with prompt:", promptEn);
-
+    // Build Fireworks request
     const fireworksBody: Record<string, unknown> = {
       prompt: promptEn,
       aspect_ratio: validAspectRatio,
@@ -194,15 +202,15 @@ serve(async (req) => {
     if (negativePrompt) {
       fireworksBody.negative_prompt = negativePrompt;
     }
-
     if (seed > 0) {
       fireworksBody.seed = seed;
     }
 
+    // Call Fireworks API
     const fireworksResponse = await fetch(FIREWORKS_API_URL, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${FIREWORKS_API_KEY}`,
+        Authorization: `Bearer ${fireworksApiKey}`,
         "Content-Type": "application/json",
         Accept: "image/png",
       },
@@ -211,25 +219,29 @@ serve(async (req) => {
 
     if (!fireworksResponse.ok) {
       const errorText = await fireworksResponse.text();
-      console.error("[fireworks] Fireworks API error:", fireworksResponse.status, errorText);
-      
-      // Check for content filter
+      console.error(`[${requestId}] Fireworks API error:`, fireworksResponse.status, errorText);
+
       if (errorText.includes("content") || errorText.includes("filter") || errorText.includes("safety")) {
         return new Response(
-          JSON.stringify({ ok: false, error: "Rasm yaratib bo'lmadi. Iltimos, boshqa prompt kiriting." }),
+          JSON.stringify({ ok: false, error: "Rasm yaratib bo'lmadi. Iltimos, boshqa prompt kiriting.", requestId }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      
+
       return new Response(
-        JSON.stringify({ ok: false, error: "Rasm yaratishda xatolik yuz berdi" }),
+        JSON.stringify({ ok: false, error: "Rasm yaratishda xatolik yuz berdi", requestId }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Get binary PNG
-    const imageBytes = new Uint8Array(await fireworksResponse.arrayBuffer());
-    console.log("[fireworks] Image received, size:", imageBytes.length, "bytes");
+    // Get binary PNG using correct Deno-compatible approach
+    const buf = await fireworksResponse.arrayBuffer();
+    const imageBytes = new Uint8Array(buf);
+    console.log(`[${requestId}] Image received, size: ${imageBytes.length} bytes`);
+
+    if (imageBytes.length === 0) {
+      throw new Error("Fireworks returned empty image");
+    }
 
     // Generate file path
     const now = new Date();
@@ -238,7 +250,7 @@ serve(async (req) => {
     const imageId = crypto.randomUUID();
     const filePath = `${user.id}/images/${year}/${month}/${imageId}.png`;
 
-    // Upload to Supabase Storage (user-files bucket)
+    // Upload to Supabase Storage
     const { error: uploadError } = await supabase.storage
       .from("user-files")
       .upload(filePath, imageBytes, {
@@ -247,14 +259,14 @@ serve(async (req) => {
       });
 
     if (uploadError) {
-      console.error("[fireworks] Storage upload error:", uploadError);
+      console.error(`[${requestId}] Storage upload error:`, uploadError);
       return new Response(
-        JSON.stringify({ ok: false, error: "Rasmni saqlashda xatolik" }),
+        JSON.stringify({ ok: false, error: "Rasmni saqlashda xatolik", requestId }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("[fireworks] Image uploaded to:", filePath);
+    console.log(`[${requestId}] Image uploaded to: ${filePath}`);
 
     // Insert into image_generations table
     const { error: genError } = await supabase
@@ -274,11 +286,10 @@ serve(async (req) => {
       });
 
     if (genError) {
-      console.error("[fireworks] DB insert error:", genError);
-      // Don't fail, image is saved
+      console.error(`[${requestId}] DB insert error:`, genError);
     }
 
-    // Also save to user_files for Fayllarim
+    // Save to user_files
     const fileName = `bahor-image-${imageId.slice(0, 8)}.png`;
     const { error: fileError } = await supabase
       .from("user_files")
@@ -299,13 +310,12 @@ serve(async (req) => {
       });
 
     if (fileError) {
-      console.error("[fireworks] user_files insert error:", fileError);
+      console.error(`[${requestId}] user_files insert error:`, fileError);
     }
 
-    // If attachToChat and chatId, create a chat attachment message
+    // Attach to chat if requested
     if (attachToChat && chatId) {
       try {
-        // Insert chat attachment record
         const { error: attachError } = await supabase
           .from("chat_attachments")
           .insert({
@@ -319,10 +329,10 @@ serve(async (req) => {
           });
 
         if (attachError) {
-          console.error("[fireworks] Chat attachment insert error:", attachError);
+          console.error(`[${requestId}] Chat attachment insert error:`, attachError);
         }
       } catch (e) {
-        console.error("[fireworks] Failed to attach to chat:", e);
+        console.error(`[${requestId}] Failed to attach to chat:`, e);
       }
     }
 
@@ -330,6 +340,8 @@ serve(async (req) => {
     const { data: signedUrlData } = await supabase.storage
       .from("user-files")
       .createSignedUrl(filePath, 3600);
+
+    console.log(`[${requestId}] Success, returning signed URL`);
 
     return new Response(
       JSON.stringify({
@@ -340,13 +352,21 @@ serve(async (req) => {
         prompt_en: promptEn,
         prompt_uz: promptUz,
         filePath,
+        requestId,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("[fireworks] Error:", error);
+    const errMessage = error instanceof Error ? error.message : String(error);
+    const errStack = error instanceof Error ? error.stack : undefined;
+    console.error(`[${requestId}] fireworks-generate-image error:`, errMessage, errStack ?? "");
+
     return new Response(
-      JSON.stringify({ ok: false, error: error instanceof Error ? error.message : "Xatolik yuz berdi" }),
+      JSON.stringify({
+        ok: false,
+        error: "Rasm yaratishda xatolik yuz berdi",
+        requestId,
+      }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
