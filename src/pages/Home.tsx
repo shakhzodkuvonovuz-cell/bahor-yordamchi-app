@@ -211,11 +211,6 @@ export default function Home() {
           </div>
         </div>
       </div>
-
-      {/* Footer hint */}
-      <div className="text-center py-4 text-xs text-muted-foreground">
-        {t('section.exploreModes.subtitle')}
-      </div>
     </div>
   );
 }
