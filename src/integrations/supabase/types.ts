@@ -757,6 +757,8 @@ export type Database = {
         Row: {
           created_at: string | null
           goal: string | null
+          icon_color: string | null
+          icon_emoji: string | null
           id: string
           name: string
           owner_id: string
@@ -766,6 +768,8 @@ export type Database = {
         Insert: {
           created_at?: string | null
           goal?: string | null
+          icon_color?: string | null
+          icon_emoji?: string | null
           id?: string
           name: string
           owner_id: string
@@ -775,6 +779,8 @@ export type Database = {
         Update: {
           created_at?: string | null
           goal?: string | null
+          icon_color?: string | null
+          icon_emoji?: string | null
           id?: string
           name?: string
           owner_id?: string
