@@ -424,8 +424,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Footer - appears when scrolling down */}
-      <AppFooter />
+      {/* Footer hidden on /modes to keep hero clean - only visible on other pages */}
     </div>
   );
 }
