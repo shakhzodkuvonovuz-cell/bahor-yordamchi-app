@@ -49,6 +49,8 @@ import { AppFooter } from "@/components/layout/AppFooter";
 function HeroMockup() {
   const { t } = useTranslation();
   const [activeSlide, setActiveSlide] = React.useState(0);
+  const [mousePosition, setMousePosition] = React.useState({ x: 0, y: 0 });
+  const containerRef = React.useRef<HTMLDivElement>(null);
   
   // Auto-rotate slides every 5 seconds
   React.useEffect(() => {
@@ -58,6 +60,19 @@ function HeroMockup() {
     return () => clearInterval(timer);
   }, []);
   
+  // Mouse parallax effect (desktop only)
+  const handleMouseMove = React.useCallback((e: React.MouseEvent) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2);
+    const y = (e.clientY - rect.top - rect.height / 2) / (rect.height / 2);
+    setMousePosition({ x: x * 8, y: y * 8 }); // Max 8deg tilt
+  }, []);
+  
+  const handleMouseLeave = React.useCallback(() => {
+    setMousePosition({ x: 0, y: 0 });
+  }, []);
+  
   const slides = [
     { id: 'web', label: t('mockup.slide.web') },
     { id: 'image', label: t('mockup.slide.image') },
@@ -65,12 +80,27 @@ function HeroMockup() {
   ];
   
   return (
-    <div className="relative w-full max-w-md mx-auto">
-      {/* Glow effect */}
-      <div className="absolute inset-0 bg-primary/20 rounded-full scale-90 translate-y-8 blur-3xl" />
+    <div 
+      ref={containerRef}
+      className="relative w-full max-w-md mx-auto perspective-1000"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    >
+      {/* Glow effect - also reacts to mouse */}
+      <div 
+        className="absolute inset-0 bg-primary/20 rounded-full scale-90 translate-y-8 blur-3xl transition-transform duration-300 ease-out"
+        style={{
+          transform: `translate(${mousePosition.x * 2}px, ${mousePosition.y * 2 + 32}px) scale(0.9)`,
+        }}
+      />
       
-      {/* Main card */}
-      <div className="relative glass-premium rounded-2xl shadow-glow-lg animate-float-slow border border-border/40 overflow-hidden">
+      {/* Main card with 3D tilt */}
+      <div 
+        className="relative glass-premium rounded-2xl shadow-glow-lg border border-border/40 overflow-hidden transition-transform duration-300 ease-out will-change-transform"
+        style={{
+          transform: `rotateY(${mousePosition.x}deg) rotateX(${-mousePosition.y}deg) translateZ(0)`,
+        }}
+      >
         {/* Header bar */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 bg-card/50">
           <div className="flex items-center gap-3">
