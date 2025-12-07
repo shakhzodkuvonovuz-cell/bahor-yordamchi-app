@@ -455,6 +455,23 @@ export async function attachFile(
   return data as ChatAttachmentRecord;
 }
 
+export async function linkAttachmentsToMessage(
+  attachmentIds: string[],
+  messageId: string
+): Promise<void> {
+  if (attachmentIds.length === 0) return;
+  
+  const { error } = await supabase
+    .from("chat_attachments")
+    .update({ message_id: messageId })
+    .in("id", attachmentIds);
+
+  if (error) {
+    console.error("Error linking attachments to message:", error);
+    throw error;
+  }
+}
+
 export async function getAttachments(threadId: string): Promise<ChatAttachmentRecord[]> {
   const { data, error } = await supabase
     .from("chat_attachments")

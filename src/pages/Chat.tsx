@@ -929,20 +929,26 @@ export default function Chat() {
           previewUrl,
           extractedText,
           readStatus,
+          storagePath: filePath, // Store path for DB linking
         };
 
-        newAttachments.push(attachment);
-
-        // Save attachment record to DB
+        // Save attachment record to DB and store the DB ID
         if (currentThreadId && user) {
-          await chatStore.attachFile(user.id, {
-            threadId: currentThreadId,
-            path: filePath,
-            mimeType: file.type,
-            sizeBytes: file.size,
-            originalName: file.name,
-          }).catch(console.error);
+          try {
+            const dbAttachment = await chatStore.attachFile(user.id, {
+              threadId: currentThreadId,
+              path: filePath,
+              mimeType: file.type,
+              sizeBytes: file.size,
+              originalName: file.name,
+            });
+            attachment.dbId = dbAttachment.id; // Store DB ID for later linking
+          } catch (err) {
+            console.error("Error saving attachment to DB:", err);
+          }
         }
+
+        newAttachments.push(attachment);
       }
 
       if (newAttachments.length > 0) {
@@ -1057,6 +1063,16 @@ export default function Chat() {
       setMessages((prev) => 
         prev.map(m => m.id === tempUserMessageId ? { ...m, id: savedUserMessage.id } : m)
       );
+      
+      // Link pending attachments to the saved user message
+      const attachmentDbIds = attachmentsToProcess
+        .filter(att => att.dbId)
+        .map(att => att.dbId as string);
+      
+      if (attachmentDbIds.length > 0) {
+        await chatStore.linkAttachmentsToMessage(attachmentDbIds, savedUserMessage.id)
+          .catch(err => console.error("Error linking attachments:", err));
+      }
       
       // Auto-title thread if it's the first message
       const currentThread = threads.find(t => t.id === currentThreadId);
