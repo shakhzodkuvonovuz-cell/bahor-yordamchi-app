@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, FileText, Images, Merge, Split, Minimize2, Droplet, Hash, ScanText, Download, RefreshCw, Loader2, File, X, Plus, FileUp, Image, RotateCw, Lock, Unlock, Wrench, Eye, Trash2, MoreVertical } from "lucide-react";
+import { ArrowLeft, FileText, Images, Merge, Split, Minimize2, Droplet, Hash, ScanText, Download, RefreshCw, Loader2, File, X, Plus, FileUp, Image, RotateCw, Lock, Unlock, Wrench, Eye, Trash2, MoreVertical, Sparkles } from "lucide-react";
 import { FileActionsSheet } from "@/components/documents/FileActionsSheet";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import ToolsUsageBadge from "@/components/ToolsUsageBadge";
 import LimitReachedSheet from "@/components/LimitReachedSheet";
+import ImageGeneratorModal from "@/components/ImageGeneratorModal";
 
 interface UserFile {
   id: string;
@@ -28,6 +29,7 @@ interface UserFile {
 }
 
 const TOOLS = [
+  { id: "imagegen", icon: Sparkles, labelKey: "docs.tool.imagegen", premium: false, isImageGen: true },
   { id: "htmlpdf", icon: FileText, labelKey: "docs.tool.htmlpdf", premium: false },
   { id: "imagepdf", icon: Images, labelKey: "docs.tool.imagepdf", premium: false },
   { id: "officepdf", icon: FileUp, labelKey: "docs.tool.officepdf", premium: false },
@@ -46,6 +48,7 @@ const TOOLS = [
 
 const TOOL_LABELS: Record<string, Record<string, string>> = {
   uz: {
+    imagegen: "Rasm yaratish (AI)",
     htmlpdf: "Matndan PDF",
     imagepdf: "Rasmlardan PDF",
     officepdf: "Office → PDF",
@@ -62,6 +65,7 @@ const TOOL_LABELS: Record<string, Record<string, string>> = {
     repair: "Tuzatish",
   },
   en: {
+    imagegen: "Generate Image (AI)",
     htmlpdf: "Text to PDF",
     imagepdf: "Images to PDF",
     officepdf: "Office → PDF",
@@ -78,6 +82,7 @@ const TOOL_LABELS: Record<string, Record<string, string>> = {
     repair: "Repair",
   },
   ru: {
+    imagegen: "Создать изображение (AI)",
     htmlpdf: "Текст в PDF",
     imagepdf: "Изображения в PDF",
     officepdf: "Office → PDF",
@@ -94,6 +99,7 @@ const TOOL_LABELS: Record<string, Record<string, string>> = {
     repair: "Восстановить",
   },
   tr: {
+    imagegen: "Görsel Oluştur (AI)",
     htmlpdf: "Metinden PDF",
     imagepdf: "Resimlerden PDF",
     officepdf: "Office → PDF",
@@ -125,6 +131,7 @@ export default function DocumentTools() {
   const [showFileActions, setShowFileActions] = useState(false);
   const [showLimitSheet, setShowLimitSheet] = useState(false);
   const [limitData, setLimitData] = useState<{ used: number; limit: number } | null>(null);
+  const [showImageGenModal, setShowImageGenModal] = useState(false);
   
   // Form states
   const [title, setTitle] = useState("");
@@ -624,19 +631,27 @@ export default function DocumentTools() {
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                   {TOOLS.map((tool) => {
                     const Icon = tool.icon;
-                    const isSelected = selectedTool === tool.id;
+                    const isImageGen = (tool as any).isImageGen;
+                    const isSelected = !isImageGen && selectedTool === tool.id;
                     return (
                       <Button
                         key={tool.id}
                         variant={isSelected ? "default" : "outline"}
-                        className={`flex flex-col items-center gap-1 h-auto py-2.5 px-2 text-xs ${tool.premium ? "border-amber-500/50" : ""}`}
-                        onClick={() => setSelectedTool(tool.id)}
+                        className={`flex flex-col items-center gap-1 h-auto py-2.5 px-2 text-xs ${tool.premium ? "border-amber-500/50" : ""} ${isImageGen ? "border-primary/50 bg-primary/5" : ""}`}
+                        onClick={() => {
+                          if (isImageGen) {
+                            setShowImageGenModal(true);
+                          } else {
+                            setSelectedTool(tool.id);
+                          }
+                        }}
                       >
-                        <Icon className="h-4 w-4" />
+                        <Icon className={`h-4 w-4 ${isImageGen ? "text-primary" : ""}`} />
                         <span className="text-[10px] text-center leading-tight line-clamp-1">
                           {TOOL_LABELS[language]?.[tool.id] || TOOL_LABELS.en[tool.id]}
                         </span>
                         {tool.premium && <span className="text-[8px] text-amber-500">Pro</span>}
+                        {isImageGen && <span className="text-[8px] text-primary">AI</span>}
                       </Button>
                     );
                   })}
@@ -1030,6 +1045,12 @@ export default function DocumentTools() {
         scope="pdf_monthly"
         used={limitData?.used || 0}
         limit={limitData?.limit || 0}
+      />
+
+      <ImageGeneratorModal
+        open={showImageGenModal}
+        onOpenChange={setShowImageGenModal}
+        onImageGenerated={() => loadFiles()}
       />
     </div>
   );
