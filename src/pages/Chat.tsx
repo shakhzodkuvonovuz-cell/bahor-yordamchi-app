@@ -35,6 +35,7 @@ import { useTranslation } from "@/i18n/LanguageProvider";
 import { getTranslation } from "@/data/translations";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { generateChatTitle } from "@/utils/generateChatTitle";
+import { isFreshSession, markSessionInitialized } from "@/utils/chatSession";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDailyUsageServer } from "@/hooks/useEntitlements";
 import * as chatStore from "@/lib/chatStore";
@@ -449,10 +450,12 @@ export default function Chat() {
     }
   }, [currentThreadId]);
 
-  // Handle ?new=1 query param to create new chat
+  // Handle ?new=<id> query param to create new chat
+  // Uses unique id per click to ensure each "Yangi chat" click creates a truly new chat
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    if (params.get("new") === "1" && user && mode) {
+    const newParam = params.get("new");
+    if (newParam && user && mode) {
       // Create a new chat thread immediately
       const createNewThread = async () => {
         try {
@@ -464,6 +467,8 @@ export default function Chat() {
           setCurrentThreadId(newThread.id);
           setMessages([]);
           setInputValue("");
+          // Mark session as initialized since we're starting fresh
+          markSessionInitialized();
           // Clear the query param
           navigate(location.pathname, { replace: true });
           // Focus input
@@ -967,7 +972,34 @@ export default function Chat() {
   };
 
   const handleSendMessage = async (content: string) => {
-    if ((!content.trim() && pendingAttachments.length === 0) || isLoading || typing || !mode || !user || !currentThreadId) return;
+    if ((!content.trim() && pendingAttachments.length === 0) || isLoading || typing || !mode || !user) return;
+    
+    // FRESH SESSION CHECK: If this is a fresh session (tab just opened) and user is sending 
+    // the first message, create a new chat first to avoid appending to old chat
+    if (isFreshSession() && currentThreadId) {
+      // Create a new thread for this fresh session
+      try {
+        const newThread = await chatStore.createThread(user.id, {
+          title: t.chat.defaultChatTitle,
+          mode,
+        });
+        setThreads(prev => [newThread, ...prev]);
+        setCurrentThreadId(newThread.id);
+        setMessages([]);
+        markSessionInitialized();
+        // Wait a tick for state to update, then re-call handleSendMessage
+        setTimeout(() => handleSendMessage(content), 50);
+        return;
+      } catch (error) {
+        console.error("Error creating fresh session chat:", error);
+      }
+    }
+    
+    // Must have currentThreadId at this point
+    if (!currentThreadId) return;
+    
+    // Mark session as initialized (user has sent a message)
+    markSessionInitialized();
     
     if (editingMessageId) {
       setEditingMessageId(null);

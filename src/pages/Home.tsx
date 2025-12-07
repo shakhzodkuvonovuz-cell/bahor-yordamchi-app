@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { AppFooter } from "@/components/layout/AppFooter";
 import bahorLogo from "@/assets/bahor-logo.png";
+import { markSessionInitialized } from "@/utils/chatSession";
 
 interface PendingAttachment {
   id: string;
@@ -177,6 +178,10 @@ export default function Home() {
   const handleSend = async () => {
     if (!input.trim() && pendingAttachments.length === 0) return;
 
+    // Mark session as initialized when user sends from /modes
+    // This ensures the first message will go into a new chat
+    markSessionInitialized();
+
     // If we have attachments, upload them first then navigate with attachments
     if (pendingAttachments.length > 0 && user) {
       setIsUploading(true);
@@ -209,7 +214,9 @@ export default function Home() {
           });
         }
 
-        navigate(`/chat/${selectedMode}`, { 
+        // Navigate with ?new to force new chat creation
+        const newChatId = crypto.randomUUID?.() ?? Date.now().toString();
+        navigate(`/chat/${selectedMode}?new=${newChatId}`, { 
           state: { 
             initialMessage: input,
             attachments: uploadedAttachments,
@@ -226,7 +233,9 @@ export default function Home() {
         setIsUploading(false);
       }
     } else {
-      navigate(`/chat/${selectedMode}`, { state: { initialMessage: input } });
+      // Navigate with ?new to force new chat creation
+      const newChatId = crypto.randomUUID?.() ?? Date.now().toString();
+      navigate(`/chat/${selectedMode}?new=${newChatId}`, { state: { initialMessage: input } });
     }
   };
 
@@ -238,7 +247,9 @@ export default function Home() {
   };
 
   const handlePromptChip = (mode: string, prompt: string) => {
-    navigate(`/chat/${mode}`, { state: { initialMessage: prompt } });
+    markSessionInitialized();
+    const newChatId = crypto.randomUUID?.() ?? Date.now().toString();
+    navigate(`/chat/${mode}?new=${newChatId}`, { state: { initialMessage: prompt } });
   };
 
   return (

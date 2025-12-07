@@ -7,6 +7,7 @@ import BahorCard, { parseMessageForCards, hasCardContent } from "@/components/ch
 import { CollapsibleMessage, OutputFormatButtons } from "@/components/chat";
 import { formatAssistantText } from "@/lib/formatAssistant";
 import { track } from "@/lib/analytics";
+import { ImageLightbox } from "@/components/ImageLightbox";
 
 interface ChatMessageProps {
   message: Message;
@@ -47,6 +48,7 @@ export default function ChatMessage({
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const [isPressed, setIsPressed] = useState(false);
   const [showMobileSheet, setShowMobileSheet] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   // Parse message for Bahor Cards (only for AI messages)
   const hasCards = !isUser && hasCardContent(message.content);
@@ -137,25 +139,25 @@ export default function ChatMessage({
                 <img
                   src={attachment.url}
                   alt={attachment.name}
-                  className="max-w-full max-h-72 rounded-xl"
+                  className="max-w-full max-h-72 rounded-xl cursor-pointer hover:opacity-95 transition-opacity"
+                  onClick={() => setLightboxImage(attachment.url!)}
                   onError={(e) => {
                     console.error('[ChatMessage] Image failed to load:', attachment.url);
                     (e.target as HTMLImageElement).style.display = 'none';
                   }}
                 />
                 <div className="absolute bottom-2 right-2 flex gap-1.5 opacity-0 group-hover/img:opacity-100 transition-opacity">
-                  <a
-                    href={attachment.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    onClick={() => setLightboxImage(attachment.url!)}
                     className="w-8 h-8 rounded-lg bg-black/60 hover:bg-black/80 flex items-center justify-center text-white transition-colors"
-                    title="Open in new tab"
+                    title="View fullscreen"
                   >
                     <ExternalLink className="w-4 h-4" />
-                  </a>
+                  </button>
                   <button
                     onClick={async (e) => {
                       e.preventDefault();
+                      e.stopPropagation();
                       try {
                         const response = await fetch(attachment.url!);
                         const blob = await response.blob();
@@ -400,6 +402,13 @@ export default function ChatMessage({
           onExportPdf={!isUser && onExportPdf ? handleExportPdf : undefined}
         />
       )}
+
+      {/* Image Lightbox with pinch/zoom/pan */}
+      <ImageLightbox
+        imageUrl={lightboxImage}
+        alt="Attachment"
+        onClose={() => setLightboxImage(null)}
+      />
     </>
   );
 }
