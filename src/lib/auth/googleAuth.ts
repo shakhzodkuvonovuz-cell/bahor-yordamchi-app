@@ -51,35 +51,45 @@ export const getPlatformName = (): string => {
 };
 
 /**
- * Parse OAuth tokens from deep link URL
- * Format: bahorai://auth-callback#access_token=...&refresh_token=...&...
+ * Parse OAuth data from deep link URL
+ * Supports both formats:
+ * - Hash tokens: bahorai://auth-callback#access_token=...&refresh_token=...
+ * - Code flow: bahorai://auth-callback?code=...
  */
-const parseOAuthTokensFromUrl = (url: string): { accessToken: string; refreshToken: string } | null => {
+type OAuthData = 
+  | { type: 'tokens'; accessToken: string; refreshToken: string }
+  | { type: 'code'; code: string };
+
+const parseOAuthDataFromUrl = (url: string): OAuthData | null => {
   try {
-    // Extract hash fragment
+    // First check for ?code= (PKCE code flow)
+    const urlObj = new URL(url);
+    const code = urlObj.searchParams.get('code');
+    
+    if (code) {
+      console.log('[GoogleAuth] Found authorization code in URL');
+      return { type: 'code', code };
+    }
+
+    // Then check for #access_token (implicit flow)
     const hashIndex = url.indexOf('#');
-    if (hashIndex === -1) {
-      console.log('[GoogleAuth] No hash fragment in URL');
-      return null;
+    if (hashIndex !== -1) {
+      const hashFragment = url.substring(hashIndex + 1);
+      const params = new URLSearchParams(hashFragment);
+
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+
+      if (accessToken && refreshToken) {
+        console.log('[GoogleAuth] Found tokens in URL hash');
+        return { type: 'tokens', accessToken, refreshToken };
+      }
     }
 
-    const hashFragment = url.substring(hashIndex + 1);
-    const params = new URLSearchParams(hashFragment);
-
-    const accessToken = params.get('access_token');
-    const refreshToken = params.get('refresh_token');
-
-    if (!accessToken || !refreshToken) {
-      console.log('[GoogleAuth] Missing tokens in URL', { 
-        hasAccessToken: !!accessToken, 
-        hasRefreshToken: !!refreshToken 
-      });
-      return null;
-    }
-
-    return { accessToken, refreshToken };
+    console.log('[GoogleAuth] No valid OAuth data in URL');
+    return null;
   } catch (err) {
-    console.error('[GoogleAuth] Failed to parse tokens from URL:', err);
+    console.error('[GoogleAuth] Failed to parse OAuth data from URL:', err);
     return null;
   }
 };
@@ -108,28 +118,41 @@ export const setupOAuthDeepLinkListener = (
       return;
     }
 
-    const tokens = parseOAuthTokensFromUrl(url);
+    const oauthData = parseOAuthDataFromUrl(url);
 
-    if (!tokens) {
-      console.log('[GoogleAuth] No valid tokens in deep link, ignoring');
+    if (!oauthData) {
+      console.log('[GoogleAuth] No valid OAuth data in deep link, ignoring');
       return;
     }
 
     try {
-      console.log('[GoogleAuth] Setting session with tokens...');
-      
-      const { data, error } = await supabase.auth.setSession({
-        access_token: tokens.accessToken,
-        refresh_token: tokens.refreshToken,
-      });
+      let sessionError: Error | null = null;
+      let userEmail: string | null = null;
 
-      if (error) {
-        console.error('[GoogleAuth] Failed to set session:', error);
-        onError(error.message);
+      if (oauthData.type === 'code') {
+        // PKCE code flow - exchange code for session
+        console.log('[GoogleAuth] Exchanging authorization code for session...');
+        const { data, error } = await supabase.auth.exchangeCodeForSession(oauthData.code);
+        sessionError = error;
+        userEmail = data?.user?.email ?? null;
+      } else {
+        // Implicit flow - set session directly with tokens
+        console.log('[GoogleAuth] Setting session with tokens...');
+        const { data, error } = await supabase.auth.setSession({
+          access_token: oauthData.accessToken,
+          refresh_token: oauthData.refreshToken,
+        });
+        sessionError = error;
+        userEmail = data?.user?.email ?? null;
+      }
+
+      if (sessionError) {
+        console.error('[GoogleAuth] Failed to establish session:', sessionError);
+        onError(sessionError.message);
         return;
       }
 
-      console.log('[GoogleAuth] Session set successfully:', data.user?.email);
+      console.log('[GoogleAuth] Session established successfully:', userEmail);
 
       // Close the browser
       try {
@@ -141,7 +164,7 @@ export const setupOAuthDeepLinkListener = (
 
       onSuccess();
     } catch (err) {
-      console.error('[GoogleAuth] Unexpected error setting session:', err);
+      console.error('[GoogleAuth] Unexpected error establishing session:', err);
       onError('Failed to complete sign in');
     }
   };
