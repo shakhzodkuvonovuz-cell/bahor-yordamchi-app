@@ -1655,6 +1655,7 @@ export default function Chat() {
               timestamp: new Date(),
             };
             setMessages((prev) => [...prev, newAssistantMessage]);
+            setLastAssistantMessageId(assistantId);
             assistantMessageCreated = true;
           } else {
             setMessages((prev) =>
