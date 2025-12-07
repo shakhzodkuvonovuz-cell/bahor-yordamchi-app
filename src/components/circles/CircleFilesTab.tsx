@@ -301,7 +301,7 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-4">
+    <div className="max-w-2xl mx-auto px-4 pt-4 pb-[env(safe-area-inset-bottom)]">
       {/* Upload Button */}
       <div className="mb-4">
         <input
@@ -326,9 +326,9 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
 
       {/* Files List */}
       {files.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-          <p>{language === "uz" ? "Hali fayllar yo'q" : "No files yet"}</p>
+        <div className="text-center py-8 text-muted-foreground">
+          <FileText className="w-10 h-10 mx-auto mb-3 opacity-40" />
+          <p className="text-sm">{language === "uz" ? "Hali fayllar yo'q" : "No files yet"}</p>
         </div>
       ) : (
         <div className="space-y-2">

@@ -523,7 +523,7 @@ export default function SpaceDetail() {
 
         {/* Natijalar (AI Results) Tab - lazy loaded */}
         <TabsContent value="natijalar" className="flex-1 min-h-0 m-0 overflow-y-auto tab-panel-transition">
-          <div className="max-w-2xl mx-auto px-4 py-4 space-y-4 pb-[env(safe-area-inset-bottom)]">
+          <div className="max-w-2xl mx-auto px-4 pt-4 space-y-4 pb-[env(safe-area-inset-bottom)]">
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm text-muted-foreground">AI tomonidan yaratilgan natijalar</p>
               <CircleAIActionsPanel 
@@ -548,10 +548,10 @@ export default function SpaceDetail() {
                 </Button>
               </div>
             ) : aiCards.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
+              <div className="text-center py-8 text-muted-foreground">
                 <Sparkles className="w-10 h-10 mx-auto mb-3 opacity-40" />
-                <p className="font-medium">Hali natijalar yo'q</p>
-                <p className="text-sm mt-1">AI Amallar tugmasini bosib natija yarating</p>
+                <p className="font-medium text-sm">Hali natijalar yo'q</p>
+                <p className="text-xs mt-1">AI Amallar tugmasini bosib natija yarating</p>
               </div>
             ) : (
               aiCards.map((card) => (
@@ -587,11 +587,14 @@ export default function SpaceDetail() {
               </Button>
             </div>
           ) : members.length === 0 ? (
-            <div className="max-w-2xl mx-auto px-4 py-4 text-center py-12 text-muted-foreground">
-              {language === "uz" ? "A'zolar yo'q" : "No members"}
+            <div className="max-w-2xl mx-auto px-4 pt-4">
+              <div className="text-center py-8 text-muted-foreground">
+                <Users className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                <p className="text-sm">{language === "uz" ? "A'zolar yo'q" : "No members"}</p>
+              </div>
             </div>
           ) : (
-            <div className="max-w-2xl mx-auto px-4 py-4 space-y-2 pb-[env(safe-area-inset-bottom)]">
+            <div className="max-w-2xl mx-auto px-4 pt-4 space-y-2 pb-[env(safe-area-inset-bottom)]">
               {members.map((member) => {
                 const initials = member.name?.split(" ").map(n => n.charAt(0).toUpperCase()).join("").slice(0, 2) || "U";
                 return (
@@ -653,13 +656,14 @@ export default function SpaceDetail() {
                 </Button>
               </div>
             ) : requests.length === 0 ? (
-              <div className="max-w-2xl mx-auto px-4 py-4">
-                <div className="text-center py-12 text-muted-foreground">
-                  {language === "uz" ? "So'rovlar yo'q" : "No requests"}
+              <div className="max-w-2xl mx-auto px-4 pt-4">
+                <div className="text-center py-8 text-muted-foreground">
+                  <UserPlus className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                  <p className="text-sm">{language === "uz" ? "So'rovlar yo'q" : "No requests"}</p>
                 </div>
               </div>
             ) : (
-              <div className="max-w-2xl mx-auto px-4 py-4 space-y-2">
+              <div className="max-w-2xl mx-auto px-4 pt-4 space-y-2 pb-[env(safe-area-inset-bottom)]">
                 {requests.map((req) => {
                   const displayName = req.requester_name || "User";
                   const initials = displayName.charAt(0).toUpperCase();
