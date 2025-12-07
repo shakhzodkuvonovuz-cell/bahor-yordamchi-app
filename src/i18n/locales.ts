@@ -17,6 +17,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     // Subscription
     'subscription.upgrade': "Premiumga o'tish",
     
+    // Sidebar
+    'sidebar.new_chat': 'Yangi chat',
+    'sidebar.account': 'Hisob',
+    
     // Header & Navigation
     'nav.home': 'Bosh sahifa',
     'nav.features': 'Imkoniyatlar',
@@ -592,6 +596,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     // Subscription
     'subscription.upgrade': 'Upgrade to Premium',
     
+    // Sidebar
+    'sidebar.new_chat': 'New Chat',
+    'sidebar.account': 'Account',
+    
     // Header & Navigation
     'nav.home': 'Home',
     'nav.features': 'Features',
@@ -1155,6 +1163,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     
     // Subscription
     'subscription.upgrade': 'Перейти на Premium',
+    
+    // Sidebar
+    'sidebar.new_chat': 'Новый чат',
+    'sidebar.account': 'Аккаунт',
     'app.tagline.main': 'Первый узбекский искусственный интеллект — для узбеков.',
     'app.tagline.sub': 'Быстрый ИИ-ассистент, созданный специально для узбекского языка и культуры.',
     
@@ -1661,6 +1673,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     
     // Subscription
     'subscription.upgrade': "Premium'a geç",
+    
+    // Sidebar
+    'sidebar.new_chat': 'Yeni Sohbet',
+    'sidebar.account': 'Hesap',
     'app.tagline.main': 'İlk Özbek yapay zekâsı — Özbekler için.',
     'app.tagline.sub': 'Özbek dili ve kültürü için özel olarak tasarlanmış, çok hızlı bir yapay zekâ asistanı.',
     

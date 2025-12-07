@@ -1,10 +1,10 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { 
-  Sparkles,
+  PenLine,
   MessageSquare, 
+  Sparkles,
   Users, 
   FileText, 
-  Settings,
   MessageCircle,
   Crown,
   HelpCircle,
@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n/LanguageProvider";
+import { useAuth } from "@/contexts/AuthContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import bahorLogo from "@/assets/bahor-logo.png";
 
 interface SidebarV2Props {
@@ -26,15 +28,15 @@ interface NavItem {
   labelKey: string;
   icon: React.ElementType;
   path: string;
-  badge?: string;
+  isNewChat?: boolean;
 }
 
 const PRIMARY_NAV: NavItem[] = [
-  { id: "home", labelKey: "nav.modes", icon: Sparkles, path: "/modes" },
+  { id: "new-chat", labelKey: "sidebar.new_chat", icon: PenLine, path: "/chat/general", isNewChat: true },
   { id: "chat", labelKey: "nav.chat", icon: MessageSquare, path: "/chat/general" },
+  { id: "modes", labelKey: "nav.modes", icon: Sparkles, path: "/modes" },
   { id: "circles", labelKey: "nav.circles", icon: Users, path: "/circles" },
   { id: "tools", labelKey: "nav.tools", icon: FileText, path: "/tools/documents" },
-  { id: "settings", labelKey: "settings.title", icon: Settings, path: "/settings" },
 ];
 
 const SECONDARY_NAV: NavItem[] = [
@@ -47,8 +49,11 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
+  const { profile } = useAuth();
 
-  const isActive = (path: string) => {
+  const isActive = (path: string, isNewChat?: boolean) => {
+    // New chat button is never "active" visually
+    if (isNewChat) return false;
     if (path === "/modes") {
       return location.pathname === "/modes";
     }
@@ -61,9 +66,31 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
     return location.pathname.startsWith(path);
   };
 
-  const handleNavClick = (path: string) => {
-    navigate(path);
+  const handleNavClick = (item: NavItem) => {
+    if (item.isNewChat) {
+      // Navigate to chat with new=1 to trigger new chat creation
+      navigate("/chat/general?new=1");
+    } else {
+      navigate(item.path);
+    }
     onNavigate?.();
+  };
+
+  const getUserInitials = () => {
+    if (profile?.first_name && profile?.last_name) {
+      return `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase();
+    }
+    if (profile?.full_name) {
+      const parts = profile.full_name.split(" ");
+      if (parts.length >= 2) {
+        return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+      }
+      return profile.full_name[0].toUpperCase();
+    }
+    if (profile?.email) {
+      return profile.email[0].toUpperCase();
+    }
+    return "U";
   };
 
   return (
@@ -87,27 +114,30 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
       </div>
 
       {/* Primary Navigation */}
-      <nav className="flex-1 py-3 px-2 space-y-1 overflow-y-auto">
+      <nav className="flex-1 py-4 px-3 space-y-1.5 overflow-y-auto">
         {PRIMARY_NAV.map((item) => {
           const Icon = item.icon;
-          const active = isActive(item.path);
+          const active = isActive(item.path, item.isNewChat);
+          const isNewChatBtn = item.isNewChat;
+          
           return (
             <button
               key={item.id}
-              onClick={() => handleNavClick(item.path)}
+              onClick={() => handleNavClick(item)}
               title={collapsed ? t(item.labelKey) : undefined}
               className={cn(
-                "w-full flex items-center gap-3 rounded-lg transition-all duration-200",
-                collapsed ? "justify-center px-2 py-3" : "px-3 py-2.5",
-                active 
-                  ? "bg-primary/10 text-primary font-medium" 
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                "w-full flex items-center gap-3 rounded-xl transition-all duration-200",
+                collapsed ? "justify-center px-2 py-3" : "px-4 py-3",
+                isNewChatBtn 
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90 font-medium shadow-sm mb-3" 
+                  : active 
+                    ? "bg-accent text-accent-foreground font-medium" 
+                    : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
               )}
             >
               <Icon className={cn(
                 "flex-shrink-0 transition-colors",
-                collapsed ? "w-5 h-5" : "w-5 h-5",
-                active && "text-primary"
+                "w-5 h-5"
               )} />
               {!collapsed && (
                 <span className="text-sm truncate">{t(item.labelKey)}</span>
@@ -118,31 +148,31 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
       </nav>
 
       {/* Divider */}
-      <div className="px-4">
-        <div className="h-px bg-border" />
+      <div className="px-4 py-2">
+        <div className="h-px bg-border/60" />
       </div>
 
       {/* Secondary Navigation */}
-      <nav className="py-3 px-2 space-y-1">
+      <nav className="py-2 px-3 space-y-1">
         {SECONDARY_NAV.map((item) => {
           const Icon = item.icon;
           const isPremium = item.id === "premium";
           return (
             <button
               key={item.id}
-              onClick={() => handleNavClick(item.path)}
+              onClick={() => handleNavClick(item)}
               title={collapsed ? t(item.labelKey) : undefined}
               className={cn(
                 "w-full flex items-center gap-3 rounded-lg transition-all duration-200",
-                collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2",
+                collapsed ? "justify-center px-2 py-2.5" : "px-4 py-2.5",
                 isPremium 
                   ? "text-amber-500 hover:bg-amber-500/10"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                  : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
               )}
             >
               <Icon className={cn(
                 "flex-shrink-0",
-                collapsed ? "w-4 h-4" : "w-4 h-4",
+                "w-4 h-4",
                 isPremium && "text-amber-500"
               )} />
               {!collapsed && (
@@ -152,6 +182,36 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
           );
         })}
       </nav>
+
+      {/* Account Section */}
+      <div className="px-3 py-3 border-t border-border">
+        <button
+          onClick={() => { navigate("/settings"); onNavigate?.(); }}
+          title={collapsed ? t("sidebar.account") : undefined}
+          className={cn(
+            "w-full flex items-center gap-3 rounded-xl transition-all duration-200 hover:bg-accent/50",
+            collapsed ? "justify-center px-2 py-3" : "px-3 py-3",
+            location.pathname === "/settings" && "bg-accent"
+          )}
+        >
+          <Avatar className="h-8 w-8 flex-shrink-0">
+            <AvatarImage src={profile?.avatar_url || undefined} alt="Avatar" />
+            <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
+              {getUserInitials()}
+            </AvatarFallback>
+          </Avatar>
+          {!collapsed && (
+            <div className="flex-1 text-left min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">
+                {profile?.first_name || profile?.full_name?.split(" ")[0] || t("sidebar.account")}
+              </p>
+              <p className="text-xs text-muted-foreground truncate">
+                {profile?.email || ""}
+              </p>
+            </div>
+          )}
+        </button>
+      </div>
 
       {/* Collapse Toggle - Desktop Only */}
       {onCollapse && (
