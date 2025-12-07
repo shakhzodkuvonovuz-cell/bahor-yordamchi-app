@@ -161,11 +161,28 @@ function detectImageGenerationIntent(userMsg: string, hasImageAttachment: boolea
   }
   
   // Check for just the word "rasm" at the end with content before it (like "cat rasm")
-  if (qLower.endsWith(' rasm') || qLower.endsWith(' surat') || qLower.endsWith(' tasvir')) {
-    const prompt = q.slice(0, -5).trim(); // Remove last word and space
-    if (prompt.length > 2) {
-      console.log('[Image Detect] Trailing keyword matched, prompt:', prompt);
-      return { isImageGen: true, prompt };
+  // Also check for Uzbek suffixes: rasmi (of image), surati (of photo), tasviri (of picture)
+  const trailingPatterns = [
+    { pattern: / rasm$/i, len: 5 },
+    { pattern: / rasmi$/i, len: 6 },
+    { pattern: / rasmini$/i, len: 8 },
+    { pattern: / surat$/i, len: 6 },
+    { pattern: / surati$/i, len: 7 },
+    { pattern: / tasvir$/i, len: 7 },
+    { pattern: / tasviri$/i, len: 8 },
+    { pattern: / foto$/i, len: 5 },
+    { pattern: / fotosi$/i, len: 7 },
+    { pattern: / image$/i, len: 6 },
+    { pattern: / picture$/i, len: 8 },
+  ];
+  
+  for (const { pattern, len } of trailingPatterns) {
+    if (pattern.test(q)) {
+      const prompt = q.slice(0, -len).trim();
+      if (prompt.length > 2) {
+        console.log('[Image Detect] Trailing keyword matched:', pattern.toString(), ', prompt:', prompt);
+        return { isImageGen: true, prompt };
+      }
     }
   }
   
