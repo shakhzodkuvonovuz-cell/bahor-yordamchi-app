@@ -201,6 +201,8 @@ function detectImageGenerationIntent(userMsg: string, hasImageAttachment: boolea
     /\b(ultra hd|8k|4k|high resolution|detailed|sharp|crisp|bokeh|depth of field|dof)\b/i,
     // Photo style keywords
     /\b(documentary photo|street photography|editorial|magazine style|professional photo)\b/i,
+    // Uzbek visual/composition terms
+    /\b(keng plan|yaqin plan|portret|manzara|keng kadr|yaqin kadr|batafsil|atmosfera)\b/i,
   ];
   
   let matchCount = 0;
@@ -214,6 +216,15 @@ function detectImageGenerationIntent(userMsg: string, hasImageAttachment: boolea
   if (matchCount >= 2 && q.length > 50) {
     console.log('[Image Detect] Prompt-like description detected, matchCount:', matchCount, ', prompt:', q.slice(0, 80));
     return { isImageGen: true, prompt: q };
+  }
+  
+  // NEW: Detect Uzbek scene description patterns with colon separator
+  // Format: "Location/Subject: detail1, detail2, detail3, camera term."
+  // Example: "Andijon bozori: tonggi savdo, meva-sabzavot rastalari, turli yoshdagi odamlar, shovqinli atmosfera, keng plan."
+  const uzScenePattern = /^[A-Za-zА-Яа-яЎўҚқҒғҲҳ'\s]+:\s*[^?]+(?:,\s*[^,?]+){2,}\.?$/;
+  if (uzScenePattern.test(qClean) && qClean.length >= 30 && qClean.length <= 200 && !qClean.includes('?')) {
+    console.log('[Image Detect] Uzbek scene description pattern detected, prompt:', qClean);
+    return { isImageGen: true, prompt: qClean };
   }
   
   // Check for Uzbek possessive endings that suggest "image of X" (hovlisi = its courtyard, etc.)
