@@ -233,6 +233,15 @@
     @apply transition-transform duration-300 hover:scale-[1.02];
   }
 
+  /* 3D Perspective for parallax effects */
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+
   /* 3D Elevation utilities */
   .elevation-0 {
     box-shadow: var(--elevation-0);
