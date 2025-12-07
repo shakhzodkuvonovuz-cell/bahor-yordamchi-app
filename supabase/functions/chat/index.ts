@@ -202,7 +202,7 @@ function detectImageGenerationIntent(userMsg: string, hasImageAttachment: boolea
     // Photo style keywords
     /\b(documentary photo|street photography|editorial|magazine style|professional photo)\b/i,
     // Uzbek visual/composition terms
-    /\b(keng plan|yaqin plan|portret|manzara|keng kadr|yaqin kadr|batafsil|atmosfera)\b/i,
+    /\b(keng plan|yaqin plan|portret|manzara|keng kadr|yaqin kadr|batafsil|atmosfera|yaqindan|uzoqdan|katta kadr|kichik kadr|oldidan|orqadan|tepadan|pastdan|yon tomondan)\b/i,
   ];
   
   let matchCount = 0;
