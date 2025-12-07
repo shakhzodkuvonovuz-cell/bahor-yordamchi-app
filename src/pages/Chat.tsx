@@ -447,6 +447,33 @@ export default function Chat() {
     }
   }, [currentThreadId]);
 
+  // Handle ?new=1 query param to create new chat
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("new") === "1" && user && mode) {
+      // Create a new chat thread immediately
+      const createNewThread = async () => {
+        try {
+          const newThread = await chatStore.createThread(user.id, {
+            title: t.chat.defaultChatTitle,
+            mode,
+          });
+          setThreads(prev => [newThread, ...prev]);
+          setCurrentThreadId(newThread.id);
+          setMessages([]);
+          setInputValue("");
+          // Clear the query param
+          navigate(location.pathname, { replace: true });
+          // Focus input
+          setTimeout(() => inputRef.current?.focus(), 100);
+        } catch (error) {
+          console.error("Error creating new chat:", error);
+        }
+      };
+      createNewThread();
+    }
+  }, [location.search, user, mode, t.chat.defaultChatTitle, navigate]);
+
   // Update input with dictation text (live interim updates)
   useEffect(() => {
     if (dictation.isListening) {
