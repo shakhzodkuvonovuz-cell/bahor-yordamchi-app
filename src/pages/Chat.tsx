@@ -1213,11 +1213,20 @@ export default function Chat() {
 
       // Detect if this is an image generation request (for showing appropriate loading status)
       const contentLower = content.trim().toLowerCase();
-      const isImageRequest = 
-        contentLower.startsWith('/image ') || 
-        contentLower.startsWith('/rasm ') ||
-        ["rasm yarat", "rasm chiz", "surat yarat", "tasvir yarat", "generate an image", "create an image", "make an image"]
-          .some(kw => contentLower.includes(kw));
+      const imageKeywords = [
+        // Explicit commands
+        "/image ", "/rasm ",
+        // Uzbek keywords
+        "rasm yarat", "rasm chiz", "surat yarat", "tasvir yarat", "rasm qil", "rasmini yarat",
+        "surat chiz", "tasvir chiz", "chizib ber", "rasm yasab ber", "foto yarat",
+        // English keywords
+        "generate an image", "create an image", "make an image", "draw an image", "render an image",
+        "generate image", "create image", "make image", "draw image", "render image",
+        "generate a picture", "create a picture", "make a picture", "draw a picture",
+        "generate photo", "create photo", "create a photo", "generate a photo",
+        "make a photo", "make photo", "draw a photo", "draw photo", "render a photo", "render photo"
+      ];
+      const isImageRequest = imageKeywords.some(kw => contentLower.startsWith(kw) || contentLower.includes(kw));
       
       if (isImageRequest) {
         setIsGeneratingImage(true);
