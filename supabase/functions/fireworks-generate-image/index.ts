@@ -6,21 +6,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Use the official FLUX Schnell FP8 workflow endpoint
 const FIREWORKS_API_URL = "https://api.fireworks.ai/inference/v1/workflows/accounts/fireworks/models/flux-1-schnell-fp8/text_to_image";
-const MAX_PROMPT_LENGTH = 300;
-
-// Aspect ratio to width/height mapping
-const ASPECT_DIMENSIONS: Record<string, { width: number; height: number }> = {
-  "1:1": { width: 1024, height: 1024 },
-  "4:5": { width: 1024, height: 1280 },
-  "5:4": { width: 1280, height: 1024 },
-  "16:9": { width: 1344, height: 768 },
-  "9:16": { width: 768, height: 1344 },
-  "3:4": { width: 960, height: 1280 },
-  "4:3": { width: 1280, height: 960 },
-  "3:2": { width: 1216, height: 832 },
-  "2:3": { width: 832, height: 1216 },
-};
+const MAX_PROMPT_LENGTH = 500;
 
 // Content guardrails - block inappropriate content
 const BLOCKED_PATTERNS = [
@@ -35,44 +23,25 @@ function isBlockedPrompt(prompt: string): boolean {
   return BLOCKED_PATTERNS.some(p => p.test(prompt));
 }
 
-
-// Compose high-quality English prompt using Lovable AI Gateway
-// This acts as Bahor AI's Image Prompt Composer for FLUX.1 Schnell
-async function composeEnglishPrompt(prompt: string, renderMode: "photo" | "illustration", requestId: string): Promise<string> {
+// Translate Uzbek/Russian to English using Lovable AI Gateway
+// Minimal translation - no extra styling, just clean English
+async function translateToEnglish(prompt: string, requestId: string): Promise<string> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!LOVABLE_API_KEY) {
-    console.log(`[${requestId}] No LOVABLE_API_KEY, skipping prompt composition`);
+    console.log(`[${requestId}] No LOVABLE_API_KEY, skipping translation`);
     return prompt;
   }
 
-  const styleHint = renderMode === "illustration" 
-    ? "The user wants illustration/art style." 
-    : "The user wants photo-realistic style.";
+  // Simple check if already English-ish (mostly ASCII letters)
+  const asciiRatio = (prompt.match(/[a-zA-Z]/g) || []).length / prompt.length;
+  if (asciiRatio > 0.7) {
+    console.log(`[${requestId}] Prompt appears to be English, skipping translation`);
+    return prompt;
+  }
 
-  const composerPrompt = `You are Bahor AI's Image Prompt Composer for FLUX.1 Schnell.
+  const translatorPrompt = `Translate the following text to English. Keep it simple and direct. Preserve all place names, proper nouns, and specific details exactly. Output ONLY the English translation, nothing else.
 
-Goal:
-Turn the user's request (Uzbek/Russian/English) into a single, high-quality ENGLISH prompt that produces the best possible image quality on FLUX.1 Schnell.
-
-Rules:
-- Preserve the user's intent exactly: subject, location, era, mood, style, and any constraints. Do not change the request.
-- Do NOT add new main subjects (e.g., don't invent "a man" or "a portrait") unless the user explicitly asked for it.
-- If the user asked for a portrait, make it a portrait. If the user asked for a landscape/city/scene, keep it a scene.
-- Add helpful cinematic/photographic/art-direction details ONLY when they improve clarity and quality (lighting, time of day, atmosphere, materials, camera/lens, realism level, color mood).
-- Keep place names and proper nouns exactly (Samarkand, Registon, Amir Temur, Tashkent, etc.).
-- Keep it concise but rich: usually 1–3 sentences.
-- If the user prompt is very short (3–6 words), expand it slightly into a strong prompt while staying faithful.
-- Output ONLY the final English prompt text. No labels, no markdown, no quotes, no JSON.
-
-Quality defaults to weave in (only when not conflicting):
-- "high detail, natural lighting, strong composition, realistic textures"
-- If photo-like: "documentary / cinematic photo, 35mm or 50mm, sharp focus, natural colors"
-- If art-like: "highly detailed illustration / concept art, dramatic lighting, coherent anatomy, clean edges"
-- If architecture/location: include time of day + atmosphere + materials + scale + reflections/shadows.
-
-${styleHint}
-
-User's request: ${prompt}`;
+Text: ${prompt}`;
 
   try {
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -82,33 +51,35 @@ User's request: ${prompt}`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "user", content: composerPrompt },
-        ],
-        max_tokens: 600,
-        temperature: 0.3,
+        model: "google/gemini-2.5-flash-lite",
+        messages: [{ role: "user", content: translatorPrompt }],
+        max_tokens: 300,
+        temperature: 0.1,
       }),
     });
 
     if (!response.ok) {
-      console.error(`[${requestId}] Prompt composer API error:`, response.status);
+      console.error(`[${requestId}] Translation API error:`, response.status);
       return prompt;
     }
 
     const data = await response.json();
-    const composed = data.choices?.[0]?.message?.content?.trim();
-    console.log(`[${requestId}] Composed prompt: "${prompt}" -> "${composed}"`);
-    return composed || prompt;
+    const translated = data.choices?.[0]?.message?.content?.trim();
+    console.log(`[${requestId}] Translated: "${prompt}" -> "${translated}"`);
+    return translated || prompt;
   } catch (error) {
-    console.error(`[${requestId}] Prompt composition failed:`, error);
+    console.error(`[${requestId}] Translation failed:`, error);
     return prompt;
   }
 }
 
-// Build negative prompt for technical quality issues only
-function buildNegativePrompt(): string {
-  return "text, watermark, logo, signature, deformed hands, extra fingers, disfigured face, lowres, blurry, oversaturated, plastic skin, duplicated people, bad anatomy, cropped, artifacts, distorted proportions";
+// Add soft quality boosters (not restrictions)
+function addQualityBoosters(prompt: string, renderMode: "photo" | "illustration"): string {
+  const boosters = renderMode === "photo"
+    ? "high detail, natural lighting, realistic materials, coherent composition, sharp focus"
+    : "highly detailed illustration, clean lines, coherent anatomy, dramatic lighting";
+  
+  return `${prompt}. ${boosters}`;
 }
 
 serve(async (req) => {
@@ -126,15 +97,9 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const fireworksApiKey = Deno.env.get("FIREWORKS_API_KEY");
 
-    if (!supabaseUrl) {
-      throw new Error("Missing env: SUPABASE_URL");
-    }
-    if (!supabaseServiceKey) {
-      throw new Error("Missing env: SUPABASE_SERVICE_ROLE_KEY");
-    }
-    if (!fireworksApiKey) {
-      throw new Error("Missing env: FIREWORKS_API_KEY");
-    }
+    if (!supabaseUrl) throw new Error("Missing env: SUPABASE_URL");
+    if (!supabaseServiceKey) throw new Error("Missing env: SUPABASE_SERVICE_ROLE_KEY");
+    if (!fireworksApiKey) throw new Error("Missing env: FIREWORKS_API_KEY");
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -170,9 +135,14 @@ serve(async (req) => {
       qualityBoost = false,
       chatId,
       attachToChat = false,
+      // A/B test flags
+      skipTranslation = false,
+      skipBoosters = false,
+      rawMode = false, // Send prompt as-is (for baseline testing)
     } = body;
 
-    console.log(`[${requestId}] Prompt: "${prompt}", aspectRatio: ${aspectRatio}, renderMode: ${renderMode}, qualityBoost: ${qualityBoost}`);
+    console.log(`[${requestId}] Input prompt: "${prompt}"`);
+    console.log(`[${requestId}] Options: aspectRatio=${aspectRatio}, renderMode=${renderMode}, qualityBoost=${qualityBoost}, rawMode=${rawMode}`);
 
     if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
       return new Response(
@@ -181,7 +151,7 @@ serve(async (req) => {
       );
     }
 
-    // Clean and limit prompt
+    // Clean prompt
     let promptOriginal = prompt.trim();
     promptOriginal = promptOriginal.replace(/--ar\s*\d+:\d+/gi, "").trim();
     promptOriginal = promptOriginal.replace(/Style:\s*/gi, "").trim();
@@ -191,9 +161,9 @@ serve(async (req) => {
       console.log(`[${requestId}] Prompt truncated to ${MAX_PROMPT_LENGTH} chars`);
     }
 
-    // Check for blocked content BEFORE translation
+    // Check for blocked content
     if (isBlockedPrompt(promptOriginal)) {
-      console.log(`[${requestId}] Blocked content detected in original`);
+      console.log(`[${requestId}] Blocked content detected`);
       return new Response(
         JSON.stringify({
           ok: false,
@@ -204,12 +174,31 @@ serve(async (req) => {
       );
     }
 
-    // Compose high-quality English prompt using AI
-    const finalPrompt = await composeEnglishPrompt(promptOriginal, renderMode === "illustration" ? "illustration" : "photo", requestId);
+    // Build final prompt based on mode
+    let finalPrompt: string;
     
-    // Check for blocked content AFTER composition
+    if (rawMode) {
+      // A/B Test A: Baseline - send as-is
+      finalPrompt = promptOriginal;
+      console.log(`[${requestId}] RAW MODE: Using prompt as-is`);
+    } else {
+      // Step 1: Translate if needed
+      let translatedPrompt = promptOriginal;
+      if (!skipTranslation) {
+        translatedPrompt = await translateToEnglish(promptOriginal, requestId);
+      }
+      
+      // Step 2: Add quality boosters if not skipped
+      if (!skipBoosters) {
+        finalPrompt = addQualityBoosters(translatedPrompt, renderMode === "illustration" ? "illustration" : "photo");
+      } else {
+        finalPrompt = translatedPrompt;
+      }
+    }
+
+    // Check for blocked content after translation
     if (isBlockedPrompt(finalPrompt)) {
-      console.log(`[${requestId}] Blocked content detected in composed prompt`);
+      console.log(`[${requestId}] Blocked content detected in final prompt`);
       return new Response(
         JSON.stringify({
           ok: false,
@@ -220,15 +209,7 @@ serve(async (req) => {
       );
     }
 
-    // Validate aspect ratio
-    const validAspectRatio = ASPECT_DIMENSIONS[aspectRatio] ? aspectRatio : "1:1";
-    const dimensions = ASPECT_DIMENSIONS[validAspectRatio];
-
-    // Validate render mode
-    const validRenderMode: "photo" | "illustration" = 
-      renderMode === "illustration" ? "illustration" : "photo";
-
-    // Check user limits - use DEV_UNLIMITED_EMAILS env var like chat function
+    // Check user limits
     const userEmail = user.email?.toLowerCase() || '';
     const devUnlimitedRaw = Deno.env.get('DEV_UNLIMITED_EMAILS') || '';
     const adminEmailsRaw = Deno.env.get('ADMIN_EMAILS') || '';
@@ -273,75 +254,135 @@ serve(async (req) => {
       console.log(`[${requestId}] Dev unlimited user - bypassing limits`);
     }
 
-    // Get negative prompt
-    const negativePrompt = buildNegativePrompt();
+    console.log(`[${requestId}] Final prompt (${finalPrompt.length} chars): "${finalPrompt}"`);
+
+    // ==========================================
+    // FIREWORKS API CALL - Matching Playground defaults
+    // ==========================================
     
-    console.log(`[${requestId}] Final prompt (${finalPrompt.length} chars): "${finalPrompt.slice(0, 150)}..."`);
-    console.log(`[${requestId}] Negative prompt: "${negativePrompt.slice(0, 80)}..."`)
+    // Use Playground defaults
+    const steps = qualityBoost ? 8 : 4; // Default is 4
+    const guidanceScale = 3.5; // Playground default
+    
+    // Use fixed seed for reproducible debugging (remove in production for variety)
+    const seed = Math.floor(Math.random() * 1000000);
 
-    // Build Fireworks request
-    const steps = qualityBoost ? 6 : 4;
-    const guidanceScale = qualityBoost ? 4.5 : 3.5;
-
-    const fireworksBody: Record<string, unknown> = {
+    const fireworksBody = {
       prompt: finalPrompt,
-      negative_prompt: negativePrompt,
-      aspect_ratio: validAspectRatio,
+      aspect_ratio: aspectRatio,
       guidance_scale: guidanceScale,
       num_inference_steps: steps,
+      seed: seed,
+      // NO negative_prompt - Playground doesn't use it by default
     };
 
-    console.log(`[${requestId}] Calling Fireworks API - steps: ${steps}, guidance: ${guidanceScale}, dimensions: ${dimensions.width}x${dimensions.height}`);
+    console.log(`[${requestId}] Fireworks request:`, JSON.stringify(fireworksBody));
 
-    // Call Fireworks API
+    // Use Accept: application/json for easier debugging (returns base64)
     const fireworksResponse = await fetch(FIREWORKS_API_URL, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${fireworksApiKey}`,
         "Content-Type": "application/json",
-        Accept: "image/png",
+        Accept: "application/json", // Get base64 JSON response for debugging
       },
       body: JSON.stringify(fireworksBody),
     });
 
+    // Log full response for debugging
+    const responseStatus = fireworksResponse.status;
+    console.log(`[${requestId}] Fireworks response status: ${responseStatus}`);
+
     if (!fireworksResponse.ok) {
       const errorText = await fireworksResponse.text();
-      console.error(`[${requestId}] Fireworks API error:`, fireworksResponse.status, errorText);
+      console.error(`[${requestId}] Fireworks API error ${responseStatus}:`, errorText);
 
+      // Parse error for better messages
+      let errorMessage = "Rasm yaratishda xatolik yuz berdi";
       if (errorText.includes("content") || errorText.includes("filter") || errorText.includes("safety")) {
-        return new Response(
-          JSON.stringify({ ok: false, error: "Rasm yaratib bo'lmadi. Iltimos, boshqa prompt kiriting.", requestId }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        errorMessage = "Rasm yaratib bo'lmadi. Iltimos, boshqa prompt kiriting.";
+      } else if (responseStatus === 429) {
+        errorMessage = "Juda ko'p so'rov. Biroz kutib turing.";
+      } else if (responseStatus === 401 || responseStatus === 403) {
+        errorMessage = "API kaliti xatosi";
       }
 
       return new Response(
-        JSON.stringify({ ok: false, error: "Rasm yaratishda xatolik yuz berdi", requestId }),
+        JSON.stringify({ 
+          ok: false, 
+          error: errorMessage, 
+          requestId,
+          debug: { status: responseStatus, body: errorText.slice(0, 500) }
+        }),
+        { status: responseStatus >= 500 ? 500 : 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Parse JSON response with base64 image
+    const responseData = await fireworksResponse.json();
+    console.log(`[${requestId}] Fireworks response keys:`, Object.keys(responseData));
+
+    // Extract base64 image from response
+    // Fireworks returns: { output: { "0": { url: "data:image/png;base64,..." } } } or similar
+    let base64Data: string | null = null;
+    
+    if (responseData.output) {
+      // Handle different response formats
+      if (typeof responseData.output === 'string') {
+        base64Data = responseData.output;
+      } else if (responseData.output["0"]?.url) {
+        base64Data = responseData.output["0"].url;
+      } else if (responseData.output.url) {
+        base64Data = responseData.output.url;
+      } else if (Array.isArray(responseData.output) && responseData.output[0]) {
+        base64Data = responseData.output[0].url || responseData.output[0];
+      }
+    } else if (responseData.image) {
+      base64Data = responseData.image;
+    } else if (responseData.images?.[0]) {
+      base64Data = responseData.images[0];
+    }
+
+    if (!base64Data) {
+      console.error(`[${requestId}] Could not extract image from response:`, JSON.stringify(responseData).slice(0, 1000));
+      return new Response(
+        JSON.stringify({ ok: false, error: "Rasm ma'lumotlarini olishda xatolik", requestId }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Get binary PNG using correct Deno-compatible approach
-    const buf = await fireworksResponse.arrayBuffer();
-    const imageBytes = new Uint8Array(buf);
-    console.log(`[${requestId}] Image received, size: ${imageBytes.length} bytes`);
+    // Remove data URL prefix if present
+    const base64Clean = base64Data.replace(/^data:image\/\w+;base64,/, '');
+    
+    // Decode base64 to binary
+    const binaryString = atob(base64Clean);
+    const imageBytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      imageBytes[i] = binaryString.charCodeAt(i);
+    }
+
+    console.log(`[${requestId}] Image decoded, size: ${imageBytes.length} bytes`);
 
     if (imageBytes.length === 0) {
-      throw new Error("Fireworks returned empty image");
+      throw new Error("Decoded image is empty");
     }
+
+    // Determine mime type from base64 header
+    const mimeType = base64Data.startsWith('data:image/jpeg') ? 'image/jpeg' : 'image/png';
+    const extension = mimeType === 'image/jpeg' ? 'jpg' : 'png';
 
     // Generate file path
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, "0");
     const imageId = crypto.randomUUID();
-    const filePath = `${user.id}/images/${year}/${month}/${imageId}.png`;
+    const filePath = `${user.id}/images/${year}/${month}/${imageId}.${extension}`;
 
     // Upload to Supabase Storage
     const { error: uploadError } = await supabase.storage
       .from("user-files")
       .upload(filePath, imageBytes, {
-        contentType: "image/png",
+        contentType: mimeType,
         upsert: false,
       });
 
@@ -362,14 +403,14 @@ serve(async (req) => {
         user_id: user.id,
         prompt_uz: promptOriginal,
         prompt_en: finalPrompt,
-        negative_prompt_en: negativePrompt,
-        aspect_ratio: validAspectRatio,
+        negative_prompt_en: null, // No negative prompt
+        aspect_ratio: aspectRatio,
         guidance_scale: guidanceScale,
         num_inference_steps: steps,
-        seed: null,
+        seed: seed,
         status: "done",
         file_path: filePath,
-        mime_type: "image/png",
+        mime_type: mimeType,
       });
 
     if (genError) {
@@ -377,26 +418,27 @@ serve(async (req) => {
     }
 
     // Save to user_files
-    const fileName = `bahor-image-${imageId.slice(0, 8)}.png`;
+    const fileName = `bahor-image-${imageId.slice(0, 8)}.${extension}`;
     const { error: fileError } = await supabase
       .from("user_files")
       .insert({
         user_id: user.id,
         title: fileName,
         tool: "imagegen",
-        mime_type: "image/png",
+        mime_type: mimeType,
         size_bytes: imageBytes.length,
         bucket: "user-files",
         path: filePath,
         status: "success",
         meta: {
           prompt_original: promptOriginal,
-          prompt_composed: finalPrompt,
-          render_mode: validRenderMode,
+          prompt_final: finalPrompt,
+          render_mode: renderMode,
           quality_boost: qualityBoost,
-          aspect_ratio: validAspectRatio,
-          width: dimensions.width,
-          height: dimensions.height,
+          aspect_ratio: aspectRatio,
+          seed: seed,
+          steps: steps,
+          guidance: guidanceScale,
         },
       });
 
@@ -414,7 +456,7 @@ serve(async (req) => {
             user_id: user.id,
             bucket: "user-files",
             path: filePath,
-            mime_type: "image/png",
+            mime_type: mimeType,
             original_name: fileName,
             size_bytes: imageBytes.length,
           });
@@ -438,12 +480,14 @@ serve(async (req) => {
       JSON.stringify({
         ok: true,
         image_url: signedUrlData?.signedUrl || "",
-        prompt_used: finalPrompt,
         prompt_original: promptOriginal,
+        prompt_final: finalPrompt,
         model: "flux-schnell",
-        width: dimensions.width,
-        height: dimensions.height,
-        render_mode: validRenderMode,
+        aspect_ratio: aspectRatio,
+        seed: seed,
+        steps: steps,
+        guidance: guidanceScale,
+        render_mode: renderMode,
         quality_boost: qualityBoost,
         file_path: filePath,
         file_name: fileName,
@@ -461,6 +505,7 @@ serve(async (req) => {
         ok: false,
         error: "Rasm yaratishda xatolik yuz berdi",
         requestId,
+        debug: { message: errMessage },
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
