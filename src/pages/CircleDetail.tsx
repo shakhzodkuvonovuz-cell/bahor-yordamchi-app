@@ -420,8 +420,8 @@ export default function SpaceDetail() {
   return (
     <div className="h-dvh w-full max-w-full bg-background flex flex-col overflow-hidden" style={{ maxWidth: '100vw', overflowX: 'hidden' }}>
       {/* Header - fixed */}
-      <header className="flex-shrink-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+      <header className="flex-shrink-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border w-full max-w-full overflow-hidden">
+        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between w-full" style={{ maxWidth: '100%' }}>
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate("/circles")}
@@ -467,10 +467,10 @@ export default function SpaceDetail() {
       </header>
 
       {/* Tabs container */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
-        {/* Tabs bar - sticky with solid background, high z-index, and pointer-events-auto */}
-        <div className="flex-shrink-0 z-50 border-b border-border bg-background/95 backdrop-blur-md overflow-x-hidden" style={{ position: 'sticky', top: 0 }}>
-          <TabsList className="max-w-2xl mx-auto w-full justify-start px-4 bg-transparent h-11 flex-nowrap">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden w-full max-w-full">
+        {/* Tabs bar - sticky with solid background, high z-index */}
+        <div className="flex-shrink-0 z-50 border-b border-border bg-background/95 backdrop-blur-md w-full max-w-full" style={{ position: 'sticky', top: 0, overflowX: 'hidden' }}>
+          <TabsList className="max-w-2xl mx-auto w-full justify-start px-4 bg-transparent h-11 overflow-x-auto scrollbar-none" style={{ maxWidth: '100%' }}>
             <TabsTrigger 
               value="chat" 
               className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-sm transition-all duration-150 text-sm"
