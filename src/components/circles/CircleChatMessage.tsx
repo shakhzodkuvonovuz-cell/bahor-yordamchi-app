@@ -388,10 +388,10 @@ export default function CircleChatMessage({
           </div>
         )}
 
-        <div className="flex flex-col max-w-[80%]">
+        <div className="flex flex-col max-w-[80%] min-w-0">
           <div
             className={cn(
-              "rounded-2xl px-4 py-2.5 relative select-none",
+              "rounded-2xl px-4 py-2.5 relative select-none overflow-hidden",
               isAi
                 ? "bg-primary/10 border border-primary/20 text-foreground"
                 : isOwn
@@ -429,7 +429,7 @@ export default function CircleChatMessage({
 
             {/* Content */}
             {message.content && (
-              <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+              <p className="text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{message.content}</p>
             )}
 
             {/* Attachments */}
