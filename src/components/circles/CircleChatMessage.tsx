@@ -370,10 +370,11 @@ export default function CircleChatMessage({
       <div 
         id={`msg-${message.id}`}
         className={cn(
-          "flex group transition-all duration-200 rounded-lg w-full overflow-hidden",
+          "flex group transition-all duration-200 rounded-lg max-w-full",
           isAi ? "justify-start" : isOwn ? "justify-end" : "justify-start",
           isSending && "opacity-70"
         )}
+        style={{ maxWidth: '100%' }}
       >
         {/* Avatar for others */}
         {!isOwn && !isAi && (
@@ -388,7 +389,7 @@ export default function CircleChatMessage({
           </div>
         )}
 
-        <div className="flex flex-col max-w-[75%] min-w-0 flex-shrink">
+        <div className="flex flex-col min-w-0" style={{ maxWidth: 'calc(100% - 56px)' }}>
           <div
             className={cn(
               "rounded-2xl px-4 py-2.5 relative select-none overflow-hidden",
