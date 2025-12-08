@@ -284,6 +284,38 @@ function formatSearchResults(items: any[]): string {
 }
 
 // ============================================
+// NEWS QUERY ENHANCEMENT
+// ============================================
+
+// Keywords that indicate news queries (should get fresh article results, not category pages)
+const NEWS_KEYWORDS = [
+  "yangilik", "yangiliklari", "xabar", "xabarlar", "news",
+  "новости", "новость", "haberler", "haber"
+];
+
+// Keywords that already have time context (don't add "bugun")
+const ALREADY_TIME_SPECIFIC = [
+  "bugun", "today", "kecha", "yesterday", "this week", "bu hafta",
+  "hozir", "now", "сегодня", "вчера", "bugün", "dün"
+];
+
+function enhanceNewsQuery(query: string): string {
+  const qLower = query.toLowerCase();
+  
+  // Check if this is a news query
+  const isNewsQuery = NEWS_KEYWORDS.some(kw => qLower.includes(kw));
+  if (!isNewsQuery) return query;
+  
+  // Check if already has time context
+  const hasTimeContext = ALREADY_TIME_SPECIFIC.some(kw => qLower.includes(kw));
+  if (hasTimeContext) return query;
+  
+  // Add "bugun" (today) to get fresh article results instead of category pages
+  console.log("[search] enhancing news query with 'bugun'");
+  return `${query} bugun`;
+}
+
+// ============================================
 // MAIN SEARCH FUNCTION
 // ============================================
 
@@ -292,8 +324,11 @@ export async function googleSearch(query: string): Promise<SearchResult> {
   const cx = Deno.env.get("GOOGLE_CX") || "";
   const apiKey = Deno.env.get("GOOGLE_SEARCH_API_KEY");
   
+  // Step 0: Enhance news queries to get actual articles instead of category pages
+  const enhancedQuery = enhanceNewsQuery(query);
+  
   // Step 1: Normalize query
-  const queryNorm = normalizeQuery(query);
+  const queryNorm = normalizeQuery(enhancedQuery);
   const locale = currentLang || null;
   
   console.log("[search] starting search for:", queryNorm.slice(0, 50));
@@ -354,7 +389,7 @@ export async function googleSearch(query: string): Promise<SearchResult> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3000);
 
-    const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cx}&q=${encodeURIComponent(query)}`;
+    const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cx}&q=${encodeURIComponent(enhancedQuery)}`;
 
     const res = await fetch(url, { signal: controller.signal });
     clearTimeout(timeout);
