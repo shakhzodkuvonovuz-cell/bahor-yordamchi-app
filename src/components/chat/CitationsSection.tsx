@@ -35,6 +35,12 @@ export default function CitationsSection({ citations }: CitationsSectionProps) {
             <span className="w-4 h-4 rounded bg-primary/10 flex items-center justify-center text-[10px] font-medium text-primary shrink-0">
               {idx + 1}
             </span>
+            <img 
+              src={`https://www.google.com/s2/favicons?domain=${new URL(citation.url).hostname}&sz=32`}
+              alt=""
+              className="w-4 h-4 rounded shrink-0"
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
             <span className="truncate flex-1">{citation.title || citation.url}</span>
             <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
           </a>
