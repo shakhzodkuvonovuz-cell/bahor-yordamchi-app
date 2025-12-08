@@ -449,6 +449,69 @@ export type Database = {
         }
         Relationships: []
       }
+      search_cache: {
+        Row: {
+          created_at: string
+          cx: string
+          expires_at: string
+          id: string
+          locale: string | null
+          query_norm: string
+          result_json: Json
+        }
+        Insert: {
+          created_at?: string
+          cx: string
+          expires_at: string
+          id?: string
+          locale?: string | null
+          query_norm: string
+          result_json: Json
+        }
+        Update: {
+          created_at?: string
+          cx?: string
+          expires_at?: string
+          id?: string
+          locale?: string | null
+          query_norm?: string
+          result_json?: Json
+        }
+        Relationships: []
+      }
+      search_global_burst: {
+        Row: {
+          count: number
+          minute_bucket: string
+        }
+        Insert: {
+          count?: number
+          minute_bucket: string
+        }
+        Update: {
+          count?: number
+          minute_bucket?: string
+        }
+        Relationships: []
+      }
+      search_usage: {
+        Row: {
+          count: number
+          day: string
+          user_id: string
+        }
+        Insert: {
+          count?: number
+          day?: string
+          user_id: string
+        }
+        Update: {
+          count?: number
+          day?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       space_files: {
         Row: {
           created_at: string | null
@@ -914,6 +977,7 @@ export type Database = {
             Args: { p_date: string; p_limit: number; p_user_id: string }
             Returns: Json
           }
+      cleanup_search_cache: { Args: never; Returns: number }
       get_effective_entitlement: { Args: { p_user_id: string }; Returns: Json }
       get_or_create_trial: {
         Args: { p_trial_days?: number; p_user_id: string }
