@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.extract-attachment-text]
 verify_jwt = false
+
+[functions.register-device]
+verify_jwt = false
