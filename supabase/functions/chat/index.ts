@@ -121,8 +121,34 @@ function shouldUseSearch(userMsg: string): boolean {
 }
 
 // ============================================
-// IMAGE GENERATION INTENT DETECTION
+// IMAGE GENERATION INTENT DETECTION (STRICT)
 // ============================================
+
+// Words that BLOCK image generation - if these appear, it's NOT an image request
+const IMAGE_BLOCKERS = [
+  // Weather terms
+  "ob-havo", "ob havo", "obhavo", "weather", "погода", "hava durumu",
+  "harorat", "temperature", "температура", "sıcaklık",
+  // News/info terms
+  "yangilik", "news", "новости", "haber",
+  "qachon", "when", "когда", "ne zaman",
+  "nima", "what is", "что такое", "nedir",
+  "kim", "who", "кто", "kim",
+  "narx", "price", "цена", "fiyat",
+  "kurs", "rate", "курс",
+  // Question patterns
+  "qanday", "how", "как", "nasıl",
+  "necha", "how much", "сколько", "kaç",
+  "qayerda", "where", "где", "nerede",
+  // File/document
+  "fayl", "file", "файл", "dosya",
+  "hujjat", "document", "документ", "belge",
+  // Help/explain
+  "tushuntir", "explain", "объясни", "açıkla",
+  "yordam", "help", "помощь", "yardım",
+  // Analysis patterns
+  "tahlil", "analysis", "analyze", "анализ",
+];
 
 function detectImageGenerationIntent(userMsg: string, hasImageAttachment: boolean): { isImageGen: boolean; prompt: string } {
   const q = userMsg.trim();
@@ -134,34 +160,44 @@ function detectImageGenerationIntent(userMsg: string, hasImageAttachment: boolea
     return { isImageGen: false, prompt: "" };
   }
   
-  // Check for explicit commands
+  // HARD BLOCK: If message contains blockers, NEVER generate image
+  for (const blocker of IMAGE_BLOCKERS) {
+    if (qLower.includes(blocker)) {
+      console.log('[Image Detect] BLOCKED by term:', blocker);
+      return { isImageGen: false, prompt: "" };
+    }
+  }
+  
+  // HARD BLOCK: Questions (ends with ?) are never image requests
+  if (q.endsWith('?')) {
+    console.log('[Image Detect] BLOCKED: Question mark detected');
+    return { isImageGen: false, prompt: "" };
+  }
+  
+  // Check for explicit commands - ONLY way to guarantee image gen
   if (qLower.startsWith('/image ') || qLower.startsWith('/rasm ')) {
-    const prompt = q.slice(7).trim(); // Remove /image or /rasm
+    const prompt = q.slice(7).trim();
     console.log('[Image Detect] Explicit command detected, prompt:', prompt);
     return { isImageGen: prompt.length > 0, prompt };
   }
   
-  // Check for Uzbek keywords for image generation (more flexible)
+  // Check for Uzbek keywords for image generation (explicit only)
   const uzKeywords = [
     "rasm yarat", "rasm chiz", "surat yarat", "surat chiz", "tasvir yarat", "tasvir chiz",
-    "generatsiya qil", "rasm qil", "chizib ber", "rasmini yarat", "rasmini chiz",
-    "suratini yarat", "tasvirini yarat", "rasm yasab ber", "rasm yasat",
-    "rasmini chizib ber", "rasmini yasab ber", "rasm genera", "foto yarat"
+    "rasm qil", "chizib ber", "rasmini yarat", "rasmini chiz",
+    "suratini yarat", "tasvirini yarat", "rasm yasab ber",
+    "rasmini chizib ber"
   ];
   
   // Check for English keywords for image generation
   const enKeywords = [
     "generate an image", "generate image", "create an image", "create image",
-    "make an image", "make image", "draw an image", "draw image",
-    "render an image", "render image", "generate a picture", "create a picture",
-    "make a picture", "draw a picture", "generate photo", "create photo",
-    "create a photo", "generate a photo", "make a photo", "make photo",
-    "draw a photo", "draw photo", "render a photo", "render photo"
+    "make an image", "draw an image", "draw image",
+    "generate a picture", "create a picture", "draw a picture"
   ];
   
   for (const kw of uzKeywords) {
     if (qLower.includes(kw)) {
-      // Extract the prompt (remove the keyword)
       const prompt = q.replace(new RegExp(kw, 'gi'), '').trim();
       console.log('[Image Detect] UZ keyword matched:', kw, ', prompt:', prompt);
       return { isImageGen: true, prompt: prompt || q };
@@ -176,39 +212,13 @@ function detectImageGenerationIntent(userMsg: string, hasImageAttachment: boolea
     }
   }
   
-  // Special case: message starts with explicit image request word + "of" or just the word
-  const simplePatterns = [
-    /^rasm:?\s+(.+)/i,
-    /^surat:?\s+(.+)/i,
-    /^tasvir:?\s+(.+)/i,
-    /^image:?\s+(.+)/i,
-    /^picture:?\s+(.+)/i,
-  ];
-  
-  for (const pattern of simplePatterns) {
-    const match = q.match(pattern);
-    if (match) {
-      console.log('[Image Detect] Simple pattern matched:', pattern, ', prompt:', match[1].trim());
-      return { isImageGen: true, prompt: match[1].trim() };
-    }
-  }
-  
-  // Check for just the word "rasm" at the end with content before it (like "cat rasm")
-  // Also check for Uzbek suffixes: rasmi (of image), surati (of photo), tasviri (of picture)
-  // Strip trailing punctuation for matching
+  // Check for trailing image words: "X rasmi", "X rasmini"
   const qClean = q.replace(/[.!?,;:]+$/, '').trim();
   const trailingPatterns = [
-    { pattern: / rasm$/i, len: 5 },
     { pattern: / rasmi$/i, len: 6 },
     { pattern: / rasmini$/i, len: 8 },
-    { pattern: / surat$/i, len: 6 },
     { pattern: / surati$/i, len: 7 },
-    { pattern: / tasvir$/i, len: 7 },
     { pattern: / tasviri$/i, len: 8 },
-    { pattern: / foto$/i, len: 5 },
-    { pattern: / fotosi$/i, len: 7 },
-    { pattern: / image$/i, len: 6 },
-    { pattern: / picture$/i, len: 8 },
   ];
   
   for (const { pattern, len } of trailingPatterns) {
@@ -221,64 +231,8 @@ function detectImageGenerationIntent(userMsg: string, hasImageAttachment: boolea
     }
   }
   
-  // NEW: Detect image prompt-like descriptions (descriptive scene prompts)
-  // These typically contain: composition terms, visual terms, camera/lens terms, style terms
-  const imagePromptIndicators = [
-    // Composition & scene types
-    /\b(wide shot|close up|closeup|portrait|landscape|scene|panorama|aerial view|bird's eye|eye level|low angle|high angle)\b/i,
-    // Camera/lens terms
-    /\b(35mm|50mm|85mm|lens|camera|shot|frame|composition|aspect ratio|--ar\s*\d+:\d+)\b/i,
-    // Visual style terms
-    /\b(realistic|photorealistic|hyper realistic|cinematic|dramatic lighting|natural lighting|golden hour|blue hour|studio lighting)\b/i,
-    // Art/render terms
-    /\b(ultra hd|8k|4k|high resolution|detailed|sharp|crisp|bokeh|depth of field|dof)\b/i,
-    // Photo style keywords
-    /\b(documentary photo|street photography|editorial|magazine style|professional photo)\b/i,
-    // Uzbek visual/composition terms
-    /\b(keng plan|yaqin plan|portret|manzara|keng kadr|yaqin kadr|batafsil|atmosfera|yaqindan|uzoqdan|katta kadr|kichik kadr|oldidan|orqadan|tepadan|pastdan|yon tomondan)\b/i,
-  ];
-  
-  let matchCount = 0;
-  for (const pattern of imagePromptIndicators) {
-    if (pattern.test(qLower)) {
-      matchCount++;
-    }
-  }
-  
-  // If message contains 2+ image prompt indicators AND is descriptive (length > 50 chars), treat as image prompt
-  if (matchCount >= 2 && q.length > 50) {
-    console.log('[Image Detect] Prompt-like description detected, matchCount:', matchCount, ', prompt:', q.slice(0, 80));
-    return { isImageGen: true, prompt: q };
-  }
-  
-  // NEW: Detect Uzbek scene description patterns with colon separator
-  // Format: "Location/Subject: detail1, detail2, detail3, camera term."
-  // Example: "Andijon bozori: tonggi savdo, meva-sabzavot rastalari, turli yoshdagi odamlar, shovqinli atmosfera, keng plan."
-  const uzScenePattern = /^[A-Za-zА-Яа-яЎўҚқҒғҲҳ'\s]+:\s*[^?]+(?:,\s*[^,?]+){2,}\.?$/;
-  if (uzScenePattern.test(qClean) && qClean.length >= 30 && qClean.length <= 200 && !qClean.includes('?')) {
-    console.log('[Image Detect] Uzbek scene description pattern detected, prompt:', qClean);
-    return { isImageGen: true, prompt: qClean };
-  }
-  
-  // Check for comma or period-separated visual scene descriptions (no colon)
-  // e.g., "qishloq yo'li, quyosh botishi" or "Registon maydoni tunda. Chiroqlar yorug'ligi."
-  const commaCount = (qClean.match(/,/g) || []).length;
-  const periodCount = (qClean.match(/\./g) || []).length;
-  const visualSceneWords = /\b(yo'l|ko'cha|tog'|daryo|suv|osmon|quyosh|oy|yulduz|bulut|daraxt|gul|qush|ot|uy|masjid|maktab|bozor|maydon|maydoni|bog'|dalalar|dala|kecha|tong|oqshom|tunda|tun|kechasi|bahor|yoz|kuz|qish|qor|yomg'ir|shamol|manzara|tabiat|shahri|qishloq|botishi|chiqishi|nuri|nurlar|hovli|ayvon|choyxona|ko'prik|chiroq|chiroqlar|yorug'|yorug'lik|yoruqligi|registon|samarqand|buxoro|xiva|toshkent|andijon|farg'ona|namangan|qo'qon|shahrisabz|nukus|urganch|gavjum|odamlar|odam|masofada|yaqin|uzoq|keng|panorama)\b/i;
-  const hasSeparators = commaCount >= 1 || periodCount >= 1;
-  if (hasSeparators && qClean.length >= 15 && qClean.length <= 120 && visualSceneWords.test(qClean) && !qClean.includes('?')) {
-    console.log('[Image Detect] Multi-phrase visual scene detected, prompt:', qClean);
-    return { isImageGen: true, prompt: qClean };
-  }
-  
-  // Check for Uzbek possessive endings that suggest "image of X" (hovlisi = its courtyard, etc.)
-  // These are short descriptive phrases that typically request images in Uzbek context
-  const uzPossessivePattern = /^[A-Za-zА-Яа-яЎўҚқҒғҲҳ'\s]+(?:ning\s+)?[A-Za-zА-Яа-яЎўҚқҒғҲҳ']+(?:si|i|lari)\.?$/i;
-  if (uzPossessivePattern.test(qClean) && qClean.length >= 15 && qClean.length <= 60 && !qClean.includes('?')) {
-    // Short Uzbek phrase with possessive ending, likely an image request
-    console.log('[Image Detect] Uzbek possessive phrase detected, prompt:', qClean);
-    return { isImageGen: true, prompt: qClean };
-  }
+  // REMOVED: All loose pattern matching (scene descriptions, comma patterns, possessive endings)
+  // These caused false positives like "Sidney bugungi ob-havosi" triggering image gen
   
   console.log('[Image Detect] No image intent found in:', qLower.slice(0, 50));
   return { isImageGen: false, prompt: "" };
