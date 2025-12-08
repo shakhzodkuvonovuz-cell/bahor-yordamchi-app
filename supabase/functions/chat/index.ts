@@ -567,7 +567,7 @@ serve(async (req) => {
   const requestStartTime = Date.now();
 
   try {
-    const { messages, mode, modelPreference, threadSummary, hasAnalysis, analysisType, reply_language, ui_language, attachments, userToneContext } = await req.json();
+    const { messages, mode, modelPreference, threadSummary, hasAnalysis, analysisType, reply_language, ui_language, attachments, userToneContext, device_id } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(
@@ -597,6 +597,31 @@ serve(async (req) => {
         JSON.stringify({ error: "AUTH_REQUIRED", message: "Sessiya tugagan. Qaytadan kiring." }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // ===========================================
+    // DEVICE VERIFICATION
+    // ===========================================
+    if (device_id) {
+      const { data: deviceData } = await supabaseAdmin
+        .from('user_devices')
+        .select('revoked_at')
+        .eq('user_id', user.id)
+        .eq('device_id', device_id)
+        .single();
+
+      if (deviceData?.revoked_at) {
+        return new Response(
+          JSON.stringify({ 
+            error: "DEVICE_REVOKED", 
+            message: "Bu qurilma boshqa joydan chiqarilgan. Qaytadan kiring.",
+            message_en: "This device was signed out from another location. Please sign in again.",
+            message_ru: "Это устройство было отключено с другого места. Войдите снова.",
+            message_tr: "Bu cihaz başka bir yerden çıkarıldı. Lütfen tekrar giriş yapın.",
+          }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
     
     // Set user ID for search logging

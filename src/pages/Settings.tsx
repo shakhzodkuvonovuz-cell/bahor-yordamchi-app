@@ -20,6 +20,7 @@ import SettingsProfileSkeleton from "@/components/SettingsProfileSkeleton";
 import ProfileCompletionCard from "@/components/ProfileCompletionCard";
 import DataManagementModal from "@/components/DataManagementModal";
 import UserPreferencesSection from "@/components/UserPreferencesSection";
+import { DevicesSection } from "@/components/DevicesSection";
 import { useDailyUsageServer } from "@/hooks/useEntitlements";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -343,6 +344,9 @@ export default function Settings() {
 
           {/* User Preferences Section */}
           <UserPreferencesSection />
+
+          {/* Devices Section */}
+          {user && <DevicesSection />}
 
           {/* Security Section */}
           <section className="bg-card border border-border/40 rounded-2xl overflow-hidden shadow-premium-sm w-full">
