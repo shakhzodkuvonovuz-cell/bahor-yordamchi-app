@@ -52,7 +52,7 @@ export function AppShellV2({ children }: AppShellV2Props) {
   const hidesMobileHeader = location.pathname.match(/^\/circles\/[^/]+$/);
 
   return (
-    <div className="min-h-[100dvh] bg-background flex w-full app-shell">
+    <div className="min-h-[100dvh] bg-background flex w-full max-w-full overflow-x-hidden app-shell">
       {/* Desktop Sidebar */}
       <aside className={cn(
         "hidden lg:block fixed left-0 top-0 h-[100dvh] z-40 transition-all duration-300",
@@ -122,7 +122,7 @@ export function AppShellV2({ children }: AppShellV2Props) {
 
       {/* Main Content Area */}
       <main className={cn(
-        "flex-1 min-h-[100dvh] transition-all duration-300",
+        "flex-1 min-h-[100dvh] transition-all duration-300 max-w-full overflow-x-hidden",
         collapsed ? "lg:ml-[72px]" : "lg:ml-[260px]",
         hidesMobileHeader ? "pt-0 lg:pt-0" : "pt-14 lg:pt-0"
       )}>
