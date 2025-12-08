@@ -205,7 +205,7 @@ export default function CircleChatInput({
             disabled={disabled || uploading}
             rows={1}
             className={cn(
-              "flex-1 px-4 py-2.5 rounded-xl bg-secondary border-none outline-none text-foreground text-base",
+              "flex-1 px-4 py-2.5 rounded-xl bg-secondary border-none outline-none text-foreground text-base [font-size:16px]",
               "placeholder:text-muted-foreground resize-none min-h-[44px] max-h-[120px]",
               "focus:ring-1 focus:ring-primary/30 transition-all duration-200",
               (disabled || uploading) && "opacity-50"

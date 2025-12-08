@@ -2099,7 +2099,7 @@ export default function Chat() {
       )}
 
       {/* Main Chat Container with Context Dock */}
-      <div className="flex h-screen w-full max-w-7xl mx-auto">
+      <div className="flex min-h-[100dvh] w-full max-w-7xl mx-auto">
         {/* Focus Canvas - Main Chat Area */}
         <FocusCanvas>
           {/* Header */}
@@ -2492,7 +2492,7 @@ export default function Chat() {
                   disabled={isLoading || typing || dictation.isListening}
                   rows={1}
                   className={clsx(
-                    "w-full bg-transparent border-none outline-none resize-none text-base leading-relaxed text-foreground placeholder:text-muted-foreground/60 disabled:opacity-50 max-h-[140px] overflow-y-auto py-3 px-1",
+                    "w-full bg-transparent border-none outline-none resize-none text-base leading-relaxed text-foreground placeholder:text-muted-foreground/60 disabled:opacity-50 max-h-[140px] overflow-y-auto py-3 px-1 [font-size:16px]",
                     dictation.isListening && "text-primary"
                   )}
                 />
