@@ -418,31 +418,31 @@ export default function SpaceDetail() {
   }
 
   return (
-    <div className="h-dvh w-full max-w-full bg-background flex flex-col overflow-hidden" style={{ maxWidth: '100vw', overflowX: 'hidden' }}>
+    <div className="h-dvh w-screen bg-background flex flex-col" style={{ maxWidth: '100vw', overflow: 'hidden' }}>
       {/* Header - fixed */}
-      <header className="flex-shrink-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border w-full max-w-full overflow-hidden">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between w-full" style={{ maxWidth: '100%' }}>
-          <div className="flex items-center gap-3">
+      <header className="flex-shrink-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border w-full">
+        <div className="w-full px-3 py-3 flex items-center justify-between gap-2" style={{ maxWidth: '100%' }}>
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             <button
               onClick={() => navigate("/circles")}
-              className="p-2 -ml-2 hover:bg-secondary rounded-lg transition-colors"
+              className="p-2 -ml-1 hover:bg-secondary rounded-lg transition-colors flex-shrink-0"
             >
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
             {/* Circle emoji icon */}
-            <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0 ${getColorClass(space.icon_color)}`}>
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-base flex-shrink-0 ${getColorClass(space.icon_color)}`}>
               {space.icon_emoji || "💬"}
             </div>
-            <div>
-              <h1 className="text-lg font-bold text-foreground">{space.name}</h1>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-base font-bold text-foreground truncate">{space.name}</h1>
               {space.goal && (
-                <p className="text-xs text-muted-foreground truncate max-w-[200px]">
+                <p className="text-xs text-muted-foreground truncate">
                   {space.goal}
                 </p>
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 flex-shrink-0">
             <CircleAIActionsPanel 
               circleId={id || ""} 
               onSendToChat={(content, title) => {
@@ -456,10 +456,10 @@ export default function SpaceDetail() {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowInviteModal(true)}
-                className="gap-1.5"
+                className="gap-1 px-2 text-xs"
               >
-                <UserPlus className="w-4 h-4" />
-                {language === "uz" ? "Taklif" : "Invite"}
+                <UserPlus className="w-3.5 h-3.5" />
+                <span className="hidden xs:inline">{language === "uz" ? "Taklif" : "Invite"}</span>
               </Button>
             )}
           </div>
@@ -467,48 +467,50 @@ export default function SpaceDetail() {
       </header>
 
       {/* Tabs container */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden w-full max-w-full">
-        {/* Tabs bar - sticky with solid background, high z-index */}
-        <div className="flex-shrink-0 z-50 border-b border-border bg-background/95 backdrop-blur-md w-full max-w-full" style={{ position: 'sticky', top: 0, overflowX: 'hidden' }}>
-          <TabsList className="max-w-2xl mx-auto w-full justify-start px-4 bg-transparent h-11 overflow-x-auto scrollbar-none" style={{ maxWidth: '100%' }}>
-            <TabsTrigger 
-              value="chat" 
-              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-sm transition-all duration-150 text-sm"
-            >
-              <MessageSquare className="w-4 h-4" />
-              Chat
-            </TabsTrigger>
-            <TabsTrigger 
-              value="files" 
-              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-sm transition-all duration-150 text-sm"
-            >
-              <FileText className="w-4 h-4" />
-              {language === "uz" ? "Fayllar" : "Files"}
-            </TabsTrigger>
-            <TabsTrigger 
-              value="members" 
-              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-sm transition-all duration-150 text-sm"
-            >
-              <Users className="w-4 h-4" />
-              {language === "uz" ? "A'zolar" : "Members"}
-            </TabsTrigger>
-            <TabsTrigger 
-              value="natijalar" 
-              className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-sm transition-all duration-150 text-sm"
-            >
-              <Sparkles className="w-4 h-4" />
-              Natijalar
-            </TabsTrigger>
-            {isAdmin && (
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 w-full" style={{ overflow: 'hidden' }}>
+        {/* Tabs bar - horizontally scrollable */}
+        <div className="flex-shrink-0 z-50 border-b border-border bg-background/95 backdrop-blur-md w-full" style={{ position: 'sticky', top: 0 }}>
+          <div className="w-full overflow-x-auto scrollbar-none">
+            <TabsList className="w-max min-w-full justify-start px-3 bg-transparent h-11">
               <TabsTrigger 
-                value="requests" 
-                className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-sm transition-all duration-150 text-sm"
+                value="chat" 
+                className="gap-1 data-[state=active]:bg-secondary data-[state=active]:shadow-sm transition-all duration-150 text-sm px-2.5"
               >
-                <UserPlus className="w-4 h-4" />
-                {language === "uz" ? "So'rovlar" : "Requests"}
+                <MessageSquare className="w-4 h-4" />
+                Chat
               </TabsTrigger>
-            )}
-          </TabsList>
+              <TabsTrigger 
+                value="files" 
+                className="gap-1 data-[state=active]:bg-secondary data-[state=active]:shadow-sm transition-all duration-150 text-sm px-2.5"
+              >
+                <FileText className="w-4 h-4" />
+                {language === "uz" ? "Fayllar" : "Files"}
+              </TabsTrigger>
+              <TabsTrigger 
+                value="members" 
+                className="gap-1 data-[state=active]:bg-secondary data-[state=active]:shadow-sm transition-all duration-150 text-sm px-2.5"
+              >
+                <Users className="w-4 h-4" />
+                {language === "uz" ? "A'zolar" : "Members"}
+              </TabsTrigger>
+              <TabsTrigger 
+                value="natijalar" 
+                className="gap-1 data-[state=active]:bg-secondary data-[state=active]:shadow-sm transition-all duration-150 text-sm px-2.5"
+              >
+                <Sparkles className="w-4 h-4" />
+                Natijalar
+              </TabsTrigger>
+              {isAdmin && (
+                <TabsTrigger 
+                  value="requests" 
+                  className="gap-1 data-[state=active]:bg-secondary data-[state=active]:shadow-sm transition-all duration-150 text-sm px-2.5"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  {language === "uz" ? "So'rovlar" : "Requests"}
+                </TabsTrigger>
+              )}
+            </TabsList>
+          </div>
         </div>
 
         {/* Chat Tab - NO flex on TabsContent, inner div handles flex layout */}
