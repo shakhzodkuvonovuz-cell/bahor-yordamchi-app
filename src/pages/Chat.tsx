@@ -530,6 +530,11 @@ export default function Chat() {
 
   // Load messages when thread changes
   useEffect(() => {
+    // Skip loading if we're about to send a pending message (new thread from /modes)
+    // The ?new effect will handle adding the first message
+    if (pendingThreadCreationRef.current) {
+      return;
+    }
     if (currentThreadId) {
       loadMessages(currentThreadId);
     }
