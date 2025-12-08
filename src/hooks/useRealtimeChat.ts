@@ -134,12 +134,17 @@ export function useRealtimeChat({
     onMessageUpdate(updated.id, updated.content);
   }, [threadId, onMessageUpdate]);
 
-  // Handle incoming attachment from realtime
-  const handleAttachmentInsert = useCallback(async (
+  // Handle incoming attachment from realtime (insert or update)
+  const handleAttachmentChange = useCallback(async (
     payload: RealtimePostgresInsertPayload<DbAttachment>
   ) => {
     const newAtt = payload.new;
     
+    // Skip if not for current thread
+    if (newAtt.thread_id !== threadId) {
+      return;
+    }
+
     // Dedupe: skip if already seen
     if (seenAttachmentIdsRef.current.has(newAtt.id)) {
       console.log("[Realtime] Skipping duplicate attachment:", newAtt.id);
@@ -147,16 +152,13 @@ export function useRealtimeChat({
     }
 
     // Skip if not linked to a message yet
+    // (we'll get it via UPDATE when it gets linked, or via page refresh)
     if (!newAtt.message_id) {
+      console.log("[Realtime] Attachment without message_id, waiting for link:", newAtt.id);
       return;
     }
 
-    // Skip if not for current thread
-    if (newAtt.thread_id !== threadId) {
-      return;
-    }
-
-    console.log("[Realtime] New attachment received:", newAtt.id);
+    console.log("[Realtime] New/Updated attachment received:", newAtt.id);
     seenAttachmentIdsRef.current.add(newAtt.id);
 
     // Generate signed URL
@@ -235,7 +237,18 @@ export function useRealtimeChat({
           table: "chat_attachments",
           filter: `thread_id=eq.${threadId}`,
         },
-        handleAttachmentInsert
+        handleAttachmentChange
+      )
+      // Listen for attachment updates (when message_id gets set)
+      .on<DbAttachment>(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "chat_attachments",
+          filter: `thread_id=eq.${threadId}`,
+        },
+        handleAttachmentChange as any
       )
       .subscribe((status) => {
         console.log("[Realtime] Subscription status:", status);
@@ -257,7 +270,7 @@ export function useRealtimeChat({
     threadId,
     handleMessageInsert,
     handleMessageUpdate,
-    handleAttachmentInsert,
+    handleAttachmentChange,
   ]);
 
   return {
