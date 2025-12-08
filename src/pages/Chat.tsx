@@ -434,26 +434,21 @@ export default function Chat() {
   const loadThreads = useCallback(async () => {
     if (!user || !mode) return;
     
+    // Skip loading if we're processing a "new" query param - thread will be created by that effect
+    const params = new URLSearchParams(location.search);
+    if (params.get("new")) return;
+    
     setIsLoadingThreads(true);
     try {
       const fetchedThreads = await chatStore.listThreads(user.id, mode);
       setThreads(fetchedThreads);
       
-      // If no threads exist, create one
-      if (fetchedThreads.length === 0) {
-        const newThread = await chatStore.createThread(user.id, {
-          title: t.chat.defaultChatTitle,
-          mode,
-        });
-        setThreads([newThread]);
-        setCurrentThreadId(newThread.id);
-        setMessages([]);
-        markThreadSeen(newThread.id);
-      } else {
+      if (fetchedThreads.length > 0) {
         // Select most recent thread
         const mostRecent = fetchedThreads[0];
         setCurrentThreadId(mostRecent.id);
       }
+      // Don't auto-create thread - let handleSendMessage create one when user sends first message
     } catch (error) {
       console.error("Error loading threads:", error);
       toast({
@@ -466,7 +461,7 @@ export default function Chat() {
     } finally {
       setIsLoadingThreads(false);
     }
-  }, [user, mode, t.chat.defaultChatTitle, language, toast]);
+  }, [user, mode, t.chat.defaultChatTitle, language, toast, location.search]);
 
   // Load messages for current thread
   const loadMessages = useCallback(async (threadId: string, append = false) => {
@@ -1119,10 +1114,12 @@ export default function Chat() {
   const handleSendMessage = async (content: string) => {
     if ((!content.trim() && pendingAttachments.length === 0) || isLoading || typing || !mode || !user) return;
     
-    // FRESH SESSION CHECK: If this is a fresh session (tab just opened) and user is sending 
-    // the first message, create a new chat first to avoid appending to old chat
-    if (isFreshSession() && currentThreadId) {
-      // Create a new thread for this fresh session
+    // Create new thread if:
+    // 1. No current thread exists (empty chat history), OR
+    // 2. Fresh session (tab just opened) AND current thread has messages (to avoid appending to old chat)
+    const needsNewThread = !currentThreadId || (isFreshSession() && messages.length > 0);
+    
+    if (needsNewThread) {
       try {
         const newThread = await chatStore.createThread(user.id, {
           title: t.chat.defaultChatTitle,
@@ -1137,7 +1134,8 @@ export default function Chat() {
         setTimeout(() => handleSendMessage(content), 50);
         return;
       } catch (error) {
-        console.error("Error creating fresh session chat:", error);
+        console.error("Error creating new chat:", error);
+        return;
       }
     }
     
