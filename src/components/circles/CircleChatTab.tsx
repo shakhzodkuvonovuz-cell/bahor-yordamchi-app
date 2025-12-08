@@ -252,15 +252,15 @@ export default function CircleChatTab({ spaceId, onSendAICardRef }: CircleChatTa
   }
 
   return (
-    <div className="h-full flex flex-col overflow-hidden relative">
+    <div className="h-full w-full flex flex-col overflow-hidden relative">
       {/* Messages container - scrollable area */}
       <div 
         ref={messagesContainerRef} 
-        className="flex-1 min-h-0 overflow-y-auto overscroll-contain scroll-smooth"
+        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain scroll-smooth"
         style={{ WebkitOverflowScrolling: "touch" }}
         onScroll={handleScroll}
       >
-        <div className="max-w-2xl mx-auto px-4 py-3 space-y-2.5">
+        <div className="max-w-2xl mx-auto px-4 py-3 space-y-2.5 w-full">
           {messages.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               {language === "uz" ? "Hali xabarlar yo'q" : "No messages yet"}
