@@ -50,6 +50,16 @@
   </head>
 
   <body>
+    <script>
+      // Flash prevention: set dark mode immediately before React loads
+      (function() {
+        var stored = localStorage.getItem('bahorai_theme');
+        if (stored === 'light') return; // User explicitly chose light
+        if (stored === 'dark' || !window.matchMedia('(prefers-color-scheme: light)').matches) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
