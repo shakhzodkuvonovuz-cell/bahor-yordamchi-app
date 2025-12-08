@@ -2196,11 +2196,12 @@ export default function Chat() {
                   />
                   
                   
-                  {/* ThinkBar - shows above assistant message while generating */}
+                  {/* ThinkBar - shows above assistant message while generating (hides once complete) */}
                   {message.role === 'assistant' && 
                    message.id === lastAssistantMessageId && 
                    (isLoading || typing) && 
-                   !message.trace && (
+                   !message.trace && 
+                   !activeTrace?.isComplete && (
                     <div className="mb-3">
                       <ThinkBar
                         trace={activeTrace}
