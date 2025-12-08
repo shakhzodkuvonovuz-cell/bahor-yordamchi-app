@@ -69,17 +69,17 @@ export function useTrialStatus() {
         return;
       }
 
-      // Check if user is dev bypass via edge function
-      const { data: { session } } = await supabase.auth.getSession();
+      // Check if user is dev bypass via edge function - get fresh session first
+      const { data: { session: freshSession } } = await supabase.auth.getSession();
       let isDevBypass = false;
       
-      if (session) {
+      if (freshSession) {
         try {
           const res = await fetch(
             `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-entitlements?action=status`,
             {
               headers: {
-                Authorization: `Bearer ${session.access_token}`,
+                Authorization: `Bearer ${freshSession.access_token}`,
                 'Content-Type': 'application/json',
               },
             }
