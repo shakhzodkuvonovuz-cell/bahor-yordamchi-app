@@ -293,7 +293,9 @@ function detectImageKeywords(q: string, qLower: string): { isImageGen: boolean; 
   const enKeywords = [
     "generate an image", "generate image", "create an image", "create image",
     "make an image", "draw an image", "draw image",
-    "generate a picture", "create a picture", "draw a picture"
+    "generate a picture", "create a picture", "draw a picture",
+    "generate a photo", "create a photo", "make a photo",
+    "photo of", "picture of", "image of"
   ];
   
   for (const kw of uzKeywords) {
