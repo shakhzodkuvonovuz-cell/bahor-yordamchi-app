@@ -167,6 +167,8 @@
   /* Smooth scrolling */
   html {
     scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   /* ============================================
@@ -181,6 +183,11 @@
     }
   }
 
+  /* Textarea base for all devices */
+  textarea {
+    @apply text-base md:text-sm;
+  }
+
   /* ============================================
      MOBILE VIEWPORT HEIGHT FIX
      100vh lies on mobile due to address bar
@@ -188,6 +195,12 @@
   .app-shell {
     height: 100dvh;
     height: calc(var(--vvh, 1vh) * 100);
+  }
+
+  /* Full page container that respects keyboard */
+  .mobile-full-height {
+    min-height: 100dvh;
+    min-height: calc(var(--vvh, 1vh) * 100);
   }
 
   /* ============================================
@@ -199,6 +212,14 @@
 
   .safe-area-top {
     padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  /* Chat composer sticky bottom with safe area */
+  .composer-container {
+    position: sticky;
+    bottom: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: hsl(var(--background));
   }
 }
 
