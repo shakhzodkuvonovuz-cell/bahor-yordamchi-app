@@ -150,13 +150,23 @@ const DeviceRegistrationHandler = () => {
 
     const registerDevice = async () => {
       try {
+        // Get fresh session to ensure we have a valid token
+        const { data: { session: freshSession } } = await supabase.auth.getSession();
+        if (!freshSession) {
+          console.log('No valid session for device registration');
+          return;
+        }
+
         const deviceId = getDeviceId();
         const { data, error } = await supabase.functions.invoke('register-device', {
           body: { device_id: deviceId, device_label: getDeviceLabel() },
         });
 
         if (error) {
-          console.error('Device registration error:', error);
+          // Don't log 401 errors as they're expected when session expires
+          if (!error.message?.includes('401')) {
+            console.error('Device registration error:', error);
+          }
           return;
         }
 
