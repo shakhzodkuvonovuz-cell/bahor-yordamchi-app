@@ -260,7 +260,7 @@ export default function Home() {
   };
 
   return (
-    <div className="bg-background flex flex-col">
+    <div className="bg-background flex flex-col min-h-[100dvh]">
       {/* Main content wrapper - ensures footer is below the fold */}
       <div className="min-h-screen flex flex-col">
         {/* Top Bar with page label + Language - subtle, not sticky */}
@@ -414,7 +414,7 @@ export default function Home() {
                       }
                     }}
                     placeholder={t('chat.input.placeholder')}
-                    className="flex-1 h-9 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground text-base min-w-0 leading-9"
+                    className="flex-1 h-9 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground text-base min-w-0 leading-9 [font-size:16px]"
                   />
 
                   {/* Send button */}
