@@ -26,23 +26,36 @@ export function DevicesSection() {
   const [showDevices, setShowDevices] = useState(false);
 
   const fetchDevices = async () => {
-    if (!user) return;
-    
-    const { data, error } = await supabase
-      .from('user_devices')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('last_seen_at', { ascending: false });
-
-    if (!error && data) {
-      setDevices(data as Device[]);
+    if (!user) {
+      setLoading(false);
+      return;
     }
-    setLoading(false);
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('user_devices')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('last_seen_at', { ascending: false });
+
+      if (error) {
+        console.error('Fetch devices error:', error);
+      } else if (data) {
+        setDevices(data as Device[]);
+      }
+    } catch (err) {
+      console.error('Fetch devices failed:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    fetchDevices();
-  }, [user]);
+    if (user) {
+      fetchDevices();
+    }
+  }, [user?.id]);
 
   const handleRevokeOthers = async () => {
     if (!user) return;
