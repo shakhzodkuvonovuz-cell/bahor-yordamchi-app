@@ -121,7 +121,7 @@ function shouldUseSearch(userMsg: string): boolean {
 }
 
 // ============================================
-// IMAGE GENERATION INTENT DETECTION (STRICT)
+// UNIFIED TOOL ROUTER - Priority-based decision
 // ============================================
 
 // Words that BLOCK image generation - if these appear, it's NOT an image request
@@ -150,38 +150,138 @@ const IMAGE_BLOCKERS = [
   "tahlil", "analysis", "analyze", "анализ",
 ];
 
-function detectImageGenerationIntent(userMsg: string, hasImageAttachment: boolean): { isImageGen: boolean; prompt: string } {
+// Router decision type
+interface RouterDecision {
+  selectedTool: 'text' | 'image' | 'search';
+  imageIntent: boolean;
+  searchIntent: boolean;
+  blockersHit: string[];
+  confidence: number;
+  explicitCommand: boolean;
+  detectedLanguage: string;
+  imagePrompt?: string;
+}
+
+// Detect language from message content
+function detectMessageLanguage(msg: string): string {
+  const text = msg.toLowerCase();
+  
+  // Cyrillic = Russian
+  if (/[а-яё]/i.test(text)) return 'ru';
+  
+  // Turkish special chars
+  if (/[ğüşöçıİ]/i.test(text)) return 'tr';
+  
+  // Uzbek Latin special chars (o', g', ʻ, ʼ)
+  if (/[oʻʼ]'|g'|oʻ|gʻ/i.test(text)) return 'uz';
+  
+  // Check for Uzbek-specific words
+  const uzWords = ['salom', 'rahmat', 'qanday', 'nima', 'qayerda', 'uchun', 'bilan', 'kerak'];
+  if (uzWords.some(w => text.includes(w))) return 'uz';
+  
+  // Default to English for Latin script
+  return 'en';
+}
+
+// Unified router function - single path decision
+function routeRequest(
+  userMsg: string, 
+  hasImageAttachment: boolean,
+  hasFileAttachment: boolean,
+  forcedTool?: 'text' | 'image' | 'search'
+): RouterDecision {
   const q = userMsg.trim();
   const qLower = q.toLowerCase();
+  const detectedLanguage = detectMessageLanguage(q);
   
-  // If user uploaded an image attachment, they want analysis, not generation
-  if (hasImageAttachment) {
-    console.log('[Image Detect] Has image attachment, skipping image gen');
-    return { isImageGen: false, prompt: "" };
+  const decision: RouterDecision = {
+    selectedTool: 'text',
+    imageIntent: false,
+    searchIntent: false,
+    blockersHit: [],
+    confidence: 1.0,
+    explicitCommand: false,
+    detectedLanguage,
+  };
+  
+  // PRIORITY 1: Forced tool from UI
+  if (forcedTool) {
+    decision.selectedTool = forcedTool;
+    decision.explicitCommand = true;
+    decision.confidence = 1.0;
+    console.log('[Router] Forced tool from UI:', forcedTool);
+    return decision;
   }
   
-  // HARD BLOCK: If message contains blockers, NEVER generate image
+  // PRIORITY 2: Explicit commands (/rasm, /image, /search)
+  if (qLower.startsWith('/image ') || qLower.startsWith('/rasm ')) {
+    decision.selectedTool = 'image';
+    decision.imageIntent = true;
+    decision.explicitCommand = true;
+    decision.imagePrompt = q.slice(7).trim();
+    console.log('[Router] Explicit image command');
+    return decision;
+  }
+  
+  if (qLower.startsWith('/search ') || qLower.startsWith('/qidir ')) {
+    decision.selectedTool = 'search';
+    decision.searchIntent = true;
+    decision.explicitCommand = true;
+    console.log('[Router] Explicit search command');
+    return decision;
+  }
+  
+  // PRIORITY 3: File/image attachments → always text analysis
+  if (hasImageAttachment || hasFileAttachment) {
+    decision.selectedTool = 'text';
+    console.log('[Router] Has attachment → text analysis');
+    return decision;
+  }
+  
+  // PRIORITY 4: Check hard blockers for image generation
   for (const blocker of IMAGE_BLOCKERS) {
     if (qLower.includes(blocker)) {
-      console.log('[Image Detect] BLOCKED by term:', blocker);
-      return { isImageGen: false, prompt: "" };
+      decision.blockersHit.push(blocker);
     }
   }
   
-  // HARD BLOCK: Questions (ends with ?) are never image requests
+  // Question mark = never image
   if (q.endsWith('?')) {
-    console.log('[Image Detect] BLOCKED: Question mark detected');
-    return { isImageGen: false, prompt: "" };
+    decision.blockersHit.push('?');
   }
   
-  // Check for explicit commands - ONLY way to guarantee image gen
-  if (qLower.startsWith('/image ') || qLower.startsWith('/rasm ')) {
-    const prompt = q.slice(7).trim();
-    console.log('[Image Detect] Explicit command detected, prompt:', prompt);
-    return { isImageGen: prompt.length > 0, prompt };
+  // PRIORITY 5: Check for image generation keywords (only if no blockers)
+  if (decision.blockersHit.length === 0) {
+    const imageResult = detectImageKeywords(q, qLower);
+    if (imageResult.isImageGen) {
+      decision.selectedTool = 'image';
+      decision.imageIntent = true;
+      decision.imagePrompt = imageResult.prompt;
+      decision.confidence = 0.85;
+      console.log('[Router] Image intent detected');
+      return decision;
+    }
+  } else {
+    console.log('[Router] Image blocked by:', decision.blockersHit);
   }
   
-  // Check for Uzbek keywords for image generation (explicit only)
+  // PRIORITY 6: Check for search intent
+  if (shouldUseSearch(userMsg)) {
+    decision.selectedTool = 'search';
+    decision.searchIntent = true;
+    decision.confidence = 0.8;
+    console.log('[Router] Search intent detected');
+    return decision;
+  }
+  
+  // PRIORITY 7: Default to text
+  console.log('[Router] Default to text');
+  return decision;
+}
+
+// Helper: detect image keywords only (no blockers check here)
+function detectImageKeywords(q: string, qLower: string): { isImageGen: boolean; prompt: string } {
+  // Uzbek keywords for image generation (explicit only)
   const uzKeywords = [
     "rasm yarat", "rasm chiz", "surat yarat", "surat chiz", "tasvir yarat", "tasvir chiz",
     "rasm qil", "chizib ber", "rasmini yarat", "rasmini chiz",
@@ -189,7 +289,7 @@ function detectImageGenerationIntent(userMsg: string, hasImageAttachment: boolea
     "rasmini chizib ber"
   ];
   
-  // Check for English keywords for image generation
+  // English keywords for image generation
   const enKeywords = [
     "generate an image", "generate image", "create an image", "create image",
     "make an image", "draw an image", "draw image",
@@ -199,7 +299,6 @@ function detectImageGenerationIntent(userMsg: string, hasImageAttachment: boolea
   for (const kw of uzKeywords) {
     if (qLower.includes(kw)) {
       const prompt = q.replace(new RegExp(kw, 'gi'), '').trim();
-      console.log('[Image Detect] UZ keyword matched:', kw, ', prompt:', prompt);
       return { isImageGen: true, prompt: prompt || q };
     }
   }
@@ -207,7 +306,6 @@ function detectImageGenerationIntent(userMsg: string, hasImageAttachment: boolea
   for (const kw of enKeywords) {
     if (qLower.includes(kw)) {
       const prompt = q.replace(new RegExp(kw, 'gi'), '').trim();
-      console.log('[Image Detect] EN keyword matched:', kw, ', prompt:', prompt);
       return { isImageGen: true, prompt: prompt || q };
     }
   }
@@ -225,18 +323,41 @@ function detectImageGenerationIntent(userMsg: string, hasImageAttachment: boolea
     if (pattern.test(qClean)) {
       const prompt = qClean.slice(0, -len).trim();
       if (prompt.length > 2) {
-        console.log('[Image Detect] Trailing keyword matched:', pattern.toString(), ', prompt:', prompt);
         return { isImageGen: true, prompt };
       }
     }
   }
   
-  // REMOVED: All loose pattern matching (scene descriptions, comma patterns, possessive endings)
-  // These caused false positives like "Sidney bugungi ob-havosi" triggering image gen
-  
-  console.log('[Image Detect] No image intent found in:', qLower.slice(0, 50));
   return { isImageGen: false, prompt: "" };
 }
+
+// Log router decision to database
+async function logRouterDecision(
+  supabase: any,
+  userId: string,
+  userMsg: string,
+  decision: RouterDecision,
+  uiLanguage?: string
+): Promise<void> {
+  try {
+    await supabase.from("tool_decisions").insert({
+      user_id: userId,
+      message_preview: userMsg.slice(0, 200),
+      detected_language: decision.detectedLanguage,
+      ui_language: uiLanguage || null,
+      image_intent: decision.imageIntent,
+      search_intent: decision.searchIntent,
+      blockers_hit: decision.blockersHit,
+      selected_tool: decision.selectedTool,
+      confidence: decision.confidence,
+      explicit_command: decision.explicitCommand,
+    });
+  } catch (e) {
+    console.log("Failed to log router decision:", e);
+  }
+}
+
+// REMOVED: Old detectImageGenerationIntent function - now using unified routeRequest()
 
 // ============================================
 // TRACE EVENT HELPER - Enhanced with safe metadata
@@ -606,13 +727,25 @@ serve(async (req) => {
     const effectivePlan = isPremium ? 'premium' : (isTrialActive ? 'trial' : 'free');
 
     // ===========================================
-    // IMAGE GENERATION INTENT DETECTION
+    // UNIFIED TOOL ROUTER - Priority-based decision
     // ===========================================
     const lastUserMsg = messages.filter((m: any) => m.role === "user").pop()?.content || "";
-    const imageIntent = detectImageGenerationIntent(lastUserMsg, hasImageAttachment);
+    const routerDecision = routeRequest(lastUserMsg, hasImageAttachment, hasFileAttachment);
     
-    if (imageIntent.isImageGen) {
-      console.log('[Image Gen] Detected image generation intent:', imageIntent.prompt);
+    // Log router decision for debugging
+    logRouterDecision(supabaseAdmin, user.id, lastUserMsg, routerDecision, ui_language);
+    
+    console.log('[Router Decision]', {
+      selectedTool: routerDecision.selectedTool,
+      imageIntent: routerDecision.imageIntent,
+      searchIntent: routerDecision.searchIntent,
+      blockersHit: routerDecision.blockersHit,
+      confidence: routerDecision.confidence,
+      detectedLanguage: routerDecision.detectedLanguage,
+    });
+    
+    if (routerDecision.selectedTool === 'image' && routerDecision.imagePrompt) {
+      console.log('[Image Gen] Routed to image generation:', routerDecision.imagePrompt);
       
       try {
         // Call the fireworks-generate-image edge function internally
@@ -623,7 +756,7 @@ serve(async (req) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            prompt: imageIntent.prompt,
+            prompt: routerDecision.imagePrompt,
             aspectRatio: '1:1',
             attachToChat: false,
           }),
@@ -710,14 +843,15 @@ serve(async (req) => {
     // Collect sources from web search
     const collectedSources: TraceSource[] = [];
 
-    // Check for search
+    // Check for search - use router decision
     const lastUserMessage = recentMessages.filter((m: any) => m.role === "user").pop()?.content || "";
     let searchResults = "";
     let searchUrls: string[] = [];
     let didSearch = false;
     let searchBusyMessage = "";
     
-    if (shouldUseSearch(lastUserMessage)) {
+    // Only search if router decided on search tool (not image, not text-only)
+    if (routerDecision.selectedTool === 'search' || routerDecision.searchIntent) {
       didSearch = true;
       try {
         // Set language for localized busy messages
@@ -771,22 +905,31 @@ Use this context to maintain continuity. Don't repeat information unless asked.
 `;
     }
 
-    // Build language directive based on reply_language
+    // Build STRONG language directive - use router's detected language or reply_language
     const languageNames: Record<string, string> = {
       uz: "Uzbek",
       ru: "Russian", 
       en: "English",
       tr: "Turkish",
     };
-    const replyLang = reply_language || "uz";
+    // Priority: reply_language from client > router detected language > default uz
+    const replyLang = reply_language || routerDecision.detectedLanguage || "uz";
     const languageDirective = `
 ═══════════════════════════════════════════════════════════════════
-REPLY LANGUAGE (MANDATORY)
+REPLY LANGUAGE (STRICT - DO NOT SWITCH)
 ═══════════════════════════════════════════════════════════════════
 
-**Reply in: ${languageNames[replyLang] || "Uzbek"}**
+**YOU MUST REPLY IN: ${languageNames[replyLang] || "Uzbek"} (${replyLang.toUpperCase()})**
 
-This is determined by the user's message language. Follow it strictly unless the user explicitly asks for a different language.
+CRITICAL LANGUAGE RULES:
+1. NEVER switch languages unless user EXPLICITLY requests it (e.g., "answer in English")
+2. Keep your ENTIRE response in ${languageNames[replyLang] || "Uzbek"} - including greetings, explanations, examples
+3. If you cite sources in another language, summarize/translate them to ${languageNames[replyLang] || "Uzbek"}
+4. Technical terms can stay in English, but explanations must be in ${languageNames[replyLang] || "Uzbek"}
+5. DO NOT use mixed languages in the same response
+
+User's detected message language: ${routerDecision.detectedLanguage}
+User's UI language setting: ${ui_language || "uz"}
 `;
 
     // Build attached file content blocks - prefer server-extracted text from DB
