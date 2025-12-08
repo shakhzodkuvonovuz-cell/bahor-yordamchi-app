@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Smartphone, Monitor, Tablet, Trash2, Check } from 'lucide-react';
+import { Smartphone, Monitor, Tablet, Trash2, Check, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useDeviceRegistration } from '@/hooks/useDeviceRegistration';
 import { useTranslation } from '@/i18n/LanguageProvider';
 import { toast } from 'sonner';
@@ -24,6 +23,7 @@ export function DevicesSection() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
   const [revoking, setRevoking] = useState(false);
+  const [showDevices, setShowDevices] = useState(false);
 
   const fetchDevices = async () => {
     if (!user) return;
@@ -91,48 +91,54 @@ export function DevicesSection() {
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('settings.devices') || "Qurilmalar"}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="animate-pulse space-y-3">
-            {[1, 2].map(i => (
-              <div key={i} className="h-14 bg-muted rounded-lg" />
-            ))}
+      <section className="bg-card border border-border/40 rounded-2xl overflow-hidden shadow-premium-sm w-full">
+        <div className="px-4 min-h-[56px] flex items-center gap-3">
+          <Smartphone className="w-5 h-5 text-muted-foreground shrink-0" />
+          <div className="flex-1">
+            <div className="h-4 w-24 bg-muted animate-pulse rounded" />
+            <div className="h-3 w-32 bg-muted animate-pulse rounded mt-1" />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Smartphone className="w-5 h-5" />
-          {t('settings.devices') || "Qurilmalar"}
-        </CardTitle>
-        <CardDescription>
-          {t('settings.devicesDescription') || `Faol qurilmalar: ${activeDevices.length}/${deviceLimit}`}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Active devices */}
-        <div className="space-y-2">
+    <section className="bg-card border border-border/40 rounded-2xl overflow-hidden shadow-premium-sm w-full">
+      <button
+        onClick={() => setShowDevices(prev => !prev)}
+        className="w-full px-4 min-h-[56px] flex items-center justify-between hover:bg-muted/50 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <Smartphone className="w-5 h-5 text-muted-foreground shrink-0" />
+          <div className="text-left">
+            <p className="font-medium text-foreground text-[15px]">
+              {t('settings.devices') || "Qurilmalar"}
+            </p>
+            <p className="text-[13px] text-muted-foreground">
+              {t('settings.devicesDescription') || `Faol qurilmalar: ${activeDevices.length}/${deviceLimit}`}
+            </p>
+          </div>
+        </div>
+        <ChevronRight className={`w-5 h-5 text-muted-foreground shrink-0 transition-transform ${showDevices ? 'rotate-90' : ''}`} />
+      </button>
+
+      {showDevices && (
+        <div className="border-t border-border/40 px-4 py-4 space-y-3">
+          {/* Active devices */}
           {activeDevices.map(device => (
             <div
               key={device.id}
               className={`flex items-center justify-between p-3 rounded-lg border ${
                 device.device_id === currentDeviceId
                   ? 'bg-primary/5 border-primary/20'
-                  : 'bg-muted/50'
+                  : 'bg-muted/50 border-border/40'
               }`}
             >
               <div className="flex items-center gap-3">
                 {getDeviceIcon(device.device_label)}
                 <div>
-                  <div className="font-medium flex items-center gap-2">
+                  <div className="font-medium text-[15px] flex items-center gap-2">
                     {device.device_label || 'Unknown'}
                     {device.device_id === currentDeviceId && (
                       <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
@@ -150,54 +156,54 @@ export function DevicesSection() {
               )}
             </div>
           ))}
-        </div>
 
-        {/* Revoked devices (collapsed) */}
-        {revokedDevices.length > 0 && (
-          <details className="group">
-            <summary className="text-sm text-muted-foreground cursor-pointer hover:text-foreground">
-              {t('settings.revokedDevices') || "Chiqarilgan qurilmalar"} ({revokedDevices.length})
-            </summary>
-            <div className="mt-2 space-y-2">
-              {revokedDevices.slice(0, 5).map(device => (
-                <div
-                  key={device.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/30 opacity-60"
-                >
-                  <div className="flex items-center gap-3">
-                    {getDeviceIcon(device.device_label)}
-                    <div>
-                      <div className="font-medium line-through">
-                        {device.device_label || 'Unknown'}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {t('settings.revokedAt') || "Chiqarilgan"}: {formatDate(device.revoked_at!)}
+          {/* Revoked devices (collapsed) */}
+          {revokedDevices.length > 0 && (
+            <details className="group">
+              <summary className="text-sm text-muted-foreground cursor-pointer hover:text-foreground">
+                {t('settings.revokedDevices') || "Chiqarilgan qurilmalar"} ({revokedDevices.length})
+              </summary>
+              <div className="mt-2 space-y-2">
+                {revokedDevices.slice(0, 5).map(device => (
+                  <div
+                    key={device.id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted/30 opacity-60"
+                  >
+                    <div className="flex items-center gap-3">
+                      {getDeviceIcon(device.device_label)}
+                      <div>
+                        <div className="font-medium line-through text-[15px]">
+                          {device.device_label || 'Unknown'}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {t('settings.revokedAt') || "Chiqarilgan"}: {formatDate(device.revoked_at!)}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </details>
-        )}
+                ))}
+              </div>
+            </details>
+          )}
 
-        {/* Sign out other devices button */}
-        {activeDevices.length > 1 && (
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={handleRevokeOthers}
-            disabled={revoking}
-          >
-            <Trash2 className="w-4 h-4 mr-2" />
-            {revoking
-              ? (t('common.loading') || "Yuklanmoqda...")
-              : (t('settings.signOutOtherDevices') || "Boshqa qurilmalardan chiqish")
-            }
-          </Button>
-        )}
-      </CardContent>
-    </Card>
+          {/* Sign out other devices button */}
+          {activeDevices.length > 1 && (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={handleRevokeOthers}
+              disabled={revoking}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              {revoking
+                ? (t('common.loading') || "Yuklanmoqda...")
+                : (t('settings.signOutOtherDevices') || "Boshqa qurilmalardan chiqish")
+              }
+            </Button>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 
