@@ -168,6 +168,38 @@
   html {
     scroll-behavior: smooth;
   }
+
+  /* ============================================
+     MOBILE INPUT ZOOM PREVENTION
+     iOS Safari auto-zooms inputs < 16px
+     ============================================ */
+  @media screen and (max-width: 768px) {
+    input,
+    textarea,
+    select {
+      font-size: 16px !important;
+    }
+  }
+
+  /* ============================================
+     MOBILE VIEWPORT HEIGHT FIX
+     100vh lies on mobile due to address bar
+     ============================================ */
+  .app-shell {
+    height: 100dvh;
+    height: calc(var(--vvh, 1vh) * 100);
+  }
+
+  /* ============================================
+     SAFE AREA INSETS (iOS notch + home bar)
+     ============================================ */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
 }
 
 /* iOS Safari text selection prevention - touch devices only, bubble content only */
