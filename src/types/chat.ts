@@ -13,6 +13,7 @@ export interface ChatAttachment {
   readStatus?: 'ready' | 'unsupported' | 'error' | 'processing';
   dbId?: string; // Database record ID for linking to messages
   storagePath?: string; // Storage path for DB linking
+  textStatus?: 'pending' | 'processing' | 'ready' | 'failed'; // Server-side extraction status
 }
 
 export interface Message {

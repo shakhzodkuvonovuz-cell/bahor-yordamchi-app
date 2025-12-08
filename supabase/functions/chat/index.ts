@@ -835,31 +835,69 @@ REPLY LANGUAGE (MANDATORY)
 This is determined by the user's message language. Follow it strictly unless the user explicitly asks for a different language.
 `;
 
-    // Build attached file content blocks from extractedText
+    // Build attached file content blocks - prefer server-extracted text from DB
     let fileContentBlocks = "";
+    const attachmentIds = attachments?.filter((att: any) => att.dbId)?.map((att: any) => att.dbId) || [];
+    
+    // Fetch extracted text from attachment_text table
+    let dbExtractedTexts: Record<string, { text: string; summary: string; status: string }> = {};
+    if (attachmentIds.length > 0) {
+      const { data: extractedData } = await supabaseAdmin
+        .from('attachment_text')
+        .select('attachment_id, text, summary, status')
+        .in('attachment_id', attachmentIds)
+        .eq('status', 'ready');
+      
+      if (extractedData) {
+        for (const item of extractedData) {
+          dbExtractedTexts[item.attachment_id] = {
+            text: item.text || '',
+            summary: item.summary || '',
+            status: item.status,
+          };
+        }
+      }
+    }
+    
     if (attachments && Array.isArray(attachments)) {
-      const filesWithText = attachments.filter((att: any) => att.extractedText);
-      if (filesWithText.length > 0) {
-        const blocks = filesWithText.map((att: any) => 
-          `--- ATTACHED FILE: ${att.name} ---\n${att.extractedText}\n--- END FILE ---`
-        ).join('\n\n');
+      const fileBlocks: string[] = [];
+      const unsupportedNames: string[] = [];
+      
+      for (const att of attachments) {
+        const dbText = att.dbId ? dbExtractedTexts[att.dbId] : null;
+        
+        if (dbText && dbText.status === 'ready') {
+          // Use server-extracted text (prefer summary if available and text is long)
+          const content = (dbText.summary && dbText.text.length > 20000) ? dbText.summary : dbText.text;
+          if (content) {
+            fileBlocks.push(`--- ATTACHED FILE: ${att.name} ---\n${content}\n--- END FILE ---`);
+          }
+        } else if (att.extractedText) {
+          // Fallback to client-extracted text
+          fileBlocks.push(`--- ATTACHED FILE: ${att.name} ---\n${att.extractedText}\n--- END FILE ---`);
+        } else if (att.readStatus === 'unsupported') {
+          unsupportedNames.push(att.name);
+        } else if (att.readStatus === 'processing') {
+          fileBlocks.push(`--- ATTACHED FILE: ${att.name} ---\n[File is still being processed. Please wait a moment and try again.]\n--- END FILE ---`);
+        }
+      }
+      
+      if (fileBlocks.length > 0) {
         fileContentBlocks = `
 ═══════════════════════════════════════════════════════════════════
 ATTACHED FILES (User uploaded these files - prioritize answering based on their content)
 ═══════════════════════════════════════════════════════════════════
 
-${blocks}
+${fileBlocks.join('\n\n')}
 
 If an attached file is provided above, prioritize answering based on its content. If the user asks to summarize, analyze, or explain the file, do so based on the content above.
 `;
       }
       
       // Check for unsupported files that need acknowledgment
-      const unsupportedFiles = attachments.filter((att: any) => att.readStatus === 'unsupported');
-      if (unsupportedFiles.length > 0) {
-        const names = unsupportedFiles.map((att: any) => att.name).join(', ');
+      if (unsupportedNames.length > 0) {
         fileContentBlocks += `
-Note: The user attached file(s) that could not be read: ${names}. If they ask about these files, politely explain that PDF/DOC file reading is coming soon in beta, and suggest they paste the text content directly or use a TXT/JSON file instead.
+Note: The user attached file(s) that could not be read: ${unsupportedNames.join(', ')}. If they ask about these files, politely explain that this file type is not yet supported, and suggest they paste the text content directly or use a TXT/PDF file instead.
 `;
       }
     }

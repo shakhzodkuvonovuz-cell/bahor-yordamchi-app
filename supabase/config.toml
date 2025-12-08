@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.fireworks-generate-image]
 verify_jwt = false
+
+[functions.extract-attachment-text]
+verify_jwt = false
