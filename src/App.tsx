@@ -105,10 +105,11 @@ const OAuthDeepLinkHandler = () => {
 
 // Device Registration Handler - registers device on app startup
 const DeviceRegistrationHandler = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, session } = useAuth();
 
   useEffect(() => {
-    if (!user) return;
+    // Need both user AND session to be valid before registering
+    if (!user || !session) return;
 
     const DEVICE_ID_KEY = 'bahor_device_id';
     
@@ -173,8 +174,10 @@ const DeviceRegistrationHandler = () => {
       }
     };
 
-    registerDevice();
-  }, [user, signOut]);
+    // Small delay to ensure session token is fully propagated
+    const timer = setTimeout(registerDevice, 500);
+    return () => clearTimeout(timer);
+  }, [user, session, signOut]);
 
   return null;
 };
