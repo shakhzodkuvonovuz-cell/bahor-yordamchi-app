@@ -103,100 +103,6 @@ const OAuthDeepLinkHandler = () => {
   return null;
 };
 
-// Device Registration Handler - registers device on app startup
-const DeviceRegistrationHandler = () => {
-  const { user, signOut, session } = useAuth();
-
-  useEffect(() => {
-    // Need both user AND session to be valid before registering
-    if (!user || !session) return;
-
-    const DEVICE_ID_KEY = 'bahor_device_id';
-    
-    // Generate device ID if not exists
-    const getDeviceId = () => {
-      let deviceId = localStorage.getItem(DEVICE_ID_KEY);
-      if (!deviceId) {
-        const nav = window.navigator;
-        const screen = window.screen;
-        const components = [
-          nav.userAgent, nav.language, screen.width, screen.height,
-          screen.colorDepth, new Date().getTimezoneOffset(), nav.hardwareConcurrency || 'unknown',
-        ];
-        let hashCode = 0;
-        const hash = components.join('|');
-        for (let i = 0; i < hash.length; i++) {
-          hashCode = ((hashCode << 5) - hashCode) + hash.charCodeAt(i);
-          hashCode = hashCode & hashCode;
-        }
-        const random = Math.random().toString(36).substring(2, 15);
-        const timestamp = Date.now().toString(36);
-        deviceId = `${Math.abs(hashCode).toString(36)}-${random}-${timestamp}`;
-        localStorage.setItem(DEVICE_ID_KEY, deviceId);
-      }
-      return deviceId;
-    };
-
-    const getDeviceLabel = () => {
-      const ua = navigator.userAgent;
-      if (/iPhone/.test(ua)) return 'iPhone';
-      if (/iPad/.test(ua)) return 'iPad';
-      if (/Android/.test(ua)) return /Mobile/.test(ua) ? 'Android Phone' : 'Android Tablet';
-      if (/Macintosh/.test(ua)) return 'Mac';
-      if (/Windows/.test(ua)) return 'Windows PC';
-      if (/Linux/.test(ua)) return 'Linux';
-      return 'Unknown Device';
-    };
-
-    const registerDevice = async () => {
-      try {
-        // Validate session with server (getUser checks with server, getSession uses cache)
-        const { data: { user: validUser }, error: userError } = await supabase.auth.getUser();
-        if (userError || !validUser) {
-          console.log('Session invalid, skipping device registration');
-          // Session is invalid server-side, sign out to clear stale tokens
-          if (userError?.message?.includes('session_not_found') || userError?.status === 403) {
-            signOut();
-          }
-          return;
-        }
-
-        const deviceId = getDeviceId();
-        const { data, error } = await supabase.functions.invoke('register-device', {
-          body: { device_id: deviceId, device_label: getDeviceLabel() },
-        });
-
-        if (error) {
-          // Session expired server-side, force sign out
-          if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
-            signOut();
-            return;
-          }
-          console.error('Device registration error:', error);
-          return;
-        }
-
-        // Check if current device was revoked
-        const isActive = data?.devices?.some((d: { device_id: string }) => d.device_id === deviceId);
-        if (data?.devices && !isActive) {
-          toast.error("Sessiya boshqa qurilmadan tugatildi", {
-            description: "Iltimos, qayta kiring.",
-            duration: 5000,
-          });
-          setTimeout(() => signOut(), 2000);
-        }
-      } catch (err) {
-        console.error('Device registration failed:', err);
-      }
-    };
-
-    // Small delay to ensure session token is fully propagated
-    const timer = setTimeout(registerDevice, 500);
-    return () => clearTimeout(timer);
-  }, [user, session, signOut]);
-
-  return null;
-};
 
 const App = () => (
   <ErrorBoundary>
@@ -210,8 +116,6 @@ const App = () => (
                 <VisualViewportHandler />
                 {/* OAuth Deep Link Handler for Capacitor */}
                 <OAuthDeepLinkHandler />
-                {/* Device Registration Handler - registers on every app load */}
-                <DeviceRegistrationHandler />
                 <OfflineBanner />
                 <Toaster />
                 <Sonner />
