@@ -40,13 +40,16 @@ export function AppShellV2({ children }: AppShellV2Props) {
     if (path === "/modes") return "Suhbat";
     if (path === "/modes-list") return "Rejimlar";
     if (path.startsWith("/chat")) return "Chat";
-    if (path.startsWith("/circles")) return "Doiralar";
+    if (path === "/circles") return "Doiralar";
     if (path.startsWith("/tools")) return "Asboblar";
     if (path === "/settings") return "Sozlamalar";
     if (path === "/feedback") return "Fikr bildirish";
     if (path === "/support") return "Yordam";
     return "Bahor AI";
   };
+
+  // Pages that have their own headers and don't need AppShellV2 mobile header
+  const hidesMobileHeader = location.pathname.match(/^\/circles\/[^/]+$/);
 
   return (
     <div className="min-h-[100dvh] bg-background flex w-full app-shell">
@@ -61,27 +64,29 @@ export function AppShellV2({ children }: AppShellV2Props) {
         />
       </aside>
 
-      {/* Mobile Top Bar */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-background/95 backdrop-blur-md border-b border-border z-40 flex items-center justify-between px-4 safe-area-top">
-        <button
-          onClick={() => setDrawerOpen(true)}
-          className="p-2 -ml-2 rounded-lg hover:bg-accent transition-colors"
-          aria-label="Open menu"
-        >
-          <Menu className="w-5 h-5 text-foreground" />
-        </button>
-        
-        <div className="flex items-center gap-2">
-          <img 
-            src={bahorLogo} 
-            alt="Bahor AI" 
-            className="h-7 w-7 object-contain" 
-          />
-          <span className="font-semibold text-foreground">{getPageTitle()}</span>
-        </div>
-        
-        <div className="w-9" />
-      </header>
+      {/* Mobile Top Bar - hidden for pages with their own headers */}
+      {!hidesMobileHeader && (
+        <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-background/95 backdrop-blur-md border-b border-border z-40 flex items-center justify-between px-4 safe-area-top">
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="p-2 -ml-2 rounded-lg hover:bg-accent transition-colors"
+            aria-label="Open menu"
+          >
+            <Menu className="w-5 h-5 text-foreground" />
+          </button>
+          
+          <div className="flex items-center gap-2">
+            <img 
+              src={bahorLogo} 
+              alt="Bahor AI" 
+              className="h-7 w-7 object-contain" 
+            />
+            <span className="font-semibold text-foreground">{getPageTitle()}</span>
+          </div>
+          
+          <div className="w-9" />
+        </header>
+      )}
 
       {/* Mobile Drawer Overlay - true modal with fixed position */}
       {drawerOpen && (
@@ -119,7 +124,7 @@ export function AppShellV2({ children }: AppShellV2Props) {
       <main className={cn(
         "flex-1 min-h-[100dvh] transition-all duration-300",
         collapsed ? "lg:ml-[72px]" : "lg:ml-[260px]",
-        "pt-14 lg:pt-0"
+        hidesMobileHeader ? "pt-0 lg:pt-0" : "pt-14 lg:pt-0"
       )}>
         {children}
       </main>
