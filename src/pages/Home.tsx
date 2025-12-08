@@ -214,14 +214,16 @@ export default function Home() {
           });
         }
 
-        // Navigate with ?new to force new chat creation
+      // Navigate with ?new to force new chat creation
+        // Store pending message and attachments in sessionStorage
         const newChatId = crypto.randomUUID?.() ?? Date.now().toString();
-        navigate(`/chat/${selectedMode}?new=${newChatId}`, { 
-          state: { 
-            initialMessage: input,
-            attachments: uploadedAttachments,
-          } 
-        });
+        if (input.trim()) {
+          sessionStorage.setItem(`pending_msg_${newChatId}`, input.trim());
+        }
+        if (uploadedAttachments.length > 0) {
+          sessionStorage.setItem(`pending_attachments_${newChatId}`, JSON.stringify(uploadedAttachments));
+        }
+        navigate(`/chat/${selectedMode}?new=${newChatId}&source=modes`);
       } catch (error) {
         console.error("Upload error:", error);
         toast({
@@ -234,8 +236,12 @@ export default function Home() {
       }
     } else {
       // Navigate with ?new to force new chat creation
+      // Store pending message in sessionStorage for Chat.tsx to pick up
       const newChatId = crypto.randomUUID?.() ?? Date.now().toString();
-      navigate(`/chat/${selectedMode}?new=${newChatId}`, { state: { initialMessage: input } });
+      if (input.trim()) {
+        sessionStorage.setItem(`pending_msg_${newChatId}`, input.trim());
+      }
+      navigate(`/chat/${selectedMode}?new=${newChatId}&source=modes`);
     }
   };
 
@@ -249,7 +255,8 @@ export default function Home() {
   const handlePromptChip = (mode: string, prompt: string) => {
     markSessionInitialized();
     const newChatId = crypto.randomUUID?.() ?? Date.now().toString();
-    navigate(`/chat/${mode}?new=${newChatId}`, { state: { initialMessage: prompt } });
+    sessionStorage.setItem(`pending_msg_${newChatId}`, prompt);
+    navigate(`/chat/${mode}?new=${newChatId}&source=modes`);
   };
 
   return (

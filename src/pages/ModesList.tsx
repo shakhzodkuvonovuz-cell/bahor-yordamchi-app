@@ -9,8 +9,9 @@ export default function ModesList() {
   const { language, t } = useTranslation();
 
   const handleModeClick = (modeId: string) => {
-    // Navigate to main chat entry page with mode preselected
-    navigate(`/modes?mode=${modeId}`);
+    // Create a new chat in the selected mode
+    const newChatId = crypto.randomUUID?.() ?? Date.now().toString();
+    navigate(`/chat/${modeId}?new=${newChatId}&source=modes`);
   };
 
   return (
