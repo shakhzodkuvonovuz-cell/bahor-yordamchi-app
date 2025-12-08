@@ -57,13 +57,6 @@ export function useTrialStatus() {
     }
 
     try {
-      // Validate session with server first
-      const { data: { user: validUser }, error: authError } = await supabase.auth.getUser();
-      if (authError || !validUser) {
-        console.log('Session invalid, using default trial status');
-        setStatus(defaultStatus);
-        return;
-      }
 
       // Initialize trial for user (14 days by default)
       await supabase.rpc('get_or_create_trial', { p_user_id: user.id, p_trial_days: 14 });
