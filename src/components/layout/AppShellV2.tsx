@@ -14,6 +14,11 @@ export function AppShellV2({ children }: AppShellV2Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
+  // Close drawer on route change
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [location.pathname]);
+
   // Lock body scroll when drawer is open
   useEffect(() => {
     if (drawerOpen) {

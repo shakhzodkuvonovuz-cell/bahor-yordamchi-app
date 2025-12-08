@@ -109,7 +109,13 @@ export function FileActionsSheet({ file, open, onOpenChange, onDeleted }: FileAc
       if (!response.ok) throw new Error("Failed to fetch file");
       
       const blob = await response.blob();
-      const filename = `${file.title}.pdf`;
+      
+      // Determine filename with correct extension
+      const isImage = file.mime_type?.startsWith("image/");
+      const ext = isImage 
+        ? (file.mime_type?.split("/")[1] || "png")
+        : "pdf";
+      const filename = `${file.title}.${ext}`;
       
       // Try Web Share API on mobile (iOS "Save to Files")
       if (navigator.canShare && navigator.canShare({ files: [new File([blob], filename, { type: file.mime_type })] })) {
@@ -283,15 +289,29 @@ export function FileActionsSheet({ file, open, onOpenChange, onDeleted }: FileAc
             </Button>
           </DialogHeader>
           <div className="flex-1 overflow-hidden">
-            {file.signed_url && file.mime_type === "application/pdf" ? (
+            {file.signed_url && file.mime_type?.startsWith("image/") ? (
+              <div className="w-full h-[calc(85vh-60px)] flex items-center justify-center bg-black/5 p-4">
+                <img
+                  src={file.signed_url}
+                  alt={file.title}
+                  className="max-w-full max-h-full object-contain rounded-lg"
+                />
+              </div>
+            ) : file.signed_url && file.mime_type === "application/pdf" ? (
               <iframe
                 src={file.signed_url}
                 className="w-full h-[calc(85vh-60px)] border-0"
                 title={file.title}
               />
             ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                {language === "uz" ? "Ko'rishni iloji yo'q" : "Preview not available"}
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-4">
+                <p>{language === "uz" ? "Ko'rishni iloji yo'q" : "Preview not available"}</p>
+                {file.signed_url && (
+                  <Button variant="outline" onClick={handleDownload} disabled={downloading}>
+                    <Download className="w-4 h-4 mr-2" />
+                    {t("download")}
+                  </Button>
+                )}
               </div>
             )}
           </div>
