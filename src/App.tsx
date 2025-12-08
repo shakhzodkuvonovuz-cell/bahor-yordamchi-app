@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate } from "react-router-dom";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { LanguageProvider } from "@/i18n/LanguageProvider";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PublicRoute } from "@/components/PublicRoute";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -14,6 +14,7 @@ import OfflineBanner from "@/components/OfflineBanner";
 import { AppShellV2 } from "@/components/layout/AppShellV2";
 import { setupOAuthDeepLinkListener, isNativePlatform } from "@/lib/auth/googleAuth";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import Home from "./pages/Home";
 import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
@@ -102,6 +103,82 @@ const OAuthDeepLinkHandler = () => {
   return null;
 };
 
+// Device Registration Handler - registers device on app startup
+const DeviceRegistrationHandler = () => {
+  const { user, signOut } = useAuth();
+
+  useEffect(() => {
+    if (!user) return;
+
+    const DEVICE_ID_KEY = 'bahor_device_id';
+    
+    // Generate device ID if not exists
+    const getDeviceId = () => {
+      let deviceId = localStorage.getItem(DEVICE_ID_KEY);
+      if (!deviceId) {
+        const nav = window.navigator;
+        const screen = window.screen;
+        const components = [
+          nav.userAgent, nav.language, screen.width, screen.height,
+          screen.colorDepth, new Date().getTimezoneOffset(), nav.hardwareConcurrency || 'unknown',
+        ];
+        let hashCode = 0;
+        const hash = components.join('|');
+        for (let i = 0; i < hash.length; i++) {
+          hashCode = ((hashCode << 5) - hashCode) + hash.charCodeAt(i);
+          hashCode = hashCode & hashCode;
+        }
+        const random = Math.random().toString(36).substring(2, 15);
+        const timestamp = Date.now().toString(36);
+        deviceId = `${Math.abs(hashCode).toString(36)}-${random}-${timestamp}`;
+        localStorage.setItem(DEVICE_ID_KEY, deviceId);
+      }
+      return deviceId;
+    };
+
+    const getDeviceLabel = () => {
+      const ua = navigator.userAgent;
+      if (/iPhone/.test(ua)) return 'iPhone';
+      if (/iPad/.test(ua)) return 'iPad';
+      if (/Android/.test(ua)) return /Mobile/.test(ua) ? 'Android Phone' : 'Android Tablet';
+      if (/Macintosh/.test(ua)) return 'Mac';
+      if (/Windows/.test(ua)) return 'Windows PC';
+      if (/Linux/.test(ua)) return 'Linux';
+      return 'Unknown Device';
+    };
+
+    const registerDevice = async () => {
+      try {
+        const deviceId = getDeviceId();
+        const { data, error } = await supabase.functions.invoke('register-device', {
+          body: { device_id: deviceId, device_label: getDeviceLabel() },
+        });
+
+        if (error) {
+          console.error('Device registration error:', error);
+          return;
+        }
+
+        // Check if current device was revoked
+        const isActive = data?.devices?.some((d: { device_id: string }) => d.device_id === deviceId);
+        if (data?.devices && !isActive) {
+          toast.error("Sessiya boshqa qurilmadan tugatildi", {
+            description: "Iltimos, qayta kiring.",
+            duration: 5000,
+          });
+          setTimeout(() => signOut(), 2000);
+        }
+      } catch (err) {
+        console.error('Device registration failed:', err);
+      }
+    };
+
+    registerDevice();
+  }, [user, signOut]);
+
+  return null;
+};
+
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
@@ -114,6 +191,8 @@ const App = () => (
                 <VisualViewportHandler />
                 {/* OAuth Deep Link Handler for Capacitor */}
                 <OAuthDeepLinkHandler />
+                {/* Device Registration Handler - registers on every app load */}
+                <DeviceRegistrationHandler />
                 <OfflineBanner />
                 <Toaster />
                 <Sonner />
