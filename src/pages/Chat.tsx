@@ -195,6 +195,9 @@ export default function Chat() {
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const [messageOffset, setMessageOffset] = useState(0);
   
+  // Ref to track thread creation in progress (prevents double-creation loop)
+  const pendingThreadCreationRef = useRef<string | null>(null);
+  
   // Migration modal state
   const [showMigrationModal, setShowMigrationModal] = useState(false);
   
@@ -562,7 +565,16 @@ export default function Chat() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const newParam = params.get("new");
+    
+    // Skip if already processing this newParam (prevents double-creation)
+    if (newParam && pendingThreadCreationRef.current === newParam) {
+      return;
+    }
+    
     if (newParam && user && mode) {
+      // Mark as in-progress
+      pendingThreadCreationRef.current = newParam;
+      
       // Create a new chat thread immediately
       const createNewThread = async () => {
         try {
@@ -573,7 +585,6 @@ export default function Chat() {
           setThreads(prev => [newThread, ...prev]);
           setCurrentThreadId(newThread.id);
           setMessages([]);
-          setInputValue("");
           markThreadSeen(newThread.id);
           // Mark session as initialized since we're starting fresh
           markSessionInitialized();
@@ -604,19 +615,25 @@ export default function Chat() {
               setPendingAttachments(attachments);
             }
             
-            // Auto-send the pending message after thread is created
+            // Auto-send the pending message using the new thread ID directly
             if (pendingMessage) {
-              // Small delay to ensure thread state is updated
+              // Use a small delay and pass thread ID directly to avoid stale state issues
               setTimeout(() => {
-                handleSendMessage(pendingMessage);
-              }, 100);
+                // Clear the pending flag since thread is created
+                pendingThreadCreationRef.current = null;
+                handleSendMessage(pendingMessage, newThread.id);
+              }, 50);
+              return; // Don't clear pendingThreadCreationRef yet
             }
-          } else {
-            // Focus input if no pending message
-            setTimeout(() => inputRef.current?.focus(), 100);
           }
+          
+          // Clear the pending flag
+          pendingThreadCreationRef.current = null;
+          // Focus input if no pending message
+          setTimeout(() => inputRef.current?.focus(), 100);
         } catch (error) {
           console.error("Error creating new chat:", error);
+          pendingThreadCreationRef.current = null;
         }
       };
       createNewThread();
@@ -1139,13 +1156,17 @@ export default function Chat() {
     setPendingAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
   };
 
-  const handleSendMessage = async (content: string) => {
+  // handleSendMessage with optional thread override to bypass stale state
+  const handleSendMessage = async (content: string, overrideThreadId?: string) => {
     if ((!content.trim() && pendingAttachments.length === 0) || isLoading || typing || !mode || !user) return;
     
+    // Use override thread if provided, otherwise use state
+    const effectiveThreadId = overrideThreadId || currentThreadId;
+    
     // Create new thread if:
-    // 1. No current thread exists (empty chat history), OR
+    // 1. No effective thread exists (empty chat history), OR
     // 2. Fresh session (tab just opened) AND current thread has messages (to avoid appending to old chat)
-    const needsNewThread = !currentThreadId || (isFreshSession() && messages.length > 0);
+    const needsNewThread = !effectiveThreadId || (!overrideThreadId && isFreshSession() && messages.length > 0);
     
     if (needsNewThread) {
       try {
@@ -1158,8 +1179,8 @@ export default function Chat() {
         setMessages([]);
         markSessionInitialized();
         markThreadSeen(newThread.id);
-        // Wait a tick for state to update, then re-call handleSendMessage
-        setTimeout(() => handleSendMessage(content), 50);
+        // Use the new thread directly to avoid stale state
+        await handleSendMessage(content, newThread.id);
         return;
       } catch (error) {
         console.error("Error creating new chat:", error);
@@ -1167,8 +1188,8 @@ export default function Chat() {
       }
     }
     
-    // Must have currentThreadId at this point
-    if (!currentThreadId) return;
+    // Must have effective thread ID at this point
+    if (!effectiveThreadId) return;
     
     // Mark session as initialized (user has sent a message)
     markSessionInitialized();
@@ -1217,9 +1238,9 @@ export default function Chat() {
     let savedUserMessageId: string | null = null;
 
     try {
-      // Save user message to DB
+      // Save user message to DB - use effectiveThreadId
       const savedUserMessage = await chatStore.addMessage(user.id, {
-        threadId: currentThreadId,
+        threadId: effectiveThreadId,
         role: "user",
         content: content.trim(),
       });
@@ -1244,12 +1265,12 @@ export default function Chat() {
       }
       
       // Auto-title thread if it's the first message
-      const currentThread = threads.find(t => t.id === currentThreadId);
+      const currentThread = threads.find(t => t.id === effectiveThreadId);
       if (currentThread && (currentThread.title === "Yangi chat" || currentThread.title === t.chat.defaultChatTitle)) {
         const newTitle = generateChatTitle(content.trim());
-        await chatStore.renameThread(currentThreadId, newTitle);
+        await chatStore.renameThread(effectiveThreadId, newTitle);
         setThreads(prev => prev.map(th => 
-          th.id === currentThreadId ? { ...th, title: newTitle } : th
+          th.id === effectiveThreadId ? { ...th, title: newTitle } : th
         ));
       }
 
@@ -1343,7 +1364,7 @@ export default function Chat() {
       
       // Get thread context (summary + recent messages) for API
       const { summary: threadSummary, messages: contextMessages } = await chatStore.getMessagesWithContext(
-        currentThreadId,
+        effectiveThreadId,
         { recentLimit: 10 }
       );
       
@@ -1541,7 +1562,7 @@ export default function Chat() {
           if (user) {
             try {
               const savedAssistant = await chatStore.addMessage(user.id, {
-                threadId: currentThreadId,
+                threadId: effectiveThreadId,
                 role: "assistant",
                 content: imageMessage.content,
               });
@@ -1549,7 +1570,7 @@ export default function Chat() {
               // Also save the attachment reference with correct storage path
               if (jsonData.fileUrl && jsonData.filePath) {
                 const imgAttachment = await chatStore.attachFile(user.id, {
-                  threadId: currentThreadId,
+                  threadId: effectiveThreadId,
                   messageId: savedAssistant.id,
                   bucket: "user-files",
                   path: jsonData.filePath,
@@ -1728,7 +1749,7 @@ export default function Chat() {
           if (assistantContent && user) {
             try {
               const savedAssistant = await chatStore.addMessage(user.id, {
-                threadId: currentThreadId,
+                threadId: effectiveThreadId,
                 role: "assistant",
                 content: assistantContent,
               });
@@ -1744,11 +1765,11 @@ export default function Chat() {
               setLastAssistantMessageId(savedAssistant.id);
               
               if (session?.access_token) {
-                chatStore.maybeGenerateSummary(currentThreadId, session.access_token)
+                chatStore.maybeGenerateSummary(effectiveThreadId, session.access_token)
                   .then(result => {
                     if (result.summary) {
                       setThreads(prev => prev.map(t => 
-                        t.id === currentThreadId 
+                        t.id === effectiveThreadId 
                           ? { ...t, summary: result.summary }
                           : t
                       ));
