@@ -879,6 +879,30 @@ export type Database = {
         }
         Relationships: []
       }
+      usage_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          meta: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          meta?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          meta?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_entitlements: {
         Row: {
           created_at: string
@@ -985,6 +1009,7 @@ export type Database = {
       }
       get_space_by_invite_code: { Args: { p_code: string }; Returns: Json }
       get_trial_status: { Args: { p_user_id: string }; Returns: Json }
+      get_usage_summary: { Args: { p_date?: string }; Returns: Json }
       increment_daily_usage: {
         Args: { p_today: string; p_user_id: string }
         Returns: Json
