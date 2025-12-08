@@ -370,7 +370,7 @@ export default function CircleChatMessage({
       <div 
         id={`msg-${message.id}`}
         className={cn(
-          "flex group transition-all duration-200 rounded-lg",
+          "flex group transition-all duration-200 rounded-lg w-full overflow-hidden",
           isAi ? "justify-start" : isOwn ? "justify-end" : "justify-start",
           isSending && "opacity-70"
         )}
@@ -388,7 +388,7 @@ export default function CircleChatMessage({
           </div>
         )}
 
-        <div className="flex flex-col max-w-[80%] min-w-0">
+        <div className="flex flex-col max-w-[75%] min-w-0 flex-shrink">
           <div
             className={cn(
               "rounded-2xl px-4 py-2.5 relative select-none overflow-hidden",
@@ -447,7 +447,7 @@ export default function CircleChatMessage({
 
         {/* Actions dropdown - visible on hover (desktop), always visible on mobile */}
         {!isSending && !isFailed && (
-          <div className="opacity-80 sm:opacity-60 group-hover:opacity-100 transition-opacity ml-1 self-center">
+          <div className="opacity-80 sm:opacity-60 group-hover:opacity-100 transition-opacity ml-1 self-center flex-shrink-0">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="p-2 min-w-[44px] min-h-[44px] rounded-lg bg-secondary/50 hover:bg-secondary focus:bg-secondary flex items-center justify-center touch-manipulation">
