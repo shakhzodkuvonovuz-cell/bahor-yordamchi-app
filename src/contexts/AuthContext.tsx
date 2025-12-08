@@ -161,17 +161,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+    // THEN validate session with server (not just cached local session)
+    const validateSession = async () => {
+      const { data: { session: localSession } } = await supabase.auth.getSession();
       
-      // Fetch profile if session exists
-      if (session?.user) {
-        fetchOrCreateProfile(session.user);
+      if (localSession) {
+        // Validate with server - getUser() checks server-side, not cache
+        const { data: { user: validUser }, error } = await supabase.auth.getUser();
+        
+        if (error || !validUser) {
+          // Session is invalid server-side, clear local session
+          console.log('Session invalidated server-side, signing out');
+          await supabase.auth.signOut();
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+        
+        // Session is valid
+        setSession(localSession);
+        setUser(validUser);
+        setLoading(false);
+        fetchOrCreateProfile(validUser);
+      } else {
+        setSession(null);
+        setUser(null);
+        setLoading(false);
       }
-    });
+    };
+    
+    validateSession();
 
     return () => subscription.unsubscribe();
   }, [fetchOrCreateProfile]);
