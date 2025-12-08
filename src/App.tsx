@@ -150,10 +150,14 @@ const DeviceRegistrationHandler = () => {
 
     const registerDevice = async () => {
       try {
-        // Get fresh session to ensure we have a valid token
-        const { data: { session: freshSession } } = await supabase.auth.getSession();
-        if (!freshSession) {
-          console.log('No valid session for device registration');
+        // Validate session with server (getUser checks with server, getSession uses cache)
+        const { data: { user: validUser }, error: userError } = await supabase.auth.getUser();
+        if (userError || !validUser) {
+          console.log('Session invalid, skipping device registration');
+          // Session is invalid server-side, sign out to clear stale tokens
+          if (userError?.message?.includes('session_not_found') || userError?.status === 403) {
+            signOut();
+          }
           return;
         }
 
@@ -163,10 +167,12 @@ const DeviceRegistrationHandler = () => {
         });
 
         if (error) {
-          // Don't log 401 errors as they're expected when session expires
-          if (!error.message?.includes('401')) {
-            console.error('Device registration error:', error);
+          // Session expired server-side, force sign out
+          if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+            signOut();
+            return;
           }
+          console.error('Device registration error:', error);
           return;
         }
 
