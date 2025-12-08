@@ -15,11 +15,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const stored = typeof window !== "undefined" ? localStorage.getItem("bahorai_theme") : null;
     if (stored === "light" || stored === "dark") return stored;
 
-    // Fallback: detect system preference ONCE
-    if (typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      return "dark";
+    // Default to dark for Bahor AI's dark-first design
+    // Only use light if user explicitly prefers it via system settings
+    if (typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: light)").matches) {
+      return "light";
     }
-    return "light";
+    return "dark";
   });
 
   // Apply/remove the `dark` class and persist
