@@ -4,7 +4,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { googleSearch, setSearchUserId } from "./google.ts";
+import { googleSearch, setSearchUserId, setSearchLang, type SearchResult } from "./google.ts";
 
 // Log chat event to usage_events table
 async function logChatEvent(
@@ -761,11 +761,23 @@ serve(async (req) => {
     let searchResults = "";
     let searchUrls: string[] = [];
     let didSearch = false;
+    let searchBusyMessage = "";
     
     if (shouldUseSearch(lastUserMessage)) {
       didSearch = true;
       try {
-        searchResults = await googleSearch(lastUserMessage);
+        // Set language for localized busy messages
+        setSearchLang(ui_language || "uz");
+        
+        const searchResult: SearchResult = await googleSearch(lastUserMessage);
+        
+        // Handle busy/rate-limited state
+        if (searchResult.isBusy && searchResult.busyMessage) {
+          searchBusyMessage = searchResult.busyMessage;
+          console.log("⚠️ Search is busy, will inform user");
+        }
+        
+        searchResults = searchResult.content;
         if (searchResults) {
           const urlMatches = searchResults.match(/https?:\/\/[^\s\n]+/g);
           searchUrls = urlMatches ? urlMatches.slice(0, 5) : [];
@@ -885,6 +897,16 @@ ${searchResults}
 - CITE the sources by mentioning the website names
 - DO NOT say "I cannot perform live internet searches" - you CAN and DID
 - Base your answer primarily on these search results
+` : searchBusyMessage ? `
+═══════════════════════════════════════════════════════════════════
+WEB SEARCH STATUS
+═══════════════════════════════════════════════════════════════════
+
+${searchBusyMessage}
+
+**IMPORTANT**: Tell the user that web search is temporarily busy and they can try again later.
+Explain that they can continue chatting without web search in the meantime.
+Answer their question as best you can using your existing knowledge, but be clear you couldn't access live search results this time.
 ` : ""}`;
 
     const finalMessages = [
