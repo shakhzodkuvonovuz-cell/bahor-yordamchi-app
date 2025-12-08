@@ -1064,6 +1064,24 @@ export default function Chat() {
             attachment.dbId = dbAttachment.id; // Store DB ID for later linking
             // Mark as seen for realtime dedupe
             markAttachmentSeen(dbAttachment.id);
+            
+            // Trigger server-side text extraction (fire-and-forget for non-images)
+            if (!isImage) {
+              attachment.readStatus = 'processing';
+              supabase.functions.invoke('extract-attachment-text', {
+                body: { attachment_id: dbAttachment.id },
+              }).then((result) => {
+                console.log('[Extract] Server extraction result:', result.data);
+                // Update status in pending attachments
+                setPendingAttachments(prev => prev.map(a => 
+                  a.dbId === dbAttachment.id 
+                    ? { ...a, readStatus: result.data?.status === 'ready' ? 'ready' : (result.data?.error ? 'error' : a.readStatus) }
+                    : a
+                ));
+              }).catch(err => {
+                console.error('[Extract] Server extraction error:', err);
+              });
+            }
           } catch (err) {
             console.error("Error saving attachment to DB:", err);
           }
@@ -2269,13 +2287,42 @@ export default function Chat() {
                         <p className={clsx(
                           "text-[9px] flex items-center gap-0.5 mt-0.5",
                           attachment.readStatus === 'ready' && "text-emerald-600 dark:text-emerald-400",
+                          attachment.readStatus === 'processing' && "text-primary",
                           attachment.readStatus === 'unsupported' && "text-amber-600 dark:text-amber-400",
                           attachment.readStatus === 'error' && "text-destructive"
                         )}>
                           {attachment.readStatus === 'ready' && <CheckCircle className="w-2.5 h-2.5" />}
+                          {attachment.readStatus === 'processing' && <RefreshCw className="w-2.5 h-2.5 animate-spin" />}
                           {attachment.readStatus === 'unsupported' && <AlertCircle className="w-2.5 h-2.5" />}
-                          {getFileReadStatusLabel(attachment.readStatus, language)}
+                          {attachment.readStatus === 'error' && <AlertCircle className="w-2.5 h-2.5" />}
+                          {attachment.readStatus === 'processing' 
+                            ? (language === 'uz' ? "O'qilmoqda..." : language === 'ru' ? 'Обработка...' : language === 'tr' ? 'İşleniyor...' : 'Processing...')
+                            : getFileReadStatusLabel(attachment.readStatus, language)
+                          }
                         </p>
+                      )}
+                      {/* Retry button for failed extractions */}
+                      {attachment.readStatus === 'error' && attachment.dbId && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPendingAttachments(prev => prev.map(a => 
+                              a.id === attachment.id ? { ...a, readStatus: 'processing' } : a
+                            ));
+                            supabase.functions.invoke('extract-attachment-text', {
+                              body: { attachment_id: attachment.dbId },
+                            }).then((result) => {
+                              setPendingAttachments(prev => prev.map(a => 
+                                a.id === attachment.id 
+                                  ? { ...a, readStatus: result.data?.status === 'ready' ? 'ready' : 'error' }
+                                  : a
+                              ));
+                            });
+                          }}
+                          className="text-[9px] text-primary hover:text-primary/80 underline mt-0.5"
+                        >
+                          {language === 'uz' ? 'Qayta urinish' : language === 'ru' ? 'Повторить' : language === 'tr' ? 'Yeniden dene' : 'Retry'}
+                        </button>
                       )}
                     </div>
                     <button

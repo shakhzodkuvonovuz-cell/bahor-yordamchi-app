@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      attachment_text: {
+        Row: {
+          attachment_id: string
+          char_count: number | null
+          created_at: string
+          error: string | null
+          id: string
+          status: string
+          summary: string | null
+          text: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attachment_id: string
+          char_count?: number | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          status?: string
+          summary?: string | null
+          text?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attachment_id?: string
+          char_count?: number | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          status?: string
+          summary?: string | null
+          text?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attachment_text_attachment_id_fkey"
+            columns: ["attachment_id"]
+            isOneToOne: true
+            referencedRelation: "chat_attachments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       beta_feedback: {
         Row: {
           app_version: string | null
