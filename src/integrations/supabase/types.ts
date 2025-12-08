@@ -899,6 +899,51 @@ export type Database = {
         }
         Relationships: []
       }
+      tool_decisions: {
+        Row: {
+          blockers_hit: string[] | null
+          confidence: number | null
+          created_at: string
+          detected_language: string | null
+          explicit_command: boolean | null
+          id: string
+          image_intent: boolean | null
+          message_preview: string
+          search_intent: boolean | null
+          selected_tool: string
+          ui_language: string | null
+          user_id: string
+        }
+        Insert: {
+          blockers_hit?: string[] | null
+          confidence?: number | null
+          created_at?: string
+          detected_language?: string | null
+          explicit_command?: boolean | null
+          id?: string
+          image_intent?: boolean | null
+          message_preview: string
+          search_intent?: boolean | null
+          selected_tool?: string
+          ui_language?: string | null
+          user_id: string
+        }
+        Update: {
+          blockers_hit?: string[] | null
+          confidence?: number | null
+          created_at?: string
+          detected_language?: string | null
+          explicit_command?: boolean | null
+          id?: string
+          image_intent?: boolean | null
+          message_preview?: string
+          search_intent?: boolean | null
+          selected_tool?: string
+          ui_language?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       usage_counters: {
         Row: {
           date: string
