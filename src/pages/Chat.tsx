@@ -2437,7 +2437,7 @@ export default function Chat() {
                   disabled={isLoading || typing || dictation.isListening}
                   rows={1}
                   className={clsx(
-                    "w-full bg-transparent border-none outline-none resize-none text-[15px] leading-relaxed text-foreground placeholder:text-muted-foreground/60 disabled:opacity-50 max-h-[140px] overflow-y-auto py-3 px-1",
+                    "w-full bg-transparent border-none outline-none resize-none text-base leading-relaxed text-foreground placeholder:text-muted-foreground/60 disabled:opacity-50 max-h-[140px] overflow-y-auto py-3 px-1",
                     dictation.isListening && "text-primary"
                   )}
                 />

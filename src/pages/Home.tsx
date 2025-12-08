@@ -407,7 +407,7 @@ export default function Home() {
                       }
                     }}
                     placeholder={t('chat.input.placeholder')}
-                    className="flex-1 h-9 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground text-sm sm:text-base min-w-0 leading-9"
+                    className="flex-1 h-9 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground text-base min-w-0 leading-9"
                   />
 
                   {/* Send button */}

@@ -29,7 +29,7 @@ export function AppShellV2({ children }: AppShellV2Props) {
   };
 
   return (
-    <div className="min-h-screen bg-background flex w-full">
+    <div className="min-h-screen bg-background flex w-full app-shell">
       {/* Desktop Sidebar */}
       <aside className={cn(
         "hidden lg:block fixed left-0 top-0 h-screen z-40 transition-all duration-300",

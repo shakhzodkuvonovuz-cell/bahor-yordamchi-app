@@ -121,7 +121,7 @@ export default function CircleChatInput({
   const canSend = value.trim().length > 0 || pendingAttachments.length > 0;
 
   return (
-    <div className="border-t border-border bg-background/95 backdrop-blur-md">
+    <div className="border-t border-border bg-background/95 backdrop-blur-md safe-area-bottom">
       {/* Reply preview */}
       {replyTo && (
         <div className="px-4 pt-2 max-w-2xl mx-auto">
@@ -205,7 +205,7 @@ export default function CircleChatInput({
             disabled={disabled || uploading}
             rows={1}
             className={cn(
-              "flex-1 px-4 py-2.5 rounded-xl bg-secondary border-none outline-none text-foreground",
+              "flex-1 px-4 py-2.5 rounded-xl bg-secondary border-none outline-none text-foreground text-base",
               "placeholder:text-muted-foreground resize-none min-h-[44px] max-h-[120px]",
               "focus:ring-1 focus:ring-primary/30 transition-all duration-200",
               (disabled || uploading) && "opacity-50"
