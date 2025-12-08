@@ -418,11 +418,11 @@ export default function SpaceDetail() {
   }
 
   return (
-    <div className="h-dvh w-screen bg-background flex flex-col" style={{ maxWidth: '100vw', overflow: 'hidden' }}>
+    <div className="h-dvh w-full bg-background flex flex-col overflow-hidden">
       {/* Header - fixed */}
       <header className="flex-shrink-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border w-full">
-        <div className="w-full px-3 py-3 flex items-center justify-between gap-2" style={{ maxWidth: '100%' }}>
-          <div className="flex items-center gap-2 min-w-0 flex-1">
+        <div className="w-full max-w-4xl mx-auto px-3 sm:px-4 py-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <button
               onClick={() => navigate("/circles")}
               className="p-2 -ml-1 hover:bg-secondary rounded-lg transition-colors flex-shrink-0"
@@ -430,19 +430,19 @@ export default function SpaceDetail() {
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
             {/* Circle emoji icon */}
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-base flex-shrink-0 ${getColorClass(space.icon_color)}`}>
+            <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-base sm:text-lg flex-shrink-0 ${getColorClass(space.icon_color)}`}>
               {space.icon_emoji || "💬"}
             </div>
             <div className="min-w-0 flex-1">
-              <h1 className="text-base font-bold text-foreground truncate">{space.name}</h1>
+              <h1 className="text-base sm:text-lg font-bold text-foreground truncate">{space.name}</h1>
               {space.goal && (
-                <p className="text-xs text-muted-foreground truncate">
+                <p className="text-xs text-muted-foreground truncate max-w-[180px] sm:max-w-[300px]">
                   {space.goal}
                 </p>
               )}
             </div>
           </div>
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             <CircleAIActionsPanel 
               circleId={id || ""} 
               onSendToChat={(content, title) => {
@@ -456,10 +456,10 @@ export default function SpaceDetail() {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowInviteModal(true)}
-                className="gap-1 px-2 text-xs"
+                className="gap-1 sm:gap-1.5 px-2 sm:px-3"
               >
-                <UserPlus className="w-3.5 h-3.5" />
-                <span className="hidden xs:inline">{language === "uz" ? "Taklif" : "Invite"}</span>
+                <UserPlus className="w-4 h-4" />
+                <span className="hidden sm:inline">{language === "uz" ? "Taklif" : "Invite"}</span>
               </Button>
             )}
           </div>
