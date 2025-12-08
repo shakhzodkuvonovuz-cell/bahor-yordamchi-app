@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 const DEVICE_ID_KEY = 'bahor_device_id';
+const REVOCATION_CHECK_INTERVAL = 30000; // Check every 30 seconds
 
 interface Device {
   id: string;
@@ -80,12 +82,13 @@ function getDeviceLabel(): string {
 }
 
 export function useDeviceRegistration() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [devices, setDevices] = useState<Device[]>([]);
   const [deviceLimit, setDeviceLimit] = useState(2);
   const [isRevoked, setIsRevoked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [currentDeviceId] = useState(() => getDeviceId());
+  const hasShownRevocationToast = useRef(false);
 
   const registerDevice = useCallback(async () => {
     if (!user) return null;
@@ -171,6 +174,46 @@ export function useDeviceRegistration() {
       registerDevice();
     }
   }, [user, registerDevice]);
+
+  // Show toast and logout when device is revoked
+  useEffect(() => {
+    if (isRevoked && user && !hasShownRevocationToast.current) {
+      hasShownRevocationToast.current = true;
+      
+      toast.error("Sessiya boshqa qurilmadan tugatildi", {
+        description: "Iltimos, qayta kiring.",
+        duration: 5000,
+      });
+
+      // Sign out after a short delay so user sees the toast
+      const timer = setTimeout(() => {
+        signOut();
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isRevoked, user, signOut]);
+
+  // Periodically check if device was revoked from another location
+  useEffect(() => {
+    if (!user) return;
+
+    const checkRevocationStatus = async () => {
+      const { data, error } = await supabase
+        .from('user_devices')
+        .select('revoked_at')
+        .eq('user_id', user.id)
+        .eq('device_id', currentDeviceId)
+        .maybeSingle();
+
+      if (!error && data?.revoked_at) {
+        setIsRevoked(true);
+      }
+    };
+
+    const interval = setInterval(checkRevocationStatus, REVOCATION_CHECK_INTERVAL);
+    return () => clearInterval(interval);
+  }, [user, currentDeviceId]);
 
   return {
     devices,
