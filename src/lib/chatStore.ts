@@ -240,24 +240,25 @@ export async function getMessagesWithAttachments(
   // Get message IDs
   const messageIds = messages.map(m => m.id);
 
-  // Fetch attachments for these messages
+  // Fetch ALL attachments for this thread (both linked and unlinked)
+  // This ensures we don't miss attachments that weren't properly linked
   const { data: attachments, error: attError } = await supabase
     .from("chat_attachments")
     .select("*")
-    .in("message_id", messageIds);
+    .eq("thread_id", threadId)
+    .order("created_at", { ascending: true });
 
   if (attError) {
     console.error("Error getting attachments:", attError);
     // Continue without attachments
   }
 
-  // Generate signed URLs for attachments
+  // Generate signed URLs and map attachments to messages
   const attachmentMap = new Map<string, ChatMessageWithAttachments["attachments"]>();
+  const orphanAttachments: ChatMessageWithAttachments["attachments"] = [];
   
   if (attachments && attachments.length > 0) {
     for (const att of attachments) {
-      if (!att.message_id) continue;
-      
       // Generate signed URL
       const { data: signedData } = await supabase.storage
         .from(att.bucket || "chat-attachments")
@@ -273,10 +274,50 @@ export async function getMessagesWithAttachments(
         bucket: att.bucket || "chat-attachments",
       };
       
-      if (!attachmentMap.has(att.message_id)) {
-        attachmentMap.set(att.message_id, []);
+      if (att.message_id && messageIds.includes(att.message_id)) {
+        // Attachment is linked to a message in current view
+        if (!attachmentMap.has(att.message_id)) {
+          attachmentMap.set(att.message_id, []);
+        }
+        attachmentMap.get(att.message_id)!.push(attachmentItem);
+      } else if (!att.message_id) {
+        // Orphan attachment - try to associate with closest message by time
+        orphanAttachments.push(attachmentItem);
       }
-      attachmentMap.get(att.message_id)!.push(attachmentItem);
+    }
+  }
+  
+  // Associate orphan attachments with the closest user message by timestamp
+  // This handles cases where attachment linking failed
+  if (orphanAttachments.length > 0 && messages.length > 0) {
+    const userMessages = messages.filter(m => m.role === 'user');
+    for (const orphan of orphanAttachments) {
+      // Find attachment creation time from DB data
+      const attRecord = attachments?.find(a => a.id === orphan.id);
+      if (!attRecord) continue;
+      
+      const attTime = new Date(attRecord.created_at).getTime();
+      
+      // Find closest user message that was created within 1 minute after the attachment
+      let bestMatch: string | null = null;
+      let bestDiff = Infinity;
+      
+      for (const msg of userMessages) {
+        const msgTime = new Date(msg.created_at).getTime();
+        const diff = msgTime - attTime;
+        // Message should be after attachment (user uploads then sends), within 5 minutes
+        if (diff >= 0 && diff < 300000 && diff < bestDiff) {
+          bestDiff = diff;
+          bestMatch = msg.id;
+        }
+      }
+      
+      if (bestMatch) {
+        if (!attachmentMap.has(bestMatch)) {
+          attachmentMap.set(bestMatch, []);
+        }
+        attachmentMap.get(bestMatch)!.push(orphan);
+      }
     }
   }
 
