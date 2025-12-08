@@ -1027,11 +1027,22 @@ WEB SEARCH RESULTS (CRITICAL - USE THESE!)
 
 ${searchResults}
 
-**IMPORTANT**: You HAVE access to live web search. The results above are REAL and CURRENT.
-- USE the information from these search results to answer the user's question
-- CITE the sources by mentioning the website names
-- DO NOT say "I cannot perform live internet searches" - you CAN and DID
-- Base your answer primarily on these search results
+**CRITICAL INSTRUCTIONS - READ CAREFULLY:**
+
+1. You performed a LIVE web search and the results above are REAL and CURRENT
+2. **SUMMARIZE THE ACTUAL CONTENT** from the search results - don't just list the source links
+3. If search results contain news articles → TELL THE USER WHAT THE NEWS IS (headlines, key facts, dates)
+4. If search results contain data → EXTRACT AND PRESENT THAT DATA
+5. If search results contain answers → GIVE THE ANSWER, not just "check this website"
+6. CITE sources naturally: "Kun.uz xabariga ko'ra..." or "...deb xabar beradi Daryo.uz"
+7. DO NOT say "I cannot search" or "check these websites" - you already searched, now summarize what you found
+8. If the snippets are short, synthesize the information into a helpful answer
+
+**WRONG RESPONSE (don't do this):**
+"Yangiliklar uchun Kun.uz, Daryo.uz saytlariga o'ting"
+
+**CORRECT RESPONSE (do this instead):**
+"Bugungi asosiy yangiliklar: [actual news from snippets]. Manba: Kun.uz"
 ` : searchBusyMessage ? `
 ═══════════════════════════════════════════════════════════════════
 WEB SEARCH STATUS
