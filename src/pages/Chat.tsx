@@ -1682,8 +1682,6 @@ export default function Chat() {
           }
         },
         onDone: async () => {
-          setTyping(false);
-          setIsLoading(false);
           setProcessingStatus(null);
           inputRef.current?.focus();
           
@@ -1697,7 +1695,8 @@ export default function Chat() {
             );
           }
           
-          // Save assistant message to DB
+          // Save assistant message to DB BEFORE setting isLoading to false
+          // This prevents realtime subscription from adding duplicate message
           if (assistantContent && user) {
             try {
               const savedAssistant = await chatStore.addMessage(user.id, {
@@ -1706,15 +1705,15 @@ export default function Chat() {
                 content: assistantContent,
               });
               
+              // Mark as seen BEFORE updating state to prevent race condition
+              markMessageSeen(savedAssistant.id);
+              
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantId ? { ...m, id: savedAssistant.id } : m
                 )
               );
               setLastAssistantMessageId(savedAssistant.id);
-              
-              // Mark as seen for realtime dedupe
-              markMessageSeen(savedAssistant.id);
               
               if (session?.access_token) {
                 chatStore.maybeGenerateSummary(currentThreadId, session.access_token)
@@ -1733,6 +1732,10 @@ export default function Chat() {
               console.error("Error saving assistant message:", err);
             }
           }
+          
+          // NOW set loading to false - after message is saved and marked as seen
+          setTyping(false);
+          setIsLoading(false);
           
           refreshProfile();
           refreshUsage().then(() => {
