@@ -554,14 +554,8 @@ export default function Chat() {
     }
   }, [isLoading, typing]);
 
-  // Handle initial message from home page
-  useEffect(() => {
-    const state = location.state as { initialMessage?: string } | null;
-    if (state?.initialMessage && currentThreadId) {
-      handleSendMessage(state.initialMessage);
-      navigate(location.pathname, { replace: true, state: {} });
-    }
-  }, [currentThreadId]);
+  // Note: Initial messages from /modes are now handled via sessionStorage in the ?new effect above
+  // This legacy location.state handler is kept for backwards compatibility with deep links
 
   // Handle ?new=<id> query param to create new chat
   // Uses unique id per click to ensure each "Yangi chat" click creates a truly new chat
@@ -585,8 +579,42 @@ export default function Chat() {
           markSessionInitialized();
           // Clear the query param
           navigate(location.pathname, { replace: true });
-          // Focus input
-          setTimeout(() => inputRef.current?.focus(), 100);
+          
+          // Check for pending message in sessionStorage (from /modes input)
+          const pendingMessage = sessionStorage.getItem(`pending_msg_${newParam}`);
+          const pendingAttachmentsJson = sessionStorage.getItem(`pending_attachments_${newParam}`);
+          
+          // Clean up sessionStorage
+          sessionStorage.removeItem(`pending_msg_${newParam}`);
+          sessionStorage.removeItem(`pending_attachments_${newParam}`);
+          
+          if (pendingMessage || pendingAttachmentsJson) {
+            // Parse attachments if present
+            let attachments: ChatAttachment[] = [];
+            if (pendingAttachmentsJson) {
+              try {
+                attachments = JSON.parse(pendingAttachmentsJson);
+              } catch (e) {
+                console.error("Error parsing pending attachments:", e);
+              }
+            }
+            
+            // Set pending attachments if any
+            if (attachments.length > 0) {
+              setPendingAttachments(attachments);
+            }
+            
+            // Auto-send the pending message after thread is created
+            if (pendingMessage) {
+              // Small delay to ensure thread state is updated
+              setTimeout(() => {
+                handleSendMessage(pendingMessage);
+              }, 100);
+            }
+          } else {
+            // Focus input if no pending message
+            setTimeout(() => inputRef.current?.focus(), 100);
+          }
         } catch (error) {
           console.error("Error creating new chat:", error);
         }
