@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, NavigateOptions } from "react-router-dom";
 import { 
   PenLine,
   MessageSquare, 
@@ -87,7 +87,13 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
         description: t('settings.comingSoon'),
       });
     } else {
-      navigate(item.path);
+      // Use replace: true for top-level section navigation to avoid stacking history
+      const navOptions: NavigateOptions = { replace: true };
+      // Pass from state for settings so back button can be deterministic
+      if (item.path === "/settings") {
+        navOptions.state = { from: location.pathname };
+      }
+      navigate(item.path, navOptions);
     }
     onNavigate?.();
   };
@@ -223,7 +229,7 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
       {/* Account Section */}
       <div className="px-3 py-3 border-t border-border">
         <button
-          onClick={() => { navigate("/settings"); onNavigate?.(); }}
+          onClick={() => { navigate("/settings", { replace: true, state: { from: location.pathname } }); onNavigate?.(); }}
           title={collapsed ? t("sidebar.account") : undefined}
           className={cn(
             "w-full flex items-center gap-3 rounded-xl transition-all duration-200 hover:bg-accent/50",

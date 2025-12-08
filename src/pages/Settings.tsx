@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { ArrowLeft, User, Globe, Moon, Sun, Shield, HelpCircle, FileText, Mail, LogOut, ChevronRight, CreditCard, Bell, Zap, Edit, Crown, Lock, RotateCcw, Loader2, Infinity, Download, Trash2 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useTranslation } from "@/i18n/LanguageProvider";
@@ -27,6 +27,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export default function Settings() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { theme, setTheme } = useTheme();
   const { language, setLanguage, t } = useTranslation();
   const { user, profile, profileLoading, signOut, refreshProfile } = useAuth();
@@ -127,7 +128,11 @@ export default function Settings() {
       <header className="sticky top-0 bg-card/95 backdrop-blur-lg border-b border-border/40 shadow-premium-sm z-10">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => {
+              // Deterministic back: use state.from if available, otherwise default to /modes
+              const fromPath = (location.state as { from?: string })?.from;
+              navigate(fromPath || "/modes", { replace: true });
+            }}
             className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-secondary rounded-xl transition-colors shrink-0"
             aria-label={t('settings.back')}
           >

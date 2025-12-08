@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Settings } from "lucide-react";
 import ModeCard from "@/components/ModeCard";
 import { PRIMARY_MODES, LEARNING_MODES } from "@/data/modes";
@@ -7,6 +7,7 @@ import { AppContainer, AppLayout } from "@/components/layout";
 
 export default function ModeSelection() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { language, t } = useTranslation();
 
   return (
@@ -18,7 +19,7 @@ export default function ModeSelection() {
             <h1 className="text-2xl font-bold text-foreground">{t('modes.title')}</h1>
           </div>
           <button
-            onClick={() => navigate("/settings")}
+            onClick={() => navigate("/settings", { replace: true, state: { from: location.pathname } })}
             className="p-2 hover:bg-secondary rounded-xl transition-colors"
             aria-label={t('settings.title')}
           >
