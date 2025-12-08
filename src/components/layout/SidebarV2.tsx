@@ -76,6 +76,8 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
   const handleNavClick = (item: NavItem) => {
     if (item.isNewChat) {
       // Generate unique ID each click to ensure a brand-new chat is created every time
+      // Clear session flag so the new chat is treated as fresh
+      sessionStorage.removeItem("bahor_session_chat_initialized");
       const newChatId = crypto.randomUUID?.() ?? Date.now().toString();
       navigate(`/chat/general?new=${newChatId}`);
     } else if (item.isPlaceholder) {
