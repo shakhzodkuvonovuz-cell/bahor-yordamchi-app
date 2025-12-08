@@ -82,8 +82,33 @@ function addQualityBoosters(prompt: string, renderMode: "photo" | "illustration"
   return `${prompt}. ${boosters}`;
 }
 
+// Log image generation event
+async function logImageGenEvent(
+  supabase: any,
+  userId: string,
+  meta: {
+    success: boolean;
+    duration_ms: number;
+    steps: number;
+    model: string;
+    aspect_ratio?: string;
+    error?: string;
+  }
+): Promise<void> {
+  try {
+    await supabase.from("usage_events").insert({
+      user_id: userId,
+      event_type: "image_gen",
+      meta,
+    });
+  } catch (e) {
+    console.log("Failed to log image_gen event:", e);
+  }
+}
+
 serve(async (req) => {
   const requestId = crypto.randomUUID().slice(0, 8);
+  const requestStart = Date.now();
   console.log(`[${requestId}] fireworks-generate-image start`);
 
   // Handle CORS preflight
@@ -91,6 +116,9 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let supabase: any = null;
+  let user: any = null;
+  
   try {
     // Validate required env vars early
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -101,7 +129,7 @@ serve(async (req) => {
     if (!supabaseServiceKey) throw new Error("Missing env: SUPABASE_SERVICE_ROLE_KEY");
     if (!fireworksApiKey) throw new Error("Missing env: FIREWORKS_API_KEY");
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Auth check
     const authHeader = req.headers.get("Authorization");
@@ -114,7 +142,8 @@ serve(async (req) => {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
+    user = authUser;
 
     if (authError || !user) {
       console.log(`[${requestId}] Auth error:`, authError?.message);
@@ -439,6 +468,15 @@ serve(async (req) => {
 
     console.log(`[${requestId}] Success, returning signed URL`);
 
+    // Log successful image generation event
+    await logImageGenEvent(supabase, user.id, {
+      success: true,
+      duration_ms: Date.now() - requestStart,
+      steps: steps,
+      model: "flux-schnell",
+      aspect_ratio: aspectRatio,
+    });
+
     return new Response(
       JSON.stringify({
         ok: true,
@@ -462,6 +500,17 @@ serve(async (req) => {
     const errMessage = error instanceof Error ? error.message : String(error);
     const errStack = error instanceof Error ? error.stack : undefined;
     console.error(`[${requestId}] fireworks-generate-image error:`, errMessage, errStack ?? "");
+
+    // Log failed image generation event
+    if (supabase && user?.id) {
+      await logImageGenEvent(supabase, user.id, {
+        success: false,
+        duration_ms: Date.now() - requestStart,
+        steps: 4,
+        model: "flux-schnell",
+        error: errMessage,
+      });
+    }
 
     return new Response(
       JSON.stringify({

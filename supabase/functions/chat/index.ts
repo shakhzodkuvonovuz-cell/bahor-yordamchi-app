@@ -4,7 +4,32 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { googleSearch } from "./google.ts";
+import { googleSearch, setSearchUserId } from "./google.ts";
+
+// Log chat event to usage_events table
+async function logChatEvent(
+  supabase: any,
+  userId: string,
+  meta: {
+    model: string;
+    duration_ms: number;
+    tokens_in?: number;
+    tokens_out?: number;
+    mode?: string;
+    search_used?: boolean;
+    files_count?: number;
+  }
+): Promise<void> {
+  try {
+    await supabase.from("usage_events").insert({
+      user_id: userId,
+      event_type: "chat",
+      meta,
+    });
+  } catch (e) {
+    console.log("Failed to log chat event:", e);
+  }
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -498,6 +523,9 @@ serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    
+    // Set user ID for search logging
+    setSearchUserId(user.id);
 
     // ===========================================
     // BETA TRIAL + QUOTA ENFORCEMENT
@@ -1040,6 +1068,16 @@ ${searchResults}
           
           controller.close();
           console.log('[Stream] Response stream closed successfully');
+          
+          // Log chat event for observability
+          const chatDurationMs = Date.now() - requestStartTime;
+          logChatEvent(supabaseAdmin, user.id, {
+            model: selectedModel,
+            duration_ms: chatDurationMs,
+            mode: mode || 'general',
+            search_used: didSearch,
+            files_count: textFilesWithContent.length || 0,
+          }).catch(() => {}); // Fire and forget
         } catch (err) {
           console.error('[Stream] Error during streaming:', err);
           controller.error(err);
