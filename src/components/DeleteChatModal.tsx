@@ -7,44 +7,9 @@ interface DeleteChatModalProps {
 }
 
 export function DeleteChatModal({ open, onConfirm, onCancel }: DeleteChatModalProps) {
-  const { language } = useTranslation();
+  const { t } = useTranslation();
 
   if (!open) return null;
-
-  const getText = () => {
-    switch (language) {
-      case "en":
-        return {
-          title: "Delete chat?",
-          description: "This will permanently delete this chat history. Do you want to continue?",
-          cancel: "Cancel",
-          confirm: "Delete"
-        };
-      case "ru":
-        return {
-          title: "Удалить чат?",
-          description: "Это действие полностью удалит историю этого чата. Вы хотите продолжить?",
-          cancel: "Отмена",
-          confirm: "Удалить"
-        };
-      case "tr":
-        return {
-          title: "Sohbet silinsin mi?",
-          description: "Bu işlem bu sohbet geçmişini kalıcı olarak silecek. Devam etmek istiyor musunuz?",
-          cancel: "İptal",
-          confirm: "Sil"
-        };
-      default: // uz
-        return {
-          title: "Suhbat o'chirilsinmi?",
-          description: "Bu amaliyot ushbu suhbat tarixini butunlay o'chiradi. Davom etishni xohlaysizmi?",
-          cancel: "Bekor qilish",
-          confirm: "O'chirish"
-        };
-    }
-  };
-
-  const text = getText();
 
   return (
     <div 
@@ -56,10 +21,10 @@ export function DeleteChatModal({ open, onConfirm, onCancel }: DeleteChatModalPr
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-lg font-semibold text-foreground mb-2">
-          {text.title}
+          {t('delete.title')}
         </h2>
         <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
-          {text.description}
+          {t('delete.description')}
         </p>
         <div className="flex justify-end gap-3">
           <button
@@ -67,14 +32,14 @@ export function DeleteChatModal({ open, onConfirm, onCancel }: DeleteChatModalPr
             className="px-4 py-2 text-sm font-medium rounded-xl border border-border bg-secondary/50 text-foreground hover:bg-secondary transition-all active:scale-[0.97]"
             onClick={onCancel}
           >
-            {text.cancel}
+            {t('delete.cancel')}
           </button>
           <button
             type="button"
             className="px-4 py-2 text-sm font-medium rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90 active:scale-[0.97] transition-all"
             onClick={onConfirm}
           >
-            {text.confirm}
+            {t('delete.confirm')}
           </button>
         </div>
       </div>

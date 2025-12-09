@@ -12,13 +12,11 @@ interface ChatSearchBarProps {
 }
 
 export default function ChatSearchBar({ messages, onHighlight, isOpen, onClose }: ChatSearchBarProps) {
-  const { language } = useTranslation();
+  const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [matches, setMatches] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const placeholder = language === "uz" ? "Qidirish..." : language === "ru" ? "Поиск..." : "Search...";
 
   // Search logic
   const search = useCallback((searchQuery: string) => {
@@ -100,7 +98,7 @@ export default function ChatSearchBar({ messages, onHighlight, isOpen, onClose }
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder={placeholder}
+        placeholder={t('search.placeholder')}
         className="flex-1 h-9 border-0 bg-transparent focus-visible:ring-0 px-0"
       />
       

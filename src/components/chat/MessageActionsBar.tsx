@@ -57,27 +57,11 @@ export function MessageActionsBar({
   onVariant,
   onExportPdf,
 }: MessageActionsBarProps) {
-  const { language } = useTranslation();
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
 
   const isDisabled = isStreaming || isActionLoading;
-
-  const labels = {
-    like: language === "uz" ? "Yoqdi" : language === "ru" ? "Нравится" : language === "tr" ? "Beğen" : "Like",
-    dislike: language === "uz" ? "Yoqmadi" : language === "ru" ? "Не нравится" : language === "tr" ? "Beğenme" : "Dislike",
-    copy: language === "uz" ? "Nusxa olish" : language === "ru" ? "Копировать" : language === "tr" ? "Kopyala" : "Copy",
-    copied: language === "uz" ? "Nusxa olindi" : language === "ru" ? "Скопировано" : language === "tr" ? "Kopyalandı" : "Copied",
-    share: language === "uz" ? "Ulashish" : language === "ru" ? "Поделиться" : language === "tr" ? "Paylaş" : "Share",
-    continue: language === "uz" ? "Davom ettirish" : language === "ru" ? "Продолжить" : language === "tr" ? "Devam et" : "Continue",
-    regenerate: language === "uz" ? "Qayta yaratish" : language === "ru" ? "Перегенерировать" : language === "tr" ? "Yeniden oluştur" : "Regenerate",
-    shorter: language === "uz" ? "Qisqaroq" : language === "ru" ? "Короче" : language === "tr" ? "Daha kısa" : "Shorter",
-    longer: language === "uz" ? "Uzunroq" : language === "ru" ? "Длиннее" : language === "tr" ? "Daha uzun" : "Longer",
-    simplify: language === "uz" ? "Soddalash" : language === "ru" ? "Упростить" : language === "tr" ? "Basitleştir" : "Simplify",
-    detailed: language === "uz" ? "Batafsil" : language === "ru" ? "Подробнее" : language === "tr" ? "Detaylı" : "More detailed",
-    more: language === "uz" ? "Ko'proq" : language === "ru" ? "Ещё" : language === "tr" ? "Daha fazla" : "More",
-    exportPdf: language === "uz" ? "PDFga chiqarish" : language === "ru" ? "Экспорт в PDF" : language === "tr" ? "PDF'e aktar" : "Export to PDF",
-  };
 
   const handleCopy = () => {
     onCopy();
@@ -108,7 +92,7 @@ export function MessageActionsBar({
           )}
           onClick={() => handleReaction("like")}
           disabled={isDisabled}
-          title={labels.like}
+          title={t('actions.like')}
         >
           <ThumbsUp className={cn("w-4 h-4", reaction === "like" && "fill-current")} />
         </Button>
@@ -123,7 +107,7 @@ export function MessageActionsBar({
           )}
           onClick={() => handleReaction("dislike")}
           disabled={isDisabled}
-          title={labels.dislike}
+          title={t('actions.dislike')}
         >
           <ThumbsDown className={cn("w-4 h-4", reaction === "dislike" && "fill-current")} />
         </Button>
@@ -138,14 +122,14 @@ export function MessageActionsBar({
         className="h-8 px-2 gap-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60"
         onClick={handleCopy}
         disabled={isDisabled}
-        title={labels.copy}
+        title={t('actions.copy')}
       >
         {copied ? (
           <Check className="w-4 h-4 text-primary" />
         ) : (
           <Copy className="w-4 h-4" />
         )}
-        <span className="text-xs hidden sm:inline">{copied ? labels.copied : labels.copy}</span>
+        <span className="text-xs hidden sm:inline">{copied ? t('actions.copied') : t('actions.copy')}</span>
       </Button>
 
       {/* Share */}
@@ -155,10 +139,10 @@ export function MessageActionsBar({
         className="h-8 px-2 gap-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60"
         onClick={onShare}
         disabled={isDisabled}
-        title={labels.share}
+        title={t('actions.share')}
       >
         <Share2 className="w-4 h-4" />
-        <span className="text-xs hidden sm:inline">{labels.share}</span>
+        <span className="text-xs hidden sm:inline">{t('actions.share')}</span>
       </Button>
 
       <div className="w-px h-5 bg-border/50 mx-1" />
@@ -170,10 +154,10 @@ export function MessageActionsBar({
         className="h-8 px-2 gap-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60"
         onClick={onContinue}
         disabled={isDisabled}
-        title={labels.continue}
+        title={t('actions.continue')}
       >
         <ChevronRight className="w-4 h-4" />
-        <span className="text-xs hidden sm:inline">{labels.continue}</span>
+        <span className="text-xs hidden sm:inline">{t('actions.continue')}</span>
       </Button>
 
       {/* Regenerate */}
@@ -183,10 +167,10 @@ export function MessageActionsBar({
         className="h-8 px-2 gap-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60"
         onClick={onRegenerate}
         disabled={isDisabled}
-        title={labels.regenerate}
+        title={t('actions.regenerate')}
       >
         <RefreshCw className="w-4 h-4" />
-        <span className="text-xs hidden sm:inline">{labels.regenerate}</span>
+        <span className="text-xs hidden sm:inline">{t('actions.regenerate')}</span>
       </Button>
 
       {/* More options (variants) */}
@@ -197,7 +181,7 @@ export function MessageActionsBar({
             size="sm"
             className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60"
             disabled={isDisabled}
-            title={labels.more}
+            title={t('actions.more')}
           >
             <MoreHorizontal className="w-4 h-4" />
           </Button>
@@ -210,7 +194,7 @@ export function MessageActionsBar({
               disabled={isDisabled}
             >
               <Minimize2 className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm">{labels.shorter}</span>
+              <span className="text-sm">{t('actions.shorter')}</span>
             </button>
             <button
               onClick={() => { onVariant("longer"); setMoreOpen(false); }}
@@ -218,7 +202,7 @@ export function MessageActionsBar({
               disabled={isDisabled}
             >
               <Maximize2 className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm">{labels.longer}</span>
+              <span className="text-sm">{t('actions.longer')}</span>
             </button>
             <button
               onClick={() => { onVariant("simplify"); setMoreOpen(false); }}
@@ -226,7 +210,7 @@ export function MessageActionsBar({
               disabled={isDisabled}
             >
               <Sparkles className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm">{labels.simplify}</span>
+              <span className="text-sm">{t('actions.simplify')}</span>
             </button>
             <button
               onClick={() => { onVariant("detailed"); setMoreOpen(false); }}
@@ -234,7 +218,7 @@ export function MessageActionsBar({
               disabled={isDisabled}
             >
               <FileText className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm">{labels.detailed}</span>
+              <span className="text-sm">{t('actions.detailed')}</span>
             </button>
             {onExportPdf && (
               <>
@@ -245,7 +229,7 @@ export function MessageActionsBar({
                   disabled={isDisabled}
                 >
                   <FileDown className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm">{labels.exportPdf}</span>
+                  <span className="text-sm">{t('actions.exportPdf')}</span>
                 </button>
               </>
             )}
@@ -288,7 +272,7 @@ export function MessageActionsSheet({
   onReport?: () => void;
   onExportPdf?: () => void;
 }) {
-  const { language } = useTranslation();
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const [toast, setToast] = useState<{ msg: string; variant: "success" | "error" | "info"; visible: boolean }>({
     msg: "",
@@ -342,35 +326,6 @@ export function MessageActionsSheet({
     };
   }, []);
 
-  const labels = {
-    like: language === "uz" ? "Yoqdi" : language === "ru" ? "Нравится" : language === "tr" ? "Beğen" : "Like",
-    dislike: language === "uz" ? "Yoqmadi" : language === "ru" ? "Не нравится" : language === "tr" ? "Beğenme" : "Dislike",
-    copy: language === "uz" ? "Nusxa olish" : language === "ru" ? "Копировать" : language === "tr" ? "Kopyala" : "Copy",
-    copied: language === "uz" ? "Nusxa olindi ✓" : language === "ru" ? "Скопировано ✓" : language === "tr" ? "Kopyalandı ✓" : "Copied ✓",
-    share: language === "uz" ? "Ulashish" : language === "ru" ? "Поделиться" : language === "tr" ? "Paylaş" : "Share",
-    shareReady: language === "uz" ? "Ulashishga tayyor ✓" : language === "ru" ? "Готово к отправке ✓" : language === "tr" ? "Paylaşıma hazır ✓" : "Ready to share ✓",
-    shareUnavailable: language === "uz" ? "Nusxa olindi ✓" : language === "ru" ? "Скопировано ✓" : language === "tr" ? "Kopyalandı ✓" : "Copied ✓",
-    continue: language === "uz" ? "Davom ettirish" : language === "ru" ? "Продолжить" : language === "tr" ? "Devam et" : "Continue",
-    continued: language === "uz" ? "Davom ettirildi ✓" : language === "ru" ? "Продолжено ✓" : language === "tr" ? "Devam edildi ✓" : "Continued ✓",
-    regenerate: language === "uz" ? "Qayta yaratish" : language === "ru" ? "Перегенерировать" : language === "tr" ? "Yeniden oluştur" : "Regenerate",
-    regenerated: language === "uz" ? "Qayta yaratildi ✓" : language === "ru" ? "Перегенерировано ✓" : language === "tr" ? "Yeniden oluşturuldu ✓" : "Regenerated ✓",
-    shorter: language === "uz" ? "Qisqaroq" : language === "ru" ? "Короче" : language === "tr" ? "Daha kısa" : "Shorter",
-    shortened: language === "uz" ? "Qisqartirildi ✓" : language === "ru" ? "Сокращено ✓" : language === "tr" ? "Kısaltıldı ✓" : "Shortened ✓",
-    longer: language === "uz" ? "Uzunroq" : language === "ru" ? "Длиннее" : language === "tr" ? "Daha uzun" : "Longer",
-    lengthened: language === "uz" ? "Uzaytirildi ✓" : language === "ru" ? "Расширено ✓" : language === "tr" ? "Uzatıldı ✓" : "Lengthened ✓",
-    simplify: language === "uz" ? "Soddalash" : language === "ru" ? "Упростить" : language === "tr" ? "Basitleştir" : "Simplify",
-    simplified: language === "uz" ? "Soddalashtirildi ✓" : language === "ru" ? "Упрощено ✓" : language === "tr" ? "Basitleştirildi ✓" : "Simplified ✓",
-    detailed: language === "uz" ? "Batafsil" : language === "ru" ? "Подробнее" : language === "tr" ? "Detaylı" : "More detailed",
-    detailedDone: language === "uz" ? "Batafsil ✨" : language === "ru" ? "Подробно ✨" : language === "tr" ? "Detaylı ✨" : "Detailed ✨",
-    cancel: language === "uz" ? "Bekor qilish" : language === "ru" ? "Отмена" : language === "tr" ? "İptal" : "Cancel",
-    edit: language === "uz" ? "Tahrirlash" : language === "ru" ? "Редактировать" : language === "tr" ? "Düzenle" : "Edit",
-    liked: language === "uz" ? "Yoqdi ✓" : language === "ru" ? "Понравилось ✓" : language === "tr" ? "Beğenildi ✓" : "Liked ✓",
-    disliked: language === "uz" ? "Yoqmadi ✓" : language === "ru" ? "Не понравилось ✓" : language === "tr" ? "Beğenilmedi ✓" : "Disliked ✓",
-    error: language === "uz" ? "Xatolik yuz berdi" : language === "ru" ? "Произошла ошибка" : language === "tr" ? "Hata oluştu" : "Error occurred",
-    report: language === "uz" ? "Noto'g'ri javobni bildirish" : language === "ru" ? "Сообщить о неверном ответе" : language === "tr" ? "Yanlış cevabı bildir" : "Report incorrect answer",
-    exportPdf: language === "uz" ? "PDFga chiqarish" : language === "ru" ? "Экспорт в PDF" : language === "tr" ? "PDF'e aktar" : "Export to PDF",
-  };
-
   const closeWithDelay = useCallback(() => {
     closeTimeoutRef.current = setTimeout(() => {
       onClose();
@@ -382,12 +337,12 @@ export function MessageActionsSheet({
     try {
       onCopy();
       setCopied(true);
-      showToast(labels.copied, "success");
+      showToast(t('actions.copied') + ' ✓', "success");
       setTimeout(() => setCopied(false), 1500);
       closeWithDelay();
     } catch {
       haptic("error");
-      showToast(labels.error, "error");
+      showToast(t('actions.error'), "error");
     }
   };
 
@@ -397,7 +352,7 @@ export function MessageActionsSheet({
       onReaction(null);
     } else {
       onReaction(type);
-      showToast(type === "like" ? labels.liked : labels.disliked, "success");
+      showToast(type === "like" ? t('actions.liked') : t('actions.disliked'), "success");
     }
     closeWithDelay();
   };
@@ -406,25 +361,25 @@ export function MessageActionsSheet({
     haptic("light");
     try {
       onShare();
-      showToast(labels.shareReady, "success");
+      showToast(t('actions.shareReady') + ' ✓', "success");
       closeWithDelay();
     } catch {
       haptic("error");
-      showToast(labels.error, "error");
+      showToast(t('actions.error'), "error");
     }
   };
 
   const handleContinue = () => {
     haptic("light");
     onContinue();
-    showToast(labels.continued, "success");
+    showToast(t('actions.continued'), "success");
     closeWithDelay();
   };
 
   const handleRegenerate = () => {
     haptic("light");
     onRegenerate();
-    showToast(labels.regenerated, "success");
+    showToast(t('actions.regenerated'), "success");
     closeWithDelay();
   };
 
@@ -432,12 +387,12 @@ export function MessageActionsSheet({
     haptic("light");
     onVariant(variant);
     const toastMessages: Record<MessageVariant, string> = {
-      shorter: labels.shortened,
-      longer: labels.lengthened,
-      simplify: labels.simplified,
-      detailed: labels.detailedDone,
-      continue: labels.continued,
-      regen: labels.regenerated,
+      shorter: t('actions.shortened'),
+      longer: t('actions.lengthened'),
+      simplify: t('actions.simplified'),
+      detailed: t('actions.detailedDone'),
+      continue: t('actions.continued'),
+      regen: t('actions.regenerated'),
     };
     showToast(toastMessages[variant], "success");
     closeWithDelay();
@@ -445,214 +400,192 @@ export function MessageActionsSheet({
 
   const handleEdit = () => {
     haptic("light");
-    if (onEdit) {
-      onEdit();
-    }
-    onClose();
+    onEdit?.();
+    closeWithDelay();
   };
 
-  const handleClose = () => {
-    onClose();
+  const handleReport = () => {
+    haptic("light");
+    onReport?.();
+    closeWithDelay();
+  };
+
+  const handleExportPdf = () => {
+    haptic("light");
+    onExportPdf?.();
+    closeWithDelay();
   };
 
   if (!isOpen) return null;
 
   return (
     <>
-      {/* Overlay */}
+      {/* Backdrop */}
       <div
         className="fixed inset-0 z-50 bg-background/60 backdrop-blur-sm animate-fade-in"
-        onClick={handleClose}
-        onTouchEnd={(e) => {
-          e.preventDefault();
-          handleClose();
-        }}
+        onClick={onClose}
       />
-      {/* Bottom Sheet */}
-      <div 
-        className="fixed bottom-0 left-0 right-0 z-50 animate-slide-up"
-        onTouchMove={(e) => {
-          const touch = e.touches[0];
-          if (touch && touch.clientY > window.innerHeight - 100) {
-            handleClose();
-          }
-        }}
-      >
-        <div className="bg-card border-t border-border/40 rounded-t-3xl shadow-2xl p-4 pb-8 safe-area-bottom">
-          <div 
-            className="w-12 h-1.5 bg-muted rounded-full mx-auto mb-3 cursor-pointer" 
-            onClick={handleClose}
-          />
 
-          {/* Micro Toast */}
-          <MicroToast message={toast.msg} variant={toast.variant} visible={toast.visible} />
+      {/* Sheet */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border rounded-t-3xl shadow-2xl animate-slide-in-up safe-area-bottom">
+        {/* Handle */}
+        <div className="flex justify-center pt-3 pb-2">
+          <div className="w-10 h-1 bg-muted-foreground/30 rounded-full" />
+        </div>
 
-          {/* Quick reactions row - only for assistant messages */}
-          {!isUserMessage && (
-            <div className="flex items-center justify-center gap-4 mb-4 pb-4 border-b border-border/40">
-              <button
-                onClick={() => handleReaction("like")}
-                disabled={isDisabled}
-                className={cn(
-                  "flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors",
-                  reaction === "like" ? "bg-primary/10 text-primary" : "text-muted-foreground"
-                )}
-              >
-                <ThumbsUp className={cn("w-6 h-6", reaction === "like" && "fill-current")} />
-                <span className="text-xs">{labels.like}</span>
-              </button>
-              <button
-                onClick={() => handleReaction("dislike")}
-                disabled={isDisabled}
-                className={cn(
-                  "flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors",
-                  reaction === "dislike" ? "bg-destructive/10 text-destructive" : "text-muted-foreground"
-                )}
-              >
-                <ThumbsDown className={cn("w-6 h-6", reaction === "dislike" && "fill-current")} />
-                <span className="text-xs">{labels.dislike}</span>
-              </button>
-            </div>
-          )}
+        {/* Actions grid */}
+        <div className="px-4 pb-6 space-y-2">
+          {/* Reaction row */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleReaction("like")}
+              disabled={isDisabled}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all",
+                reaction === "like"
+                  ? "bg-primary/10 text-primary"
+                  : "bg-secondary hover:bg-secondary/80 text-foreground"
+              )}
+            >
+              <ThumbsUp className={cn("w-5 h-5", reaction === "like" && "fill-current")} />
+              <span className="text-sm font-medium">{t('actions.like')}</span>
+            </button>
+            <button
+              onClick={() => handleReaction("dislike")}
+              disabled={isDisabled}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all",
+                reaction === "dislike"
+                  ? "bg-destructive/10 text-destructive"
+                  : "bg-secondary hover:bg-secondary/80 text-foreground"
+              )}
+            >
+              <ThumbsDown className={cn("w-5 h-5", reaction === "dislike" && "fill-current")} />
+              <span className="text-sm font-medium">{t('actions.dislike')}</span>
+            </button>
+          </div>
 
-          <div className="space-y-1">
-            {/* Copy */}
+          {/* Main actions */}
+          <div className="grid grid-cols-4 gap-2">
             <button
               onClick={handleCopy}
               disabled={isDisabled}
-              className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-secondary/60 active:bg-secondary transition-colors"
+              className="flex flex-col items-center gap-1.5 py-3 rounded-xl bg-secondary hover:bg-secondary/80 transition-all"
             >
               {copied ? <Check className="w-5 h-5 text-primary" /> : <Copy className="w-5 h-5 text-muted-foreground" />}
-              <span className="text-[15px] font-medium">{copied ? labels.copied : labels.copy}</span>
+              <span className="text-xs">{t('actions.copy')}</span>
             </button>
-
-            {/* Edit - only for user messages */}
-            {isUserMessage && onEdit && (
-              <button
-                onClick={handleEdit}
-                disabled={isDisabled}
-                className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-secondary/60 active:bg-secondary transition-colors"
-              >
-                <Edit3 className="w-5 h-5 text-muted-foreground" />
-                <span className="text-[15px] font-medium">{labels.edit}</span>
-              </button>
-            )}
-
-            {/* Share */}
             <button
               onClick={handleShare}
               disabled={isDisabled}
-              className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-secondary/60 active:bg-secondary transition-colors"
+              className="flex flex-col items-center gap-1.5 py-3 rounded-xl bg-secondary hover:bg-secondary/80 transition-all"
             >
               <Share2 className="w-5 h-5 text-muted-foreground" />
-              <span className="text-[15px] font-medium">{labels.share}</span>
+              <span className="text-xs">{t('actions.share')}</span>
             </button>
-
-            {/* Assistant-only actions */}
-            {!isUserMessage && (
-              <>
-                {/* Continue */}
-                <button
-                  onClick={handleContinue}
-                  disabled={isDisabled}
-                  className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-secondary/60 active:bg-secondary transition-colors"
-                >
-                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                  <span className="text-[15px] font-medium">{labels.continue}</span>
-                </button>
-
-                {/* Regenerate */}
-                <button
-                  onClick={handleRegenerate}
-                  disabled={isDisabled}
-                  className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-secondary/60 active:bg-secondary transition-colors"
-                >
-                  <RefreshCw className="w-5 h-5 text-muted-foreground" />
-                  <span className="text-[15px] font-medium">{labels.regenerate}</span>
-                </button>
-
-                {/* Export to PDF */}
-                {onExportPdf && (
-                  <button
-                    onClick={() => {
-                      haptic("light");
-                      onExportPdf();
-                      onClose();
-                    }}
-                    disabled={isDisabled}
-                    className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-secondary/60 active:bg-secondary transition-colors"
-                  >
-                    <FileDown className="w-5 h-5 text-muted-foreground" />
-                    <span className="text-[15px] font-medium">{labels.exportPdf}</span>
-                  </button>
-                )}
-
-                {/* Divider */}
-                <div className="h-px bg-border/40 my-2" />
-
-                {/* Variants */}
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => handleVariant("shorter")}
-                    disabled={isDisabled}
-                    className="flex items-center gap-2 px-4 py-3 rounded-xl bg-secondary/40 hover:bg-secondary/60 transition-colors"
-                  >
-                    <Minimize2 className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">{labels.shorter}</span>
-                  </button>
-                  <button
-                    onClick={() => handleVariant("longer")}
-                    disabled={isDisabled}
-                    className="flex items-center gap-2 px-4 py-3 rounded-xl bg-secondary/40 hover:bg-secondary/60 transition-colors"
-                  >
-                    <Maximize2 className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">{labels.longer}</span>
-                  </button>
-                  <button
-                    onClick={() => handleVariant("simplify")}
-                    disabled={isDisabled}
-                    className="flex items-center gap-2 px-4 py-3 rounded-xl bg-secondary/40 hover:bg-secondary/60 transition-colors"
-                  >
-                    <Sparkles className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">{labels.simplify}</span>
-                  </button>
-                  <button
-                    onClick={() => handleVariant("detailed")}
-                    disabled={isDisabled}
-                    className="flex items-center gap-2 px-4 py-3 rounded-xl bg-secondary/40 hover:bg-secondary/60 transition-colors"
-                  >
-                    <FileText className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">{labels.detailed}</span>
-                  </button>
-                </div>
-
-                {/* Report Button */}
-                <div className="h-px bg-border/40 my-2" />
-                <button
-                  onClick={() => {
-                    haptic("light");
-                    if (onReport) onReport();
-                    onClose();
-                  }}
-                  className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-destructive/10 active:bg-destructive/15 transition-colors text-muted-foreground hover:text-destructive"
-                >
-                  <Flag className="w-5 h-5" />
-                  <span className="text-[15px] font-medium">{labels.report || "Noto'g'ri javobni bildirish"}</span>
-                </button>
-              </>
-            )}
-
-            {/* Cancel */}
             <button
-              onClick={handleClose}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 mt-3 rounded-xl bg-secondary/60 hover:bg-secondary transition-colors"
+              onClick={handleContinue}
+              disabled={isDisabled}
+              className="flex flex-col items-center gap-1.5 py-3 rounded-xl bg-secondary hover:bg-secondary/80 transition-all"
             >
-              <X className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">{labels.cancel}</span>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              <span className="text-xs">{t('actions.continue')}</span>
+            </button>
+            <button
+              onClick={handleRegenerate}
+              disabled={isDisabled}
+              className="flex flex-col items-center gap-1.5 py-3 rounded-xl bg-secondary hover:bg-secondary/80 transition-all"
+            >
+              <RefreshCw className="w-5 h-5 text-muted-foreground" />
+              <span className="text-xs">{t('actions.regenerate')}</span>
             </button>
           </div>
+
+          {/* Variant actions */}
+          <div className="grid grid-cols-4 gap-2">
+            <button
+              onClick={() => handleVariant("shorter")}
+              disabled={isDisabled}
+              className="flex flex-col items-center gap-1.5 py-3 rounded-xl bg-secondary hover:bg-secondary/80 transition-all"
+            >
+              <Minimize2 className="w-5 h-5 text-muted-foreground" />
+              <span className="text-xs">{t('actions.shorter')}</span>
+            </button>
+            <button
+              onClick={() => handleVariant("longer")}
+              disabled={isDisabled}
+              className="flex flex-col items-center gap-1.5 py-3 rounded-xl bg-secondary hover:bg-secondary/80 transition-all"
+            >
+              <Maximize2 className="w-5 h-5 text-muted-foreground" />
+              <span className="text-xs">{t('actions.longer')}</span>
+            </button>
+            <button
+              onClick={() => handleVariant("simplify")}
+              disabled={isDisabled}
+              className="flex flex-col items-center gap-1.5 py-3 rounded-xl bg-secondary hover:bg-secondary/80 transition-all"
+            >
+              <Sparkles className="w-5 h-5 text-muted-foreground" />
+              <span className="text-xs">{t('actions.simplify')}</span>
+            </button>
+            <button
+              onClick={() => handleVariant("detailed")}
+              disabled={isDisabled}
+              className="flex flex-col items-center gap-1.5 py-3 rounded-xl bg-secondary hover:bg-secondary/80 transition-all"
+            >
+              <FileText className="w-5 h-5 text-muted-foreground" />
+              <span className="text-xs">{t('actions.detailed')}</span>
+            </button>
+          </div>
+
+          {/* User message actions or assistant actions */}
+          {isUserMessage && onEdit && (
+            <button
+              onClick={handleEdit}
+              disabled={isDisabled}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-secondary hover:bg-secondary/80 transition-all"
+            >
+              <Edit3 className="w-5 h-5 text-muted-foreground" />
+              <span className="text-sm font-medium">{t('actions.edit')}</span>
+            </button>
+          )}
+
+          {!isUserMessage && (
+            <div className="flex gap-2">
+              {onExportPdf && (
+                <button
+                  onClick={handleExportPdf}
+                  disabled={isDisabled}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-secondary hover:bg-secondary/80 transition-all"
+                >
+                  <FileDown className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-sm font-medium">{t('actions.exportPdf')}</span>
+                </button>
+              )}
+              {onReport && (
+                <button
+                  onClick={handleReport}
+                  disabled={isDisabled}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-secondary hover:bg-secondary/80 transition-all"
+                >
+                  <Flag className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-sm font-medium">{t('actions.report')}</span>
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Cancel */}
+          <button
+            onClick={onClose}
+            className="w-full py-3 rounded-xl bg-muted/50 hover:bg-muted transition-all text-muted-foreground"
+          >
+            {t('actions.cancel')}
+          </button>
         </div>
       </div>
+
+      {/* Micro toast */}
+      <MicroToast message={toast.msg} variant={toast.variant} visible={toast.visible} />
     </>
   );
 }
