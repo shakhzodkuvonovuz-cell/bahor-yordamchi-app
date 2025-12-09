@@ -13,6 +13,27 @@
    Hit area: min 44px for tappable elements
    ============================================ */
 
+/* Performance: Reduce animations on low-power/mobile devices */
+@media (prefers-reduced-motion: reduce), (max-width: 768px) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Allow specific animations on mobile that are essential */
+@media (max-width: 768px) {
+  .animate-fade-in,
+  .animate-scale-in,
+  [data-essential-animation="true"] {
+    animation-duration: 0.2s !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
 @layer base {
   :root {
     /* Light mode - Clean, minimal */

@@ -61,8 +61,15 @@ function HeroMockup() {
     return () => clearInterval(timer);
   }, []);
   
-  // Mouse parallax effect (desktop only)
+  // Mouse parallax effect (desktop only, throttled for performance)
+  const lastFrameRef = React.useRef(0);
   const handleMouseMove = React.useCallback((e: React.MouseEvent) => {
+    // Skip on mobile or if throttled
+    if (window.innerWidth < 768) return;
+    const now = performance.now();
+    if (now - lastFrameRef.current < 16) return; // ~60fps throttle
+    lastFrameRef.current = now;
+    
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const x = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2);
@@ -87,17 +94,17 @@ function HeroMockup() {
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Background decorations */}
+      {/* Background decorations - hidden on mobile for performance */}
       {/* Gradient mesh orbs */}
-      <div className="absolute -top-20 -left-20 w-40 h-40 bg-primary/15 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute -bottom-16 -right-16 w-32 h-32 bg-primary/10 rounded-full blur-2xl animate-[pulse_3s_ease-in-out_infinite_0.5s]" />
-      <div className="absolute top-1/2 -left-24 w-24 h-24 bg-accent/20 rounded-full blur-2xl animate-[pulse_4s_ease-in-out_infinite_1s]" />
+      <div className="hidden md:block absolute -top-20 -left-20 w-40 h-40 bg-primary/15 rounded-full blur-3xl animate-pulse" />
+      <div className="hidden md:block absolute -bottom-16 -right-16 w-32 h-32 bg-primary/10 rounded-full blur-2xl animate-[pulse_3s_ease-in-out_infinite_0.5s]" />
+      <div className="hidden md:block absolute top-1/2 -left-24 w-24 h-24 bg-accent/20 rounded-full blur-2xl animate-[pulse_4s_ease-in-out_infinite_1s]" />
       
-      {/* Floating particles */}
-      <div className="absolute top-8 right-0 w-2 h-2 bg-primary/40 rounded-full animate-[float-slow_6s_ease-in-out_infinite]" />
-      <div className="absolute top-1/3 -left-8 w-1.5 h-1.5 bg-primary/30 rounded-full animate-[float-slow_5s_ease-in-out_infinite_0.5s]" />
-      <div className="absolute bottom-1/4 -right-4 w-1 h-1 bg-primary/50 rounded-full animate-[float-slow_4s_ease-in-out_infinite_1s]" />
-      <div className="absolute bottom-8 left-4 w-1.5 h-1.5 bg-accent/40 rounded-full animate-[float-slow_7s_ease-in-out_infinite_0.3s]" />
+      {/* Floating particles - hidden on mobile */}
+      <div className="hidden md:block absolute top-8 right-0 w-2 h-2 bg-primary/40 rounded-full animate-[float-slow_6s_ease-in-out_infinite]" />
+      <div className="hidden md:block absolute top-1/3 -left-8 w-1.5 h-1.5 bg-primary/30 rounded-full animate-[float-slow_5s_ease-in-out_infinite_0.5s]" />
+      <div className="hidden md:block absolute bottom-1/4 -right-4 w-1 h-1 bg-primary/50 rounded-full animate-[float-slow_4s_ease-in-out_infinite_1s]" />
+      <div className="hidden md:block absolute bottom-8 left-4 w-1.5 h-1.5 bg-accent/40 rounded-full animate-[float-slow_7s_ease-in-out_infinite_0.3s]" />
       
       {/* Grid pattern overlay */}
       <div className="absolute inset-0 -m-16 opacity-[0.03] pointer-events-none" 
@@ -107,9 +114,9 @@ function HeroMockup() {
         }}
       />
       
-      {/* Main glow effect - reacts to mouse */}
+      {/* Main glow effect - reacts to mouse (hidden on mobile for performance) */}
       <div 
-        className="absolute inset-0 bg-primary/20 rounded-full scale-90 translate-y-8 blur-3xl transition-transform duration-300 ease-out"
+        className="hidden md:block absolute inset-0 bg-primary/20 rounded-full scale-90 translate-y-8 blur-3xl transition-transform duration-300 ease-out"
         style={{
           transform: `translate(${mousePosition.x * 2}px, ${mousePosition.y * 2 + 32}px) scale(0.9)`,
         }}
