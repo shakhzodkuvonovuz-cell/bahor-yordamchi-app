@@ -35,3 +35,7 @@ export { InputWaveform } from "./InputWaveform";
 // Layout components
 export { FocusCanvas, MessageArea } from "./FocusCanvas";
 export { ContextDock } from "./ContextDock";
+
+// Virtualized components
+export { default as VirtualizedMessageList } from "./VirtualizedMessageList";
+export type { VirtualizedMessageListHandle } from "./VirtualizedMessageList";

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,6 +44,7 @@ import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { AppFooter } from "@/components/layout/AppFooter";
+import { prefetchCriticalRoutes } from "@/lib/routePrefetch";
 
 // Hero mockup with 3-page carousel showing real use cases
 function HeroMockup() {
@@ -425,6 +426,12 @@ export default function Landing() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { user } = useAuth();
+  
+  // Prefetch critical routes after landing loads for instant navigation
+  useEffect(() => {
+    const timer = setTimeout(prefetchCriticalRoutes, 1500);
+    return () => clearTimeout(timer);
+  }, []);
   
   const handleOpenApp = () => {
     if (user) {
