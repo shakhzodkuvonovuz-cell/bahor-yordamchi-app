@@ -536,10 +536,10 @@ export default function Landing() {
       {/* Sticky Header with Nav */}
       <header className="glass-strong sticky top-0 z-50 border-b border-border/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
-          {/* Logo - increased size for visual presence */}
-          <div className="flex items-center gap-2.5">
-            <img src={bahorLogo} alt="Bahor AI" className="h-10 sm:h-11 w-auto" />
-            <span className="text-xl sm:text-[1.35rem] font-bold text-foreground tracking-tight">Bahor AI</span>
+          {/* Logo - ~30% larger for visual presence */}
+          <div className="flex items-center gap-3">
+            <img src={bahorLogo} alt="Bahor AI" className="h-12 sm:h-14 w-auto" />
+            <span className="text-[1.4rem] sm:text-[1.7rem] font-bold text-foreground tracking-tight">Bahor AI</span>
           </div>
           
           {/* Center Nav - hidden on mobile */}
@@ -573,16 +573,16 @@ export default function Landing() {
       </header>
 
       {/* HERO — 2-column, tighter layout */}
-      <section className="relative pt-6 pb-8 sm:pt-10 sm:pb-12 lg:pt-12 lg:pb-16">
+      <section className="relative pt-6 pb-8 sm:pt-8 sm:pb-12 lg:pt-12 lg:pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
             ref={heroRef.ref}
-            className={`grid lg:grid-cols-[1.1fr_1fr] gap-8 lg:gap-12 items-center transition-all duration-700 ${
+            className={`grid lg:grid-cols-[1.1fr_0.9fr] gap-8 lg:gap-10 items-center transition-all duration-700 ${
               heroRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
             }`}
           >
-            {/* Left - Content (wider column) */}
-            <div className="text-center lg:text-left max-w-xl lg:max-w-none">
+            {/* Left - Content (wider column, max-w ~620px) */}
+            <div className="text-center lg:text-left max-w-[620px] lg:max-w-none">
               {/* Beta badge - tighter margin */}
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-3">
                 <Sparkles className="w-4 h-4" />
@@ -638,8 +638,8 @@ export default function Landing() {
               </div>
             </div>
             
-            {/* Right - Mockup (aligned higher) */}
-            <div className="mt-2 lg:mt-0 lg:-mt-4">
+            {/* Right - Mockup (shifted up ~20px) */}
+            <div className="mt-2 lg:mt-0 lg:-mt-5">
               <HeroMockup />
             </div>
           </div>
