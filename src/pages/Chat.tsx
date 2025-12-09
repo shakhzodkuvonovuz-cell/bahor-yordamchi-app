@@ -17,6 +17,8 @@ import {
   EditingIndicator,
   ExportToPdfModal,
   ThinkBar,
+  VirtualizedMessageList,
+  type VirtualizedMessageListHandle,
 } from "@/components/chat";
 import { InputWaveform } from "@/components/chat/InputWaveform";
 import { ChatListSkeleton, ChatMessagesSkeleton } from "@/components/chat/ChatListSkeleton";
@@ -254,6 +256,7 @@ export default function Chat() {
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const virtuosoRef = useRef<VirtualizedMessageListHandle>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -270,37 +273,7 @@ export default function Chat() {
   const modeTranslation = t.modes[mode as keyof typeof t.modes];
   const modeSuggestions = [...(t.suggestions[mode as keyof typeof t.suggestions] || modeInfo?.quickSuggestions || [])];
 
-  // Scroll tracking
-  const handleScroll = useCallback(() => {
-    if (!messagesContainerRef.current) return;
-    
-    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
-    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-    const atBottom = distanceFromBottom < 100;
-    
-    setIsAtBottom(atBottom);
-    setShowScrollButton(!atBottom && messages.length > 0);
-  }, [messages.length]);
-
-  // Throttled scroll handler
-  useEffect(() => {
-    const container = messagesContainerRef.current;
-    if (!container) return;
-    
-    let ticking = false;
-    const onScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          handleScroll();
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-    
-    container.addEventListener("scroll", onScroll, { passive: true });
-    return () => container.removeEventListener("scroll", onScroll);
-  }, [handleScroll]);
+  // Note: Scroll tracking now handled by VirtualizedMessageList's onAtBottomStateChange
 
   // ============= REALTIME SYNC =============
   
@@ -546,11 +519,7 @@ export default function Chat() {
     }
   }, [modeInfo, navigate]);
 
-  useEffect(() => {
-    if (isAtBottom) {
-      scrollToBottom();
-    }
-  }, [messages, typing, isAtBottom]);
+  // Note: Auto-scroll handled by Virtuoso's followOutput prop
 
   // Auto-focus input after AI finishes responding
   useEffect(() => {
@@ -654,9 +623,9 @@ export default function Chat() {
     }
   }, [dictation.isListening, dictation.finalText, dictation.interimText, preDictationText]);
 
-  const scrollToBottom = (smooth = true) => {
-    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
-  };
+  const scrollToBottom = useCallback(() => {
+    virtuosoRef.current?.scrollToBottom();
+  }, []);
 
   // Handle dictation start
   const handleDictationStart = useCallback(() => {
@@ -2153,143 +2122,66 @@ export default function Chat() {
           </div>
 
           {/* Messages Area */}
-          <div 
-            ref={messagesContainerRef}
-            className="flex-1 overflow-y-auto px-3 sm:px-6 pb-4 pt-4 sm:pt-6"
-          >
+          <div className="flex-1 flex flex-col overflow-hidden">
             {isLoadingMessages ? (
-              <ChatMessagesSkeleton />
+              <div className="px-3 sm:px-6 pb-4 pt-4 sm:pt-6">
+                <ChatMessagesSkeleton />
+              </div>
             ) : messages.length === 0 ? (
-              <ChatEmptyState modeInfo={modeInfo} modeTranslation={modeTranslation} />
+              <div className="px-3 sm:px-6 pb-4 pt-4 sm:pt-6">
+                <ChatEmptyState modeInfo={modeInfo} modeTranslation={modeTranslation} />
+              </div>
             ) : (
-              <MessageArea className="space-y-5">
-              {/* Load more button */}
-              {hasMoreMessages && (
-                <div className="flex justify-center">
-                  <button
-                    onClick={loadMoreMessages}
-                    disabled={isLoadingMessages}
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary rounded-xl transition-colors"
-                  >
-                    <RefreshCw className={clsx("w-4 h-4", isLoadingMessages && "animate-spin")} />
-                    {language === "uz" ? "Oldingi xabarlar" : "Earlier messages"}
-                  </button>
-                </div>
-              )}
-              
-              {messages.map((message, index) => (
-                <div key={message.id}>
-                  <ChatMessage
-                    message={message}
-                    onCopy={handleCopyMessage}
-                    onEdit={handleEditMessage}
-                    onRegenerate={handleRegenerateMessage}
-                    onReaction={handleReaction}
-                    onShare={handleShare}
-                    onContinue={handleContinue}
-                    onVariant={handleVariant}
-                    onExportPdf={handleExportPdf}
-                    showActions={!isLoading && !typing}
-                    showActionBar={!isLoading && !typing}
-                    isStreaming={isLoading || typing}
-                    isMobile={isMobile}
-                  />
-                  
-                  
-                  {/* ThinkBar - shows above assistant message while generating (hides once complete) */}
-                  {message.role === 'assistant' && 
-                   message.id === lastAssistantMessageId && 
-                   (isLoading || typing) && 
-                   !message.trace && 
-                   !activeTrace?.isComplete && (
-                    <div className="mb-3">
-                      <ThinkBar
-                        trace={activeTrace}
-                        isGenerating={isLoading || typing}
-                        language={language}
-                        elapsedLive={liveElapsedMs}
-                        modelPreference={modelPreference}
-                        onExpandClick={() => {
-                          if (activeTrace?.isComplete) {
-                            haptic("selection");
-                            setSelectedTraceMessageId(message.id);
-                            setTraceSheetOpen(true);
-                          }
-                        }}
-                      />
-                    </div>
-                  )}
-                  
-                  {/* ReasonedChip (status pill) - shows after completion */}
-                  {message.role === 'assistant' && (
-                    message.trace ||  // Persisted trace from DB/history
-                    (message.id === lastAssistantMessageId && activeTrace?.isComplete) // Current message after generating complete
-                  ) && (
-                    <div className="flex justify-start mt-2 ml-12">
-                      <ReasonedChip
-                        trace={message.trace || (message.id === lastAssistantMessageId ? activeTrace : null)}
-                        isGenerating={false}
-                        language={language}
-                        elapsedLive={undefined}
-                        onClick={() => {
-                          const traceData = message.trace || (message.id === lastAssistantMessageId ? activeTrace : null);
-                          if (traceData?.isComplete) {
-                            haptic("selection");
-                            setSelectedTraceMessageId(message.id);
-                            setTraceSheetOpen(true);
-                          }
-                        }}
-                      />
-                    </div>
-                  )}
-                  
-                  {message.role === 'assistant' && 
-                   message.id === lastAssistantMessageId && 
-                   !isLoading && 
-                   !typing && (
-                    <FollowUpSuggestions
-                      onSelect={handleSendMessage}
-                      disabled={isLoading || typing}
-                      mode={mode}
-                    />
-                  )}
-                </div>
-              ))}
-              
-              {/* Image Generation Placeholder */}
-              {isGeneratingImage && (
-                <div className="flex gap-3 justify-start chat-message-ai group animate-fade-in">
-                  <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-card border border-border/40 flex items-center justify-center mt-0.5 shadow-[0_0_12px_rgba(45,212,191,0.3)]">
-                    <img src={bahorLogo} alt="Bahor AI" className="w-8 h-8 object-contain" />
+              <>
+                {/* Load more button */}
+                {hasMoreMessages && (
+                  <div className="flex justify-center py-2 px-3 sm:px-6">
+                    <button
+                      onClick={loadMoreMessages}
+                      disabled={isLoadingMessages}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary rounded-xl transition-colors"
+                    >
+                      <RefreshCw className={clsx("w-4 h-4", isLoadingMessages && "animate-spin")} />
+                      {language === "uz" ? "Oldingi xabarlar" : "Earlier messages"}
+                    </button>
                   </div>
-                  <div className="rounded-2xl bg-card border border-border/40 rounded-tl-md shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.06)] px-5 py-4">
-                    <div className="flex items-center gap-3 text-muted-foreground">
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center animate-pulse">
-                        <span className="text-lg">🎨</span>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-foreground">
-                          {language === "uz" ? "Rasm yaratilmoqda..." :
-                           language === "ru" ? "Создание изображения..." :
-                           language === "tr" ? "Görsel oluşturuluyor..." :
-                           "Generating image..."}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {language === "uz" ? "10-15 soniya..." :
-                           language === "ru" ? "10-15 секунд..." :
-                           language === "tr" ? "10-15 saniye..." :
-                           "10-15 seconds..."}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              <div ref={messagesEndRef} className="h-4" />
-              </MessageArea>
+                )}
+                
+                <VirtualizedMessageList
+                  ref={virtuosoRef}
+                  messages={messages}
+                  typing={typing}
+                  isLoading={isLoading}
+                  lastAssistantMessageId={lastAssistantMessageId}
+                  onCopy={handleCopyMessage}
+                  onEdit={handleEditMessage}
+                  onRegenerate={handleRegenerateMessage}
+                  onReaction={handleReaction}
+                  onShare={handleShare}
+                  onContinue={handleContinue}
+                  onVariant={handleVariant}
+                  onExportPdf={handleExportPdf}
+                  onSendMessage={handleSendMessage}
+                  isMobile={isMobile}
+                  onAtBottomStateChange={(atBottom) => {
+                    setIsAtBottom(atBottom);
+                    setShowScrollButton(!atBottom && messages.length > 0);
+                  }}
+                  activeTrace={activeTrace}
+                  liveElapsedMs={liveElapsedMs}
+                  modelPreference={modelPreference}
+                  language={language}
+                  mode={mode}
+                  onTraceClick={(messageId) => {
+                    haptic("selection");
+                    setSelectedTraceMessageId(messageId);
+                    setTraceSheetOpen(true);
+                  }}
+                  isGeneratingImage={isGeneratingImage}
+                />
+              </>
             )}
-        </div>
+          </div>
 
         <ScrollToBottom 
           visible={showScrollButton} 
