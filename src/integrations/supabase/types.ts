@@ -1110,6 +1110,10 @@ export type Database = {
     Functions: {
       check_and_increment_usage:
         | {
+            Args: { p_date: string; p_limit: number; p_user_id: string }
+            Returns: Json
+          }
+        | {
             Args: {
               p_is_bypass?: boolean
               p_user_id: string
@@ -1117,10 +1121,6 @@ export type Database = {
               p_wants_search?: boolean
               p_wants_vision?: boolean
             }
-            Returns: Json
-          }
-        | {
-            Args: { p_date: string; p_limit: number; p_user_id: string }
             Returns: Json
           }
       cleanup_search_cache: { Args: never; Returns: number }

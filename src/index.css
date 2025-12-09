@@ -253,6 +253,53 @@
   }
 }
 
+/* ============================================
+   MOBILE PERFORMANCE OPTIMIZATIONS
+   Reduce heavy blur/shadows that cause jank
+   ============================================ */
+@media screen and (max-width: 768px) {
+  /* Reduce backdrop-filter intensity on mobile (iOS hates blur-2xl) */
+  .glass,
+  .glass-strong,
+  .glass-card,
+  .glass-premium {
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+  }
+  
+  /* Disable heavy blur on large overlays */
+  .no-blur-mobile {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  
+  /* Reduce animation complexity */
+  .animate-float,
+  .animate-float-slow,
+  .animate-pulse-glow {
+    animation: none !important;
+  }
+  
+  /* Optimize transforms for GPU */
+  .chat-message {
+    will-change: transform;
+    transform: translateZ(0);
+  }
+  
+  /* Reduce shadow complexity on cards */
+  .elevation-3,
+  .elevation-4 {
+    box-shadow: var(--elevation-2) !important;
+  }
+}
+
+/* GPU acceleration hints for smooth scrolling */
+.gpu-accelerated {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
 /* Premium glassmorphism utilities */
 @layer utilities {
   .glass {

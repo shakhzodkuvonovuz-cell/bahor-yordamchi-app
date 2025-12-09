@@ -30,6 +30,32 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Bahor AI" />
 
+    <!-- Preload critical font (single weight for first paint) -->
+    <link rel="preload" href="/fonts/NotoSans-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
+    
+    <!-- Font face declarations with font-display: swap for performance -->
+    <style>
+      @font-face {
+        font-family: 'Noto Sans';
+        src: url('/fonts/NotoSans-Regular.woff2') format('woff2'),
+             url('/fonts/NotoSans-Regular.woff') format('woff');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Noto Sans';
+        src: url('/fonts/NotoSans-Bold.woff2') format('woff2'),
+             url('/fonts/NotoSans-Bold.woff') format('woff');
+        font-weight: 700;
+        font-style: normal;
+        font-display: swap;
+      }
+      /* Critical CSS for fast first paint */
+      html { background-color: #0f0f0f; }
+      body { font-family: 'Noto Sans', system-ui, -apple-system, sans-serif; }
+    </style>
+
     <!-- Open Graph / Facebook / Instagram / Telegram -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://www.bahorai.com/" />
