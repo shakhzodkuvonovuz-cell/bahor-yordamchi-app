@@ -573,7 +573,7 @@ export default function Landing() {
       </header>
 
       {/* HERO — 2-column, tighter layout */}
-      <section className="relative pt-6 pb-8 sm:pt-8 sm:pb-12 lg:pt-12 lg:pb-16">
+      <section className="relative pt-4 pb-8 sm:pt-6 sm:pb-12 lg:pt-8 lg:pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
             ref={heroRef.ref}
