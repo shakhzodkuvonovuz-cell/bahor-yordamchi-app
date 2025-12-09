@@ -236,14 +236,49 @@ serve(async (req) => {
         );
       }
       
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "Service temporarily unavailable. Please try again." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
       throw new Error(`AI Gateway error: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log("[Translate] AI Response received:", JSON.stringify(data).slice(0, 500));
+    
     const outputText = data.choices?.[0]?.message?.content?.trim() || "";
 
-    if (!outputText || outputText.startsWith("[ERROR]")) {
-      throw new Error("Translation failed");
+    if (!outputText) {
+      console.error("[Translate] Empty output from AI");
+      // Return input as-is if translation fails
+      return new Response(
+        JSON.stringify({
+          output_text: inputText,
+          detected_language: from_language,
+          action_mode,
+          to_language,
+          duration_ms: Date.now() - startTime,
+          warning: "Could not process text, returning original",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    if (outputText.startsWith("[ERROR]")) {
+      return new Response(
+        JSON.stringify({
+          output_text: inputText,
+          detected_language: from_language,
+          action_mode,
+          to_language,
+          duration_ms: Date.now() - startTime,
+          warning: outputText,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Try to detect source language (simple heuristic)
