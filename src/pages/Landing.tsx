@@ -581,44 +581,42 @@ export default function Landing() {
               heroRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
             }`}
           >
-            {/* Left - Content (wider column) with staggered animations */}
+            {/* Left - Content (wider column) */}
             <div className="text-center lg:text-left max-w-xl lg:max-w-none">
-              {/* Beta badge - stagger delay 0 */}
-              <div 
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-3 opacity-0 animate-[fade-in_0.5s_ease-out_0.1s_forwards]"
-              >
+              {/* Beta badge - tighter margin */}
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-3">
                 <Sparkles className="w-4 h-4" />
                 {t('badge.beta')}
               </div>
               
-              {/* Headline - stagger delay 1 */}
-              <h1 className="text-[1.75rem] sm:text-4xl lg:text-[2.75rem] xl:text-5xl font-bold mb-3 sm:mb-4 text-foreground leading-[1.15] tracking-tight opacity-0 animate-[fade-in_0.6s_ease-out_0.2s_forwards]">
+              {/* Headline - slightly larger, tighter line-height */}
+              <h1 className="text-[1.75rem] sm:text-4xl lg:text-[2.75rem] xl:text-5xl font-bold mb-3 sm:mb-4 text-foreground leading-[1.15] tracking-tight">
                 {t('landing.hero.headline')}
               </h1>
               
-              {/* Subheadline - stagger delay 2 */}
-              <p className="text-base sm:text-lg text-muted-foreground mb-5 max-w-xl mx-auto lg:mx-0 opacity-0 animate-[fade-in_0.5s_ease-out_0.35s_forwards]">
+              {/* Subheadline - slightly larger max-width */}
+              <p className="text-base sm:text-lg text-muted-foreground mb-5 max-w-xl mx-auto lg:mx-0">
                 {t('landing.hero.subheadline')}
               </p>
               
-              {/* 3 bullet value props - staggered delays 3, 4, 5 */}
+              {/* 3 bullet value props - tighter spacing */}
               <ul className="space-y-1.5 mb-5 text-left max-w-xl mx-auto lg:mx-0">
-                <li className="flex items-start gap-3 opacity-0 animate-[fade-in_0.4s_ease-out_0.45s_forwards]">
+                <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                   <span className="text-sm text-foreground">{t('landing.hero.bullet1')}</span>
                 </li>
-                <li className="flex items-start gap-3 opacity-0 animate-[fade-in_0.4s_ease-out_0.55s_forwards]">
+                <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                   <span className="text-sm text-foreground">{t('landing.hero.bullet2')}</span>
                 </li>
-                <li className="flex items-start gap-3 opacity-0 animate-[fade-in_0.4s_ease-out_0.65s_forwards]">
+                <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                   <span className="text-sm text-foreground">{t('landing.hero.bullet3')}</span>
                 </li>
               </ul>
               
-              {/* CTA row - stagger delay 6 */}
-              <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start mb-4 opacity-0 animate-[fade-in_0.5s_ease-out_0.75s_forwards]">
+              {/* CTA row - tighter spacing */}
+              <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start mb-4">
                 <Button onClick={handleOpenApp} size="lg" className="h-11 px-6 font-semibold rounded-xl shadow-lg shadow-primary/25 hover-lift">
                   <MessageSquare className="w-5 h-5 mr-2" />
                   {t('button.openApp')}
@@ -629,8 +627,8 @@ export default function Landing() {
                 </Button>
               </div>
               
-              {/* Trust strip - stagger delay 7 */}
-              <div className="flex flex-col sm:flex-row items-center gap-2 justify-center lg:justify-start text-sm text-muted-foreground opacity-0 animate-[fade-in_0.4s_ease-out_0.85s_forwards]">
+              {/* Trust strip */}
+              <div className="flex flex-col sm:flex-row items-center gap-2 justify-center lg:justify-start text-sm text-muted-foreground">
                 <span>{t('landing.hero.trustLine')}</span>
                 <div className="flex gap-1.5">
                   {sourceChips.map((s) => (
