@@ -164,7 +164,7 @@ export default function Tarjimon() {
   const [preserveNames, setPreserveNames] = useState(true);
   const [naturalTranslation, setNaturalTranslation] = useState(true);
   const [preserveFormatting, setPreserveFormatting] = useState(true);
-  const [autoTranslate, setAutoTranslate] = useState(false);
+  const [autoTranslate, setAutoTranslate] = useState(true);
   const [showBilingual, setShowBilingual] = useState(false);
   
   // History
