@@ -30,7 +30,7 @@ function markBahorHintSeen(circleId: string, userId: string): void {
 
 export default function CircleChatTab({ spaceId, onSendAICardRef }: CircleChatTabProps) {
   const { user } = useAuth();
-  const { language } = useTranslation();
+  const { language, t } = useTranslation();
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const prevMessagesLengthRef = useRef(0);
@@ -114,7 +114,7 @@ export default function CircleChatTab({ spaceId, onSendAICardRef }: CircleChatTa
     if (trimmed.toLowerCase().startsWith("/bahor")) {
       const question = trimmed.replace(/^\/bahor\s*/i, "").trim();
       if (!question) { 
-        toast.error(language === "uz" ? "Savol yozing" : "Enter a question"); 
+        toast.error(t('circleChat.askQuestion')); 
         return; 
       }
       if (user?.id && !hasBahorHintBeenSeen(spaceId, user.id)) { 
@@ -193,7 +193,7 @@ export default function CircleChatTab({ spaceId, onSendAICardRef }: CircleChatTa
       // Insert AI response with clickable sources
       let aiContent = data.response;
       if (webResults.length > 0) {
-        aiContent += "\n\n**Manbalar:**\n";
+        aiContent += `\n\n**${t('circleChat.sources')}:**\n`;
         webResults.forEach((r, i) => {
           aiContent += `${i + 1}. [${r.title}](${r.url})\n`;
         });
@@ -209,7 +209,7 @@ export default function CircleChatTab({ spaceId, onSendAICardRef }: CircleChatTa
       setMessageInput(""); 
       setBahorQuestion("");
     } catch (err: any) { 
-      toast.error(err.message || "Xatolik"); 
+      toast.error(err.message || t('common.error')); 
     } finally { 
       setSendingBahor(false); 
     }
@@ -263,7 +263,7 @@ export default function CircleChatTab({ spaceId, onSendAICardRef }: CircleChatTa
         <div className="max-w-2xl mx-auto px-4 py-3 space-y-2.5 w-full">
           {messages.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              {language === "uz" ? "Hali xabarlar yo'q" : "No messages yet"}
+              {t('circleChat.noMessages')}
             </div>
           ) : (
             messages.map((msg) => (
@@ -283,7 +283,7 @@ export default function CircleChatTab({ spaceId, onSendAICardRef }: CircleChatTa
 
       {showInlineHint && (
         <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-10 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm text-primary animate-fade-in">
-          /bahor — AI javob beradi
+          {t('circleChat.bahorHint')}
         </div>
       )}
 
@@ -294,7 +294,7 @@ export default function CircleChatTab({ spaceId, onSendAICardRef }: CircleChatTa
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground shadow-lg"
           >
             <ChevronDown className="w-4 h-4" />
-            {hasNewMessages ? (language === "uz" ? "Yangi xabarlar" : "New messages") : "↓"}
+            {hasNewMessages ? t('circleChat.newMessages') : "↓"}
           </button>
         </div>
       )}
@@ -325,23 +325,23 @@ export default function CircleChatTab({ spaceId, onSendAICardRef }: CircleChatTa
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-primary" />
-              /bahor nima?
+              {t('circleChat.bahorWhat')}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 text-sm text-muted-foreground">
-            <p>{language === "uz" ? "/bahor — Space ichidagi AI yordamchi:" : "/bahor is the Space AI:"}</p>
+            <p>{t('circleChat.bahorDesc')}</p>
             <ul className="list-disc list-inside space-y-1">
-              <li>{language === "uz" ? "Xabarlarni o'qiydi" : "Reads messages"}</li>
-              <li>{language === "uz" ? "Fayllarni tahlil qiladi" : "Analyzes files"}</li>
-              <li>{language === "uz" ? "Webdan qidiradi" : "Searches the web"}</li>
+              <li>{t('circleChat.bahorReads')}</li>
+              <li>{t('circleChat.bahorAnalyzes')}</li>
+              <li>{t('circleChat.bahorSearches')}</li>
             </ul>
           </div>
           <div className="flex gap-2 pt-2">
             <button onClick={() => setShowBahorHint(false)} className="flex-1 px-4 py-2 rounded-xl bg-secondary">
-              {language === "uz" ? "Bekor" : "Cancel"}
+              {t('actions.cancel')}
             </button>
             <button onClick={handleBahorHintConfirm} className="flex-1 px-4 py-2 rounded-xl bg-primary text-primary-foreground">
-              {language === "uz" ? "Tushundim" : "Got it"}
+              {t('circleChat.gotIt')}
             </button>
           </div>
         </DialogContent>
@@ -362,14 +362,14 @@ export default function CircleChatTab({ spaceId, onSendAICardRef }: CircleChatTa
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Users className="w-5 h-5" />
-              {language === "uz" ? "Kim o'qidi" : "Read by"}
+              {t('circleChat.whoRead')}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {loadingReaders ? (
-              <div className="py-4 text-center animate-pulse">{language === "uz" ? "Yuklanmoqda..." : "Loading..."}</div>
+              <div className="py-4 text-center animate-pulse">{t('common.loading')}</div>
             ) : readers.length === 0 ? (
-              <div className="py-4 text-center text-muted-foreground">{language === "uz" ? "Hali hech kim o'qimagan" : "No readers"}</div>
+              <div className="py-4 text-center text-muted-foreground">{t('circleChat.noReaders')}</div>
             ) : (
               readers.map((r, i) => (
                 <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-secondary/50">

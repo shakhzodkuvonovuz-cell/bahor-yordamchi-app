@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import PendingAttachments, { type PendingAttachment } from "./PendingAttachments";
 import type { CircleMessage } from "./CircleChatMessage";
 import { toast } from "sonner";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 interface CircleChatInputProps {
   value: string;
@@ -27,6 +28,7 @@ export default function CircleChatInput({
   uploading,
   language,
 }: CircleChatInputProps) {
+  const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
@@ -104,7 +106,7 @@ export default function CircleChatInput({
     if (isRecording) {
       setIsRecording(false);
       // Show coming soon toast
-      toast.info(language === "uz" ? "Tez orada" : "Coming soon");
+      toast.info(t('common.comingSoon'));
       // Haptic feedback
       if (navigator.vibrate) navigator.vibrate(10);
     }
@@ -129,7 +131,7 @@ export default function CircleChatInput({
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-primary">{replyTo.senderName}</p>
               <p className="text-xs text-muted-foreground truncate">
-                {replyTo.content?.slice(0, 60) || (language === "uz" ? "Rasm/Fayl" : "Image/File")}
+                {replyTo.content?.slice(0, 60) || t('circleChat.imageFile')}
               </p>
             </div>
             <button onClick={onCancelReply} className="p-1 hover:bg-secondary rounded transition-colors">
@@ -152,7 +154,7 @@ export default function CircleChatInput({
           <div className="flex items-center gap-2 p-2 rounded-lg bg-secondary/50">
             <Loader2 className="w-4 h-4 animate-spin text-primary" />
             <span className="text-xs text-muted-foreground">
-              {language === "uz" ? "Yuklanmoqda..." : "Uploading..."}
+              {t('circleChat.uploading')}
             </span>
           </div>
         </div>
@@ -164,7 +166,7 @@ export default function CircleChatInput({
           <div className="flex items-center gap-2 p-2 rounded-lg bg-red-500/10 border border-red-500/30">
             <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
             <span className="text-xs text-red-500 font-medium">
-              {language === "uz" ? "Yozilmoqda..." : "Recording..."}
+              {t('circleChat.recording')}
             </span>
           </div>
         </div>
@@ -201,7 +203,7 @@ export default function CircleChatInput({
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={language === "uz" ? "Xabar yozing... (/bahor savol)" : "Type a message... (/bahor question)"}
+            placeholder={t('circleChat.messagePlaceholder')}
             disabled={disabled || uploading}
             rows={1}
             className={cn(
