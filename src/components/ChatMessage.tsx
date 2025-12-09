@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, memo } from "react";
 import { Message } from "@/types/chat";
 import { ExternalLink, FileText, Download } from "lucide-react";
 import { MessageActionsPopover } from "@/components/chat/MessageActions";
@@ -29,7 +29,7 @@ interface ChatMessageProps {
   isMobile?: boolean;
 }
 
-export default function ChatMessage({
+function ChatMessageComponent({
   message,
   onCopy,
   onEdit,
@@ -440,3 +440,19 @@ export default function ChatMessage({
     </>
   );
 }
+
+// Memoize to prevent unnecessary re-renders in message list
+const ChatMessage = memo(ChatMessageComponent, (prevProps, nextProps) => {
+  // Only re-render if these props change
+  return (
+    prevProps.message.id === nextProps.message.id &&
+    prevProps.message.content === nextProps.message.content &&
+    prevProps.message.reaction === nextProps.message.reaction &&
+    prevProps.isStreaming === nextProps.isStreaming &&
+    prevProps.isActionLoading === nextProps.isActionLoading &&
+    prevProps.showActions === nextProps.showActions &&
+    prevProps.showActionBar === nextProps.showActionBar
+  );
+});
+
+export default ChatMessage;

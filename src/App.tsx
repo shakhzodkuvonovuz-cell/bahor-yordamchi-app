@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate } from "react-router-dom";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { LanguageProvider } from "@/i18n/LanguageProvider";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PublicRoute } from "@/components/PublicRoute";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -14,30 +14,48 @@ import OfflineBanner from "@/components/OfflineBanner";
 import { AppShellV2 } from "@/components/layout/AppShellV2";
 import { setupOAuthDeepLinkListener, isNativePlatform } from "@/lib/auth/googleAuth";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import Home from "./pages/Home";
-import Chat from "./pages/Chat";
-import Settings from "./pages/Settings";
-import Auth from "./pages/Auth";
-import AuthEmail from "./pages/AuthEmail";
-import AuthGoogle from "./pages/AuthGoogle";
-import AuthPhone from "./pages/AuthPhone";
-import AuthCallback from "./pages/AuthCallback";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Eager load only landing (first paint) and auth (critical path)
 import Landing from "./pages/Landing";
-import AdminEntitlements from "./pages/AdminEntitlements";
-import Feedback from "./pages/Feedback";
-import Terms from "./pages/Terms";
-import Privacy from "./pages/Privacy";
-import Support from "./pages/Support";
-import DocumentTools from "./pages/DocumentTools";
-import Circles from "./pages/Circles";
-import CircleDetail from "./pages/CircleDetail";
-import JoinCircle from "./pages/JoinCircle";
-import ModesList from "./pages/ModesList";
-import Tarjimon from "./pages/Tarjimon";
-import NotFound from "./pages/NotFound";
+import Auth from "./pages/Auth";
+import AuthCallback from "./pages/AuthCallback";
+
+// Lazy load all other routes for code splitting
+const Home = lazy(() => import("./pages/Home"));
+const Chat = lazy(() => import("./pages/Chat"));
+const Settings = lazy(() => import("./pages/Settings"));
+const AuthEmail = lazy(() => import("./pages/AuthEmail"));
+const AuthGoogle = lazy(() => import("./pages/AuthGoogle"));
+const AuthPhone = lazy(() => import("./pages/AuthPhone"));
+const AdminEntitlements = lazy(() => import("./pages/AdminEntitlements"));
+const Feedback = lazy(() => import("./pages/Feedback"));
+const Terms = lazy(() => import("./pages/Terms"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Support = lazy(() => import("./pages/Support"));
+const DocumentTools = lazy(() => import("./pages/DocumentTools"));
+const Circles = lazy(() => import("./pages/Circles"));
+const CircleDetail = lazy(() => import("./pages/CircleDetail"));
+const JoinCircle = lazy(() => import("./pages/JoinCircle"));
+const ModesList = lazy(() => import("./pages/ModesList"));
+const Tarjimon = lazy(() => import("./pages/Tarjimon"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
+
+// Minimal loading fallback - fast, lightweight skeleton
+const PageSkeleton = () => (
+  <div className="flex flex-col min-h-screen bg-background p-4">
+    <Skeleton className="h-12 w-32 mb-4" />
+    <Skeleton className="h-8 w-48 mb-2" />
+    <Skeleton className="h-4 w-64 mb-6" />
+    <div className="flex-1 flex flex-col gap-3">
+      <Skeleton className="h-16 w-full rounded-xl" />
+      <Skeleton className="h-16 w-full rounded-xl" />
+      <Skeleton className="h-16 w-3/4 rounded-xl" />
+    </div>
+  </div>
+);
 
 // Redirect helpers for old /spaces URLs
 const SpaceIdRedirect = () => {
@@ -104,6 +122,12 @@ const OAuthDeepLinkHandler = () => {
   return null;
 };
 
+// Wrap lazy components with Suspense
+const LazyRoute = ({ children }: { children: React.ReactNode }) => (
+  <Suspense fallback={<PageSkeleton />}>
+    {children}
+  </Suspense>
+);
 
 const App = () => (
   <ErrorBoundary>
@@ -121,25 +145,25 @@ const App = () => (
                 <Toaster />
                 <Sonner />
                 <Routes>
-                  {/* Public routes */}
+                  {/* Public routes - Landing is eager loaded for fast first paint */}
                   <Route path="/" element={<Landing />} />
-                  <Route path="/terms" element={<Terms />} />
-                  <Route path="/privacy" element={<Privacy />} />
+                  <Route path="/terms" element={<LazyRoute><Terms /></LazyRoute>} />
+                  <Route path="/privacy" element={<LazyRoute><Privacy /></LazyRoute>} />
                   
                   {/* Auth routes - redirect to /modes if already logged in */}
                   <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
-                  <Route path="/auth/email" element={<PublicRoute><AuthEmail /></PublicRoute>} />
-                  <Route path="/auth/google" element={<PublicRoute><AuthGoogle /></PublicRoute>} />
-                  <Route path="/auth/phone" element={<PublicRoute><AuthPhone /></PublicRoute>} />
+                  <Route path="/auth/email" element={<PublicRoute><LazyRoute><AuthEmail /></LazyRoute></PublicRoute>} />
+                  <Route path="/auth/google" element={<PublicRoute><LazyRoute><AuthGoogle /></LazyRoute></PublicRoute>} />
+                  <Route path="/auth/phone" element={<PublicRoute><LazyRoute><AuthPhone /></LazyRoute></PublicRoute>} />
                   <Route path="/auth/callback" element={<AuthCallback />} />
                   
-                  {/* Protected routes - wrapped in AppShell */}
+                  {/* Protected routes - wrapped in AppShell with lazy loading */}
                   <Route 
                     path="/modes" 
                     element={
                       <ProtectedRoute>
                         <AppShellV2>
-                          <Home />
+                          <LazyRoute><Home /></LazyRoute>
                         </AppShellV2>
                       </ProtectedRoute>
                     } 
@@ -149,7 +173,7 @@ const App = () => (
                     element={
                       <ProtectedRoute>
                         <AppShellV2>
-                          <ModesList />
+                          <LazyRoute><ModesList /></LazyRoute>
                         </AppShellV2>
                       </ProtectedRoute>
                     } 
@@ -159,7 +183,7 @@ const App = () => (
                     element={
                       <ProtectedRoute>
                         <AppShellV2>
-                          <Support />
+                          <LazyRoute><Support /></LazyRoute>
                         </AppShellV2>
                       </ProtectedRoute>
                     } 
@@ -169,7 +193,7 @@ const App = () => (
                     element={
                       <ProtectedRoute>
                         <AppShellV2>
-                          <Chat />
+                          <LazyRoute><Chat /></LazyRoute>
                         </AppShellV2>
                       </ProtectedRoute>
                     } 
@@ -179,7 +203,7 @@ const App = () => (
                     element={
                       <ProtectedRoute>
                         <AppShellV2>
-                          <Settings />
+                          <LazyRoute><Settings /></LazyRoute>
                         </AppShellV2>
                       </ProtectedRoute>
                     } 
@@ -189,7 +213,7 @@ const App = () => (
                     element={
                       <ProtectedRoute>
                         <AppShellV2>
-                          <Feedback />
+                          <LazyRoute><Feedback /></LazyRoute>
                         </AppShellV2>
                       </ProtectedRoute>
                     } 
@@ -199,7 +223,7 @@ const App = () => (
                     element={
                       <ProtectedRoute>
                         <AppShellV2>
-                          <AdminEntitlements />
+                          <LazyRoute><AdminEntitlements /></LazyRoute>
                         </AppShellV2>
                       </ProtectedRoute>
                     } 
@@ -209,7 +233,7 @@ const App = () => (
                     element={
                       <ProtectedRoute>
                         <AppShellV2>
-                          <DocumentTools />
+                          <LazyRoute><DocumentTools /></LazyRoute>
                         </AppShellV2>
                       </ProtectedRoute>
                     } 
@@ -219,7 +243,7 @@ const App = () => (
                     element={
                       <ProtectedRoute>
                         <AppShellV2>
-                          <Circles />
+                          <LazyRoute><Circles /></LazyRoute>
                         </AppShellV2>
                       </ProtectedRoute>
                     } 
@@ -230,7 +254,7 @@ const App = () => (
                       <ProtectedRoute>
                         <AppShellV2>
                           <ErrorBoundary>
-                            <CircleDetail />
+                            <LazyRoute><CircleDetail /></LazyRoute>
                           </ErrorBoundary>
                         </AppShellV2>
                       </ProtectedRoute>
@@ -242,20 +266,20 @@ const App = () => (
                     element={
                       <ProtectedRoute>
                         <AppShellV2>
-                          <Tarjimon />
+                          <LazyRoute><Tarjimon /></LazyRoute>
                         </AppShellV2>
                       </ProtectedRoute>
                     } 
                   />
                   {/* Invite routes - support both /circles/invite/:code and /invite/:code */}
-                  <Route path="/circles/invite/:code" element={<JoinCircle />} />
-                  <Route path="/invite/:code" element={<JoinCircle />} />
-                  <Route path="/join/:code" element={<JoinCircle />} />
+                  <Route path="/circles/invite/:code" element={<LazyRoute><JoinCircle /></LazyRoute>} />
+                  <Route path="/invite/:code" element={<LazyRoute><JoinCircle /></LazyRoute>} />
+                  <Route path="/join/:code" element={<LazyRoute><JoinCircle /></LazyRoute>} />
                   {/* Redirects from old /spaces URLs */}
                   <Route path="/spaces" element={<Navigate to="/circles" replace />} />
                   <Route path="/spaces/:id" element={<SpaceIdRedirect />} />
                   <Route path="/spaces/invite/:code" element={<SpaceInviteRedirect />} />
-                  <Route path="*" element={<NotFound />} />
+                  <Route path="*" element={<LazyRoute><NotFound /></LazyRoute>} />
                 </Routes>
               </TooltipProvider>
             </AuthProvider>

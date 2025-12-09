@@ -247,7 +247,10 @@ function HeroMockup() {
                 <div className="relative rounded-xl overflow-hidden border border-border/40 bg-secondary/30 opacity-0 animate-[scale-in_0.5s_ease-out_0.7s_forwards]">
                   <img 
                     src={samarkandImage} 
-                    alt="Generated Registan" 
+                    alt="Generated Registan"
+                    width={400}
+                    height={144}
+                    loading="lazy"
                     className="w-full h-36 object-cover"
                   />
                   {/* Image overlay actions */}
@@ -722,7 +725,10 @@ export default function Landing() {
                 >
                   <img 
                     src={img.image} 
-                    alt={img.label} 
+                    alt={img.label}
+                    width={112}
+                    height={128}
+                    loading="lazy" 
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2">
@@ -759,8 +765,8 @@ export default function Landing() {
                   </div>
                   {/* Online members mini avatars */}
                   <div className="flex -space-x-1.5">
-                    <img src="https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=64&h=64&fit=crop&crop=face" alt="" className="w-7 h-7 rounded-full border-2 border-background object-cover" />
-                    <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=64&h=64&fit=crop&crop=face" alt="" className="w-7 h-7 rounded-full border-2 border-background object-cover" />
+                    <img src="https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=64&h=64&fit=crop&crop=face" alt="" loading="lazy" className="w-7 h-7 rounded-full border-2 border-background object-cover" />
+                    <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=64&h=64&fit=crop&crop=face" alt="" loading="lazy" className="w-7 h-7 rounded-full border-2 border-background object-cover" />
                     <div className="w-7 h-7 rounded-full bg-orange-500 border-2 border-background flex items-center justify-center text-[9px] text-white font-medium">JA</div>
                     <div className="w-7 h-7 rounded-full bg-green-500 border-2 border-background flex items-center justify-center text-[9px] text-white font-medium">NK</div>
                     <div className="w-7 h-7 rounded-full bg-purple-500 border-2 border-background flex items-center justify-center text-[9px] text-white font-medium">SU</div>
