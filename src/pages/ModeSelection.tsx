@@ -4,11 +4,22 @@ import ModeCard from "@/components/ModeCard";
 import { PRIMARY_MODES, LEARNING_MODES } from "@/data/modes";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { AppContainer, AppLayout } from "@/components/layout";
+import { markSessionInitialized } from "@/utils/chatSession";
 
 export default function ModeSelection() {
   const navigate = useNavigate();
   const location = useLocation();
   const { language, t } = useTranslation();
+
+  // Handler for mode card click - creates NEW thread and navigates to chat
+  const handleModeSelect = (modeId: string) => {
+    // Mark session initialized to track that user initiated a chat
+    markSessionInitialized();
+    // Generate unique ID to force new thread creation
+    const newChatId = crypto.randomUUID?.() ?? Date.now().toString();
+    // Navigate to chat with ?new param to trigger new thread creation in Chat.tsx
+    navigate(`/chat/${modeId}?new=${newChatId}`);
+  };
 
   return (
     <AppLayout className="bg-gradient-to-b from-background to-primary-glow/10">
@@ -19,7 +30,10 @@ export default function ModeSelection() {
             <h1 className="text-2xl font-bold text-foreground">{t('modes.title')}</h1>
           </div>
           <button
-            onClick={() => navigate("/settings", { replace: true, state: { from: location.pathname } })}
+            onClick={() => {
+              const fromPath = location.pathname;
+              navigate(`/settings?from=${encodeURIComponent(fromPath)}`, { replace: true, state: { from: fromPath } });
+            }}
             className="p-2 hover:bg-secondary rounded-xl transition-colors"
             aria-label={t('settings.title')}
           >
@@ -52,7 +66,7 @@ export default function ModeSelection() {
                     <ModeCard
                       mode={mode}
                       language={language}
-                      onClick={() => navigate(`/chat/${mode.id}`)}
+                      onClick={() => handleModeSelect(mode.id)}
                     />
                   </div>
                 ))}
@@ -72,7 +86,7 @@ export default function ModeSelection() {
                     <ModeCard
                       mode={mode}
                       language={language}
-                      onClick={() => navigate(`/chat/${mode.id}`)}
+                      onClick={() => handleModeSelect(mode.id)}
                     />
                   </div>
                 ))}

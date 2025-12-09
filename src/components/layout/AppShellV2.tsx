@@ -1,4 +1,4 @@
-import { ReactNode, useState, useEffect } from "react";
+import { ReactNode, useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -19,20 +19,44 @@ export function AppShellV2({ children }: AppShellV2Props) {
     setDrawerOpen(false);
   }, [location.pathname]);
 
-  // Lock body scroll when drawer is open
+  // Lock body scroll when drawer is open - improved implementation
   useEffect(() => {
     if (drawerOpen) {
+      // Save current scroll position
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
       document.body.style.overflow = 'hidden';
       document.body.style.touchAction = 'none';
     } else {
+      // Restore scroll position
+      const scrollY = document.body.style.top;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
       document.body.style.overflow = '';
       document.body.style.touchAction = '';
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
     }
     return () => {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
       document.body.style.overflow = '';
       document.body.style.touchAction = '';
     };
   }, [drawerOpen]);
+
+  // Handle drawer close with callback for sidebar navigation
+  const handleDrawerClose = useCallback(() => {
+    setDrawerOpen(false);
+  }, []);
 
   // Get page title based on current route
   const getPageTitle = () => {
@@ -69,7 +93,7 @@ export function AppShellV2({ children }: AppShellV2Props) {
         <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-background/95 backdrop-blur-md border-b border-border z-40 flex items-center justify-between px-4 safe-area-top">
           <button
             onClick={() => setDrawerOpen(true)}
-            className="p-2 -ml-2 rounded-lg hover:bg-accent transition-colors"
+            className="p-2 -ml-2 rounded-lg hover:bg-accent transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             aria-label="Open menu"
           >
             <Menu className="w-5 h-5 text-foreground" />
@@ -84,7 +108,7 @@ export function AppShellV2({ children }: AppShellV2Props) {
             <span className="font-semibold text-foreground">{getPageTitle()}</span>
           </div>
           
-          <div className="w-9" />
+          <div className="w-11" /> {/* Spacer matching button size */}
         </header>
       )}
 
@@ -92,7 +116,7 @@ export function AppShellV2({ children }: AppShellV2Props) {
       {drawerOpen && (
         <div 
           className="lg:hidden fixed inset-0 bg-black/60 z-[100] animate-fade-in"
-          onClick={() => setDrawerOpen(false)}
+          onClick={handleDrawerClose}
           style={{ touchAction: 'none' }}
         />
       )}
@@ -108,15 +132,15 @@ export function AppShellV2({ children }: AppShellV2Props) {
       >
         <div className="flex items-center justify-end p-2 border-b border-border safe-area-top">
           <button
-            onClick={() => setDrawerOpen(false)}
-            className="p-2 rounded-lg hover:bg-accent transition-colors"
+            onClick={handleDrawerClose}
+            className="p-2 rounded-lg hover:bg-accent transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             aria-label="Close menu"
           >
             <X className="w-5 h-5 text-foreground" />
           </button>
         </div>
         <div className="h-[calc(100dvh-56px)] overflow-y-auto overscroll-contain">
-          <SidebarV2 onNavigate={() => setDrawerOpen(false)} />
+          <SidebarV2 onNavigate={handleDrawerClose} />
         </div>
       </aside>
 

@@ -77,22 +77,33 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
   };
 
   const handleNavClick = (item: NavItem) => {
-    if (item.isNewChat) {
-      // Generate unique ID each click to ensure a brand-new chat is created every time
-      // Clear session flag so the new chat is treated as fresh
-      sessionStorage.removeItem("bahor_session_chat_initialized");
-      const newChatId = crypto.randomUUID?.() ?? Date.now().toString();
-      navigate(`/chat/general?new=${newChatId}`);
-    } else {
-      // Use replace: true for top-level section navigation to avoid stacking history
-      const navOptions: NavigateOptions = { replace: true };
-      // Pass from state for settings so back button can be deterministic
-      if (item.path === "/settings") {
-        navOptions.state = { from: location.pathname };
-      }
-      navigate(item.path, navOptions);
-    }
+    // Close sidebar FIRST on mobile, then navigate
     onNavigate?.();
+    
+    // Small delay to let sidebar close animation start before navigation
+    const doNavigate = () => {
+      if (item.isNewChat) {
+        // Generate unique ID each click to ensure a brand-new chat is created every time
+        // Clear session flag so the new chat is treated as fresh
+        sessionStorage.removeItem("bahor_session_chat_initialized");
+        const newChatId = crypto.randomUUID?.() ?? Date.now().toString();
+        navigate(`/chat/general?new=${newChatId}`);
+      } else {
+        // Use replace: true for top-level section navigation to avoid stacking history
+        const navOptions: NavigateOptions = { replace: true };
+        // Pass from state AND url param for settings so back button is deterministic
+        if (item.path === "/settings") {
+          const fromPath = location.pathname;
+          navOptions.state = { from: fromPath };
+          navigate(`${item.path}?from=${encodeURIComponent(fromPath)}`, navOptions);
+          return;
+        }
+        navigate(item.path, navOptions);
+      }
+    };
+    
+    // Execute navigation immediately for smooth UX
+    doNavigate();
   };
 
   const getUserInitials = () => {
@@ -226,7 +237,11 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
       {/* Account Section */}
       <div className="px-3 py-3 border-t border-border">
         <button
-          onClick={() => { navigate("/settings", { replace: true, state: { from: location.pathname } }); onNavigate?.(); }}
+          onClick={() => { 
+            onNavigate?.(); 
+            const fromPath = location.pathname;
+            navigate(`/settings?from=${encodeURIComponent(fromPath)}`, { replace: true, state: { from: fromPath } }); 
+          }}
           title={collapsed ? t("sidebar.account") : undefined}
           className={cn(
             "w-full flex items-center gap-3 rounded-xl transition-all duration-200 hover:bg-accent/50",

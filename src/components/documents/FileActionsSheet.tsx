@@ -295,6 +295,16 @@ export function FileActionsSheet({ file, open, onOpenChange, onDeleted }: FileAc
                   src={file.signed_url}
                   alt={file.title}
                   className="max-w-full max-h-full object-contain rounded-lg"
+                  onError={(e) => {
+                    // Fallback if image fails to load
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    target.parentElement!.innerHTML = `
+                      <div class="flex flex-col items-center justify-center text-muted-foreground gap-2">
+                        <p>${language === "uz" ? "Rasmni yuklashda xatolik" : "Failed to load image"}</p>
+                      </div>
+                    `;
+                  }}
                 />
               </div>
             ) : file.signed_url && file.mime_type === "application/pdf" ? (

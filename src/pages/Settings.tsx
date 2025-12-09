@@ -129,9 +129,12 @@ export default function Settings() {
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <button
             onClick={() => {
-              // Deterministic back: use state.from if available, otherwise default to /modes
-              const fromPath = (location.state as { from?: string })?.from;
-              navigate(fromPath || "/modes", { replace: true });
+              // Deterministic back: check location.state.from first, then URL param, then default
+              const stateFrom = (location.state as { from?: string })?.from;
+              const searchParams = new URLSearchParams(location.search);
+              const urlFrom = searchParams.get('from');
+              const targetPath = stateFrom || urlFrom || "/modes";
+              navigate(targetPath, { replace: true });
             }}
             className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-secondary rounded-xl transition-colors shrink-0"
             aria-label={t('settings.back')}
