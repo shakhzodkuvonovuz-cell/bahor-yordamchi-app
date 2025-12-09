@@ -2,13 +2,12 @@ import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Image, Download, MessageSquare, ChevronDown, ChevronUp, Sparkles, Camera, Palette } from "lucide-react";
+import { Loader2, Download, MessageSquare, ChevronDown, ChevronUp, Sparkles, Camera, Palette } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useLanguage } from "@/hooks/useLanguage";
+import { useTranslation } from "@/i18n/LanguageProvider";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface ImageGeneratorModalProps {
@@ -34,112 +33,13 @@ const ASPECT_RATIOS = [
   { value: "4:5", label: "4:5 (Instagram)" },
 ];
 
-const LABELS: Record<string, Record<string, string>> = {
-  uz: {
-    title: "Rasm yaratish (AI)",
-    promptLabel: "Nimani chizish kerak?",
-    promptPlaceholder: "Masalan: Samarqand Registon maydoni kechqurun, yulduzli osmon",
-    aspectRatio: "Nisbat",
-    style: "Uslub",
-    stylePhoto: "Foto",
-    styleIllustration: "Rasm",
-    qualityBoost: "Sifatni oshirish",
-    qualityBoostDesc: "Biroz sekinroq, lekin sifatliroq",
-    generate: "Yaratish",
-    generating: "Yaratilmoqda...",
-    success: "Rasm tayyor!",
-    error: "Xatolik",
-    savedToFiles: "Fayllarimga saqlandi",
-    download: "Yuklab olish",
-    sendToChat: "Chatga yuborish",
-    close: "Yopish",
-    newImage: "Yangi rasm",
-    details: "Tafsilotlar",
-    promptUsed: "Ishlatilgan prompt",
-    model: "Model",
-    size: "O'lcham",
-  },
-  en: {
-    title: "Generate Image (AI)",
-    promptLabel: "What to generate?",
-    promptPlaceholder: "Example: Registan square in Samarkand at night, starry sky",
-    aspectRatio: "Aspect Ratio",
-    style: "Style",
-    stylePhoto: "Photo",
-    styleIllustration: "Illustration",
-    qualityBoost: "Quality boost",
-    qualityBoostDesc: "Slightly slower, better quality",
-    generate: "Generate",
-    generating: "Generating...",
-    success: "Image ready!",
-    error: "Error",
-    savedToFiles: "Saved to My Files",
-    download: "Download",
-    sendToChat: "Send to chat",
-    close: "Close",
-    newImage: "New image",
-    details: "Details",
-    promptUsed: "Prompt used",
-    model: "Model",
-    size: "Size",
-  },
-  ru: {
-    title: "Создать изображение (AI)",
-    promptLabel: "Что создать?",
-    promptPlaceholder: "Например: Площадь Регистан в Самарканде ночью, звёздное небо",
-    aspectRatio: "Соотношение сторон",
-    style: "Стиль",
-    stylePhoto: "Фото",
-    styleIllustration: "Иллюстрация",
-    qualityBoost: "Повышение качества",
-    qualityBoostDesc: "Немного медленнее, но качественнее",
-    generate: "Создать",
-    generating: "Создаётся...",
-    success: "Изображение готово!",
-    error: "Ошибка",
-    savedToFiles: "Сохранено в Мои файлы",
-    download: "Скачать",
-    sendToChat: "Отправить в чат",
-    close: "Закрыть",
-    newImage: "Новое изображение",
-    details: "Подробности",
-    promptUsed: "Использованный промпт",
-    model: "Модель",
-    size: "Размер",
-  },
-  tr: {
-    title: "Görsel Oluştur (AI)",
-    promptLabel: "Ne oluşturulsun?",
-    promptPlaceholder: "Örnek: Gece Semerkant'ta Registan Meydanı, yıldızlı gökyüzü",
-    aspectRatio: "En boy oranı",
-    style: "Stil",
-    stylePhoto: "Fotoğraf",
-    styleIllustration: "İllüstrasyon",
-    qualityBoost: "Kalite artırma",
-    qualityBoostDesc: "Biraz daha yavaş, daha kaliteli",
-    generate: "Oluştur",
-    generating: "Oluşturuluyor...",
-    success: "Görsel hazır!",
-    error: "Hata",
-    savedToFiles: "Dosyalarıma kaydedildi",
-    download: "İndir",
-    sendToChat: "Sohbete gönder",
-    close: "Kapat",
-    newImage: "Yeni görsel",
-    details: "Detaylar",
-    promptUsed: "Kullanılan prompt",
-    model: "Model",
-    size: "Boyut",
-  },
-};
-
 export default function ImageGeneratorModal({
   open,
   onOpenChange,
   chatId,
   onImageGenerated,
 }: ImageGeneratorModalProps) {
-  const { language } = useLanguage();
+  const { t } = useTranslation();
   const { toast } = useToast();
   
   const [prompt, setPrompt] = useState("");
@@ -154,11 +54,9 @@ export default function ImageGeneratorModal({
   } | null>(null);
   const [showDetails, setShowDetails] = useState(false);
 
-  const t = (key: string) => LABELS[language]?.[key] || LABELS.en[key] || key;
-
   const handleGenerate = async () => {
     if (!prompt.trim()) {
-      toast({ title: t("error"), description: "Prompt kiriting", variant: "destructive" });
+      toast({ title: t('common.error'), description: t('imageGen.enterPrompt'), variant: "destructive" });
       return;
     }
 
@@ -168,7 +66,7 @@ export default function ImageGeneratorModal({
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        toast({ title: t("error"), description: "Iltimos, tizimga kiring", variant: "destructive" });
+        toast({ title: t('common.error'), description: t('imageGen.pleaseLogin'), variant: "destructive" });
         return;
       }
 
@@ -194,7 +92,7 @@ export default function ImageGeneratorModal({
       const result = await response.json();
 
       if (!result.ok) {
-        throw new Error(result.error || "Xatolik yuz berdi");
+        throw new Error(result.error || t('common.error'));
       }
 
       const meta: ImageMeta = {
@@ -213,8 +111,8 @@ export default function ImageGeneratorModal({
       });
       
       toast({
-        title: t("success"),
-        description: t("savedToFiles"),
+        title: t('imageGen.success'),
+        description: t('imageGen.savedToFiles'),
       });
 
       if (onImageGenerated) {
@@ -223,8 +121,8 @@ export default function ImageGeneratorModal({
     } catch (error) {
       console.error("Image generation error:", error);
       toast({
-        title: t("error"),
-        description: error instanceof Error ? error.message : "Xatolik yuz berdi",
+        title: t('common.error'),
+        description: error instanceof Error ? error.message : t('common.error'),
         variant: "destructive",
       });
     } finally {
@@ -264,7 +162,7 @@ export default function ImageGeneratorModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
-            {t("title")}
+            {t('imageGen.title')}
           </DialogTitle>
         </DialogHeader>
 
@@ -273,9 +171,9 @@ export default function ImageGeneratorModal({
             <>
               {/* Prompt input */}
               <div className="space-y-2">
-                <Label>{t("promptLabel")}</Label>
+                <Label>{t('imageGen.promptLabel')}</Label>
                 <Textarea
-                  placeholder={t("promptPlaceholder")}
+                  placeholder={t('imageGen.promptPlaceholder')}
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   rows={3}
@@ -286,7 +184,7 @@ export default function ImageGeneratorModal({
 
               {/* Style toggle */}
               <div className="space-y-2">
-                <Label>{t("style")}</Label>
+                <Label>{t('imageGen.style')}</Label>
                 <div className="flex gap-2">
                   <Button
                     type="button"
@@ -297,7 +195,7 @@ export default function ImageGeneratorModal({
                     className="flex-1"
                   >
                     <Camera className="w-4 h-4 mr-2" />
-                    {t("stylePhoto")}
+                    {t('imageGen.stylePhoto')}
                   </Button>
                   <Button
                     type="button"
@@ -308,14 +206,14 @@ export default function ImageGeneratorModal({
                     className="flex-1"
                   >
                     <Palette className="w-4 h-4 mr-2" />
-                    {t("styleIllustration")}
+                    {t('imageGen.styleIllustration')}
                   </Button>
                 </div>
               </div>
 
               {/* Aspect ratio */}
               <div className="space-y-2">
-                <Label>{t("aspectRatio")}</Label>
+                <Label>{t('imageGen.aspectRatio')}</Label>
                 <div className="flex gap-2 flex-wrap">
                   {ASPECT_RATIOS.map((ratio) => (
                     <Button
@@ -335,8 +233,8 @@ export default function ImageGeneratorModal({
               {/* Quality boost toggle */}
               <div className="flex items-center justify-between py-2 px-3 bg-muted/50 rounded-lg">
                 <div className="space-y-0.5">
-                  <Label className="text-sm font-medium">{t("qualityBoost")}</Label>
-                  <p className="text-xs text-muted-foreground">{t("qualityBoostDesc")}</p>
+                  <Label className="text-sm font-medium">{t('imageGen.qualityBoost')}</Label>
+                  <p className="text-xs text-muted-foreground">{t('imageGen.qualityBoostDesc')}</p>
                 </div>
                 <Switch
                   checked={qualityBoost}
@@ -353,12 +251,12 @@ export default function ImageGeneratorModal({
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    {t("generating")}
+                    {t('imageGen.generating')}
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4 mr-2" />
-                    {t("generate")}
+                    {t('imageGen.generate')}
                   </>
                 )}
               </Button>
@@ -379,22 +277,22 @@ export default function ImageGeneratorModal({
                 <Collapsible open={showDetails} onOpenChange={setShowDetails}>
                   <CollapsibleTrigger asChild>
                     <Button variant="ghost" size="sm" className="w-full justify-between text-muted-foreground">
-                      {t("details")}
+                      {t('imageGen.details')}
                       {showDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-2 pt-2 text-sm">
                     <div className="bg-muted/50 rounded-lg p-3 space-y-2">
                       <div>
-                        <span className="text-muted-foreground">{t("model")}: </span>
+                        <span className="text-muted-foreground">{t('imageGen.model')}: </span>
                         <span className="font-mono">{generatedImage.meta.model}</span>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">{t("size")}: </span>
+                        <span className="text-muted-foreground">{t('imageGen.size')}: </span>
                         <span>{generatedImage.meta.width}×{generatedImage.meta.height}</span>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">{t("promptUsed")}: </span>
+                        <span className="text-muted-foreground">{t('imageGen.promptUsed')}: </span>
                         <p className="text-xs mt-1 text-muted-foreground leading-relaxed">
                           {generatedImage.meta.prompt_used}
                         </p>
@@ -408,29 +306,29 @@ export default function ImageGeneratorModal({
               <div className="flex gap-2">
                 <Button onClick={handleDownload} variant="outline" className="flex-1">
                   <Download className="w-4 h-4 mr-2" />
-                  {t("download")}
+                  {t('imageGen.download')}
                 </Button>
                 {chatId && (
                   <Button
                     onClick={() => {
-                      toast({ title: "✓", description: "Chatga yuborildi" });
+                      toast({ title: "✓", description: t('imageGen.sentToChat') });
                       onOpenChange(false);
                     }}
                     variant="outline"
                     className="flex-1"
                   >
                     <MessageSquare className="w-4 h-4 mr-2" />
-                    {t("sendToChat")}
+                    {t('imageGen.sendToChat')}
                   </Button>
                 )}
               </div>
 
               <div className="flex gap-2">
                 <Button onClick={handleReset} variant="ghost" className="flex-1">
-                  {t("newImage")}
+                  {t('imageGen.newImage')}
                 </Button>
                 <Button onClick={() => onOpenChange(false)} variant="ghost" className="flex-1">
-                  {t("close")}
+                  {t('imageGen.close')}
                 </Button>
               </div>
             </>

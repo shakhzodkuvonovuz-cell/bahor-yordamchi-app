@@ -1,8 +1,7 @@
-import { Clock, Crown, Check, Sparkles, Zap, FolderArchive, Layers } from 'lucide-react';
+import { Clock, Crown, Sparkles, Zap, FolderArchive, Layers } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n/LanguageProvider';
-import { useLanguage } from '@/hooks/useLanguage';
 
 interface LimitReachedSheetProps {
   open: boolean;
@@ -13,80 +12,6 @@ interface LimitReachedSheetProps {
   onUpgrade?: () => void;
 }
 
-const BENEFITS = {
-  uz: [
-    { icon: Sparkles, text: "Ko'proq so'rovlar (cheklovsiz)" },
-    { icon: Layers, text: "PDF Tools Pro (OCR, Protect/Unlock, Office→PDF…)" },
-    { icon: Zap, text: "Tezroq javob (prioritet)" },
-    { icon: FolderArchive, text: "Fayllar arxivi" },
-  ],
-  en: [
-    { icon: Sparkles, text: "More requests (unlimited)" },
-    { icon: Layers, text: "PDF Tools Pro (OCR, Protect/Unlock, Office→PDF…)" },
-    { icon: Zap, text: "Faster responses (priority)" },
-    { icon: FolderArchive, text: "File archive" },
-  ],
-  ru: [
-    { icon: Sparkles, text: "Больше запросов (безлимит)" },
-    { icon: Layers, text: "PDF Tools Pro (OCR, Protect/Unlock, Office→PDF…)" },
-    { icon: Zap, text: "Быстрые ответы (приоритет)" },
-    { icon: FolderArchive, text: "Архив файлов" },
-  ],
-  tr: [
-    { icon: Sparkles, text: "Daha fazla istek (sınırsız)" },
-    { icon: Layers, text: "PDF Tools Pro (OCR, Protect/Unlock, Office→PDF…)" },
-    { icon: Zap, text: "Daha hızlı yanıt (öncelik)" },
-    { icon: FolderArchive, text: "Dosya arşivi" },
-  ],
-};
-
-const LABELS = {
-  uz: {
-    title: "Bugungi limit tugadi",
-    subtitle: "Ertaga limit yangilanadi. Premiumga o'tsangiz cheklovlar yuqori va PDF Tools Pro ochiladi.",
-    statsLabel: "Bugun",
-    resetLabel: "Ertaga yangilanadi",
-    upgrade: "Premiumga o'tish",
-    upgradePrice: "49 000 so'm/oy",
-    later: "Ertaga davom etaman",
-    viewPlans: "Rejalarni ko'rish",
-    withPremium: "Premium bilan:",
-  },
-  en: {
-    title: "Daily limit reached",
-    subtitle: "Limit resets tomorrow. Upgrade to Premium for higher limits and PDF Tools Pro.",
-    statsLabel: "Today",
-    resetLabel: "Resets tomorrow",
-    upgrade: "Upgrade to Premium",
-    upgradePrice: "$4.99/month",
-    later: "Continue tomorrow",
-    viewPlans: "View plans",
-    withPremium: "With Premium:",
-  },
-  ru: {
-    title: "Дневной лимит исчерпан",
-    subtitle: "Лимит обновится завтра. Премиум даёт больше лимитов и PDF Tools Pro.",
-    statsLabel: "Сегодня",
-    resetLabel: "Обновится завтра",
-    upgrade: "Перейти на Премиум",
-    upgradePrice: "49 000 сум/мес",
-    later: "Продолжу завтра",
-    viewPlans: "Смотреть тарифы",
-    withPremium: "С Премиум:",
-  },
-  tr: {
-    title: "Günlük limit doldu",
-    subtitle: "Limit yarın sıfırlanır. Premium ile daha yüksek limitler ve PDF Tools Pro alın.",
-    statsLabel: "Bugün",
-    resetLabel: "Yarın sıfırlanır",
-    upgrade: "Premium'a geç",
-    upgradePrice: "₺99/ay",
-    later: "Yarın devam ederim",
-    viewPlans: "Planları gör",
-    withPremium: "Premium ile:",
-  },
-};
-
 export default function LimitReachedSheet({ 
   open, 
   onClose, 
@@ -96,11 +21,13 @@ export default function LimitReachedSheet({
   onUpgrade,
 }: LimitReachedSheetProps) {
   const { t } = useTranslation();
-  const { language } = useLanguage();
-  const lang = (language as 'uz' | 'en' | 'ru' | 'tr') || 'uz';
-  
-  const labels = LABELS[lang] || LABELS.uz;
-  const benefits = BENEFITS[lang] || BENEFITS.uz;
+
+  const benefits = [
+    { icon: Sparkles, text: t('limitSheet.benefit1') },
+    { icon: Layers, text: t('limitSheet.benefit2') },
+    { icon: Zap, text: t('limitSheet.benefit3') },
+    { icon: FolderArchive, text: t('limitSheet.benefit4') },
+  ];
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
@@ -115,23 +42,23 @@ export default function LimitReachedSheet({
               <Crown className="w-7 h-7 text-amber-400" />
             </div>
             <SheetTitle className="text-xl font-semibold text-foreground">
-              {labels.title}
+              {t('limitSheet.title')}
             </SheetTitle>
             <p className="text-sm text-muted-foreground leading-relaxed px-2">
-              {labels.subtitle}
+              {t('limitSheet.subtitle')}
             </p>
           </SheetHeader>
           
           {/* Stats row */}
           <div className="flex items-center justify-center gap-6 py-3 px-4 rounded-2xl bg-secondary/40 border border-border/30">
             <div className="text-center">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">{labels.statsLabel}</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">{t('limitSheet.today')}</p>
               <p className="text-lg font-semibold text-foreground">{used}/{limit}</p>
             </div>
             <div className="w-px h-8 bg-border/50" />
             <div className="flex items-center gap-2 text-muted-foreground">
               <Clock className="w-4 h-4" />
-              <span className="text-sm">{labels.resetLabel}</span>
+              <span className="text-sm">{t('limitSheet.resetLabel')}</span>
             </div>
           </div>
 
@@ -139,7 +66,7 @@ export default function LimitReachedSheet({
           <div className="space-y-3">
             <p className="text-sm font-medium text-foreground flex items-center gap-2">
               <Crown className="w-4 h-4 text-amber-400" />
-              {labels.withPremium}
+              {t('limitSheet.withPremium')}
             </p>
             <div className="grid grid-cols-1 gap-2">
               {benefits.map((benefit, i) => {
@@ -169,15 +96,15 @@ export default function LimitReachedSheet({
               }}
             >
               <Crown className="w-4 h-4 mr-2" />
-              {labels.upgrade}
-              <span className="ml-2 text-xs opacity-90">({labels.upgradePrice})</span>
+              {t('limitSheet.upgrade')}
+              <span className="ml-2 text-xs opacity-90">({t('limitSheet.price')})</span>
             </Button>
             <Button 
               variant="ghost" 
               onClick={onClose} 
               className="w-full h-11 text-muted-foreground hover:text-foreground rounded-xl"
             >
-              {labels.later}
+              {t('limitSheet.later')}
             </Button>
           </div>
         </div>
