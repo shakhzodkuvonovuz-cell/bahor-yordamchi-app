@@ -194,7 +194,7 @@ export default function Circles() {
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
             <h1 className="text-xl font-bold text-foreground">
-              {language === "uz" ? "Doiralar" : "Circles"}
+              {t('circles.title')}
             </h1>
           </div>
           <div className="flex items-center gap-2">
@@ -205,7 +205,7 @@ export default function Circles() {
               className="gap-1.5"
             >
               <Link2 className="w-4 h-4" />
-              {language === "uz" ? "Kod kiritish" : "Enter Code"}
+              {t('circles.enterCode')}
             </Button>
             <Button
               onClick={() => setShowCreateModal(true)}
@@ -213,7 +213,7 @@ export default function Circles() {
               className="gap-1.5"
             >
               <Plus className="w-4 h-4" />
-              {language === "uz" ? "Yangi" : "New"}
+              {t('circles.new')}
             </Button>
           </div>
         </div>
@@ -235,16 +235,14 @@ export default function Circles() {
               <Users className="w-8 h-8 text-muted-foreground" />
             </div>
             <h3 className="font-semibold text-foreground mb-2">
-              {language === "uz" ? "Doiralar yo'q" : "No circles yet"}
+              {t('circles.noCircles')}
             </h3>
             <p className="text-sm text-muted-foreground mb-4">
-              {language === "uz"
-                ? "Birinchi doirangizni yarating"
-                : "Create your first circle"}
+              {t('circles.createFirst')}
             </p>
             <Button onClick={() => setShowCreateModal(true)} className="gap-2">
               <Plus className="w-4 h-4" />
-              {language === "uz" ? "Doira yaratish" : "Create Circle"}
+              {t('circles.createCircle')}
             </Button>
           </div>
         ) : (
@@ -298,28 +296,26 @@ export default function Circles() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {language === "uz" ? "Taklif linkini kiritish" : "Enter Invite Link"}
+              {t('circles.enterInviteLink')}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <p className="text-sm text-muted-foreground">
-              {language === "uz"
-                ? "Taklif linkini yoki kodini kiriting"
-                : "Enter the invite link or code"}
+              {t('circles.enterLinkOrCode')}
             </p>
             <Input
               value={pasteLink}
               onChange={(e) => setPasteLink(e.target.value)}
-              placeholder={language === "uz" ? "Link yoki kod" : "Link or code"}
+              placeholder={t('circles.linkOrCode')}
               onKeyDown={(e) => e.key === "Enter" && handlePasteLinkSubmit()}
             />
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setShowPasteLinkModal(false)}>
-              {language === "uz" ? "Bekor" : "Cancel"}
+              {t('circles.cancel')}
             </Button>
             <Button onClick={handlePasteLinkSubmit} disabled={!pasteLink.trim()}>
-              {language === "uz" ? "Davom etish" : "Continue"}
+              {t('circles.continue')}
             </Button>
           </div>
         </DialogContent>
