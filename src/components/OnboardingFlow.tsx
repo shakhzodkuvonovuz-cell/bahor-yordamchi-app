@@ -45,8 +45,8 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const goals: { id: Goal; label: string; icon: string }[] = [
     { id: "ielts", label: "IELTS", icon: "🎯" },
     { id: "english", label: "English", icon: "🇬🇧" },
-    { id: "homework", label: language === "uz" ? "Uy vazifasi" : "Homework", icon: "📚" },
-    { id: "daily", label: language === "uz" ? "Kundalik" : "Daily", icon: "☀️" },
+    { id: "homework", label: t('onboarding.homework'), icon: "📚" },
+    { id: "daily", label: t('onboarding.daily'), icon: "☀️" },
     { id: "coding", label: "Coding", icon: "💻" },
   ];
 
@@ -70,7 +70,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             {/* Title */}
             <div className="space-y-2">
               <h1 className="text-2xl font-bold text-foreground">
-                {language === "uz" ? "Bahor AI nima qila oladi?" : "What can Bahor AI do?"}
+                {t('onboarding.whatCanDo')}
               </h1>
             </div>
 
@@ -82,7 +82,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                 </div>
                 <div>
                   <p className="font-medium text-foreground">
-                    {language === "uz" ? "Savollarga tez va aniq javob" : "Quick and accurate answers"}
+                    {t('onboarding.quickAnswers')}
                   </p>
                 </div>
               </div>
@@ -93,7 +93,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                 </div>
                 <div>
                   <p className="font-medium text-foreground">
-                    {language === "uz" ? "Rasm va fayllarni tahlil qilish" : "Image and file analysis"}
+                    {t('onboarding.fileAnalysis')}
                   </p>
                 </div>
               </div>
@@ -104,7 +104,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                 </div>
                 <div>
                   <p className="font-medium text-foreground">
-                    {language === "uz" ? "IELTS, English Coach, Homework va boshqalar" : "IELTS, English Coach, Homework & more"}
+                    {t('onboarding.specialModes')}
                   </p>
                 </div>
               </div>
@@ -115,7 +115,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
               onClick={() => setStep(2)} 
               className="w-full h-12 rounded-xl text-base font-medium"
             >
-              {language === "uz" ? "Davom etish" : "Continue"}
+              {t('onboarding.continue')}
               <ChevronRight className="w-5 h-5 ml-1" />
             </Button>
           </div>
@@ -126,10 +126,10 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             {/* Title */}
             <div className="space-y-2">
               <h1 className="text-2xl font-bold text-foreground">
-                {language === "uz" ? "Sizga ko'proq nima kerak?" : "What do you need most?"}
+                {t('onboarding.whatNeed')}
               </h1>
               <p className="text-muted-foreground">
-                {language === "uz" ? "Bitta tanlang" : "Choose one"}
+                {t('onboarding.chooseOne')}
               </p>
             </div>
 
@@ -175,7 +175,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
               disabled={!selectedGoal}
               className="w-full h-12 rounded-xl text-base font-medium"
             >
-              {language === "uz" ? "Boshlash" : "Start"}
+              {t('onboarding.start')}
             </Button>
           </div>
         )}

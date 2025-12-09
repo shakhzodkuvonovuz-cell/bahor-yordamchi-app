@@ -6,7 +6,7 @@ interface EditingIndicatorProps {
 }
 
 export function EditingIndicator({ onCancel }: EditingIndicatorProps) {
-  const { language } = useTranslation();
+  const { language, t } = useTranslation();
 
   const editingLabel = language === "uz" 
     ? "Tahrirlanyapti… Yuborsangiz yangi javob yaratiladi" 
@@ -16,14 +16,6 @@ export function EditingIndicator({ onCancel }: EditingIndicatorProps) {
     ? "Редактирование… Отправка создаст новый ответ" 
     : "Düzenleniyor… Gönderim yeni yanıt oluşturacak";
 
-  const cancelLabel = language === "uz" 
-    ? "Bekor qilish" 
-    : language === "en" 
-    ? "Cancel" 
-    : language === "ru" 
-    ? "Отмена" 
-    : "İptal";
-
   return (
     <div className="flex items-center justify-between gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-xl mb-2 animate-fade-in">
       <span className="text-xs text-primary font-medium">{editingLabel}</span>
@@ -32,7 +24,7 @@ export function EditingIndicator({ onCancel }: EditingIndicatorProps) {
         className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-lg transition-colors"
       >
         <X className="w-3 h-3" />
-        {cancelLabel}
+        {t('actions.cancel')}
       </button>
     </div>
   );
