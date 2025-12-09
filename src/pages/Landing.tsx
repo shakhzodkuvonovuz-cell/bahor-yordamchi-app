@@ -739,37 +739,37 @@ export default function Landing() {
       <section id="circles" className="py-16 sm:py-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div ref={circlesRef.ref} className={`grid lg:grid-cols-2 gap-8 lg:gap-12 items-start transition-all duration-700 ${circlesRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
-            {/* Realistic Circles Mockup - Bigger and more detailed */}
+            {/* Realistic Circles Mockup - Compact, fits well */}
             <div className={`order-2 lg:order-1 transition-all duration-700 ${circlesRef.isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}>
-              <div className="glass-premium rounded-2xl p-4 sm:p-5 border border-border/40 max-w-lg mx-auto shadow-xl">
+              <div className="glass-premium rounded-2xl p-3 sm:p-4 border border-border/40 max-w-md mx-auto shadow-xl">
                 {/* Header with back button, emoji, title, members, and avatars */}
-                <div className="flex items-center gap-2 pb-3 border-b border-border/30 mb-3">
+                <div className="flex items-center gap-2 pb-2.5 border-b border-border/30 mb-2.5">
                   {/* Back button */}
-                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors group">
-                    <ArrowLeft className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  <button className="p-1 rounded-lg hover:bg-secondary/60 transition-colors group">
+                    <ArrowLeft className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
                   </button>
                   {/* Circle emoji icon */}
-                  <div className="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center text-base hover:scale-110 transition-transform cursor-pointer">
+                  <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-sm">
                     📊
                   </div>
                   {/* Title and member count */}
                   <div className="flex-1 min-w-0">
-                    <span className="font-semibold text-sm text-foreground block truncate">{t('landing.circles.mockupTitle')}</span>
-                    <span className="text-[10px] text-muted-foreground">6 {t('landing.circles.members')}</span>
+                    <span className="font-semibold text-xs text-foreground block truncate">{t('landing.circles.mockupTitle')}</span>
+                    <span className="text-[9px] text-muted-foreground">6 {t('landing.circles.members')}</span>
                   </div>
-                  {/* Online members mini avatars - Turkic/Central Asian photos */}
-                  <div className="flex -space-x-1.5">
-                    <img src="https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=64&h=64&fit=crop&crop=face" alt="" className="w-6 h-6 rounded-full border-2 border-background object-cover hover:scale-110 hover:z-10 transition-transform cursor-pointer" />
-                    <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=64&h=64&fit=crop&crop=face" alt="" className="w-6 h-6 rounded-full border-2 border-background object-cover hover:scale-110 hover:z-10 transition-transform cursor-pointer" />
-                    <div className="w-6 h-6 rounded-full bg-orange-500 border-2 border-background flex items-center justify-center text-[8px] text-white font-medium hover:scale-110 hover:z-10 transition-transform cursor-pointer">JA</div>
-                    <div className="w-6 h-6 rounded-full bg-green-500 border-2 border-background flex items-center justify-center text-[8px] text-white font-medium hover:scale-110 hover:z-10 transition-transform cursor-pointer">NK</div>
-                    <div className="w-6 h-6 rounded-full bg-purple-500 border-2 border-background flex items-center justify-center text-[8px] text-white font-medium hover:scale-110 hover:z-10 transition-transform cursor-pointer">SU</div>
-                    <div className="w-6 h-6 rounded-full bg-pink-500 border-2 border-background flex items-center justify-center text-[8px] text-white font-medium hover:scale-110 hover:z-10 transition-transform cursor-pointer">+1</div>
+                  {/* Online members mini avatars */}
+                  <div className="flex -space-x-1">
+                    <img src="https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=64&h=64&fit=crop&crop=face" alt="" className="w-5 h-5 rounded-full border-2 border-background object-cover" />
+                    <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=64&h=64&fit=crop&crop=face" alt="" className="w-5 h-5 rounded-full border-2 border-background object-cover" />
+                    <div className="w-5 h-5 rounded-full bg-orange-500 border-2 border-background flex items-center justify-center text-[7px] text-white font-medium">JA</div>
+                    <div className="w-5 h-5 rounded-full bg-green-500 border-2 border-background flex items-center justify-center text-[7px] text-white font-medium">NK</div>
+                    <div className="w-5 h-5 rounded-full bg-purple-500 border-2 border-background flex items-center justify-center text-[7px] text-white font-medium">SU</div>
+                    <div className="w-5 h-5 rounded-full bg-pink-500 border-2 border-background flex items-center justify-center text-[7px] text-white font-medium">+1</div>
                   </div>
                 </div>
                 
                 {/* Tabs: Chat, Fayllar, AI natijalar */}
-                <div className="flex gap-1 p-1 rounded-xl bg-secondary/50 mb-3">
+                <div className="flex gap-0.5 p-0.5 rounded-lg bg-secondary/50 mb-2.5">
                   {[
                     { label: 'Chat', active: true },
                     { label: 'Fayllar', active: false },
@@ -777,10 +777,10 @@ export default function Landing() {
                   ].map((tab) => (
                     <div 
                       key={tab.label} 
-                      className={`flex-1 py-2 rounded-lg text-center text-xs font-medium transition-all cursor-pointer ${
+                      className={`flex-1 py-1.5 rounded-md text-center text-[10px] font-medium transition-all cursor-pointer ${
                         tab.active 
                           ? 'bg-primary text-primary-foreground shadow-sm' 
-                          : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
+                          : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
                       {tab.label}
@@ -789,113 +789,108 @@ export default function Landing() {
                 </div>
                 
                 {/* AI Action buttons */}
-                <div className="flex flex-wrap gap-2 mb-4">
+                <div className="flex flex-wrap gap-1.5 mb-3">
                   {circleOutcomes.map((outcome) => (
                     <span 
                       key={outcome} 
-                      className="px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/20 cursor-pointer hover:bg-primary/20 hover:scale-105 transition-all"
+                      className="px-2 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-medium border border-primary/20"
                     >
                       {outcome}
                     </span>
                   ))}
                 </div>
                 
-                {/* Chat messages area with hover effects */}
-                <div className="space-y-3 mb-3 max-h-72 overflow-y-auto">
-                  {/* User message 1 - with Turkic photo */}
-                  <div className="flex items-start gap-2 group hover:bg-secondary/30 rounded-xl p-1 -m-1 transition-colors">
+                {/* Chat messages - compact */}
+                <div className="space-y-2 mb-2.5">
+                  {/* User message 1 */}
+                  <div className="flex items-start gap-1.5">
                     <img 
                       src="https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=64&h=64&fit=crop&crop=face" 
                       alt="Asror" 
-                      className="w-7 h-7 rounded-full object-cover shrink-0 ring-2 ring-transparent group-hover:ring-primary/30 transition-all"
+                      className="w-6 h-6 rounded-full object-cover shrink-0"
                     />
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-xs font-medium text-foreground">Asror</span>
-                        <span className="text-[10px] text-muted-foreground">10:32</span>
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="text-[10px] font-medium text-foreground">Asror</span>
+                        <span className="text-[9px] text-muted-foreground">10:32</span>
                       </div>
-                      <div className="bg-secondary/60 rounded-xl rounded-tl-sm px-3 py-2 text-xs text-foreground group-hover:bg-secondary/80 transition-colors">
+                      <div className="bg-secondary/60 rounded-lg rounded-tl-sm px-2.5 py-1.5 text-[10px] text-foreground">
                         Ertangi uchrashuv uchun prezentatsiya tayyor bo'ldimi?
                       </div>
                     </div>
                   </div>
                   
-                  {/* User message 2 - with Turkic photo */}
-                  <div className="flex items-start gap-2 group hover:bg-secondary/30 rounded-xl p-1 -m-1 transition-colors">
+                  {/* User message 2 */}
+                  <div className="flex items-start gap-1.5">
                     <img 
                       src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=64&h=64&fit=crop&crop=face" 
                       alt="Dilnoza" 
-                      className="w-7 h-7 rounded-full object-cover shrink-0 ring-2 ring-transparent group-hover:ring-primary/30 transition-all"
+                      className="w-6 h-6 rounded-full object-cover shrink-0"
                     />
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-xs font-medium text-foreground">Dilnoza</span>
-                        <span className="text-[10px] text-muted-foreground">10:34</span>
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="text-[10px] font-medium text-foreground">Dilnoza</span>
+                        <span className="text-[9px] text-muted-foreground">10:34</span>
                       </div>
-                      <div className="bg-secondary/60 rounded-xl rounded-tl-sm px-3 py-2 text-xs text-foreground group-hover:bg-secondary/80 transition-colors">
+                      <div className="bg-secondary/60 rounded-lg rounded-tl-sm px-2.5 py-1.5 text-[10px] text-foreground">
                         Ha, faylga yuklab qo'ydim ✓
                       </div>
                     </div>
                   </div>
                   
-                  {/* /bahor AI request - fixed typo */}
-                  <div className="flex items-start gap-2 group hover:bg-secondary/30 rounded-xl p-1 -m-1 transition-colors">
-                    <div className="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center text-[10px] text-white font-medium shrink-0 ring-2 ring-transparent group-hover:ring-primary/30 transition-all">
+                  {/* /bahor AI request */}
+                  <div className="flex items-start gap-1.5">
+                    <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-[8px] text-white font-medium shrink-0">
                       JA
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-xs font-medium text-foreground">Jamshid</span>
-                        <span className="text-[10px] text-muted-foreground">10:35</span>
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="text-[10px] font-medium text-foreground">Jamshid</span>
+                        <span className="text-[9px] text-muted-foreground">10:35</span>
                       </div>
-                      <div className="bg-secondary/60 rounded-xl rounded-tl-sm px-3 py-2 text-xs text-foreground group-hover:bg-secondary/80 transition-colors">
+                      <div className="bg-secondary/60 rounded-lg rounded-tl-sm px-2.5 py-1.5 text-[10px] text-foreground">
                         <span className="text-primary font-medium">/bahor</span> shu hafta qanday vazifalar qoldi?
                       </div>
                     </div>
                   </div>
                   
                   {/* Bahor AI response */}
-                  <div className="flex items-start gap-2 group hover:bg-primary/5 rounded-xl p-1 -m-1 transition-colors">
-                    <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0 ring-2 ring-transparent group-hover:ring-primary/30 transition-all">
-                      <img src={bahorLogo} alt="Bahor AI" className="w-5 h-5" />
+                  <div className="flex items-start gap-1.5">
+                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                      <img src={bahorLogo} alt="Bahor AI" className="w-4 h-4" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-xs font-medium text-primary">Bahor AI</span>
-                        <Sparkles className="w-3 h-3 text-primary" />
-                        <span className="text-[10px] text-muted-foreground">10:35</span>
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="text-[10px] font-medium text-primary">Bahor AI</span>
+                        <Sparkles className="w-2.5 h-2.5 text-primary" />
+                        <span className="text-[9px] text-muted-foreground">10:35</span>
                       </div>
-                      <div className="bg-primary/10 border border-primary/20 rounded-xl rounded-tl-sm px-3 py-2 text-xs text-foreground group-hover:bg-primary/15 transition-colors">
+                      <div className="bg-primary/10 border border-primary/20 rounded-lg rounded-tl-sm px-2.5 py-1.5 text-[10px] text-foreground leading-relaxed">
                         📋 Shu hafta uchun 3 ta vazifa:<br/>
                         1. Prezentatsiya tayyorlash ✅<br/>
-                        2. Byudjet hisob-kitobi<br/>
-                        3. Mijoz uchun taklif yuborish
+                        2. Byudjet hisob-kitobi
                       </div>
                     </div>
                   </div>
                 </div>
                 
-                {/* Input area - matching actual circles input */}
-                <div className="pt-3 border-t border-border/30">
-                  <div className="flex items-center gap-2">
-                    {/* Attachment buttons */}
-                    <button className="p-2 rounded-xl bg-secondary/60 hover:bg-secondary transition-colors group">
-                      <Paperclip className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                {/* Input area - compact */}
+                <div className="pt-2.5 border-t border-border/30">
+                  <div className="flex items-center gap-1.5">
+                    <button className="p-1.5 rounded-lg bg-secondary/60 hover:bg-secondary transition-colors">
+                      <Paperclip className="w-3.5 h-3.5 text-muted-foreground" />
                     </button>
-                    <button className="p-2 rounded-xl bg-secondary/60 hover:bg-secondary transition-colors group">
-                      <Camera className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                    <button className="p-1.5 rounded-lg bg-secondary/60 hover:bg-secondary transition-colors">
+                      <Camera className="w-3.5 h-3.5 text-muted-foreground" />
                     </button>
-                    {/* Input field */}
-                    <div className="flex-1 px-3 py-2 rounded-xl bg-secondary/50 hover:bg-secondary/70 transition-colors cursor-text">
-                      <span className="text-xs text-muted-foreground">{t('landing.circles.inputPlaceholder')}</span>
+                    <div className="flex-1 px-2.5 py-1.5 rounded-lg bg-secondary/50 text-[10px] text-muted-foreground">
+                      {t('landing.circles.inputPlaceholder')}
                     </div>
-                    {/* Mic button */}
-                    <button className="p-2 rounded-xl bg-secondary/60 hover:bg-secondary transition-colors group">
-                      <Mic className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                    <button className="p-1.5 rounded-lg bg-secondary/60 hover:bg-secondary transition-colors">
+                      <Mic className="w-3.5 h-3.5 text-muted-foreground" />
                     </button>
-                    {/* Send button */}
-                    <button className="p-2 rounded-xl bg-primary hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20">
-                      <Send className="w-4 h-4 text-primary-foreground" />
+                    <button className="p-1.5 rounded-lg bg-primary shadow-lg shadow-primary/20">
+                      <Send className="w-3.5 h-3.5 text-primary-foreground" />
                     </button>
                   </div>
                 </div>
