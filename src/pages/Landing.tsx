@@ -856,8 +856,8 @@ export default function Landing() {
                   
                   {/* Bahor AI response */}
                   <div className="flex items-start gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center shrink-0 ring-1 ring-primary/20 overflow-hidden">
-                      <img src={bahorLogo} alt="Bahor AI" className="w-7 h-7 object-contain" />
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center shrink-0 ring-1 ring-primary/20 overflow-hidden p-0.5">
+                      <img src={bahorLogo} alt="Bahor AI" className="w-full h-full object-contain" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
