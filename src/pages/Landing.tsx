@@ -536,10 +536,10 @@ export default function Landing() {
       {/* Sticky Header with Nav */}
       <header className="glass-strong sticky top-0 z-50 border-b border-border/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center gap-2">
-            <img src={bahorLogo} alt="Bahor AI" className="h-8 w-auto" />
-            <span className="text-lg font-bold text-foreground">Bahor AI</span>
+          {/* Logo - increased size for visual presence */}
+          <div className="flex items-center gap-2.5">
+            <img src={bahorLogo} alt="Bahor AI" className="h-10 sm:h-11 w-auto" />
+            <span className="text-xl sm:text-[1.35rem] font-bold text-foreground tracking-tight">Bahor AI</span>
           </div>
           
           {/* Center Nav - hidden on mobile */}
@@ -572,35 +572,35 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* HERO — 2-column, less words */}
-      <section className="relative py-10 sm:py-16 lg:py-20">
+      {/* HERO — 2-column, tighter layout */}
+      <section className="relative pt-6 pb-8 sm:pt-10 sm:pb-12 lg:pt-12 lg:pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
             ref={heroRef.ref}
-            className={`grid lg:grid-cols-2 gap-10 lg:gap-14 items-center transition-all duration-700 ${
+            className={`grid lg:grid-cols-[1.1fr_1fr] gap-8 lg:gap-12 items-center transition-all duration-700 ${
               heroRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
             }`}
           >
-            {/* Left - Content */}
-            <div className="text-center lg:text-left">
-              {/* Beta badge */}
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-4">
+            {/* Left - Content (wider column) */}
+            <div className="text-center lg:text-left max-w-xl lg:max-w-none">
+              {/* Beta badge - tighter margin */}
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-3">
                 <Sparkles className="w-4 h-4" />
                 {t('badge.beta')}
               </div>
               
-              {/* Headline - shorter */}
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 text-foreground leading-tight">
+              {/* Headline - slightly larger, tighter line-height */}
+              <h1 className="text-[1.75rem] sm:text-4xl lg:text-[2.75rem] xl:text-5xl font-bold mb-3 sm:mb-4 text-foreground leading-[1.15] tracking-tight">
                 {t('landing.hero.headline')}
               </h1>
               
-              {/* Subheadline - 1 line */}
-              <p className="text-base sm:text-lg text-muted-foreground mb-6 max-w-lg mx-auto lg:mx-0">
+              {/* Subheadline - slightly larger max-width */}
+              <p className="text-base sm:text-lg text-muted-foreground mb-5 max-w-xl mx-auto lg:mx-0">
                 {t('landing.hero.subheadline')}
               </p>
               
-              {/* 3 bullet value props */}
-              <ul className="space-y-2 mb-6 text-left max-w-lg mx-auto lg:mx-0">
+              {/* 3 bullet value props - tighter spacing */}
+              <ul className="space-y-1.5 mb-5 text-left max-w-xl mx-auto lg:mx-0">
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                   <span className="text-sm text-foreground">{t('landing.hero.bullet1')}</span>
@@ -615,8 +615,8 @@ export default function Landing() {
                 </li>
               </ul>
               
-              {/* CTA row */}
-              <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start mb-5">
+              {/* CTA row - tighter spacing */}
+              <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start mb-4">
                 <Button onClick={handleOpenApp} size="lg" className="h-11 px-6 font-semibold rounded-xl shadow-lg shadow-primary/25 hover-lift">
                   <MessageSquare className="w-5 h-5 mr-2" />
                   {t('button.openApp')}
@@ -638,8 +638,8 @@ export default function Landing() {
               </div>
             </div>
             
-            {/* Right - Mockup */}
-            <div className="mt-4 lg:mt-0">
+            {/* Right - Mockup (aligned higher) */}
+            <div className="mt-2 lg:mt-0 lg:-mt-4">
               <HeroMockup />
             </div>
           </div>
