@@ -55,9 +55,8 @@
       (function() {
         var stored = localStorage.getItem('bahorai_theme');
         if (stored === 'light') return; // User explicitly chose light
-        if (stored === 'dark' || !window.matchMedia('(prefers-color-scheme: light)').matches) {
-          document.documentElement.classList.add('dark');
-        }
+        // Default to dark always (ignore system preference)
+        document.documentElement.classList.add('dark');
       })();
     </script>
     <div id="root"></div>

@@ -16,10 +16,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (stored === "light" || stored === "dark") return stored;
 
     // Default to dark for Bahor AI's dark-first design
-    // Only use light if user explicitly prefers it via system settings
-    if (typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: light)").matches) {
-      return "light";
-    }
+    // Ignore system preference - always default to dark unless user explicitly chose light
     return "dark";
   });
 
