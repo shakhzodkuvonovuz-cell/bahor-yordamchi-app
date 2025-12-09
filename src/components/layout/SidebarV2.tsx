@@ -41,7 +41,7 @@ const PRIMARY_NAV: NavItem[] = [
   { id: "modes", labelKey: "sidebar.modes", icon: Sparkles, path: "/modes-list" },
   { id: "image-gen", labelKey: "sidebar.imageGen", icon: ImageIcon, path: "/tools/documents" },
   { id: "circles", labelKey: "nav.circles", icon: Users, path: "/circles" },
-  { id: "translator", labelKey: "sidebar.translator", icon: Languages, path: "/modes?mode=translator", isPlaceholder: true },
+  { id: "translator", labelKey: "sidebar.translator", icon: Languages, path: "/tarjimon" },
   { id: "tools", labelKey: "nav.tools", icon: FileText, path: "/tools/documents" },
 ];
 
@@ -70,6 +70,9 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
     if (path === "/circles") {
       return location.pathname.startsWith("/circles");
     }
+    if (path === "/tarjimon") {
+      return location.pathname === "/tarjimon";
+    }
     return location.pathname.startsWith(path);
   };
 
@@ -80,12 +83,6 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
       sessionStorage.removeItem("bahor_session_chat_initialized");
       const newChatId = crypto.randomUUID?.() ?? Date.now().toString();
       navigate(`/chat/general?new=${newChatId}`);
-    } else if (item.isPlaceholder) {
-      // For translator, show "coming soon" toast
-      toast({
-        title: t('button.comingSoon'),
-        description: t('settings.comingSoon'),
-      });
     } else {
       // Use replace: true for top-level section navigation to avoid stacking history
       const navOptions: NavigateOptions = { replace: true };

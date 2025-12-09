@@ -34,6 +34,7 @@ import Circles from "./pages/Circles";
 import CircleDetail from "./pages/CircleDetail";
 import JoinCircle from "./pages/JoinCircle";
 import ModesList from "./pages/ModesList";
+import Tarjimon from "./pages/Tarjimon";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -231,6 +232,17 @@ const App = () => (
                           <ErrorBoundary>
                             <CircleDetail />
                           </ErrorBoundary>
+                        </AppShellV2>
+                      </ProtectedRoute>
+                    } 
+                  />
+                  {/* Tarjimon - Translator */}
+                  <Route 
+                    path="/tarjimon" 
+                    element={
+                      <ProtectedRoute>
+                        <AppShellV2>
+                          <Tarjimon />
                         </AppShellV2>
                       </ProtectedRoute>
                     } 
