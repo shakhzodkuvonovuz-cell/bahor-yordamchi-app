@@ -53,16 +53,7 @@ serve(async (req) => {
       );
     }
 
-    // Minimum duration check
-    if (durationSeconds < 1) {
-      return new Response(
-        JSON.stringify({ 
-          error: "audio_too_short",
-          message: uiLanguage === "uz" ? "Audio juda qisqa. Kamida 1 soniya gapiring." : "Audio too short. Speak for at least 1 second."
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // Note: Removed strict duration check - file size check below is sufficient
 
     // Minimum file size check
     if (audioFile.size < 1000) {
