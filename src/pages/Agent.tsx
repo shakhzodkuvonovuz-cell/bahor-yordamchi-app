@@ -638,6 +638,22 @@ export default function Agent() {
   const runningSteps = steps.filter((s) => s.status === "running").length;
   const totalSteps = steps.length;
   
+  // Fallback: If all steps are done and we have final_output, ensure isRunning is false
+  useEffect(() => {
+    if (isRunning && totalSteps > 0 && completedSteps === totalSteps && runningSteps === 0 && currentRun?.final_output) {
+      console.log("[Agent] Fallback: All steps done + final_output exists, stopping running state");
+      setIsRunning(false);
+    }
+  }, [isRunning, totalSteps, completedSteps, runningSteps, currentRun?.final_output]);
+  
+  // Also check run status directly as fallback
+  useEffect(() => {
+    if (isRunning && currentRun?.status === "done") {
+      console.log("[Agent] Fallback: Run status is done, stopping running state");
+      setIsRunning(false);
+    }
+  }, [isRunning, currentRun?.status]);
+  
   // Calculate estimated time remaining
   const [runStartTime, setRunStartTime] = useState<number | null>(null);
   
@@ -1084,15 +1100,23 @@ export default function Agent() {
                 </div>
               )}
 
-              {/* Final Output */}
+              {/* Final Output - Research Paper Style */}
               {currentRun?.final_output ? (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Badge variant="secondary" className="gap-1 text-[10px]">
-                      <Check className="h-2.5 w-2.5" />
-                      Tayyor
-                    </Badge>
-                    <div className="flex gap-1.5">
+                <div className="space-y-4">
+                  {/* Header with actions */}
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="gap-1 text-[10px] bg-green-500/10 text-green-600">
+                        <Check className="h-2.5 w-2.5" />
+                        Tayyor
+                      </Badge>
+                      {currentRun.sources && (currentRun.sources as any[]).length > 0 && (
+                        <Badge variant="outline" className="text-[10px]">
+                          {(currentRun.sources as any[]).length} manba
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex gap-1.5 flex-wrap">
                       <Button variant="outline" size="sm" onClick={handleCopyResult} className="gap-1 h-7 text-xs">
                         <Copy className="h-3 w-3" />
                         Nusxa
@@ -1117,8 +1141,68 @@ export default function Agent() {
                       </Button>
                     </div>
                   </div>
-                  <div className="prose prose-sm dark:prose-invert max-w-none text-sm">
+                  
+                  {/* Research Paper Content */}
+                  <div className="prose prose-sm dark:prose-invert max-w-none text-sm bg-muted/30 rounded-lg p-4 border border-border/50">
                     <AiResponseRenderer content={currentRun.final_output} />
+                  </div>
+                  
+                  {/* Sources Section */}
+                  {currentRun.sources && (currentRun.sources as any[]).length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                        <ExternalLink className="h-3 w-3" />
+                        Manbalar
+                      </h4>
+                      <div className="flex flex-wrap gap-1.5">
+                        {(currentRun.sources as any[]).slice(0, 8).map((source, i) => (
+                          <a
+                            key={i}
+                            href={source.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2 py-1 text-[10px] rounded-full bg-muted hover:bg-muted/80 transition-colors truncate max-w-[200px]"
+                          >
+                            <span className="w-3 h-3 rounded-full bg-primary/20 flex items-center justify-center text-[8px] font-medium shrink-0">
+                              {i + 1}
+                            </span>
+                            <span className="truncate">{source.title || new URL(source.url).hostname}</span>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Follow-up Section */}
+                  <div className="pt-2 border-t border-border/50">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={goal}
+                        onChange={(e) => setGoal(e.target.value)}
+                        placeholder="Qo'shimcha savol yoki yangi vazifa..."
+                        className="flex-1 h-9 text-sm"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && goal.trim()) {
+                            handleRun();
+                          }
+                        }}
+                      />
+                      <Button 
+                        onClick={handleRun} 
+                        disabled={!goal.trim() || isRunning}
+                        className="gap-1.5 h-9 text-sm shrink-0"
+                      >
+                        {isRunning ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Play className="h-3.5 w-3.5" />
+                        )}
+                        Davom etish
+                      </Button>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1.5">
+                      Qo'shimcha savol bering yoki yangi vazifa kiriting
+                    </p>
                   </div>
                 </div>
               ) : generatedImages.length === 0 ? (
@@ -1132,42 +1216,66 @@ export default function Agent() {
         </Tabs>
       </Card>
 
-      {/* Run Button */}
-      <div className="flex items-center gap-2 pt-1">
-        {isRunning ? (
-          <>
-            <Button variant="destructive" onClick={handleCancel} className="gap-1.5 flex-1 sm:flex-none h-9 text-sm">
-              <Square className="h-3.5 w-3.5" />
-              To'xtatish
-            </Button>
-            {totalSteps > 0 && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                <span>{completedSteps}/{totalSteps} qadam</span>
-                {estimatedTime && (
-                  <span className="text-primary/70">• {estimatedTime} qoldi</span>
-                )}
-              </div>
-            )}
-          </>
-        ) : (
-          <>
-            <Button onClick={handleRun} disabled={!goal.trim()} className="gap-1.5 flex-1 sm:flex-none h-9 text-sm">
-              <Play className="h-3.5 w-3.5" />
-              Ishga tushirish
-            </Button>
-            <label className="flex items-center gap-1.5 text-xs">
-              <input
-                type="checkbox"
-                checked={useWebSearch}
-                onChange={(e) => setUseWebSearch(e.target.checked)}
-                className="rounded border-border h-3.5 w-3.5"
-              />
-              <span className="text-muted-foreground">Web qidiruv</span>
-            </label>
-          </>
-        )}
-      </div>
+      {/* Run Button - hidden when we have results (follow-up is in the results area) */}
+      {!currentRun?.final_output && (
+        <div className="flex items-center gap-2 pt-1">
+          {isRunning ? (
+            <>
+              <Button variant="destructive" onClick={handleCancel} className="gap-1.5 flex-1 sm:flex-none h-9 text-sm">
+                <Square className="h-3.5 w-3.5" />
+                To'xtatish
+              </Button>
+              {totalSteps > 0 && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <span>{completedSteps}/{totalSteps} qadam</span>
+                  {estimatedTime && (
+                    <span className="text-primary/70">• {estimatedTime} qoldi</span>
+                  )}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <Button onClick={handleRun} disabled={!goal.trim()} className="gap-1.5 flex-1 sm:flex-none h-9 text-sm">
+                <Play className="h-3.5 w-3.5" />
+                Ishga tushirish
+              </Button>
+              <label className="flex items-center gap-1.5 text-xs">
+                <input
+                  type="checkbox"
+                  checked={useWebSearch}
+                  onChange={(e) => setUseWebSearch(e.target.checked)}
+                  className="rounded border-border h-3.5 w-3.5"
+                />
+                <span className="text-muted-foreground">Web qidiruv</span>
+              </label>
+            </>
+          )}
+        </div>
+      )}
+      
+      {/* New Task Button - shown when we have results */}
+      {currentRun?.final_output && !isRunning && (
+        <div className="flex items-center gap-2 pt-1">
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              setGoal("");
+              setCurrentRun(null);
+              setSteps([]);
+              setGeneratedImages([]);
+              setFiles([]);
+              setLinks([]);
+              setNotes("");
+            }} 
+            className="gap-1.5 h-9 text-sm"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            Yangi vazifa
+          </Button>
+        </div>
+      )}
 
       {/* Planning Skeleton */}
       {isRunning && steps.length === 0 && (
