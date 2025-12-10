@@ -3,7 +3,7 @@ import {
   Bot, Play, Square, RotateCcw, Check, Loader2, AlertCircle, Sparkles, 
   ExternalLink, ChevronDown, ChevronUp, Save, Upload, File, X, Link2,
   StickyNote, FileText, Copy, Settings2, Image, Download, ZoomIn, History,
-  Clock, Trash2, Eye, RefreshCw, PanelLeftClose, PanelLeft, Send
+  Clock, Trash2, Eye, RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,16 +14,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { AiResponseRenderer } from "@/components/ai/AiResponseRenderer";
 import { cn } from "@/lib/utils";
-import { AgentHistorySidebar, type AgentThread } from "@/components/agent/AgentHistorySidebar";
-import { AgentThreadView, type AgentMessage } from "@/components/agent/AgentThreadView";
-import { useAgentThreads } from "@/hooks/useAgentThreads";
 
 interface AgentStep {
   id: string;
@@ -72,37 +68,12 @@ export default function Agent() {
   const { t, language } = useTranslation();
   const { user } = useAuth();
   
-  // Thread-based chat system
-  const {
-    threads,
-    currentThread,
-    messages: threadMessages,
-    isLoadingThreads,
-    isLoadingMessages,
-    createThread,
-    selectThread,
-    deleteThread,
-    updateThreadTitle,
-    addMessage,
-    togglePinMessage,
-    updateRollingSummary,
-    getThreadContext,
-  } = useAgentThreads(user?.id);
-
   const [goal, setGoal] = useState("");
   const [currentRun, setCurrentRun] = useState<AgentRun | null>(null);
   const [steps, setSteps] = useState<AgentStep[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set());
-  const [activeTab, setActiveTab] = useState("chat");
-  
-  // Sidebar state
-  const [showSidebar, setShowSidebar] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  
-  // Streaming state
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [streamingContent, setStreamingContent] = useState("");
+  const [activeTab, setActiveTab] = useState("goal");
   
   // Workspace state
   const [files, setFiles] = useState<AgentFile[]>([]);
@@ -659,211 +630,32 @@ export default function Agent() {
   const completedSteps = steps.filter((s) => s.status === "done").length;
   const totalSteps = steps.length;
 
-  // Handle sending a message in thread chat mode
-  const handleSendMessage = async () => {
-    if (!goal.trim() || !user || isStreaming) return;
-
-    let thread = currentThread;
-    
-    // Create thread if none exists
-    if (!thread) {
-      thread = await createThread(goal.slice(0, 80));
-      if (!thread) return;
-    }
-
-    // Add user message
-    await addMessage(thread.id, "user", goal.trim());
-    const userGoal = goal;
-    setGoal("");
-    setIsStreaming(true);
-    setStreamingContent("");
-
-    try {
-      // Get context for the model
-      const { systemContext, messages } = getThreadContext();
-
-      const { data: session } = await supabase.auth.getSession();
-      
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-run`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.session?.access_token}`,
-          },
-          body: JSON.stringify({
-            goal: userGoal,
-            threadId: thread.id,
-            threadContext: systemContext,
-            recentMessages: messages.map(m => ({ role: m.role, content: m.content })),
-            constraints,
-            files: files.filter(f => f.extraction_status === "ready").map(f => ({ filename: f.filename })),
-            links,
-            notes,
-            useWebSearch,
-          }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Agent run failed");
-      }
-
-      // Save assistant response
-      if (result.finalOutput) {
-        await addMessage(thread.id, "assistant", result.finalOutput, {
-          runId: result.runId,
-          stepsCount: result.stepsCount,
-        });
-        
-        // Update thread title if it's the first exchange
-        if (threadMessages.length === 0) {
-          await updateThreadTitle(thread.id, userGoal.slice(0, 60));
-        }
-
-        // Update rolling summary (don't block on this)
-        updateRollingSummaryAsync(thread.id, result.finalOutput, userGoal);
-      }
-
-      // Load run details for steps display
-      if (result.runId) {
-        const { data: run } = await supabase
-          .from("agent_runs")
-          .select("*")
-          .eq("id", result.runId)
-          .single();
-        if (run) setCurrentRun(run as unknown as AgentRun);
-
-        const { data: stepsData } = await supabase
-          .from("agent_steps")
-          .select("*")
-          .eq("run_id", result.runId)
-          .order("step_index", { ascending: true });
-        if (stepsData) setSteps(stepsData as unknown as AgentStep[]);
-      }
-
-      toast.success("Javob tayyor!");
-    } catch (error: any) {
-      console.error("Agent error:", error);
-      toast.error(error.message || "Xato yuz berdi");
-    } finally {
-      setIsStreaming(false);
-      setStreamingContent("");
-    }
-  };
-
-  // Async summary update (non-blocking)
-  const updateRollingSummaryAsync = async (threadId: string, lastResponse: string, lastGoal: string) => {
-    try {
-      const { data: session } = await supabase.auth.getSession();
-      const summaryResponse = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/summarize-thread`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.session?.access_token}`,
-          },
-          body: JSON.stringify({
-            threadId,
-            existingSummary: currentThread?.rolling_summary || "",
-            lastGoal,
-            lastResponse: lastResponse.slice(0, 2000),
-          }),
-        }
-      );
-      const summaryResult = await summaryResponse.json();
-      if (summaryResult.summary) {
-        await updateRollingSummary(threadId, summaryResult.summary);
-      }
-    } catch (error) {
-      console.error("Summary update failed (non-blocking):", error);
-    }
-  };
 
   return (
-    <div className="flex h-full">
-      {/* Desktop Sidebar */}
-      <div className={cn(
-        "hidden lg:flex flex-col border-r transition-all duration-300",
-        showSidebar ? "w-64" : "w-0 overflow-hidden"
-      )}>
-        <AgentHistorySidebar
-          threads={threads}
-          currentThreadId={currentThread?.id || null}
-          isLoading={isLoadingThreads}
-          onSelectThread={selectThread}
-          onNewThread={() => createThread()}
-          onDeleteThread={deleteThread}
-          onClose={() => setShowSidebar(false)}
-        />
-      </div>
-
-      {/* Mobile Sidebar Sheet */}
-      <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-        <SheetContent side="left" className="p-0 w-72">
-          <AgentHistorySidebar
-            threads={threads}
-            currentThreadId={currentThread?.id || null}
-            isLoading={isLoadingThreads}
-            onSelectThread={(thread) => {
-              selectThread(thread);
-              setSidebarOpen(false);
-            }}
-            onNewThread={() => {
-              createThread();
-              setSidebarOpen(false);
-            }}
-            onDeleteThread={deleteThread}
-            onClose={() => setSidebarOpen(false)}
-          />
-        </SheetContent>
-      </Sheet>
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col h-full min-w-0">
-        {/* Header */}
-        <div className="flex items-center gap-2 p-3 border-b">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 lg:hidden"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <PanelLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 hidden lg:flex"
-            onClick={() => setShowSidebar(!showSidebar)}
-          >
-            {showSidebar ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
-          </Button>
-          <div className="p-1.5 rounded-lg bg-primary/10">
-            <Bot className="h-5 w-5 text-primary" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-sm font-semibold truncate">
-              {currentThread?.title || t("agent.title") || "Agent"}
-            </h1>
-            <p className="text-[10px] text-muted-foreground">
-              AI ko'p bosqichli vazifalarni rejalashtiradi
-            </p>
-          </div>
-          <Button 
-            variant={showHistory ? "secondary" : "outline"} 
-            size="sm" 
-            onClick={() => setShowHistory(!showHistory)}
-            className="gap-1.5 h-8 text-xs"
-          >
-            <History className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Tarix</span>
-          </Button>
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="flex items-center gap-2 p-3 border-b">
+        <div className="p-1.5 rounded-lg bg-primary/10">
+          <Bot className="h-5 w-5 text-primary" />
         </div>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-sm font-semibold truncate">
+            {t("agent.title") || "Agent"}
+          </h1>
+          <p className="text-[10px] text-muted-foreground">
+            AI ko'p bosqichli vazifalarni rejalashtiradi
+          </p>
+        </div>
+        <Button 
+          variant={showHistory ? "secondary" : "outline"} 
+          size="sm" 
+          onClick={() => setShowHistory(!showHistory)}
+          className="gap-1.5 h-8 text-xs"
+        >
+          <History className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Tarix</span>
+        </Button>
+      </div>
 
       {/* History Panel */}
       {showHistory && (
@@ -1457,7 +1249,6 @@ export default function Agent() {
           )}
         </DialogContent>
       </Dialog>
-      </div>
     </div>
   );
 }
