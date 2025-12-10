@@ -102,7 +102,9 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
     animationFrameRef.current = requestAnimationFrame(updateAmplitude);
   }, []);
 
-  // Get best supported audio MIME type - iOS Safari friendly
+  // Get best supported audio MIME type - Groq compatible
+  // IMPORTANT: Groq cannot parse WebM duration metadata, causing "audio too short" errors
+  // Priority: MP4/AAC > MPEG > WAV > WebM (last resort)
   const getSupportedMimeType = useCallback((): string | null => {
     // Check if MediaRecorder exists at all
     if (typeof MediaRecorder === "undefined") {
@@ -110,29 +112,18 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
       return null;
     }
     
-    // Detect iOS Safari
-    const isIOSSafari = /iPad|iPhone|iPod/.test(navigator.userAgent) && 
-                        !(window as any).MSStream &&
-                        /Safari/.test(navigator.userAgent);
-    
-    // Priority order differs by platform
-    // iOS Safari: prefer mp4/m4a, or let browser pick (empty string)
-    // Chrome/Android: prefer webm/opus
-    const types = isIOSSafari
-      ? [
-          "audio/mp4",
-          "audio/aac", 
-          "audio/mpeg",
-          "", // Let browser pick - often works best on iOS
-        ]
-      : [
-          "audio/webm;codecs=opus",
-          "audio/webm",
-          "audio/mp4",
-          "audio/ogg;codecs=opus",
-          "audio/ogg",
-          "", // Fallback: let browser pick
-        ];
+    // Prefer formats Groq can properly parse (MP4/AAC first, WebM last)
+    const types = [
+      "audio/mp4",
+      "audio/aac",
+      "audio/mpeg",
+      "audio/wav",
+      "audio/ogg;codecs=opus",
+      "audio/ogg",
+      "audio/webm;codecs=opus", // WebM last - Groq has parsing issues
+      "audio/webm",
+      "", // Final fallback: let browser pick
+    ];
     
     for (const type of types) {
       // Empty string = let browser pick
