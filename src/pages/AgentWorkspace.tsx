@@ -769,9 +769,9 @@ export default function AgentWorkspace() {
         </div>
         
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-h-0 min-w-0">
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           {/* Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
             <div className="px-3 pt-3 shrink-0">
               <TabsList className="grid w-full grid-cols-3 h-9">
                 <TabsTrigger value="report" className="gap-1 text-xs px-2">
@@ -789,9 +789,10 @@ export default function AgentWorkspace() {
               </TabsList>
             </div>
             
-            {/* Report Tab */}
-            <TabsContent value="report" className="flex-1 overflow-y-auto mt-0 p-3">
-              <div className="max-w-3xl mx-auto pb-8">
+            {/* Report Tab - use absolute positioning for scroll */}
+            <div className="flex-1 relative min-h-0">
+              <TabsContent value="report" className="absolute inset-0 overflow-y-auto p-3" forceMount style={{ display: activeTab === 'report' ? 'block' : 'none' }}>
+                <div className="max-w-3xl mx-auto pb-8">
                   {/* Report Content */}
                   <Card className="p-4 md:p-6">
                     <AiResponseRenderer content={reportContent} />
@@ -879,9 +880,10 @@ export default function AgentWorkspace() {
                 </div>
               </div>
             </TabsContent>
+          </div>
             
-            {/* Chat Tab */}
-            <TabsContent value="chat" className="flex-1 flex flex-col overflow-hidden mt-0">
+          {/* Chat Tab - outside the relative wrapper */}
+          <TabsContent value="chat" className="flex-1 flex flex-col overflow-hidden mt-0" forceMount style={{ display: activeTab === 'chat' ? 'flex' : 'none' }}>
               <ScrollArea className="flex-1 p-3">
                 <div className="max-w-2xl mx-auto space-y-4">
                   {messages.map((msg) => (
@@ -957,7 +959,7 @@ export default function AgentWorkspace() {
             </TabsContent>
             
             {/* Files Tab (Mobile only) */}
-            <TabsContent value="files" className="flex-1 overflow-hidden mt-0 p-3 lg:hidden">
+            <TabsContent value="files" className="flex-1 overflow-hidden mt-0 p-3 lg:hidden" forceMount style={{ display: activeTab === 'files' ? 'block' : 'none' }}>
               <ScrollArea className="h-full">
                 <div className="space-y-4">
                   {/* Prompt */}
