@@ -14,8 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_files: {
+        Row: {
+          created_at: string
+          extracted_text: string | null
+          extraction_status: string
+          filename: string
+          id: string
+          mime_type: string | null
+          run_id: string | null
+          size_bytes: number | null
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          extracted_text?: string | null
+          extraction_status?: string
+          filename: string
+          id?: string
+          mime_type?: string | null
+          run_id?: string | null
+          size_bytes?: number | null
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          extracted_text?: string | null
+          extraction_status?: string
+          filename?: string
+          id?: string
+          mime_type?: string | null
+          run_id?: string | null
+          size_bytes?: number | null
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_files_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "agent_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_runs: {
         Row: {
+          constraints_json: Json | null
           created_at: string
           final_output: string | null
           goal: string
@@ -27,6 +75,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          constraints_json?: Json | null
           created_at?: string
           final_output?: string | null
           goal: string
@@ -38,6 +87,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          constraints_json?: Json | null
           created_at?: string
           final_output?: string | null
           goal?: string

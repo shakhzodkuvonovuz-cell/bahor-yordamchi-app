@@ -53,7 +53,7 @@ async function callLLM(messages: any[], tools?: any[]) {
   return await response.json();
 }
 
-async function generatePlan(goal: string): Promise<AgentStep[]> {
+async function generatePlan(goal: string, context: string): Promise<AgentStep[]> {
   const systemPrompt = `You are Bahor AI Agent, an intelligent assistant that breaks down complex tasks into actionable steps.
 Given a user's goal, create a plan with 2-6 clear steps. Each step should be specific and actionable.
 
@@ -63,11 +63,17 @@ Available tools you can use in steps:
 - summarize: Summarize content
 - calculate: Perform calculations
 
+${context ? `User has provided additional context/files that you should reference in your plan.` : ""}
+
 Respond with a JSON object: { "steps": [{ "title": "Step description", "rationale": "Why this step", "tool": "tool_name or null" }] }`;
+
+  const userMessage = context 
+    ? `Goal: ${goal}\n\nAdditional Context:\n${context}\n\nCreate a step-by-step plan to achieve this goal, making use of the provided context.`
+    : `Goal: ${goal}\n\nCreate a step-by-step plan to achieve this goal.`;
 
   const result = await callLLM([
     { role: "system", content: systemPrompt },
-    { role: "user", content: `Goal: ${goal}\n\nCreate a step-by-step plan to achieve this goal.` }
+    { role: "user", content: userMessage }
   ]);
 
   const content = result.choices[0].message.content;
@@ -85,7 +91,7 @@ Respond with a JSON object: { "steps": [{ "title": "Step description", "rational
   
   // Fallback: create simple steps
   return [
-    { title: "Analyze the goal", rationale: "Understand requirements" },
+    { title: "Analyze the goal and context", rationale: "Understand requirements" },
     { title: "Research and gather information", tool: "web_search" },
     { title: "Synthesize findings and create response" }
   ];
@@ -203,7 +209,7 @@ serve(async (req) => {
       });
     }
 
-    const { goal, runId, action } = await req.json();
+    const { goal, runId, action, constraints, files, links, notes, useWebSearch } = await req.json();
 
     // Handle cancellation
     if (action === "cancel" && runId) {
@@ -237,6 +243,34 @@ serve(async (req) => {
 
     console.log(`[Agent] Starting run for user ${user.id}, goal: ${goal.slice(0, 100)}...`);
 
+    // Build context from files, links, notes
+    let contextParts: string[] = [];
+    
+    if (files && files.length > 0) {
+      contextParts.push("=== UPLOADED FILES ===");
+      for (const file of files) {
+        contextParts.push(`\n--- File: ${file.filename} ---\n${file.text?.slice(0, 15000) || "[No content]"}`);
+      }
+    }
+    
+    if (links && links.length > 0) {
+      contextParts.push(`\n=== REFERENCE LINKS ===\n${links.join("\n")}`);
+    }
+    
+    if (notes && notes.trim()) {
+      contextParts.push(`\n=== USER NOTES ===\n${notes}`);
+    }
+    
+    if (constraints && Object.values(constraints).some(v => v)) {
+      const constraintsList = Object.entries(constraints)
+        .filter(([_, v]) => v)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(", ");
+      contextParts.push(`\n=== CONSTRAINTS ===\n${constraintsList}`);
+    }
+    
+    const context = contextParts.join("\n");
+
     // Create the run
     const { data: run, error: runError } = await supabaseClient
       .from("agent_runs")
@@ -244,6 +278,7 @@ serve(async (req) => {
         user_id: user.id,
         goal,
         status: "planning",
+        constraints_json: constraints || {},
       })
       .select()
       .single();
@@ -255,8 +290,8 @@ serve(async (req) => {
 
     console.log(`[Agent] Created run ${run.id}`);
 
-    // Generate plan
-    const plan = await generatePlan(goal);
+    // Generate plan with context
+    const plan = await generatePlan(goal, context);
     console.log(`[Agent] Generated plan with ${plan.length} steps`);
 
     // Update run with plan
