@@ -547,124 +547,144 @@ serve(async (req) => {
 
     console.log(`[Agent] Created run ${run.id}`);
 
-    // Generate plan with context
-    const plan = await generatePlan(goal, context);
-    console.log(`[Agent] Generated plan with ${plan.length} steps:`, plan.map(s => s.tool || 'general').join(', '));
-
-    // Update run with plan
-    await supabaseClient
-      .from("agent_runs")
-      .update({ plan, status: "running" })
-      .eq("id", run.id);
-
-    // Create step records
-    for (let i = 0; i < plan.length; i++) {
-      await supabaseClient
-        .from("agent_steps")
-        .insert({
-          run_id: run.id,
-          step_index: i,
-          title: plan[i].title,
-          rationale: plan[i].rationale,
-          tool_name: plan[i].tool,
-          status: "pending",
-        });
-    }
-
-    // Execute steps
-    const stepResults: { title: string; output: string }[] = [];
-    const allSources: any[] = [];
-    const generatedImages: string[] = [];
-
-    for (let i = 0; i < plan.length; i++) {
-      // Check if run was cancelled
-      const { data: currentRun } = await supabaseClient
-        .from("agent_runs")
-        .select("status")
-        .eq("id", run.id)
-        .single();
-
-      if (currentRun?.status === "cancelled") {
-        console.log(`[Agent] Run ${run.id} was cancelled`);
-        break;
-      }
-
-      // Update step to running
-      await supabaseClient
-        .from("agent_steps")
-        .update({ status: "running" })
-        .eq("run_id", run.id)
-        .eq("step_index", i);
-
-      console.log(`[Agent] Executing step ${i + 1}/${plan.length}: ${plan[i].title} (tool: ${plan[i].tool || 'general'})`);
-
+    // Execute the agent in background using waitUntil
+    const executeAgentRun = async () => {
       try {
-        const { output, sources, imageUrl } = await executeStep(
-          plan[i],
-          goal,
-          stepResults.map(r => r.output),
-          user.id,
-          supabaseClient
+        // Generate plan with context
+        const plan = await generatePlan(goal, context);
+        console.log(`[Agent] Generated plan with ${plan.length} steps:`, plan.map(s => s.tool || 'general').join(', '));
+
+        // Update run with plan
+        await supabaseClient
+          .from("agent_runs")
+          .update({ plan, status: "running" })
+          .eq("id", run.id);
+
+        // Create step records
+        for (let i = 0; i < plan.length; i++) {
+          await supabaseClient
+            .from("agent_steps")
+            .insert({
+              run_id: run.id,
+              step_index: i,
+              title: plan[i].title,
+              rationale: plan[i].rationale,
+              tool_name: plan[i].tool,
+              status: "pending",
+            });
+        }
+
+        // Execute steps
+        const stepResults: { title: string; output: string }[] = [];
+        const allSources: any[] = [];
+        const generatedImages: string[] = [];
+
+        for (let i = 0; i < plan.length; i++) {
+          // Check if run was cancelled
+          const { data: currentRun } = await supabaseClient
+            .from("agent_runs")
+            .select("status")
+            .eq("id", run.id)
+            .single();
+
+          if (currentRun?.status === "cancelled") {
+            console.log(`[Agent] Run ${run.id} was cancelled`);
+            break;
+          }
+
+          // Update step to running
+          await supabaseClient
+            .from("agent_steps")
+            .update({ status: "running" })
+            .eq("run_id", run.id)
+            .eq("step_index", i);
+
+          console.log(`[Agent] Executing step ${i + 1}/${plan.length}: ${plan[i].title} (tool: ${plan[i].tool || 'general'})`);
+
+          try {
+            const { output, sources, imageUrl } = await executeStep(
+              plan[i],
+              goal,
+              stepResults.map(r => r.output),
+              user.id,
+              supabaseClient
+            );
+
+            stepResults.push({ title: plan[i].title, output });
+            allSources.push(...sources);
+            if (imageUrl) generatedImages.push(imageUrl);
+
+            // Update step to done
+            await supabaseClient
+              .from("agent_steps")
+              .update({
+                status: "done",
+                tool_output: { result: output, sources, imageUrl },
+              })
+              .eq("run_id", run.id)
+              .eq("step_index", i);
+
+          } catch (stepError: any) {
+            console.error(`[Agent] Step ${i} failed:`, stepError);
+            
+            await supabaseClient
+              .from("agent_steps")
+              .update({
+                status: "error",
+                error: stepError.message || "Step execution failed",
+              })
+              .eq("run_id", run.id)
+              .eq("step_index", i);
+
+            stepResults.push({ title: plan[i].title, output: `⚠️ Error: ${stepError.message}` });
+          }
+        }
+
+        // Generate final output
+        console.log(`[Agent] Generating final output from ${stepResults.length} steps`);
+        const finalOutput = await generateFinalOutput(goal, stepResults, allSources, generatedImages);
+
+        // Deduplicate sources
+        const uniqueSources = allSources.filter((s, i, arr) => 
+          arr.findIndex(x => x.url === s.url) === i
         );
 
-        stepResults.push({ title: plan[i].title, output });
-        allSources.push(...sources);
-        if (imageUrl) generatedImages.push(imageUrl);
-
-        // Update step to done
+        // Update run to done
         await supabaseClient
-          .from("agent_steps")
+          .from("agent_runs")
           .update({
             status: "done",
-            tool_output: { result: output, sources, imageUrl },
+            final_output: finalOutput,
+            sources: uniqueSources,
+            updated_at: new Date().toISOString(),
           })
-          .eq("run_id", run.id)
-          .eq("step_index", i);
+          .eq("id", run.id);
 
-      } catch (stepError: any) {
-        console.error(`[Agent] Step ${i} failed:`, stepError);
+        console.log(`[Agent] Run ${run.id} completed with ${uniqueSources.length} sources, ${generatedImages.length} images`);
+
+      } catch (bgError: any) {
+        console.error(`[Agent] Background execution error for run ${run.id}:`, bgError);
         
+        // Mark run as failed
         await supabaseClient
-          .from("agent_steps")
+          .from("agent_runs")
           .update({
             status: "error",
-            error: stepError.message || "Step execution failed",
+            final_output: `Xato yuz berdi: ${bgError.message || "Agent execution failed"}`,
+            updated_at: new Date().toISOString(),
           })
-          .eq("run_id", run.id)
-          .eq("step_index", i);
-
-        stepResults.push({ title: plan[i].title, output: `⚠️ Error: ${stepError.message}` });
+          .eq("id", run.id);
       }
-    }
+    };
 
-    // Generate final output
-    console.log(`[Agent] Generating final output from ${stepResults.length} steps`);
-    const finalOutput = await generateFinalOutput(goal, stepResults, allSources, generatedImages);
+    // Start background execution without blocking response
+    // Use globalThis.EdgeRuntime for Supabase Edge Functions
+    (globalThis as any).EdgeRuntime?.waitUntil?.(executeAgentRun()) ?? executeAgentRun().catch(console.error);
 
-    // Deduplicate sources
-    const uniqueSources = allSources.filter((s, i, arr) => 
-      arr.findIndex(x => x.url === s.url) === i
-    );
-
-    // Update run to done
-    await supabaseClient
-      .from("agent_runs")
-      .update({
-        status: "done",
-        final_output: finalOutput,
-        sources: uniqueSources,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", run.id);
-
-    console.log(`[Agent] Run ${run.id} completed with ${uniqueSources.length} sources, ${generatedImages.length} images`);
-
+    // Return immediately with runId - frontend uses Realtime for updates
     return new Response(JSON.stringify({ 
       runId: run.id, 
-      status: "done",
-      finalOutput,
-      sources: uniqueSources,
-      images: generatedImages,
+      status: "planning",
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
