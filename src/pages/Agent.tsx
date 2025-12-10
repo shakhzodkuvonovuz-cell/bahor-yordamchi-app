@@ -536,15 +536,20 @@ export default function Agent() {
       let filesPayload: Array<{ filename: string; textLength: number }> = [];
       
       if (!runWithoutFiles && files.length > 0) {
+        console.log("[Agent] Files in state:", files.map(f => ({ id: f.id, status: f.extraction_status })));
+        
+        const readyFiles = files.filter((f) => f.extraction_status === "ready");
+        console.log("[Agent] Ready files count:", readyFiles.length);
+        
         const results = await Promise.all(
-          files
-            .filter((f) => f.extraction_status === "ready")
-            .map(async (f) => {
-              const { data } = await supabase
+          readyFiles.map(async (f) => {
+              const { data, error } = await supabase
                 .from("agent_files")
                 .select("extracted_text, filename")
                 .eq("id", f.id)
                 .single();
+              
+              console.log(`[Agent] File ${f.id}: fetched ${data?.extracted_text?.length || 0} chars, error: ${error?.message || 'none'}`);
               return data ? { filename: data.filename, text: data.extracted_text } : null;
             })
         );
@@ -554,6 +559,8 @@ export default function Agent() {
           filename: f.filename,
           textLength: f.text?.length || 0
         }));
+        
+        console.log("[Agent] Sending files to backend:", filesPayload);
       }
       
       // Capture context snapshot for debug panel
