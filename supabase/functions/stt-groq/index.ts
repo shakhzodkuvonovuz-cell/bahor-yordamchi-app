@@ -5,21 +5,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Strong Uzbek steering prompt to prevent Turkish drift
-// Include common Uzbek words/phrases to anchor the language model
-const UZBEK_STEERING_PROMPT = `Bu audio O'zbek tilida. Transcribe strictly in Uzbek Latin script.
-
-Common Uzbek words to recognize:
-- Salom, Rahmat, Kechirasiz, Ha, Yo'q, Men, Siz, Bu, Nima, Qanday
-- Mening ismim, Menga yordam bering, Qancha turadi, Qaerda
-- O'zbekiston, Toshkent, Samarqand, Buxoro
-
-CRITICAL RULES:
-1. This is UZBEK (O'zbek tili), NOT Turkish (Türkçe)
-2. Use Uzbek apostrophe: o' (not ö), g' (not ğ), sh (not ş)
-3. Uzbek uses "men" not "ben", "siz" not "siz/sen", "nima" not "ne"
-4. Keep proper nouns unchanged
-5. Output Latin script unless Cyrillic clearly spoken`;
+// Prompt with common Uzbek words to guide transcription style
+// Do NOT force language="uz" as Whisper hallucinates when forced to unsupported languages
+const TRANSCRIPTION_PROMPT = `Salom, mening ismim, rahmat, kechirasiz, ha, yo'q, men, siz, bu, nima, qanday, O'zbekiston, Toshkent, Samarqand, Sydney, Australia.`;
 
 // Max file size: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -131,10 +119,10 @@ serve(async (req) => {
     const groqFormData = new FormData();
     groqFormData.append("file", audioBlob, fileName);
     groqFormData.append("model", "whisper-large-v3-turbo");
-    groqFormData.append("language", "uz");
+    // Do NOT set language - let Whisper auto-detect to avoid hallucinations on unsupported languages
     groqFormData.append("temperature", "0");
     groqFormData.append("response_format", "verbose_json");
-    groqFormData.append("prompt", UZBEK_STEERING_PROMPT);
+    groqFormData.append("prompt", TRANSCRIPTION_PROMPT);
 
     const startTime = Date.now();
     const groqResponse = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
@@ -207,10 +195,10 @@ serve(async (req) => {
       const retryBlob = new Blob([audioBytes], { type: "audio/mpeg" });
       retryFormData.append("file", retryBlob, "audio.mp3");
       retryFormData.append("model", "whisper-large-v3-turbo");
-      retryFormData.append("language", "uz");
+      // Do NOT set language - let auto-detect work
       retryFormData.append("temperature", "0");
       retryFormData.append("response_format", "verbose_json");
-      retryFormData.append("prompt", UZBEK_STEERING_PROMPT);
+      retryFormData.append("prompt", TRANSCRIPTION_PROMPT);
 
       const retryResponse = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
         method: "POST",
