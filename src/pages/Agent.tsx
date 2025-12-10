@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { 
   Bot, Play, Square, RotateCcw, Check, Loader2, AlertCircle, Sparkles, 
   ExternalLink, ChevronDown, ChevronUp, Save, Upload, File, X, Link2,
-  StickyNote, FileText, Copy, Settings2
+  StickyNote, FileText, Copy, Settings2, Image, Download, ZoomIn
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -49,6 +50,12 @@ interface AgentFile {
   storage_path: string;
 }
 
+interface GeneratedImage {
+  url: string;
+  stepIndex: number;
+  stepTitle: string;
+}
+
 const SAMPLE_GOALS = [
   "O'zbekistondagi eng yaxshi IT universitetlarni taqqosla",
   "Marketing reja tuzing: yangi mahsulotni bozorga chiqarish",
@@ -73,6 +80,10 @@ export default function Agent() {
   const [newLink, setNewLink] = useState("");
   const [notes, setNotes] = useState("");
   const [useWebSearch, setUseWebSearch] = useState(true);
+  
+  // Generated images state
+  const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   
   // Constraints
   const [showConstraints, setShowConstraints] = useState(false);
@@ -101,9 +112,25 @@ export default function Agent() {
           if (payload.eventType === "INSERT") {
             setSteps((prev) => [...prev, payload.new as AgentStep].sort((a, b) => a.step_index - b.step_index));
           } else if (payload.eventType === "UPDATE") {
+            const updatedStep = payload.new as AgentStep;
             setSteps((prev) =>
-              prev.map((s) => (s.id === payload.new.id ? (payload.new as AgentStep) : s))
+              prev.map((s) => (s.id === updatedStep.id ? updatedStep : s))
             );
+            
+            // Extract generated images from step output
+            if (updatedStep.tool_output?.imageUrl) {
+              setGeneratedImages((prev) => {
+                const exists = prev.some(img => img.url === updatedStep.tool_output.imageUrl);
+                if (!exists) {
+                  return [...prev, {
+                    url: updatedStep.tool_output.imageUrl,
+                    stepIndex: updatedStep.step_index,
+                    stepTitle: updatedStep.title
+                  }];
+                }
+                return prev;
+              });
+            }
           }
         }
       )
@@ -291,6 +318,7 @@ export default function Agent() {
     setIsRunning(true);
     setCurrentRun(null);
     setSteps([]);
+    setGeneratedImages([]); // Clear previous images
 
     try {
       // Get file contents
@@ -385,6 +413,25 @@ export default function Agent() {
     if (currentRun?.final_output) {
       navigator.clipboard.writeText(currentRun.final_output);
       toast.success("Nusxa olindi!");
+    }
+  };
+
+  const handleDownloadImage = async (imageUrl: string, index: number) => {
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `agent-image-${index + 1}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Rasm yuklab olindi!");
+    } catch (error) {
+      console.error("Download error:", error);
+      toast.error("Yuklab olishda xato");
     }
   };
 
@@ -653,7 +700,64 @@ export default function Agent() {
             </TabsContent>
 
             {/* Results Tab */}
-            <TabsContent value="results" className="mt-0">
+            <TabsContent value="results" className="mt-0 space-y-4">
+              {/* Generated Images Gallery */}
+              {generatedImages.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Image className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium">Yaratilgan rasmlar</span>
+                    <Badge variant="secondary" className="text-[10px]">{generatedImages.length}</Badge>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {generatedImages.map((img, i) => (
+                      <div 
+                        key={i} 
+                        className="relative group aspect-square rounded-lg overflow-hidden border bg-muted"
+                      >
+                        <img
+                          src={img.url}
+                          alt={`Generated image ${i + 1}`}
+                          className="w-full h-full object-cover cursor-pointer transition-transform group-hover:scale-105"
+                          onClick={() => setLightboxImage(img.url)}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="absolute bottom-0 left-0 right-0 p-2 flex items-end justify-between opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span className="text-[10px] text-white truncate flex-1 pr-2">
+                            {img.stepTitle.slice(0, 30)}...
+                          </span>
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="h-6 w-6 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setLightboxImage(img.url);
+                              }}
+                            >
+                              <ZoomIn className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="h-6 w-6 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownloadImage(img.url, i);
+                              }}
+                            >
+                              <Download className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Final Output */}
               {currentRun?.final_output ? (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
@@ -676,12 +780,12 @@ export default function Agent() {
                     <AiResponseRenderer content={currentRun.final_output} />
                   </div>
                 </div>
-              ) : (
+              ) : generatedImages.length === 0 ? (
                 <div className="text-center py-6 text-muted-foreground">
                   <FileText className="h-10 w-10 mx-auto mb-2 opacity-30" />
                   <p className="text-xs">Natijalar bu yerda ko'rsatiladi</p>
                 </div>
-              )}
+              ) : null}
             </TabsContent>
           </CardContent>
         </Tabs>
@@ -850,6 +954,35 @@ export default function Agent() {
           </CardContent>
         </Card>
       )}
+
+      {/* Image Lightbox */}
+      <Dialog open={!!lightboxImage} onOpenChange={() => setLightboxImage(null)}>
+        <DialogContent className="max-w-4xl p-0 bg-black/95 border-none">
+          {lightboxImage && (
+            <div className="relative">
+              <img
+                src={lightboxImage}
+                alt="Full size"
+                className="w-full h-auto max-h-[85vh] object-contain"
+              />
+              <div className="absolute bottom-4 right-4 flex gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => {
+                    const idx = generatedImages.findIndex(img => img.url === lightboxImage);
+                    handleDownloadImage(lightboxImage, idx >= 0 ? idx : 0);
+                  }}
+                >
+                  <Download className="h-4 w-4" />
+                  Yuklab olish
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
