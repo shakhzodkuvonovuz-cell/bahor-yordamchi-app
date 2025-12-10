@@ -562,6 +562,16 @@ export default function DocumentTools() {
         throw new Error(response.data?.error || response.error?.message || "Unknown error");
       }
 
+      // Auto-download the generated file
+      if (response.data?.file?.signed_url) {
+        const link = document.createElement("a");
+        link.href = response.data.file.signed_url;
+        link.download = `${title}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
       toast({ title: t("docs.success"), description: title });
       
       // Reset form
