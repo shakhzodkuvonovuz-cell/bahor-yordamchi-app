@@ -112,6 +112,7 @@ export type Database = {
           plan: Json | null
           sources: Json | null
           status: string
+          thread_id: string | null
           updated_at: string
           user_id: string
         }
@@ -124,6 +125,7 @@ export type Database = {
           plan?: Json | null
           sources?: Json | null
           status?: string
+          thread_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -136,10 +138,19 @@ export type Database = {
           plan?: Json | null
           sources?: Json | null
           status?: string
+          thread_id?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "agent_runs_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "agent_threads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       agent_steps: {
         Row: {
