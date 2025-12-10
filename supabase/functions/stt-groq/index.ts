@@ -5,10 +5,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Prompt with common Uzbek words to guide transcription style
-// Do NOT force language="uz" as Whisper hallucinates when forced to unsupported languages
-const TRANSCRIPTION_PROMPT = `Salom, mening ismim, rahmat, kechirasiz, ha, yo'q, men, siz, bu, nima, qanday, O'zbekiston, Toshkent, Samarqand, Sydney, Australia.`;
-
 // Max file size: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
@@ -19,13 +15,13 @@ serve(async (req) => {
   }
 
   const requestId = crypto.randomUUID().slice(0, 8);
-  console.log(`[stt-groq:${requestId}] Request received`);
+  console.log(`[stt:${requestId}] Request received`);
 
   try {
-    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
-    if (!GROQ_API_KEY) {
-      console.error(`[stt-groq:${requestId}] GROQ_API_KEY not configured`);
+    if (!LOVABLE_API_KEY) {
+      console.error(`[stt:${requestId}] LOVABLE_API_KEY not configured`);
       return new Response(
         JSON.stringify({ error: "STT service not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -39,7 +35,7 @@ serve(async (req) => {
     const durationSeconds = parseInt(formData.get("duration_seconds") as string || "0", 10);
 
     if (!audioFile) {
-      console.error(`[stt-groq:${requestId}] No audio file provided`);
+      console.error(`[stt:${requestId}] No audio file provided`);
       return new Response(
         JSON.stringify({ error: "No audio file provided" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -48,212 +44,164 @@ serve(async (req) => {
 
     // Validate file size
     if (audioFile.size > MAX_FILE_SIZE) {
-      console.error(`[stt-groq:${requestId}] File too large: ${audioFile.size} bytes`);
+      console.error(`[stt:${requestId}] File too large: ${audioFile.size} bytes`);
       return new Response(
         JSON.stringify({ 
           error: "audio_too_large",
           message: uiLanguage === "uz" 
             ? "Audio fayl juda katta (max 10MB)"
-            : uiLanguage === "ru"
-            ? "Аудиофайл слишком большой (макс 10МБ)"
-            : uiLanguage === "tr"
-            ? "Ses dosyası çok büyük (maks 10MB)"
             : "Audio file too large (max 10MB)"
         }),
         { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Minimum duration check - require at least 1 second of speech
+    // Minimum duration check
     if (durationSeconds < 1) {
-      console.error(`[stt-groq:${requestId}] Duration too short: ${durationSeconds}s`);
+      console.error(`[stt:${requestId}] Duration too short: ${durationSeconds}s`);
       return new Response(
         JSON.stringify({ 
           error: "audio_too_short",
           message: uiLanguage === "uz" 
             ? "Audio juda qisqa. Kamida 1 soniya gapiring."
-            : uiLanguage === "ru"
-            ? "Аудио слишком короткое. Говорите минимум 1 секунду."
-            : uiLanguage === "tr"
-            ? "Ses çok kısa. En az 1 saniye konuşun."
             : "Audio too short. Speak for at least 1 second."
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Minimum file size check (likely empty recording)
+    // Minimum file size check
     if (audioFile.size < 1000) {
-      console.error(`[stt-groq:${requestId}] File too small: ${audioFile.size} bytes`);
+      console.error(`[stt:${requestId}] File too small: ${audioFile.size} bytes`);
       return new Response(
         JSON.stringify({ 
           error: "audio_too_small",
           message: uiLanguage === "uz" 
             ? "Audio yozilmadi. Qayta urinib ko'ring."
-            : uiLanguage === "ru"
-            ? "Аудио не записано. Попробуйте снова."
-            : uiLanguage === "tr"
-            ? "Ses kaydedilmedi. Tekrar deneyin."
             : "No audio recorded. Please try again."
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`[stt-groq:${requestId}] Processing audio: ${audioFile.size} bytes, type: ${audioFile.type}, duration: ${durationSeconds}s`);
+    console.log(`[stt:${requestId}] Processing audio: ${audioFile.size} bytes, type: ${audioFile.type}, duration: ${durationSeconds}s`);
 
-    // Get audio bytes
+    // Convert audio to base64 for Gemini
     const audioBytes = await audioFile.arrayBuffer();
+    const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBytes)));
     
-    // Groq has issues with WebM duration metadata, try with different file extension
-    // Using .ogg extension sometimes works better with Groq for WebM/Opus files
-    const fileName = audioFile.type.includes("webm") ? "audio.ogg" : (audioFile.name || "audio.webm");
+    // Determine MIME type for Gemini
+    let mimeType = audioFile.type || "audio/mp4";
+    if (mimeType.includes("webm")) mimeType = "audio/webm";
+    else if (mimeType.includes("mp4") || mimeType.includes("m4a")) mimeType = "audio/mp4";
+    else if (mimeType.includes("mpeg") || mimeType.includes("mp3")) mimeType = "audio/mpeg";
+    else if (mimeType.includes("wav")) mimeType = "audio/wav";
     
-    // Create a new blob with audio/ogg type for better Groq compatibility
-    const audioBlob = new Blob([audioBytes], { 
-      type: audioFile.type.includes("webm") ? "audio/ogg" : audioFile.type 
-    });
-    
-    console.log(`[stt-groq:${requestId}] Using Groq Whisper with filename: ${fileName}`);
-    
-    const groqFormData = new FormData();
-    groqFormData.append("file", audioBlob, fileName);
-    groqFormData.append("model", "whisper-large-v3-turbo");
-    // Do NOT set language - let Whisper auto-detect to avoid hallucinations on unsupported languages
-    groqFormData.append("temperature", "0");
-    groqFormData.append("response_format", "verbose_json");
-    groqFormData.append("prompt", TRANSCRIPTION_PROMPT);
+    console.log(`[stt:${requestId}] Using Gemini for transcription, mimeType: ${mimeType}`);
 
+    // Use Gemini via Lovable AI Gateway for transcription
     const startTime = Date.now();
-    const groqResponse = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
+    const geminiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${GROQ_API_KEY}`,
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
       },
-      body: groqFormData,
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "input_audio",
+                input_audio: {
+                  data: base64Audio,
+                  format: mimeType.split("/")[1] || "mp4"
+                }
+              },
+              {
+                type: "text",
+                text: `Transcribe this audio exactly as spoken. Output ONLY the transcription text, nothing else.
+
+Rules:
+- If the speaker uses Uzbek, write in Uzbek Latin script (using o', g', sh, ch)
+- If the speaker uses Russian, write in Cyrillic
+- If the speaker uses English, write in English
+- Preserve proper nouns, names, and places exactly as pronounced
+- Do NOT translate - transcribe verbatim
+- Do NOT add any commentary, just the spoken words`
+              }
+            ]
+          }
+        ],
+        max_tokens: 2000,
+        temperature: 0
+      }),
     });
 
     const latencyMs = Date.now() - startTime;
-    console.log(`[stt-groq:${requestId}] Groq API responded in ${latencyMs}ms, status: ${groqResponse.status}`);
+    console.log(`[stt:${requestId}] Gemini responded in ${latencyMs}ms, status: ${geminiResponse.status}`);
 
-    if (groqResponse.ok) {
-      const result = await groqResponse.json();
-      console.log(`[stt-groq:${requestId}] Transcription successful, text length: ${result.text?.length || 0}`);
-
-      // Check if transcription is empty (no speech detected)
-      if (!result.text || result.text.trim().length === 0) {
-        console.warn(`[stt-groq:${requestId}] Empty transcription - no speech detected`);
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      console.error(`[stt:${requestId}] Gemini error: ${geminiResponse.status} - ${errorText}`);
+      
+      if (geminiResponse.status === 429) {
         return new Response(
           JSON.stringify({ 
-            error: "no_speech",
+            error: "rate_limit",
             message: uiLanguage === "uz" 
-              ? "Ovoz aniqlanmadi. Balandroq gapiring."
-              : uiLanguage === "ru"
-              ? "Речь не обнаружена. Говорите громче."
-              : uiLanguage === "tr"
-              ? "Ses algılanmadı. Daha yüksek sesle konuşun."
-              : "No speech detected. Please speak louder."
+              ? "Juda ko'p so'rov. Biroz kuting."
+              : "Too many requests. Please wait."
           }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-
-      return new Response(
-        JSON.stringify({
-          text: result.text,
-          language: result.language || "uz",
-          model: "whisper-large-v3-turbo",
-          duration_seconds_estimate: result.duration || durationSeconds,
-          latency_ms: latencyMs,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const errorText = await groqResponse.text();
-    console.error(`[stt-groq:${requestId}] Groq API error: ${groqResponse.status} - ${errorText}`);
-
-    // Handle rate limit
-    if (groqResponse.status === 429) {
+      
       return new Response(
         JSON.stringify({ 
-          error: "rate_limit",
+          error: "transcription_failed",
           message: uiLanguage === "uz" 
-            ? "Juda ko'p so'rov. Biroz kuting."
-            : "Too many requests. Please wait."
+            ? "Transkriptsiyada xatolik. Qayta urinib ko'ring."
+            : "Transcription failed. Please try again."
         }),
-        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Handle "audio too short" - this is a Groq WebM parsing bug
-    // Retry with mp3 filename as workaround
-    if (errorText.includes("too short")) {
-      console.log(`[stt-groq:${requestId}] Retrying with .mp3 filename workaround`);
-      
-      const retryFormData = new FormData();
-      const retryBlob = new Blob([audioBytes], { type: "audio/mpeg" });
-      retryFormData.append("file", retryBlob, "audio.mp3");
-      retryFormData.append("model", "whisper-large-v3-turbo");
-      // Do NOT set language - let auto-detect work
-      retryFormData.append("temperature", "0");
-      retryFormData.append("response_format", "verbose_json");
-      retryFormData.append("prompt", TRANSCRIPTION_PROMPT);
+    const result = await geminiResponse.json();
+    const transcription = result.choices?.[0]?.message?.content?.trim() || "";
+    
+    console.log(`[stt:${requestId}] Transcription successful, text length: ${transcription.length}`);
 
-      const retryResponse = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${GROQ_API_KEY}`,
-        },
-        body: retryFormData,
-      });
-
-      if (retryResponse.ok) {
-        const result = await retryResponse.json();
-        console.log(`[stt-groq:${requestId}] Retry successful, text length: ${result.text?.length || 0}`);
-
-        return new Response(
-          JSON.stringify({
-            text: result.text || "",
-            language: result.language || "uz",
-            model: "whisper-large-v3-turbo",
-            duration_seconds_estimate: result.duration || durationSeconds,
-            latency_ms: Date.now() - startTime,
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const retryError = await retryResponse.text();
-      console.error(`[stt-groq:${requestId}] Retry also failed: ${retryError}`);
-      
-      // If retry still fails with "too short", it's a real issue
-      if (retryError.includes("too short")) {
-        return new Response(
-          JSON.stringify({ 
-            error: "audio_format_error",
-            message: uiLanguage === "uz" 
-              ? "Audio formatida xato. Qayta yozing."
-              : "Audio format error. Please record again."
-          }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
+    // Check if transcription is empty
+    if (!transcription || transcription.length === 0) {
+      console.warn(`[stt:${requestId}] Empty transcription - no speech detected`);
+      return new Response(
+        JSON.stringify({ 
+          error: "no_speech",
+          message: uiLanguage === "uz" 
+            ? "Ovoz aniqlanmadi. Balandroq gapiring."
+            : "No speech detected. Please speak louder."
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    // Generic error
     return new Response(
-      JSON.stringify({ 
-        error: "transcription_failed",
-        message: uiLanguage === "uz" 
-          ? "Transkriptsiyada xatolik. Qayta urinib ko'ring."
-          : "Transcription failed. Please try again."
+      JSON.stringify({
+        text: transcription,
+        language: "auto",
+        model: "gemini-2.5-flash",
+        duration_seconds_estimate: durationSeconds,
+        latency_ms: latencyMs,
       }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
   } catch (error) {
-    console.error(`[stt-groq:${requestId}] Unexpected error:`, error);
+    console.error(`[stt:${requestId}] Unexpected error:`, error);
     return new Response(
       JSON.stringify({ 
         error: "internal_error",
