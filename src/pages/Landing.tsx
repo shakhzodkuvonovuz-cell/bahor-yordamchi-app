@@ -1,6 +1,5 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -10,224 +9,423 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
-  Search,
-  ImagePlus,
-  FileText,
-  Users,
+  Code2,
+  Briefcase,
+  BookOpen,
+  GraduationCap,
+  Home,
   Globe,
+  Zap,
   Sparkles,
   MessageSquare,
   ArrowRight,
+  ArrowLeft,
   Check,
-  X,
   Send,
-  Mic,
+  Wallet,
+  Users,
+  FileText,
+  Search,
+  Image,
+  Shield,
+  ListTodo,
+  ExternalLink,
+  ImagePlus,
+  Download,
   Paperclip,
   Camera,
-  ExternalLink,
-  Download,
-  Zap,
+  Mic,
 } from "lucide-react";
 import bahorLogo from "@/assets/bahor-logo.png";
 import samarkandImage from "@/assets/landing/samarkand-registan.jpg";
+import tashkentImage from "@/assets/landing/tashkent-night.jpg";
+import suzaniImage from "@/assets/landing/uzbek-suzani.jpg";
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { AppFooter } from "@/components/layout/AppFooter";
 import { prefetchCriticalRoutes } from "@/lib/routePrefetch";
 
-// Spotlight card with mouse-following gradient
-function SpotlightCard({ 
-  children, 
-  className = "" 
-}: { 
-  children: React.ReactNode; 
-  className?: string;
-}) {
-  const divRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [opacity, setOpacity] = useState(0);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!divRef.current) return;
-    const rect = divRef.current.getBoundingClientRect();
-    setPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-  }, []);
-
-  return (
-    <div
-      ref={divRef}
-      onMouseMove={handleMouseMove}
-      onMouseEnter={() => setOpacity(1)}
-      onMouseLeave={() => setOpacity(0)}
-      className={`relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] transition-colors duration-500 hover:border-white/[0.15] ${className}`}
-    >
-      {/* Spotlight gradient */}
-      <div
-        className="pointer-events-none absolute -inset-px opacity-0 transition-opacity duration-500"
-        style={{
-          opacity,
-          background: `radial-gradient(600px circle at ${position.x}px ${position.y}px, rgba(45,212,191,0.06), transparent 40%)`,
-        }}
-      />
-      {children}
-    </div>
-  );
-}
-
-// Hero product mockup with perspective
+// Hero mockup with 3-page carousel showing real use cases
 function HeroMockup() {
-  const [activeSlide, setActiveSlide] = useState(0);
-  const sources = ['kun.uz', 'gazeta.uz', 'lex.uz', 'review.uz'];
+  const { t } = useTranslation();
+  const [activeSlide, setActiveSlide] = React.useState(0);
+  const [mousePosition, setMousePosition] = React.useState({ x: 0, y: 0 });
+  const containerRef = React.useRef<HTMLDivElement>(null);
   
-  useEffect(() => {
-    const timer = setInterval(() => setActiveSlide((p) => (p + 1) % 3), 5000);
+  // Auto-rotate slides every 5 seconds
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % 3);
+    }, 5000);
     return () => clearInterval(timer);
   }, []);
-
+  
+  // Mouse parallax effect (desktop only, throttled for performance)
+  const lastFrameRef = React.useRef(0);
+  const handleMouseMove = React.useCallback((e: React.MouseEvent) => {
+    // Skip on mobile or if throttled
+    if (window.innerWidth < 768) return;
+    const now = performance.now();
+    if (now - lastFrameRef.current < 16) return; // ~60fps throttle
+    lastFrameRef.current = now;
+    
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2);
+    const y = (e.clientY - rect.top - rect.height / 2) / (rect.height / 2);
+    setMousePosition({ x: x * 8, y: y * 8 }); // Max 8deg tilt
+  }, []);
+  
+  const handleMouseLeave = React.useCallback(() => {
+    setMousePosition({ x: 0, y: 0 });
+  }, []);
+  
+  const slides = [
+    { id: 'web', label: t('mockup.slide.web') },
+    { id: 'image', label: t('mockup.slide.image') },
+    { id: 'pdf', label: t('mockup.slide.pdf') },
+  ];
+  
   return (
-    <div className="relative w-full max-w-5xl mx-auto mt-16 sm:mt-24">
-      {/* Perspective container */}
+    <div 
+      ref={containerRef}
+      className="relative w-full max-w-md mx-auto perspective-1000"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    >
+      {/* Background decorations - optimized for mobile (smaller blur, fewer orbs) */}
+      {/* Gradient mesh orbs - mobile gets 1 smaller orb, desktop gets full effect */}
+      <div className="absolute -top-12 -left-12 w-24 h-24 md:-top-20 md:-left-20 md:w-40 md:h-40 bg-primary/15 rounded-full blur-2xl md:blur-3xl animate-pulse" />
+      <div className="hidden sm:block absolute -bottom-16 -right-16 w-32 h-32 bg-primary/10 rounded-full blur-2xl animate-[pulse_3s_ease-in-out_infinite_0.5s]" />
+      <div className="hidden md:block absolute top-1/2 -left-24 w-24 h-24 bg-accent/20 rounded-full blur-2xl animate-[pulse_4s_ease-in-out_infinite_1s]" />
+      
+      {/* Floating particles - mobile gets 2 static dots, desktop gets animated */}
+      <div className="absolute top-8 right-0 w-1.5 h-1.5 md:w-2 md:h-2 bg-primary/40 rounded-full md:animate-[float-slow_6s_ease-in-out_infinite]" />
+      <div className="absolute bottom-8 left-4 w-1 h-1 md:w-1.5 md:h-1.5 bg-accent/40 rounded-full md:animate-[float-slow_7s_ease-in-out_infinite_0.3s]" />
+      <div className="hidden md:block absolute top-1/3 -left-8 w-1.5 h-1.5 bg-primary/30 rounded-full animate-[float-slow_5s_ease-in-out_infinite_0.5s]" />
+      <div className="hidden md:block absolute bottom-1/4 -right-4 w-1 h-1 bg-primary/50 rounded-full animate-[float-slow_4s_ease-in-out_infinite_1s]" />
+      
+      {/* Grid pattern overlay */}
+      <div className="absolute inset-0 -m-16 opacity-[0.03] pointer-events-none" 
+        style={{
+          backgroundImage: `linear-gradient(hsl(var(--primary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)`,
+          backgroundSize: '40px 40px',
+        }}
+      />
+      
+      {/* Main glow effect - mobile gets static subtle glow, desktop gets parallax */}
       <div 
-        className="relative"
-        style={{ 
-          perspective: '1500px',
-          perspectiveOrigin: 'center bottom'
+        className="absolute inset-0 bg-primary/10 md:bg-primary/20 rounded-full scale-75 md:scale-90 translate-y-4 md:translate-y-8 blur-2xl md:blur-3xl transition-transform duration-300 ease-out"
+        style={{
+          transform: window.innerWidth >= 768 
+            ? `translate(${mousePosition.x * 2}px, ${mousePosition.y * 2 + 32}px) scale(0.9)`
+            : 'translateY(16px) scale(0.75)',
+        }}
+      />
+      
+      {/* Main card with 3D tilt */}
+      <div 
+        className="relative glass-premium rounded-2xl shadow-glow-lg border border-border/40 overflow-hidden transition-transform duration-300 ease-out will-change-transform"
+        style={{
+          transform: `rotateY(${mousePosition.x}deg) rotateX(${-mousePosition.y}deg) translateZ(0)`,
         }}
       >
-        {/* Glow behind */}
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3 w-[600px] h-[400px] bg-[#2DD4BF]/[0.08] rounded-full blur-[120px]" />
+        {/* Header bar */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 bg-card/50">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-secondary/60 flex items-center justify-center">
+              <ArrowLeft className="w-4 h-4 text-muted-foreground" />
+            </div>
+            <div className="flex items-center gap-2">
+              <img src={bahorLogo} alt="Bahor AI" className="w-6 h-6 object-contain" />
+              <span className="font-semibold text-foreground text-sm">Bahor AI</span>
+            </div>
+          </div>
+          {/* Model toggle */}
+          <div className="flex items-center gap-0.5 bg-secondary/60 rounded-lg p-0.5">
+            <span className="text-[10px] px-2.5 py-1 rounded-md bg-background text-foreground font-medium">Tez</span>
+            <span className="text-[10px] px-2.5 py-1 rounded-md text-muted-foreground">Aqlli</span>
+          </div>
         </div>
         
-        {/* The mockup */}
-        <motion.div
-          initial={{ opacity: 0, rotateX: 15, y: 60 }}
-          animate={{ opacity: 1, rotateX: 8, y: 0 }}
-          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-          className="relative rounded-t-2xl border border-white/[0.1] border-b-0 bg-[#0a0a0a] overflow-hidden shadow-2xl"
-          style={{ transformStyle: 'preserve-3d' }}
-        >
-          {/* Browser chrome */}
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06] bg-[#0a0a0a]">
-            <div className="flex gap-1.5">
-              <div className="w-3 h-3 rounded-full bg-white/10" />
-              <div className="w-3 h-3 rounded-full bg-white/10" />
-              <div className="w-3 h-3 rounded-full bg-white/10" />
-            </div>
-            <div className="flex-1 flex justify-center">
-              <div className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06]">
-                <div className="w-3 h-3 rounded-full bg-[#2DD4BF]/20 flex items-center justify-center">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#2DD4BF]" />
+        {/* Slide content */}
+        <div className="p-4 min-h-[320px]">
+          {/* Slide 1: Web Search */}
+          {activeSlide === 0 && (
+            <div className="space-y-3">
+              {/* User message */}
+              <div className="flex justify-end opacity-0 animate-[fade-in_0.4s_ease-out_0.1s_forwards]">
+                <div className="bg-primary/15 border border-primary/30 text-foreground px-4 py-2.5 rounded-2xl rounded-tr-sm max-w-[85%]">
+                  <p className="text-sm">{t('mockup.web.userMessage')}</p>
                 </div>
-                <span className="text-xs text-gray-500">bahorai.com</span>
+              </div>
+              
+              {/* ThinkBar */}
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/50 border border-border/30 w-fit opacity-0 animate-[fade-in_0.4s_ease-out_0.3s_forwards]">
+                <Sparkles className="w-3.5 h-3.5 text-primary" />
+                <span className="text-xs text-muted-foreground">{t('mockup.web.searching')}</span>
+                <div className="flex items-center gap-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-[pulse_1.4s_ease-in-out_infinite]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-[pulse_1.4s_ease-in-out_0.2s_infinite]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-[pulse_1.4s_ease-in-out_0.4s_infinite]" />
+                </div>
+              </div>
+              
+              {/* Sources row */}
+              <div className="space-y-2 opacity-0 animate-[fade-in_0.4s_ease-out_0.5s_forwards]">
+                <div className="flex items-center gap-2">
+                  <Search className="w-3 h-3 text-primary" />
+                  <span className="text-[10px] text-muted-foreground">{t('mockup.web.sourcesFound')}</span>
+                </div>
+                <div className="flex gap-1.5 flex-wrap">
+                  <span className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center gap-1 cursor-pointer hover:bg-primary/20 hover:scale-105 transition-all duration-200">
+                    <ExternalLink className="w-2.5 h-2.5" />gazeta.uz
+                  </span>
+                  <span className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center gap-1 cursor-pointer hover:bg-primary/20 hover:scale-105 transition-all duration-200">
+                    <ExternalLink className="w-2.5 h-2.5" />review.uz
+                  </span>
+                  <span className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center gap-1 cursor-pointer hover:bg-primary/20 hover:scale-105 transition-all duration-200">
+                    <ExternalLink className="w-2.5 h-2.5" />lex.uz
+                  </span>
+                </div>
+              </div>
+              
+              {/* AI response - collapsed */}
+              <div className="space-y-2 opacity-0 animate-[fade-in_0.4s_ease-out_0.7s_forwards]">
+                <p className="text-sm font-medium text-foreground">{t('mockup.web.aiTitle')}</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {t('mockup.web.aiPreview')}
+                </p>
+                
+                {/* Fade gradient for truncated content */}
+                <div className="relative h-6 -mt-4">
+                  <div className="absolute inset-0 bg-gradient-to-t from-card via-card/80 to-transparent" />
+                </div>
+                
+                {/* Expand button */}
+                <button className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 hover:translate-y-0.5 transition-all duration-200 -mt-2">
+                  <svg className="w-3.5 h-3.5 transition-transform group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                  {t('mockup.web.showMore')}
+                </button>
+                
+                {/* Action buttons */}
+                <div className="flex items-center gap-1 pt-1 opacity-0 animate-[fade-in_0.4s_ease-out_0.9s_forwards]">
+                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 hover:scale-110 transition-all duration-200 text-muted-foreground hover:text-foreground">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                  </button>
+                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 hover:scale-110 transition-all duration-200 text-muted-foreground hover:text-foreground">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                  </button>
+                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 hover:scale-110 transition-all duration-200 text-muted-foreground hover:text-foreground">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" /></svg>
+                  </button>
+                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 hover:scale-110 transition-all duration-200 text-muted-foreground hover:text-foreground">
+                    <FileText className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
           
-          {/* App content */}
-          <div className="grid grid-cols-[240px_1fr] min-h-[400px]">
-            {/* Sidebar */}
-            <div className="border-r border-white/[0.06] p-4 hidden sm:block">
-              <div className="flex items-center gap-2 mb-6">
-                <img src={bahorLogo} alt="Bahor AI" className="w-7 h-7" />
-                <span className="font-semibold text-white text-sm">Bahor AI</span>
+          {/* Slide 2: Image Generation */}
+          {activeSlide === 1 && (
+            <div className="space-y-3">
+              {/* User message */}
+              <div className="flex justify-end opacity-0 animate-[fade-in_0.4s_ease-out_0.1s_forwards]">
+                <div className="bg-primary/15 border border-primary/30 text-foreground px-4 py-2.5 rounded-2xl rounded-tr-sm max-w-[85%]">
+                  <p className="text-sm">{t('mockup.image.userMessage')}</p>
+                </div>
               </div>
               
-              <div className="space-y-1">
-                {['Yangi suhbat', 'Kodlash', 'IELTS tayyorgarlik', 'Biznes va Marketing'].map((item, i) => (
-                  <div 
-                    key={item}
-                    className={`px-3 py-2 rounded-lg text-sm transition-colors ${
-                      i === 0 ? 'bg-white/[0.06] text-white' : 'text-gray-500 hover:text-gray-400'
-                    }`}
-                  >
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            {/* Main chat */}
-            <div className="p-6">
-              {/* Chat messages */}
-              <div className="space-y-4 mb-6">
-                {/* User message */}
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5, duration: 0.6, ease: "easeOut" }}
-                  className="flex justify-end"
-                >
-                  <div className="bg-[#2DD4BF]/10 border border-[#2DD4BF]/20 px-4 py-2.5 rounded-2xl rounded-tr-md max-w-md">
-                    <p className="text-sm text-white">O'zbekistonda 2024 yil uchun eng muhim iqtisodiy yangiliklar nima?</p>
-                  </div>
-                </motion.div>
-                
-                {/* Sources */}
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.8, duration: 0.6, ease: "easeOut" }}
-                  className="space-y-2"
-                >
-                  <div className="flex items-center gap-2">
-                    <Search className="w-3.5 h-3.5 text-[#2DD4BF]" />
-                    <span className="text-xs text-gray-500">4 manba topildi</span>
-                  </div>
-                  <div className="flex gap-2 flex-wrap">
-                    {sources.map((s, i) => (
-                      <motion.span 
-                        key={s}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.9 + i * 0.1, duration: 0.4 }}
-                        className="text-xs px-3 py-1.5 rounded-full bg-white/[0.04] text-gray-400 border border-white/[0.08] flex items-center gap-1.5 hover:bg-white/[0.06] transition-colors cursor-pointer"
-                      >
-                        <ExternalLink className="w-3 h-3" />{s}
-                      </motion.span>
-                    ))}
-                  </div>
-                </motion.div>
-                
-                {/* AI Response */}
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1.2, duration: 0.6, ease: "easeOut" }}
-                  className="space-y-3"
-                >
-                  <p className="text-sm font-medium text-white">📊 2024 yildagi asosiy iqtisodiy yangiliklar:</p>
-                  <div className="text-sm text-gray-400 leading-relaxed space-y-2">
-                    <p>1. <span className="text-gray-300">YaIM o'sishi</span> — 6.2% ga yetdi, bu mintaqadagi eng yuqori ko'rsatkich.</p>
-                    <p>2. <span className="text-gray-300">Eksport</span> — 15% ga oshdi, ayniqsa to'qimachilik va qishloq xo'jaligi.</p>
-                    <p>3. <span className="text-gray-300">IT sektor</span> — 2 milliard dollarlik eksportga chiqdi...</p>
-                  </div>
-                </motion.div>
+              {/* ThinkBar - generating */}
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/50 border border-border/30 w-fit opacity-0 animate-[fade-in_0.4s_ease-out_0.3s_forwards]">
+                <ImagePlus className="w-3.5 h-3.5 text-primary" />
+                <span className="text-xs text-muted-foreground">{t('mockup.image.generating')}</span>
+                <div className="flex items-center gap-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-[pulse_1.4s_ease-in-out_infinite]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-[pulse_1.4s_ease-in-out_0.2s_infinite]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-[pulse_1.4s_ease-in-out_0.4s_infinite]" />
+                </div>
               </div>
               
-              {/* Input */}
-              <div className="flex items-center gap-3 p-3 rounded-xl border border-white/[0.08] bg-white/[0.02]">
-                <button className="p-2 text-gray-500 hover:text-gray-400 transition-colors">
-                  <Paperclip className="w-4 h-4" />
+              {/* AI response with generated image */}
+              <div className="space-y-2 opacity-0 animate-[fade-in_0.4s_ease-out_0.5s_forwards]">
+                <p className="text-xs text-muted-foreground">{t('mockup.image.aiResponse')}</p>
+                
+                {/* Generated image preview */}
+                <div className="relative rounded-xl overflow-hidden border border-border/40 bg-secondary/30 opacity-0 animate-[scale-in_0.5s_ease-out_0.7s_forwards]">
+                  <img 
+                    src={samarkandImage} 
+                    alt="Generated Registan"
+                    width={400}
+                    height={144}
+                    loading="lazy"
+                    className="w-full h-36 object-cover"
+                  />
+                  {/* Image overlay actions */}
+                  <div className="absolute bottom-2 right-2 flex gap-1.5">
+                    <button className="p-1.5 rounded-lg bg-black/50 backdrop-blur-sm text-white hover:bg-black/70 hover:scale-110 transition-all duration-200">
+                      <Download className="w-3.5 h-3.5" />
+                    </button>
+                    <button className="p-1.5 rounded-lg bg-black/50 backdrop-blur-sm text-white hover:bg-black/70 hover:scale-110 transition-all duration-200">
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Action buttons */}
+                <div className="flex items-center gap-1 pt-1 opacity-0 animate-[fade-in_0.4s_ease-out_0.9s_forwards]">
+                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 hover:scale-110 transition-all duration-200 text-muted-foreground hover:text-foreground">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                  </button>
+                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 hover:scale-110 transition-all duration-200 text-muted-foreground hover:text-foreground">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" /></svg>
+                  </button>
+                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 hover:scale-110 transition-all duration-200 text-muted-foreground hover:text-foreground">
+                    <FileText className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+              
+              {/* Follow-up suggestions */}
+              <div className="flex gap-2 flex-wrap pt-1 opacity-0 animate-[fade-in_0.4s_ease-out_1.1s_forwards]">
+                <button className="text-[10px] px-3 py-1.5 rounded-full bg-secondary/50 border border-border/40 text-muted-foreground hover:bg-secondary hover:text-foreground hover:scale-105 transition-all duration-200">
+                  {t('mockup.image.suggestion1')}
                 </button>
-                <input 
-                  type="text" 
-                  placeholder="Savolingizni yozing..."
-                  className="flex-1 bg-transparent text-sm text-white placeholder:text-gray-600 outline-none"
-                />
-                <button className="p-2 text-gray-500 hover:text-gray-400 transition-colors">
-                  <Mic className="w-4 h-4" />
-                </button>
-                <button className="w-9 h-9 rounded-lg bg-[#2DD4BF] flex items-center justify-center hover:bg-[#2DD4BF]/90 transition-colors">
-                  <Send className="w-4 h-4 text-black" />
+                <button className="text-[10px] px-3 py-1.5 rounded-full bg-secondary/50 border border-border/40 text-muted-foreground hover:bg-secondary hover:text-foreground hover:scale-105 transition-all duration-200">
+                  {t('mockup.image.suggestion2')}
                 </button>
               </div>
             </div>
-          </div>
-        </motion.div>
+          )}
+          
+          {/* Slide 3: Text to PDF */}
+          {activeSlide === 2 && (
+            <div className="space-y-3">
+              {/* Previous AI response (truncated) */}
+              <div className="space-y-1 pb-2 border-b border-border/30 opacity-0 animate-[fade-in_0.4s_ease-out_0.1s_forwards]">
+                <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+                  {t('mockup.pdf.previousResponse')}
+                </p>
+                <button className="inline-flex items-center gap-1 text-[10px] text-primary hover:text-primary/80 hover:translate-y-0.5 transition-all duration-200">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                  {t('mockup.web.showMore')}
+                </button>
+              </div>
+              
+              {/* User message */}
+              <div className="flex justify-end opacity-0 animate-[fade-in_0.4s_ease-out_0.3s_forwards]">
+                <div className="bg-primary/15 border border-primary/30 text-foreground px-4 py-2.5 rounded-2xl rounded-tr-sm max-w-[85%]">
+                  <p className="text-sm">{t('mockup.pdf.userMessage')}</p>
+                </div>
+              </div>
+              
+              {/* ThinkBar - creating file */}
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/50 border border-border/30 w-fit opacity-0 animate-[fade-in_0.4s_ease-out_0.5s_forwards]">
+                <FileText className="w-3.5 h-3.5 text-primary" />
+                <span className="text-xs text-muted-foreground">{t('mockup.pdf.creating')}</span>
+                <div className="flex items-center gap-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-[pulse_1.4s_ease-in-out_infinite]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-[pulse_1.4s_ease-in-out_0.2s_infinite]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-[pulse_1.4s_ease-in-out_0.4s_infinite]" />
+                </div>
+              </div>
+              
+              {/* AI response with PDF file */}
+              <div className="space-y-2 opacity-0 animate-[fade-in_0.4s_ease-out_0.7s_forwards]">
+                <p className="text-xs text-muted-foreground">{t('mockup.pdf.aiResponse')}</p>
+                
+                {/* PDF file card */}
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/40 border border-border/40 opacity-0 animate-[scale-in_0.5s_ease-out_0.9s_forwards] hover:bg-secondary/60 transition-colors cursor-pointer group">
+                  <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-200">
+                    <FileText className="w-5 h-5 text-red-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{t('mockup.pdf.fileName')}</p>
+                    <p className="text-[10px] text-muted-foreground">PDF • 24 KB</p>
+                  </div>
+                  <button className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 hover:scale-110 transition-all duration-200">
+                    <Download className="w-4 h-4" />
+                  </button>
+                </div>
+                
+                {/* Action buttons */}
+                <div className="flex items-center gap-1 pt-1 opacity-0 animate-[fade-in_0.4s_ease-out_1.1s_forwards]">
+                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 hover:scale-110 transition-all duration-200 text-muted-foreground hover:text-foreground">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                  </button>
+                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 hover:scale-110 transition-all duration-200 text-muted-foreground hover:text-foreground">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" /></svg>
+                  </button>
+                </div>
+              </div>
+              
+              {/* Follow-up suggestions */}
+              <div className="flex gap-2 flex-wrap pt-1 opacity-0 animate-[fade-in_0.4s_ease-out_1.3s_forwards]">
+                <button className="text-[10px] px-3 py-1.5 rounded-full bg-secondary/50 border border-border/40 text-muted-foreground hover:bg-secondary hover:text-foreground hover:scale-105 transition-all duration-200">
+                  {t('mockup.pdf.suggestion1')}
+                </button>
+                <button className="text-[10px] px-3 py-1.5 rounded-full bg-secondary/50 border border-border/40 text-muted-foreground hover:bg-secondary hover:text-foreground hover:scale-105 transition-all duration-200">
+                  {t('mockup.pdf.suggestion2')}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
         
-        {/* Fade out mask */}
-        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#050505] via-[#050505]/80 to-transparent pointer-events-none" />
+        {/* Small dot indicators inside card */}
+        <div className="flex items-center justify-center gap-1.5 pb-3">
+          {slides.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setActiveSlide(idx)}
+              className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                activeSlide === idx
+                  ? 'bg-primary w-4'
+                  : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+              }`}
+            />
+          ))}
+        </div>
+        
+        {/* Input area */}
+        <div className="px-4 py-3 border-t border-border/30 bg-card/30">
+          <div className="flex items-center gap-2">
+            <button className="p-2 rounded-lg hover:bg-secondary/60 transition-colors text-muted-foreground">
+              <Paperclip className="w-4 h-4" />
+            </button>
+            <button className="p-2 rounded-lg hover:bg-secondary/60 transition-colors text-muted-foreground">
+              <Camera className="w-4 h-4" />
+            </button>
+            <div className="flex-1 bg-secondary/40 rounded-xl px-4 py-2.5 border border-border/30">
+              <span className="text-sm text-muted-foreground">{t('chat.input.placeholder')}</span>
+            </div>
+            <button className="p-2 rounded-lg hover:bg-secondary/60 transition-colors text-muted-foreground">
+              <Mic className="w-4 h-4" />
+            </button>
+            <button className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+              <Send className="w-4 h-4 text-primary-foreground" />
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      {/* Feature tabs below mockup */}
+      <div className="flex items-center justify-center gap-2 mt-6">
+        {slides.map((slide, idx) => (
+          <button
+            key={slide.id}
+            onClick={() => setActiveSlide(idx)}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+              activeSlide === idx
+                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30'
+                : 'bg-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {slide.label}
+          </button>
+        ))}
       </div>
     </div>
   );
@@ -238,488 +436,672 @@ export default function Landing() {
   const { t } = useTranslation();
   const { user } = useAuth();
   
+  // Prefetch critical routes after landing loads for instant navigation
   useEffect(() => {
     const timer = setTimeout(prefetchCriticalRoutes, 1500);
     return () => clearTimeout(timer);
   }, []);
   
   const handleOpenApp = () => {
-    navigate(user ? "/modes" : "/auth?next=/modes");
+    if (user) {
+      navigate("/modes");
+    } else {
+      navigate("/auth?next=/modes");
+    }
+  };
+
+  const handleModeClick = (modeId: string) => {
+    if (user) {
+      navigate(`/chat/${modeId}`);
+    } else {
+      navigate(`/auth?next=${encodeURIComponent(`/chat/${modeId}`)}`);
+    }
   };
 
   const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   };
+  
+  const heroRef = useScrollAnimation({ threshold: 0.2 });
+  const featuresRef = useScrollAnimation({ threshold: 0.1 });
+  const imageGenRef = useScrollAnimation({ threshold: 0.1 });
+  const circlesRef = useScrollAnimation({ threshold: 0.1 });
+  const stepsRef = useScrollAnimation({ threshold: 0.1 });
+  const pricingRef = useScrollAnimation({ threshold: 0.1 });
+  const faqRef = useScrollAnimation({ threshold: 0.1 });
 
+  // 6 feature cards (merged, concise)
+  const features = [
+    { icon: <Search className="w-5 h-5" />, title: t('landing.feature.webSearch.title'), desc: t('landing.feature.webSearch.desc') },
+    { icon: <ImagePlus className="w-5 h-5" />, title: t('landing.feature.imageGen.title'), desc: t('landing.feature.imageGen.desc'), badge: t('landing.badge.new') },
+    { icon: <FileText className="w-5 h-5" />, title: t('landing.feature.fileAnalysis.title'), desc: t('landing.feature.fileAnalysis.desc') },
+    { icon: <ListTodo className="w-5 h-5" />, title: t('landing.feature.aiActions.title'), desc: t('landing.feature.aiActions.desc') },
+    { icon: <Users className="w-5 h-5" />, title: t('landing.feature.circles.title'), desc: t('landing.feature.circles.desc') },
+    { icon: <Globe className="w-5 h-5" />, title: t('landing.feature.modes.title'), desc: t('landing.feature.modes.desc') },
+  ];
+
+  // 4 steps
+  const steps = [
+    { number: "1", title: t('landing.step.1.title'), desc: t('landing.step.1.desc') },
+    { number: "2", title: t('landing.step.2.title'), desc: t('landing.step.2.desc') },
+    { number: "3", title: t('landing.step.3.title'), desc: t('landing.step.3.desc') },
+    { number: "4", title: t('landing.step.4.title'), desc: t('landing.step.4.desc') },
+  ];
+
+  // Circles outcome chips
+  const circleOutcomes = [
+    t('landing.circles.outcome.plan'),
+    t('landing.circles.outcome.tasks'),
+    t('landing.circles.outcome.decisions'),
+    t('landing.circles.outcome.summary'),
+  ];
+
+  // FAQs (extended)
   const faqs = [
     { q: t('faq.1.question'), a: t('faq.1.answer') },
     { q: t('faq.2.question'), a: t('faq.2.answer') },
     { q: t('landing.faq.imageGen.question'), a: t('landing.faq.imageGen.answer') },
     { q: t('faq.webSearch.question'), a: t('faq.webSearch.answer') },
+    { q: t('landing.faq.files.question'), a: t('landing.faq.files.answer') },
+    { q: t('faq.circles.question'), a: t('faq.circles.answer') },
   ];
 
+  // Pricing plans
+  const pricingPlans = [
+    {
+      name: t('pricing.free.name'),
+      price: "0",
+      features: [t('landing.pricing.free.f1'), t('landing.pricing.free.f2'), t('landing.pricing.free.f3')],
+      cta: t('button.start'),
+      action: "start",
+    },
+    {
+      name: t('pricing.monthly.name'),
+      price: "49,000",
+      features: [t('landing.pricing.monthly.f1'), t('landing.pricing.monthly.f2'), t('landing.pricing.monthly.f3'), t('landing.pricing.monthly.f4'), t('landing.pricing.monthly.f5')],
+      cta: t('button.comingSoon'),
+      action: "soon",
+      highlighted: true,
+      badge: t('pricing.monthly.badge'),
+    },
+    {
+      name: t('pricing.yearly.name'),
+      price: "340,000",
+      features: [t('landing.pricing.yearly.f1'), t('landing.pricing.yearly.f2'), t('landing.pricing.yearly.f3')],
+      cta: t('button.comingSoon'),
+      action: "soon",
+      badge: t('pricing.yearly.badge'),
+    },
+  ];
+
+  // Real AI-generated image gallery
+  const imageGallery = [
+    { label: "Samarqand", image: samarkandImage },
+    { label: "Toshkent", image: tashkentImage },
+    { label: "Suzani", image: suzaniImage },
+  ];
+
+  // Source chips
+  const sourceChips = ['kun.uz', 'gazeta.uz', 'lex.uz'];
+
   return (
-    <div className="min-h-screen bg-[#050505] text-white relative overflow-x-hidden">
-      {/* Grid background */}
-      <div 
-        className="fixed inset-0 pointer-events-none opacity-40"
-        style={{
-          backgroundImage: `linear-gradient(to right, #80808008 1px, transparent 1px), linear-gradient(to bottom, #80808008 1px, transparent 1px)`,
-          backgroundSize: '48px 48px',
-        }}
-      />
+    <div className="min-h-screen bg-background relative overflow-x-hidden">
+      {/* Background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px]" />
+        <div className="absolute top-1/3 right-0 w-[500px] h-[500px] bg-primary/4 rounded-full blur-[100px]" />
+      </div>
       
-      {/* Subtle top gradient */}
-      <div className="fixed top-0 inset-x-0 h-[500px] bg-gradient-to-b from-[#2DD4BF]/[0.03] to-transparent pointer-events-none" />
-      
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#050505]/80 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      {/* Sticky Header with Nav */}
+      <header className="glass-strong sticky top-0 z-50 border-b border-border/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+          {/* Logo - ~30% larger for visual presence */}
           <div className="flex items-center gap-3">
-            <img src={bahorLogo} alt="Bahor AI" className="h-8 w-auto" />
-            <span className="text-lg font-semibold text-white tracking-tight">Bahor AI</span>
+            <img src={bahorLogo} alt="Bahor AI" className="h-12 sm:h-14 w-auto" />
+            <span className="text-[1.4rem] sm:text-[1.7rem] font-bold text-foreground tracking-tight">Bahor AI</span>
           </div>
           
-          <nav className="hidden md:flex items-center gap-8">
-            {[
-              { label: 'Imkoniyatlar', id: 'features' },
-              { label: 'Taqqoslash', id: 'compare' },
-              { label: 'Narxlar', id: 'pricing' },
-            ].map((item) => (
-              <button 
-                key={item.id}
-                onClick={() => scrollToSection(item.id)} 
-                className="text-sm text-gray-400 hover:text-white transition-colors"
-              >
-                {item.label}
-              </button>
-            ))}
+          {/* Center Nav - hidden on mobile */}
+          <nav className="hidden md:flex items-center gap-6">
+            <button onClick={() => scrollToSection('features')} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              {t('nav.features')}
+            </button>
+            <button onClick={() => scrollToSection('image-gen')} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              {t('landing.nav.imageGen')}
+            </button>
+            <button onClick={() => scrollToSection('circles')} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              {t('nav.circles')}
+            </button>
+            <button onClick={() => scrollToSection('pricing')} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              {t('nav.pricing')}
+            </button>
+            <button onClick={() => scrollToSection('faq')} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              FAQ
+            </button>
           </nav>
           
-          <div className="flex items-center gap-4">
+          {/* Right: Lang + CTA */}
+          <div className="flex items-center gap-2 sm:gap-3">
             <LanguageSwitcher variant="pill" />
-            <Button 
-              onClick={handleOpenApp} 
-              size="sm" 
-              className="h-9 px-5 rounded-lg font-medium bg-[#2DD4BF] text-black hover:bg-[#2DD4BF]/90 transition-colors"
-            >
-              Boshlash
+            <Button onClick={handleOpenApp} size="sm" className="h-9 px-4 rounded-xl font-medium shadow-lg shadow-primary/20">
+              <span className="hidden sm:inline">{t('button.openApp')}</span>
+              <span className="sm:hidden">{t('button.open')}</span>
             </Button>
           </div>
         </div>
       </header>
 
-      {/* HERO */}
-      <section className="relative pt-20 sm:pt-28 pb-8">
+      {/* HERO — 2-column, tighter layout */}
+      <section className="relative pt-4 pb-8 sm:pt-6 sm:pb-12 lg:pt-8 lg:pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Badge */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-            className="flex justify-center mb-8"
+          <div
+            ref={heroRef.ref}
+            className={`grid lg:grid-cols-[1.1fr_0.9fr] gap-8 lg:gap-10 items-center transition-all duration-700 ${
+              heroRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+            }`}
           >
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#2DD4BF]/10 border border-[#2DD4BF]/20 text-[#2DD4BF] text-xs font-medium">
-              <Sparkles className="w-3.5 h-3.5" />
-              Hozircha beta
-            </span>
-          </motion.div>
-          
-          {/* Headline */}
-          <motion.div 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-            className="text-center"
-          >
-            <h1 className="text-5xl sm:text-7xl lg:text-8xl font-medium tracking-tight leading-[1.05]">
-              <span className="text-white">Birinchi o'zbek</span>
-              <br />
-              <span className="bg-gradient-to-r from-white via-gray-300 to-gray-500 bg-clip-text text-transparent">
-                sun'iy intellekti
-              </span>
-            </h1>
-          </motion.div>
-          
-          {/* Subheadline */}
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
-            className="text-center text-lg sm:text-xl text-gray-400 mt-6 max-w-2xl mx-auto font-normal leading-relaxed"
-          >
-            Savol so'rang, rasm yarating, hujjat tahlil qiling — 
-            hammasi o'zbek tilida, bir platformada.
-          </motion.p>
-          
-          {/* CTA */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4, ease: "easeOut" }}
-            className="flex justify-center gap-4 mt-10"
-          >
-            <Button 
-              onClick={handleOpenApp}
-              size="lg"
-              className="h-12 px-8 rounded-lg font-medium bg-[#2DD4BF] text-black hover:bg-[#2DD4BF]/90 transition-all"
-            >
-              Bepul boshlash
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-            <Button 
-              variant="outline"
-              size="lg"
-              onClick={() => scrollToSection('features')}
-              className="h-12 px-8 rounded-lg font-medium bg-white/[0.03] border-white/[0.1] text-white hover:bg-white/[0.06] transition-all"
-            >
-              Ko'proq bilish
-            </Button>
-          </motion.div>
-          
-          {/* Hero Mockup */}
-          <HeroMockup />
+            {/* Left - Content (wider column, max-w ~620px) */}
+            <div className="text-center lg:text-left max-w-[620px] lg:max-w-none">
+              {/* Beta badge - tighter margin */}
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-3">
+                <Sparkles className="w-4 h-4" />
+                {t('badge.beta')}
+              </div>
+              
+              {/* Headline - slightly larger, tighter line-height */}
+              <h1 className="text-[1.75rem] sm:text-4xl lg:text-[2.75rem] xl:text-5xl font-bold mb-3 sm:mb-4 text-foreground leading-[1.15] tracking-tight">
+                {t('landing.hero.headline')}
+              </h1>
+              
+              {/* Subheadline - slightly larger max-width */}
+              <p className="text-base sm:text-lg text-muted-foreground mb-5 max-w-xl mx-auto lg:mx-0">
+                {t('landing.hero.subheadline')}
+              </p>
+              
+              {/* 3 bullet value props - tighter spacing */}
+              <ul className="space-y-1.5 mb-5 text-left max-w-xl mx-auto lg:mx-0">
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <span className="text-sm text-foreground">{t('landing.hero.bullet1')}</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <span className="text-sm text-foreground">{t('landing.hero.bullet2')}</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <span className="text-sm text-foreground">{t('landing.hero.bullet3')}</span>
+                </li>
+              </ul>
+              
+              {/* CTA row - tighter spacing */}
+              <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start mb-4">
+                <Button onClick={handleOpenApp} size="lg" className="h-11 px-6 font-semibold rounded-xl shadow-lg shadow-primary/25 hover-lift">
+                  <MessageSquare className="w-5 h-5 mr-2" />
+                  {t('button.openApp')}
+                </Button>
+                <Button variant="outline" size="lg" className="h-11 px-6 font-medium rounded-xl" onClick={() => scrollToSection('features')}>
+                  {t('landing.hero.seeFeatures')}
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
+              
+              {/* Trust strip */}
+              <div className="flex flex-col sm:flex-row items-center gap-2 justify-center lg:justify-start text-sm text-muted-foreground">
+                <span>{t('landing.hero.trustLine')}</span>
+                <div className="flex gap-1.5">
+                  {sourceChips.map((s) => (
+                    <span key={s} className="px-2 py-0.5 rounded-full bg-secondary/80 text-xs">{s}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            {/* Right - Mockup (shifted up ~20px) */}
+            <div className="mt-2 lg:mt-0 lg:-mt-5">
+              <HeroMockup />
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* BENTO FEATURES */}
-      <section id="features" className="py-24 sm:py-32 relative">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-medium text-white tracking-tight">
-              Bir platformada hamma narsa
-            </h2>
-            <p className="text-gray-400 mt-4 text-lg max-w-xl mx-auto">
-              Qidiruv, rasm yaratish, hujjat tahlili — hammasi o'zbek tilida
-            </p>
-          </motion.div>
+      {/* SECTION 1 — Asosiy imkoniyatlar (6 cards) */}
+      <section id="features" className="py-16 sm:py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div ref={featuresRef.ref} className={`text-center mb-10 transition-all duration-600 ${featuresRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-foreground">{t('landing.features.title')}</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">{t('landing.features.subtitle')}</p>
+          </div>
           
-          {/* Bento Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Web Search - 2 cols */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="md:col-span-2"
-            >
-              <SpotlightCard className="p-6 h-full">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl border border-white/[0.1] bg-white/[0.03] flex items-center justify-center">
-                    <Search className="w-5 h-5 text-[#2DD4BF]" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium text-white tracking-tight">Web qidiruv</h3>
-                    <p className="text-sm text-gray-500">Real vaqtda internet ma'lumotlari</p>
-                  </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {features.map((f, i) => (
+              <div
+                key={i}
+                className={`relative p-5 rounded-2xl glass-premium border border-border/30 hover:shadow-glow transition-all duration-500 ${
+                  featuresRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+                }`}
+                style={{ transitionDelay: `${i * 60}ms` }}
+              >
+                {f.badge && (
+                  <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold">
+                    {f.badge}
+                  </span>
+                )}
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-3">
+                  {f.icon}
                 </div>
-                
-                {/* Animated sources list */}
-                <div className="mt-6 space-y-2 overflow-hidden h-32 relative">
-                  {['kun.uz — Yangi iqtisodiy islohotlar e\'lon qilindi', 'gazeta.uz — 2024 yil byudjeti tasdiqlandi', 'lex.uz — Yangi soliq kodeksi kuchga kirdi', 'review.uz — IT sektor rekord o\'sishda'].map((item, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.3 + i * 0.1 }}
-                      className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-white/[0.02] border border-white/[0.05]"
-                    >
-                      <ExternalLink className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm text-gray-400">{item}</span>
-                    </motion.div>
-                  ))}
-                  <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#050505] to-transparent" />
-                </div>
-              </SpotlightCard>
-            </motion.div>
+                <h3 className="font-bold text-foreground mb-1">{f.title}</h3>
+                <p className="text-sm text-muted-foreground">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 2 — Rasm yaratish (AI) */}
+      <section id="image-gen" className="py-16 sm:py-20 relative">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div ref={imageGenRef.ref} className={`grid lg:grid-cols-2 gap-10 items-center transition-all duration-700 ${imageGenRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
+            {/* Content */}
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium mb-4">
+                <ImagePlus className="w-3.5 h-3.5" />
+                {t('landing.badge.new')}
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-foreground">{t('landing.imageGen.title')}</h2>
+              <ul className="space-y-3 mb-6">
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-primary mt-0.5" />
+                  <span className="text-foreground">{t('landing.imageGen.bullet1')}</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-primary mt-0.5" />
+                  <span className="text-foreground">{t('landing.imageGen.bullet2')}</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-primary mt-0.5" />
+                  <span className="text-foreground">{t('landing.imageGen.bullet3')}</span>
+                </li>
+              </ul>
+              <Button onClick={handleOpenApp} className="h-10 px-5 rounded-xl font-medium shadow-lg shadow-primary/20">
+                {t('landing.imageGen.cta')}
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
             
-            {/* Image Gen - tall */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="md:row-span-2"
-            >
-              <SpotlightCard className="p-6 h-full flex flex-col">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl border border-white/[0.1] bg-white/[0.03] flex items-center justify-center">
-                    <ImagePlus className="w-5 h-5 text-[#2DD4BF]" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium text-white tracking-tight">Rasm yaratish</h3>
-                    <p className="text-sm text-gray-500">So'z bilan tasvirlang</p>
-                  </div>
-                </div>
-                
-                <p className="text-sm text-gray-400 mb-4">
-                  "Registon maydonini quyosh botishida chiz" — va Bahor yaratadi.
-                </p>
-                
-                {/* Image fills the rest */}
-                <div className="flex-1 relative rounded-xl overflow-hidden mt-auto min-h-[200px]">
+            {/* Mini gallery with real AI-generated images */}
+            <div className="flex gap-3 justify-center lg:justify-end">
+              {imageGallery.map((img, i) => (
+                <div
+                  key={i}
+                  className={`w-24 h-28 sm:w-28 sm:h-32 rounded-xl overflow-hidden border border-border/40 relative group transition-all duration-500 hover:scale-105 hover:shadow-lg ${
+                    imageGenRef.isVisible ? "opacity-100 scale-100" : "opacity-0 scale-90"
+                  }`}
+                  style={{ transitionDelay: `${200 + i * 100}ms` }}
+                >
                   <img 
-                    src={samarkandImage} 
-                    alt="Registon" 
-                    className="absolute inset-0 w-full h-full object-cover"
+                    src={img.image} 
+                    alt={img.label}
+                    width={112}
+                    height={128}
+                    loading="lazy" 
+                    className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent" />
-                  <div className="absolute bottom-3 left-3 right-3">
-                    <span className="text-xs text-white/70">Registon maydoni, Samarqand</span>
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                    <span className="text-xs text-white font-medium">{img.label}</span>
                   </div>
                 </div>
-              </SpotlightCard>
-            </motion.div>
-            
-            {/* Circles */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
-              <SpotlightCard className="p-6 h-full">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl border border-white/[0.1] bg-white/[0.03] flex items-center justify-center">
-                    <Users className="w-5 h-5 text-[#2DD4BF]" />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 3 — Doiralar (Circles) */}
+      <section id="circles" className="py-16 sm:py-20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div ref={circlesRef.ref} className={`grid lg:grid-cols-2 gap-8 lg:gap-12 items-start transition-all duration-700 ${circlesRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
+            {/* Realistic Circles Mockup - Larger, more appealing */}
+            <div className={`order-2 lg:order-1 transition-all duration-700 ${circlesRef.isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}>
+              <div className="glass-premium rounded-2xl p-4 sm:p-5 border border-border/40 max-w-lg mx-auto shadow-2xl">
+                {/* Header with back button, emoji, title, members, and avatars */}
+                <div className="flex items-center gap-3 pb-3 border-b border-border/30 mb-3">
+                  {/* Back button */}
+                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors group">
+                    <ArrowLeft className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  </button>
+                  {/* Circle emoji icon */}
+                  <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-base">
+                    📊
                   </div>
-                  <div>
-                    <h3 className="text-lg font-medium text-white tracking-tight">Doiralar</h3>
-                    <p className="text-sm text-gray-500">Guruh bilan ishlang</p>
+                  {/* Title and member count */}
+                  <div className="flex-1 min-w-0">
+                    <span className="font-semibold text-sm text-foreground block truncate">{t('landing.circles.mockupTitle')}</span>
+                    <span className="text-xs text-muted-foreground">6 {t('landing.circles.members')}</span>
                   </div>
-                </div>
-                
-                <div className="flex -space-x-2 mt-4">
-                  <img src="https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=64&h=64&fit=crop&crop=face" alt="" className="w-10 h-10 rounded-full border-2 border-[#050505]" />
-                  <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=64&h=64&fit=crop&crop=face" alt="" className="w-10 h-10 rounded-full border-2 border-[#050505]" />
-                  <div className="w-10 h-10 rounded-full bg-white/[0.06] border-2 border-[#050505] flex items-center justify-center text-xs text-gray-400">+4</div>
-                </div>
-              </SpotlightCard>
-            </motion.div>
-            
-            {/* Files */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-            >
-              <SpotlightCard className="p-6 h-full">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl border border-white/[0.1] bg-white/[0.03] flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-[#2DD4BF]" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium text-white tracking-tight">Fayl tahlili</h3>
-                    <p className="text-sm text-gray-500">PDF, Word, Excel</p>
+                  {/* Online members mini avatars */}
+                  <div className="flex -space-x-1.5">
+                    <img src="https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=64&h=64&fit=crop&crop=face" alt="" loading="lazy" className="w-7 h-7 rounded-full border-2 border-background object-cover" />
+                    <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=64&h=64&fit=crop&crop=face" alt="" loading="lazy" className="w-7 h-7 rounded-full border-2 border-background object-cover" />
+                    <div className="w-7 h-7 rounded-full bg-orange-500 border-2 border-background flex items-center justify-center text-[9px] text-white font-medium">JA</div>
+                    <div className="w-7 h-7 rounded-full bg-green-500 border-2 border-background flex items-center justify-center text-[9px] text-white font-medium">NK</div>
+                    <div className="w-7 h-7 rounded-full bg-purple-500 border-2 border-background flex items-center justify-center text-[9px] text-white font-medium">SU</div>
+                    <div className="w-7 h-7 rounded-full bg-pink-500 border-2 border-background flex items-center justify-center text-[9px] text-white font-medium">+1</div>
                   </div>
                 </div>
                 
-                <div className="flex gap-2 mt-4">
-                  {['PDF', 'DOCX', 'CSV'].map((ext) => (
-                    <span key={ext} className="px-2.5 py-1 rounded-md text-xs bg-white/[0.04] text-gray-400 border border-white/[0.06]">
-                      {ext}
+                {/* Tabs: Chat, Fayllar, AI natijalar */}
+                <div className="flex gap-1 p-1 rounded-xl bg-secondary/50 mb-3">
+                  {[
+                    { label: 'Chat', active: true },
+                    { label: 'Fayllar', active: false },
+                    { label: t('landing.circles.aiResults'), active: false }
+                  ].map((tab) => (
+                    <div 
+                      key={tab.label} 
+                      className={`flex-1 py-2 rounded-lg text-center text-xs font-medium transition-all cursor-pointer ${
+                        tab.active 
+                          ? 'bg-primary text-primary-foreground shadow-sm' 
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {tab.label}
+                    </div>
+                  ))}
+                </div>
+                
+                {/* AI Action buttons */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {circleOutcomes.map((outcome) => (
+                    <span 
+                      key={outcome} 
+                      className="px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/20 hover:bg-primary/20 transition-colors cursor-pointer"
+                    >
+                      {outcome}
                     </span>
                   ))}
                 </div>
-              </SpotlightCard>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* COMPARISON */}
-      <section id="compare" className="py-24 sm:py-32 relative">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl sm:text-4xl font-medium text-white tracking-tight">
-              Nima uchun Bahor AI?
-            </h2>
-          </motion.div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-0 relative">
-            {/* Separator */}
-            <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
+                
+                {/* Chat messages */}
+                <div className="space-y-3 mb-3">
+                  {/* User message 1 */}
+                  <div className="flex items-start gap-2.5">
+                    <img 
+                      src="https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=64&h=64&fit=crop&crop=face" 
+                      alt="Asror" 
+                      className="w-8 h-8 rounded-full object-cover shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-medium text-foreground">Asror</span>
+                        <span className="text-[10px] text-muted-foreground">10:32</span>
+                      </div>
+                      <div className="bg-secondary/60 rounded-xl rounded-tl-sm px-3 py-2 text-xs text-foreground">
+                        Ertangi uchrashuv uchun prezentatsiya tayyor bo'ldimi?
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* User message 2 */}
+                  <div className="flex items-start gap-2.5">
+                    <img 
+                      src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=64&h=64&fit=crop&crop=face" 
+                      alt="Dilnoza" 
+                      className="w-8 h-8 rounded-full object-cover shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-medium text-foreground">Dilnoza</span>
+                        <span className="text-[10px] text-muted-foreground">10:34</span>
+                      </div>
+                      <div className="bg-secondary/60 rounded-xl rounded-tl-sm px-3 py-2 text-xs text-foreground">
+                        Ha, faylga yuklab qo'ydim ✓
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* /bahor AI request */}
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-[10px] text-white font-medium shrink-0">
+                      JA
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-medium text-foreground">Jamshid</span>
+                        <span className="text-[10px] text-muted-foreground">10:35</span>
+                      </div>
+                      <div className="bg-secondary/60 rounded-xl rounded-tl-sm px-3 py-2 text-xs text-foreground">
+                        <span className="text-primary font-medium">/bahor</span> shu hafta qanday vazifalar qoldi?
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Bahor AI response */}
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center shrink-0 ring-1 ring-primary/20 overflow-hidden p-0.5">
+                      <img src={bahorLogo} alt="Bahor AI" className="w-full h-full object-contain" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-medium text-primary">Bahor AI</span>
+                        <Sparkles className="w-3 h-3 text-primary" />
+                        <span className="text-[10px] text-muted-foreground">10:35</span>
+                      </div>
+                      <div className="bg-primary/10 border border-primary/20 rounded-xl rounded-tl-sm px-3 py-2.5 text-xs text-foreground leading-relaxed">
+                        📋 Shu hafta uchun 3 ta vazifa:<br/>
+                        1. Prezentatsiya tayyorlash ✅<br/>
+                        2. Byudjet hisob-kitobi<br/>
+                        3. Mijozlar bilan uchrashuv
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Input area */}
+                <div className="pt-3 border-t border-border/30">
+                  <div className="flex items-center gap-2">
+                    <button className="p-2 rounded-xl bg-secondary/60 hover:bg-secondary transition-colors">
+                      <Paperclip className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                    <button className="p-2 rounded-xl bg-secondary/60 hover:bg-secondary transition-colors">
+                      <Camera className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                    <div className="flex-1 px-3 py-2 rounded-xl bg-secondary/50 text-xs text-muted-foreground">
+                      {t('landing.circles.inputPlaceholder')}
+                    </div>
+                    <button className="p-2 rounded-xl bg-secondary/60 hover:bg-secondary transition-colors">
+                      <Mic className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                    <button className="p-2 rounded-xl bg-primary shadow-lg shadow-primary/20">
+                      <Send className="w-4 h-4 text-primary-foreground" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
             
-            {/* Ordinary chatbots */}
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="p-8"
-            >
-              <h3 className="text-lg font-medium text-gray-500 mb-6">Oddiy chatbotlar</h3>
-              <ul className="space-y-4">
-                {[
-                  "Faqat ingliz tilida yaxshi ishlaydi",
-                  "O'zbek madaniyatini tushunmaydi",
-                  "Eskirgan ma'lumotlar",
-                  "Rasm yaratish yo'q",
-                  "Fayl tahlili cheklangan",
-                ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-gray-500">
-                    <X className="w-4 h-4 text-gray-600" />
-                    <span className="text-sm">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
-            
-            {/* Bahor AI */}
-            <motion.div 
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="p-8"
-            >
-              <h3 className="text-lg font-medium text-white mb-6">Bahor AI</h3>
-              <ul className="space-y-4">
-                {[
-                  "O'zbek tilida mukammal ishlaydi",
-                  "Mahalliy madaniyat va kontekst",
-                  "Real vaqtda web qidiruv",
-                  "AI bilan rasm yaratish",
-                  "Har qanday faylni tahlil qiladi",
-                ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-white">
-                    <Check className="w-4 h-4 text-[#2DD4BF]" />
-                    <span className="text-sm">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* PRICING */}
-      <section id="pricing" className="py-24 sm:py-32 relative">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl sm:text-4xl font-medium text-white tracking-tight">
-              Oddiy narxlar
-            </h2>
-            <p className="text-gray-400 mt-4">
-              Bepul boshlang, kerak bo'lganda yangilang
-            </p>
-          </motion.div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Free */}
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="p-8 rounded-2xl border border-white/[0.08] bg-white/[0.02]"
-            >
-              <h3 className="text-lg font-medium text-white mb-2">Bepul</h3>
-              <div className="flex items-baseline gap-1 mb-6">
-                <span className="text-5xl font-medium text-white tracking-tighter">0</span>
-                <span className="text-gray-500">so'm</span>
+            {/* Content with key features explanation */}
+            <div className="order-1 lg:order-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium mb-4">
+                <Users className="w-3.5 h-3.5" />
+                {t('landing.circles.badge')}
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-foreground">{t('landing.circles.title')}</h2>
+              <p className="text-muted-foreground mb-6">{t('landing.circles.desc')}</p>
+              
+              {/* Key Features List */}
+              <div className="space-y-4 mb-6">
+                <div className="flex items-start gap-3 group">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                    <MessageSquare className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground mb-0.5">{t('landing.circles.feature.chat')}</h4>
+                    <p className="text-xs text-muted-foreground">{t('landing.circles.feature.chatDesc')}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3 group">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground mb-0.5">{t('landing.circles.feature.ai')}</h4>
+                    <p className="text-xs text-muted-foreground">{t('landing.circles.feature.aiDesc')}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3 group">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                    <FileText className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground mb-0.5">{t('landing.circles.feature.files')}</h4>
+                    <p className="text-xs text-muted-foreground">{t('landing.circles.feature.filesDesc')}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3 group">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                    <ListTodo className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground mb-0.5">{t('landing.circles.feature.outcomes')}</h4>
+                    <p className="text-xs text-muted-foreground">{t('landing.circles.feature.outcomesDesc')}</p>
+                  </div>
+                </div>
               </div>
               
-              <ul className="space-y-3 mb-8">
-                {["Kuniga 5 ta so'rov", "Asosiy rejimlar", "Web qidiruv (cheklangan)"].map((f, i) => (
-                  <li key={i} className="flex items-center gap-3 text-sm text-gray-400">
-                    <Check className="w-4 h-4 text-[#2DD4BF]" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              
-              <Button 
-                onClick={handleOpenApp}
-                className="w-full h-11 rounded-lg font-medium bg-white/[0.05] border border-white/[0.1] text-white hover:bg-white/[0.1] transition-colors"
+              <p className="text-sm text-muted-foreground mb-2">{t('landing.circles.templates')}</p>
+              <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                <span className="px-2 py-1 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">📚 Study</span>
+                <span className="px-2 py-1 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">💼 Work</span>
+                <span className="px-2 py-1 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">👨‍👩‍👧‍👦 Family</span>
+                <span className="px-2 py-1 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">🎨 Creator</span>
+                <span className="px-2 py-1 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">🏪 Small Biz</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 4 — Qanday ishlaydi (4 steps) */}
+      <section className="py-16 sm:py-20">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div ref={stepsRef.ref} className={`text-center mb-12 transition-all duration-600 ${stepsRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-foreground">{t('section.howItWorks')}</h2>
+            <p className="text-muted-foreground">{t('section.howItWorks.subtitle.4steps')}</p>
+          </div>
+          
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            {steps.map((step, i) => (
+              <div
+                key={i}
+                className={`text-center transition-all duration-500 ${stepsRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+                style={{ transitionDelay: `${i * 80}ms` }}
               >
-                Boshlash
-              </Button>
-            </motion.div>
-            
-            {/* Pro */}
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              className="p-8 rounded-2xl border border-[#2DD4BF]/30 bg-[#2DD4BF]/[0.03] relative overflow-hidden"
-            >
-              {/* Glow */}
-              <div className="absolute top-0 right-0 w-64 h-64 bg-[#2DD4BF]/10 rounded-full blur-[100px] -z-10" />
-              
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-medium text-white">Premium</h3>
-                <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-[#2DD4BF]/20 text-[#2DD4BF] border border-[#2DD4BF]/30">
-                  Tavsiya
+                <div className="relative mx-auto mb-4 w-12 h-12">
+                  <div className="absolute inset-0 bg-primary/20 rounded-full blur-lg" />
+                  <div className="relative w-full h-full rounded-full bg-primary/10 border-2 border-primary/30 flex items-center justify-center">
+                    <span className="text-lg font-bold text-primary">{step.number}</span>
+                  </div>
+                </div>
+                <h3 className="font-bold text-foreground mb-1 text-sm">{step.title}</h3>
+                <p className="text-xs text-muted-foreground">{step.desc}</p>
+              </div>
+            ))}
+          </div>
+          
+          {/* Trust sources box */}
+          <div className={`mt-12 glass-premium rounded-2xl p-6 border border-border/30 text-center max-w-lg mx-auto transition-all duration-700 ${stepsRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`} style={{ transitionDelay: '400ms' }}>
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary mx-auto mb-3">
+              <ExternalLink className="w-5 h-5" />
+            </div>
+            <h3 className="font-bold text-foreground mb-2">{t('trust.title')}</h3>
+            <p className="text-sm text-muted-foreground mb-4">{t('trust.description')}</p>
+            <div className="flex flex-wrap gap-2 justify-center">
+              {sourceChips.map((source) => (
+                <span key={source} className="px-3 py-1 rounded-full bg-secondary/80 text-xs text-foreground">
+                  {source}
                 </span>
-              </div>
-              <div className="flex items-baseline gap-1 mb-6">
-                <span className="text-5xl font-medium text-white tracking-tighter">49,000</span>
-                <span className="text-gray-500">so'm/oy</span>
-              </div>
-              
-              <ul className="space-y-3 mb-8">
-                {["Kuniga 200 ta so'rov", "Barcha rejimlar", "Cheksiz rasm yaratish", "PDF asboblar to'plami", "Tezkor javoblar"].map((f, i) => (
-                  <li key={i} className="flex items-center gap-3 text-sm text-gray-300">
-                    <Check className="w-4 h-4 text-[#2DD4BF]" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              
-              <Button 
-                className="w-full h-11 rounded-lg font-medium bg-[#2DD4BF] text-black hover:bg-[#2DD4BF]/90 transition-colors"
-              >
-                Tez kunda
-              </Button>
-            </motion.div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* FAQ */}
-      <section id="faq" className="py-24 sm:py-32">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl font-medium text-white tracking-tight">
-              Savollar
-            </h2>
-          </motion.div>
+      {/* SECTION 5 — Narxlar */}
+      <section id="pricing" className="py-16 sm:py-20">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div ref={pricingRef.ref} className={`text-center mb-10 transition-all duration-600 ${pricingRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-foreground">{t('section.pricing')}</h2>
+            <p className="text-muted-foreground">{t('section.pricing.subtitle')}</p>
+          </div>
           
-          <Accordion type="single" collapsible className="space-y-2">
-            {faqs.map((faq, idx) => (
-              <AccordionItem 
-                key={idx} 
-                value={`faq-${idx}`}
-                className="border-b border-white/[0.06] px-0"
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {pricingPlans.map((plan, i) => (
+              <div
+                key={i}
+                className={`relative p-6 rounded-2xl transition-all duration-500 border ${
+                  plan.highlighted ? "glass-premium border-primary/40 shadow-glow scale-[1.02]" : "glass-premium border-border/30"
+                } ${pricingRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+                style={{ transitionDelay: `${i * 80}ms` }}
               >
-                <AccordionTrigger className="text-left text-white hover:no-underline py-5 text-sm font-normal">
+                {plan.badge && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <span className="px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-semibold">
+                      {plan.badge}
+                    </span>
+                  </div>
+                )}
+                <div className="mb-4 pt-2">
+                  <h3 className="font-bold text-foreground mb-3">{plan.name}</h3>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-bold text-foreground">{plan.price}</span>
+                    <span className="text-sm text-muted-foreground">{t('pricing.currency')}</span>
+                  </div>
+                </div>
+                <ul className="space-y-2 mb-5">
+                  {plan.features.map((f, j) => (
+                    <li key={j} className="flex items-start gap-2 text-sm">
+                      <Check className="w-4 h-4 text-primary mt-0.5" />
+                      <span className="text-foreground">{f}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Button
+                  className={`w-full h-10 rounded-xl font-medium ${plan.highlighted ? "shadow-lg shadow-primary/25" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
+                  disabled={plan.action === "soon"}
+                  onClick={() => plan.action === "start" && handleOpenApp()}
+                >
+                  {plan.cta}
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 6 — FAQ */}
+      <section id="faq" className="py-16 sm:py-20">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div ref={faqRef.ref} className={`text-center mb-10 transition-all duration-600 ${faqRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-foreground">{t('section.faq')}</h2>
+            <p className="text-muted-foreground">{t('section.faq.subtitle')}</p>
+          </div>
+          
+          <Accordion type="single" collapsible className="space-y-3">
+            {faqs.map((faq, i) => (
+              <AccordionItem
+                key={i}
+                value={`item-${i}`}
+                className={`border-0 rounded-xl overflow-hidden glass-premium border border-border/30 transition-all duration-500 ${faqRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+                style={{ transitionDelay: `${i * 50}ms` }}
+              >
+                <AccordionTrigger className="text-sm font-semibold px-5 py-4 hover:no-underline text-foreground hover:text-primary text-left">
                   {faq.q}
                 </AccordionTrigger>
-                <AccordionContent className="text-gray-400 text-sm pb-5">
+                <AccordionContent className="text-muted-foreground px-5 pb-4 text-sm">
                   {faq.a}
                 </AccordionContent>
               </AccordionItem>
@@ -728,44 +1110,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="py-24 sm:py-32 border-t border-white/[0.06]">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.h2 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-3xl sm:text-4xl font-medium text-white tracking-tight mb-4"
-          >
-            Hoziroq sinab ko'ring
-          </motion.h2>
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-            className="text-gray-400 mb-8"
-          >
-            Bepul ro'yxatdan o'ting — 30 soniya
-          </motion.p>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-          >
-            <Button 
-              onClick={handleOpenApp}
-              size="lg"
-              className="h-12 px-10 rounded-lg font-medium bg-[#2DD4BF] text-black hover:bg-[#2DD4BF]/90"
-            >
-              Boshlash
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </motion.div>
-        </div>
-      </section>
-
+      {/* FOOTER */}
       <AppFooter />
     </div>
   );
