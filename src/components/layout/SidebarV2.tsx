@@ -12,7 +12,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Languages,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Bot
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n/LanguageProvider";
@@ -41,6 +42,7 @@ const PRIMARY_NAV: NavItem[] = [
   { id: "new-chat", labelKey: "sidebar.new_chat", icon: PenLine, path: "/chat/general", isNewChat: true },
   { id: "chats", labelKey: "sidebar.chats", icon: History, path: "/chats" },
   { id: "chat", labelKey: "sidebar.chat", icon: MessageSquare, path: "/modes" },
+  { id: "agent", labelKey: "agent.title", icon: Bot, path: "/agent" },
   { id: "modes", labelKey: "sidebar.modes", icon: Sparkles, path: "/modes-list" },
   { id: "image-gen", labelKey: "sidebar.imageGen", icon: ImageIcon, path: "/tools/documents" },
   { id: "circles", labelKey: "nav.circles", icon: Users, path: "/circles" },

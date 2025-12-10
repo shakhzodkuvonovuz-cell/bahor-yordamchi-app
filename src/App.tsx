@@ -41,6 +41,7 @@ const JoinCircle = lazy(() => import("./pages/JoinCircle"));
 const ModesList = lazy(() => import("./pages/ModesList"));
 const Tarjimon = lazy(() => import("./pages/Tarjimon"));
 const ChatsHistory = lazy(() => import("./pages/ChatsHistory"));
+const Agent = lazy(() => import("./pages/Agent"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -279,6 +280,17 @@ const App = () => (
                       <ProtectedRoute>
                         <AppShellV2>
                           <LazyRoute><Tarjimon /></LazyRoute>
+                        </AppShellV2>
+                      </ProtectedRoute>
+                    } 
+                  />
+                  {/* Agent Mode */}
+                  <Route 
+                    path="/agent" 
+                    element={
+                      <ProtectedRoute>
+                        <AppShellV2>
+                          <LazyRoute><Agent /></LazyRoute>
                         </AppShellV2>
                       </ProtectedRoute>
                     } 
