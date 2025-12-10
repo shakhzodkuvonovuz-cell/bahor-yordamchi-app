@@ -54,7 +54,7 @@ import { isVisionSupportedImage } from "@/services/visionService";
 import { detectReplyLanguage } from "@/lib/languageDetect";
 import { extractTextFromFile, isImageFile, isPdfFile, getFileReadStatusLabel } from "@/lib/fileTextExtractor";
 import { getPreferencesPromptContext } from "@/components/UserPreferencesSection";
-import { usePushToTalkDictation } from "@/hooks/usePushToTalkDictation";
+import { useGroqDictation } from "@/hooks/useGroqDictation";
 import { useRealtimeChat, useRealtimeThreads } from "@/hooks/useRealtimeChat";
 
 // Helper to format relative time
@@ -244,8 +244,13 @@ export default function Chat() {
   const [exportPdfContent, setExportPdfContent] = useState("");
   const [exportPdfTitle, setExportPdfTitle] = useState("");
   
-  // Push-to-talk dictation
-  const dictation = usePushToTalkDictation();
+  // Push-to-talk dictation (using Groq Whisper API)
+  const dictation = useGroqDictation({
+    language,
+    onError: (errorMsg) => {
+      toast({ description: errorMsg, variant: "destructive" });
+    },
+  });
   const [preDictationText, setPreDictationText] = useState("");
   
   // Network status
@@ -614,14 +619,12 @@ export default function Chat() {
     }
   }, [location.search, user, mode, t.chat.defaultChatTitle, navigate]);
 
-  // Update input with dictation text (live interim updates)
+  // Auto-stop dictation at max duration
   useEffect(() => {
-    if (dictation.isListening) {
-      const transcript = dictation.finalText + (dictation.interimText ? " " + dictation.interimText : "");
-      const separator = preDictationText && transcript ? " " : "";
-      setInputValue(preDictationText + separator + transcript.trim());
+    if (dictation.hasReachedMaxDuration && dictation.isRecording) {
+      handleDictationEnd();
     }
-  }, [dictation.isListening, dictation.finalText, dictation.interimText, preDictationText]);
+  }, [dictation.hasReachedMaxDuration, dictation.isRecording]);
 
   const scrollToBottom = useCallback(() => {
     virtuosoRef.current?.scrollToBottom();
@@ -629,27 +632,14 @@ export default function Chat() {
 
   // Handle dictation start
   const handleDictationStart = useCallback(() => {
-    if (!dictation.isSupported) {
-      toast({
-        description: language === "uz" 
-          ? "Jonli diktovka bu brauzerda ishlamaydi. Android'da Chrome tavsiya qilinadi."
-          : language === "ru"
-          ? "Голосовой ввод не поддерживается в этом браузере. Попробуйте Chrome на Android."
-          : language === "tr"
-          ? "Canlı dikte bu tarayıcıda desteklenmiyor. Android'de Chrome'u deneyin."
-          : "Live dictation isn't supported in this browser. Try Chrome on Android.",
-      });
-      return;
-    }
-    
     // Save current input text before dictation
     setPreDictationText(inputValue);
-    dictation.handlers.start(language);
-  }, [dictation.isSupported, dictation.handlers, inputValue, language, toast]);
+    dictation.handlers.start();
+  }, [dictation.handlers, inputValue]);
 
   // Handle dictation end
-  const handleDictationEnd = useCallback(() => {
-    const result = dictation.handlers.stop();
+  const handleDictationEnd = useCallback(async () => {
+    const result = await dictation.handlers.stop();
     
     if (result) {
       const separator = preDictationText ? " " : "";
@@ -2358,10 +2348,27 @@ export default function Chat() {
               <div className="relative flex-1">
                 {/* Waveform overlay for dictation */}
                 <InputWaveform 
-                  active={dictation.isListening} 
+                  active={dictation.isRecording} 
                   amplitude={dictation.amplitude}
                   className="rounded-xl"
                 />
+                
+                {/* Transcribing indicator */}
+                {dictation.isTranscribing && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded-xl z-10">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                      {language === "uz" ? "Transkriptsiya..." : language === "ru" ? "Транскрипция..." : language === "tr" ? "Transkripsiyon..." : "Transcribing..."}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Recording timer */}
+                {dictation.isRecording && (
+                  <div className="absolute top-1 right-2 text-xs text-primary font-mono z-10">
+                    {String(Math.floor(dictation.elapsedSeconds / 60)).padStart(2, '0')}:{String(dictation.elapsedSeconds % 60).padStart(2, '0')}
+                  </div>
+                )}
                 
                 <textarea
                   ref={inputRef}
@@ -2377,30 +2384,32 @@ export default function Chat() {
                           : language === "tr"
                           ? "Günlük limit doldu — Premium veya yarın devam edin"
                           : "Daily limit reached — Premium or continue tomorrow")
-                      : dictation.isListening 
-                      ? (language === "uz" ? "Eshitilyapti… Qo'yib yuboring" : language === "ru" ? "Слушаю… Отпустите" : language === "tr" ? "Dinleniyor… Bırakın" : "Listening… Release to finish")
+                      : dictation.isRecording 
+                      ? (language === "uz" ? "Yozilmoqda… Qo'yib yuboring" : language === "ru" ? "Запись… Отпустите" : language === "tr" ? "Kayıt yapılıyor… Bırakın" : "Recording… Release to finish")
+                      : dictation.isTranscribing
+                      ? (language === "uz" ? "Transkriptsiya..." : language === "ru" ? "Транскрипция..." : language === "tr" ? "Transkripsiyon..." : "Transcribing...")
                       : t.chatPlaceholder
                   }
-                  disabled={isLoading || typing || dictation.isListening}
+                  disabled={isLoading || typing || dictation.isRecording || dictation.isTranscribing}
                   rows={1}
                   className={clsx(
                     "w-full bg-transparent border-none outline-none resize-none text-base leading-relaxed text-foreground placeholder:text-muted-foreground/60 disabled:opacity-50 max-h-[140px] overflow-y-auto py-3 px-1 [font-size:16px]",
-                    dictation.isListening && "text-primary"
+                    dictation.isRecording && "text-primary"
                   )}
                 />
               </div>
               
               <VoiceModeButton
-                disabled={isLoading || typing}
+                disabled={isLoading || typing || dictation.isTranscribing}
                 className="flex-shrink-0"
                 onDictationStart={handleDictationStart}
                 onDictationEnd={handleDictationEnd}
-                isDictating={dictation.isListening}
+                isDictating={dictation.isRecording}
               />
               
               <button
                 type="submit"
-                disabled={(!inputValue.trim() && pendingAttachments.length === 0) || isLoading || typing || dictation.isListening || hasReachedLimit}
+                disabled={(!inputValue.trim() && pendingAttachments.length === 0) || isLoading || typing || dictation.isRecording || dictation.isTranscribing || hasReachedLimit}
                 className="p-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0 active:scale-95 glow-primary-subtle hover:glow-primary"
                 aria-label={language === "uz" ? "Yuborish" : language === "en" ? "Send" : language === "ru" ? "Отправить" : "Gönder"}
               >
