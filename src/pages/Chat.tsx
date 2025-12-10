@@ -1658,12 +1658,20 @@ export default function Chat() {
           setProcessingStatus(null);
           inputRef.current?.focus();
           
-          // Attach trace to message using ref (avoids stale closure issue)
+          // Attach trace and citations to message using ref (avoids stale closure issue)
           const finalTrace = activeTraceRef.current;
           if (finalTrace?.isComplete) {
+            // Extract citations from trace sources
+            const citations = finalTrace.sources?.map(s => ({
+              title: s.title,
+              url: s.url,
+            })) || [];
+            
             setMessages((prev) =>
               prev.map((m) =>
-                m.id === assistantId ? { ...m, trace: finalTrace } : m
+                m.id === assistantId 
+                  ? { ...m, trace: finalTrace, citations: citations.length > 0 ? citations : undefined } 
+                  : m
               )
             );
           }
