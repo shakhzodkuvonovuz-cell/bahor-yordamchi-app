@@ -878,112 +878,97 @@ export default function Agent() {
 
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center gap-2 p-3 border-b">
-        <div className="p-1.5 rounded-lg bg-primary/10">
-          <Bot className="h-5 w-5 text-primary" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-sm font-semibold truncate">
-            {t("agent.title") || "Agent"}
-          </h1>
-          <p className="text-[10px] text-muted-foreground">
-            AI ko'p bosqichli vazifalarni rejalashtiradi
-          </p>
+    <div className="flex flex-col h-full bg-background">
+      {/* Modern Header */}
+      <div className="flex items-center justify-between p-4 sm:p-5 border-b border-border/50">
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent flex items-center justify-center">
+              <Bot className="h-5 w-5 text-primary" />
+            </div>
+            <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 border-2 border-background" />
+          </div>
+          <div>
+            <h1 className="text-base sm:text-lg font-semibold tracking-tight">
+              {t("agent.title") || "Agent"}
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              AI ko'p bosqichli vazifalarni rejalashtiradi
+            </p>
+          </div>
         </div>
         <Button 
-          variant={showHistory ? "secondary" : "outline"} 
+          variant="ghost" 
           size="sm" 
           onClick={() => setShowHistory(!showHistory)}
-          className="gap-1.5 h-8 text-xs"
+          className={cn(
+            "gap-2 h-9 rounded-lg transition-colors",
+            showHistory && "bg-primary/10 text-primary"
+          )}
         >
-          <History className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Tarix</span>
+          <History className="h-4 w-4" />
+          <span className="hidden sm:inline text-sm">Tarix</span>
         </Button>
       </div>
 
       {/* History Panel */}
       {showHistory && (
-        <Card className="border-primary/20">
-          <CardHeader className="py-2 px-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm flex items-center gap-2">
+        <div className="border-b border-border/50 bg-muted/30">
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium flex items-center gap-2">
                 <Clock className="h-4 w-4 text-primary" />
                 Oldingi ishlar
-              </CardTitle>
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setShowHistory(false)}>
-                <X className="h-3.5 w-3.5" />
+              </h3>
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setShowHistory(false)}>
+                <X className="h-4 w-4" />
               </Button>
             </div>
-          </CardHeader>
-          <CardContent className="px-3 pb-3 max-h-[240px] overflow-auto">
             {loadingHistory ? (
               <div className="space-y-2">
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-14 w-full rounded-xl" />
+                <Skeleton className="h-14 w-full rounded-xl" />
               </div>
             ) : pastRuns.length === 0 ? (
-              <div className="text-center py-4 text-muted-foreground">
+              <div className="text-center py-6 text-muted-foreground">
                 <History className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                <p className="text-xs">Hali hech qanday ish bajarilmagan</p>
+                <p className="text-sm">Hali ish bajarilmagan</p>
               </div>
             ) : (
-              <div className="space-y-1.5">
-                {pastRuns.map((run) => (
+              <div className="space-y-2 max-h-[200px] overflow-auto">
+                {pastRuns.slice(0, 5).map((run) => (
                   <div
                     key={run.id}
                     className={cn(
-                      "flex items-start gap-2 p-2 rounded-lg transition-colors hover:bg-muted/50",
-                      currentRun?.id === run.id && "bg-primary/5 border border-primary/20"
+                      "flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer",
+                      "bg-background/60 hover:bg-background border border-border/50 hover:border-primary/30",
+                      currentRun?.id === run.id && "border-primary/50 bg-primary/5"
                     )}
+                    onClick={() => handleViewPastRun(run)}
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium line-clamp-2">{run.goal}</p>
+                      <p className="text-sm font-medium line-clamp-1">{run.goal}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <Badge 
-                          variant={run.status === "done" ? "secondary" : run.status === "error" ? "destructive" : "outline"} 
-                          className="text-[9px] h-4"
+                          variant="outline" 
+                          className={cn(
+                            "text-[10px] h-5 rounded-md",
+                            run.status === "done" && "bg-green-500/10 text-green-600 border-green-500/30",
+                            run.status === "error" && "bg-destructive/10 text-destructive border-destructive/30"
+                          )}
                         >
-                          {run.status === "done" ? "Tayyor" : run.status === "error" ? "Xato" : run.status}
+                          {run.status === "done" ? "✓ Tayyor" : run.status === "error" ? "Xato" : run.status}
                         </Badge>
                         <span className="text-[10px] text-muted-foreground">
-                          {new Date(run.created_at).toLocaleDateString("uz-UZ", {
-                            day: "2-digit",
-                            month: "short",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {new Date(run.created_at).toLocaleDateString("uz-UZ", { day: "2-digit", month: "short" })}
                         </span>
                       </div>
                     </div>
-                    <div className="flex gap-1 flex-shrink-0">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0"
-                        onClick={() => handleViewPastRun(run)}
-                        title="Ko'rish"
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0"
-                        onClick={() => handleRerun(run)}
-                        title="Qayta ishga tushirish"
-                      >
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg" onClick={(e) => { e.stopPropagation(); handleRerun(run); }}>
                         <RefreshCw className="h-3.5 w-3.5" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                        onClick={() => handleDeleteRun(run.id)}
-                        title="O'chirish"
-                      >
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteRun(run.id); }}>
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
@@ -991,8 +976,8 @@ export default function Agent() {
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* File Gating Warning */}
@@ -1005,134 +990,156 @@ export default function Agent() {
         />
       )}
 
-      {/* Debug Panel (visible when ?debug=1 or for dev users) */}
+      {/* Debug Panel */}
       <AgentDebugPanel
         fileReadiness={fileReadiness}
         contextSnapshot={contextSnapshot}
       />
 
-      {/* Goal Input */}
-      <Card>
-        <CardContent className="pt-3 space-y-2.5">
-          <Textarea
-            placeholder="Maqsadingizni yozing... Masalan: 'Yangi mobil ilova uchun marketing strategiyasini tuzing'"
-            value={goal}
-            onChange={(e) => setGoal(e.target.value)}
-            className="min-h-[80px] resize-none text-sm"
-            disabled={isRunning}
-          />
-          
-          {/* Sample goals */}
-          <div className="flex flex-wrap gap-1.5">
-            {SAMPLE_GOALS.map((sample, i) => (
-              <button
-                key={i}
-                onClick={() => setGoal(sample)}
-                className="text-[11px] px-2 py-1 rounded-full bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors"
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto">
+        <div className="max-w-2xl mx-auto p-4 sm:p-6 space-y-6">
+          {/* Goal Input - Modern Glass Style */}
+          <div className="space-y-4">
+            <div className="relative">
+              <Textarea
+                placeholder="Maqsadingizni yozing... Masalan: 'Yangi mobil ilova uchun marketing strategiyasini tuzing'"
+                value={goal}
+                onChange={(e) => setGoal(e.target.value)}
+                className={cn(
+                  "min-h-[120px] sm:min-h-[140px] resize-none text-base sm:text-lg p-4 sm:p-5",
+                  "bg-card/50 border-border/50 rounded-2xl",
+                  "placeholder:text-muted-foreground/60",
+                  "focus:ring-2 focus:ring-primary/20 focus:border-primary/50",
+                  "transition-all duration-200"
+                )}
                 disabled={isRunning}
-              >
-                {sample.slice(0, 35)}...
-              </button>
-            ))}
+              />
+              {goal.length > 0 && (
+                <div className="absolute bottom-3 right-3 text-[10px] text-muted-foreground">
+                  {goal.length} belgi
+                </div>
+              )}
+            </div>
+            
+            {/* Sample Goals - Modern Chips */}
+            <div className="flex flex-wrap gap-2">
+              {SAMPLE_GOALS.map((sample, i) => (
+                <button
+                  key={i}
+                  onClick={() => setGoal(sample)}
+                  className={cn(
+                    "text-xs sm:text-sm px-3 py-2 rounded-xl",
+                    "bg-muted/50 hover:bg-muted border border-transparent hover:border-border/50",
+                    "text-muted-foreground hover:text-foreground",
+                    "transition-all duration-200",
+                    "disabled:opacity-50"
+                  )}
+                  disabled={isRunning}
+                >
+                  {sample.slice(0, 40)}...
+                </button>
+              ))}
+            </div>
+
+            {/* Expandable Settings */}
+            <Collapsible open={showConstraints} onOpenChange={setShowConstraints}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground h-9 rounded-xl">
+                  <Settings2 className="h-4 w-4" />
+                  Qo'shimcha sozlamalar
+                  {showConstraints ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-4">
+                <div className="grid grid-cols-2 gap-3 p-4 rounded-xl bg-muted/30 border border-border/50">
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1.5 block">Ohang</label>
+                    <Input
+                      placeholder="Rasmiy, do'stona..."
+                      value={constraints.tone}
+                      onChange={(e) => setConstraints((c) => ({ ...c, tone: e.target.value }))}
+                      className="h-9 text-sm rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1.5 block">Hajmi</label>
+                    <Input
+                      placeholder="Qisqa, batafsil..."
+                      value={constraints.length}
+                      onChange={(e) => setConstraints((c) => ({ ...c, length: e.target.value }))}
+                      className="h-9 text-sm rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1.5 block">Auditoriya</label>
+                    <Input
+                      placeholder="Talabalar, biznesmenlar..."
+                      value={constraints.audience}
+                      onChange={(e) => setConstraints((c) => ({ ...c, audience: e.target.value }))}
+                      className="h-9 text-sm rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1.5 block">Til</label>
+                    <Input
+                      placeholder="O'zbekcha, English..."
+                      value={constraints.language}
+                      onChange={(e) => setConstraints((c) => ({ ...c, language: e.target.value }))}
+                      className="h-9 text-sm rounded-lg"
+                    />
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
 
-          {/* Constraints Accordion */}
-          <Collapsible open={showConstraints} onOpenChange={setShowConstraints}>
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground h-7 text-xs">
-                <Settings2 className="h-3.5 w-3.5" />
-                Qo'shimcha sozlamalar
-                {showConstraints ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="pt-2 space-y-2">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[10px] text-muted-foreground mb-0.5 block">Ohang</label>
-                  <Input
-                    placeholder="Rasmiy, do'stona..."
-                    value={constraints.tone}
-                    onChange={(e) => setConstraints((c) => ({ ...c, tone: e.target.value }))}
-                    className="text-xs h-8"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] text-muted-foreground mb-0.5 block">Hajmi</label>
-                  <Input
-                    placeholder="Qisqa, batafsil..."
-                    value={constraints.length}
-                    onChange={(e) => setConstraints((c) => ({ ...c, length: e.target.value }))}
-                    className="text-xs h-8"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] text-muted-foreground mb-0.5 block">Auditoriya</label>
-                  <Input
-                    placeholder="Talabalar, biznesmenlar..."
-                    value={constraints.audience}
-                    onChange={(e) => setConstraints((c) => ({ ...c, audience: e.target.value }))}
-                    className="text-xs h-8"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] text-muted-foreground mb-0.5 block">Til</label>
-                  <Input
-                    placeholder="O'zbekcha, English..."
-                    value={constraints.language}
-                    onChange={(e) => setConstraints((c) => ({ ...c, language: e.target.value }))}
-                    className="text-xs h-8"
-                  />
-                </div>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-        </CardContent>
-      </Card>
-
-      {/* Workspace Tabs */}
-      <Card className="flex-1 min-h-0 overflow-hidden flex flex-col">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <CardHeader className="py-2 px-3">
-            <TabsList className="grid grid-cols-4 w-full h-8">
-              <TabsTrigger value="files" className="text-[11px] gap-1 h-7">
-                <File className="h-3 w-3" />
-                <span className="hidden sm:inline">Fayllar</span>
-                {files.length > 0 && <Badge variant="secondary" className="h-3.5 w-3.5 p-0 text-[9px] justify-center">{files.length}</Badge>}
+          {/* Workspace Inputs - Modern Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+            <TabsList className="w-full h-12 p-1 bg-muted/50 rounded-xl grid grid-cols-4">
+              <TabsTrigger value="files" className="rounded-lg gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <File className="h-4 w-4" />
+                <span className="hidden sm:inline text-sm">Fayllar</span>
+                {files.length > 0 && (
+                  <Badge variant="secondary" className="h-5 w-5 p-0 text-[10px] justify-center rounded-full">{files.length}</Badge>
+                )}
               </TabsTrigger>
-              <TabsTrigger value="links" className="text-[11px] gap-1 h-7">
-                <Link2 className="h-3 w-3" />
-                <span className="hidden sm:inline">Havolalar</span>
-                {links.length > 0 && <Badge variant="secondary" className="h-3.5 w-3.5 p-0 text-[9px] justify-center">{links.length}</Badge>}
+              <TabsTrigger value="links" className="rounded-lg gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <Link2 className="h-4 w-4" />
+                <span className="hidden sm:inline text-sm">Havolalar</span>
+                {links.length > 0 && (
+                  <Badge variant="secondary" className="h-5 w-5 p-0 text-[10px] justify-center rounded-full">{links.length}</Badge>
+                )}
               </TabsTrigger>
-              <TabsTrigger value="notes" className="text-[11px] gap-1 h-7">
-                <StickyNote className="h-3 w-3" />
-                <span className="hidden sm:inline">Eslatmalar</span>
+              <TabsTrigger value="notes" className="rounded-lg gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <StickyNote className="h-4 w-4" />
+                <span className="hidden sm:inline text-sm">Eslatmalar</span>
               </TabsTrigger>
-              <TabsTrigger value="results" className="text-[11px] gap-1 h-7">
-                <FileText className="h-3 w-3" />
-                <span className="hidden sm:inline">Natijalar</span>
+              <TabsTrigger value="results" className="rounded-lg gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <FileText className="h-4 w-4" />
+                <span className="hidden sm:inline text-sm">Natijalar</span>
               </TabsTrigger>
             </TabsList>
-          </CardHeader>
 
-          <CardContent className="pt-2 pb-3 px-3 flex-1 overflow-auto">
             {/* Files Tab */}
-            <TabsContent value="files" className="mt-0 space-y-2">
+            <TabsContent value="files" className="mt-0 space-y-3">
               <div
-                className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:border-primary/50 transition-colors cursor-pointer"
+                className={cn(
+                  "border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer",
+                  "border-border/50 hover:border-primary/50 hover:bg-primary/5"
+                )}
                 onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  handleFileUpload(e.dataTransfer.files);
-                }}
+                onDrop={(e) => { e.preventDefault(); handleFileUpload(e.dataTransfer.files); }}
                 onClick={() => document.getElementById("agent-file-input")?.click()}
               >
-                <Upload className="h-6 w-6 mx-auto text-muted-foreground mb-1.5" />
-                <p className="text-xs text-muted-foreground">
-                  Fayllarni shu yerga tashlang yoki <span className="text-primary">tanlang</span>
+                <div className="h-12 w-12 mx-auto mb-3 rounded-xl bg-muted/50 flex items-center justify-center">
+                  <Upload className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Fayllarni shu yerga tashlang yoki <span className="text-primary font-medium">tanlang</span>
                 </p>
-                <p className="text-[10px] text-muted-foreground/70 mt-0.5">
-                  PDF, DOCX, TXT, rasmlar (max 10MB)
+                <p className="text-xs text-muted-foreground/60 mt-1">
+                  PDF, DOCX, TXT, rasmlar • max 10MB
                 </p>
                 <input
                   id="agent-file-input"
@@ -1145,16 +1152,18 @@ export default function Agent() {
               </div>
 
               {files.length > 0 && (
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   {files.map((file) => (
                     <div
                       key={file.id}
-                      className="flex items-center gap-2 p-2 rounded-lg bg-muted/50"
+                      className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border/50"
                     >
-                      <File className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                      <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <File className="h-4 w-4 text-primary" />
+                      </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium truncate">{file.filename}</p>
-                        <p className="text-[10px] text-muted-foreground">
+                        <p className="text-sm font-medium truncate">{file.filename}</p>
+                        <p className="text-xs text-muted-foreground">
                           {file.size_bytes ? `${(file.size_bytes / 1024).toFixed(1)} KB` : ""}
                         </p>
                       </div>
@@ -1162,10 +1171,10 @@ export default function Agent() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-6 w-6 p-0"
+                        className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-destructive"
                         onClick={() => handleRemoveFile(file.id, file.storage_path)}
                       >
-                        <X className="h-3.5 w-3.5" />
+                        <X className="h-4 w-4" />
                       </Button>
                     </div>
                   ))}
@@ -1174,32 +1183,34 @@ export default function Agent() {
             </TabsContent>
 
             {/* Links Tab */}
-            <TabsContent value="links" className="mt-0 space-y-2">
+            <TabsContent value="links" className="mt-0 space-y-3">
               <div className="flex gap-2">
                 <Input
                   placeholder="https://..."
                   value={newLink}
                   onChange={(e) => setNewLink(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleAddLink()}
-                  className="flex-1 h-8 text-xs"
+                  className="flex-1 h-10 text-sm rounded-xl"
                 />
-                <Button onClick={handleAddLink} size="sm" className="h-8 text-xs">
+                <Button onClick={handleAddLink} size="sm" className="h-10 px-4 rounded-xl">
                   Qo'shish
                 </Button>
               </div>
               {links.length > 0 && (
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   {links.map((link, i) => (
-                    <div key={i} className="flex items-center gap-2 p-1.5 rounded bg-muted/50">
-                      <Link2 className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                      <span className="text-xs truncate flex-1">{link}</span>
+                    <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border/50">
+                      <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
+                        <Link2 className="h-4 w-4 text-blue-500" />
+                      </div>
+                      <span className="text-sm truncate flex-1">{link}</span>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-5 w-5 p-0"
+                        className="h-7 w-7 p-0 rounded-lg"
                         onClick={() => setLinks((prev) => prev.filter((_, idx) => idx !== i))}
                       >
-                        <X className="h-3 w-3" />
+                        <X className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   ))}
@@ -1213,7 +1224,7 @@ export default function Agent() {
                 placeholder="Qo'shimcha ma'lumotlar, talablar, yoki kontekst..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="min-h-[80px] resize-none text-xs"
+                className="min-h-[120px] resize-none text-sm rounded-xl"
               />
             </TabsContent>
 
@@ -1433,83 +1444,62 @@ export default function Agent() {
                   </div>
                 </div>
               ) : generatedImages.length === 0 ? (
-                <div className="text-center py-6 text-muted-foreground">
-                  <FileText className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                  <p className="text-xs">Natijalar bu yerda ko'rsatiladi</p>
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">Natijalar bu yerda ko'rsatiladi</p>
                 </div>
               ) : null}
             </TabsContent>
-          </CardContent>
-        </Tabs>
-      </Card>
+          </Tabs>
+        </div>
+      </div>
 
-      {/* Run Button - hidden when we have results (follow-up is in the results area) */}
-      {!currentRun?.final_output && (
-        <div className="flex items-center gap-2 pt-1">
-          {isRunning ? (
-            <>
-              <Button variant="destructive" onClick={handleCancel} className="gap-1.5 flex-1 sm:flex-none h-9 text-sm">
-                <Square className="h-3.5 w-3.5" />
-                To'xtatish
-              </Button>
-              {totalSteps > 0 && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  <span>{completedSteps}/{totalSteps} qadam</span>
-                  {estimatedTime && (
-                    <span className="text-primary/70">• {estimatedTime} qoldi</span>
+      {/* Sticky Run Button */}
+      <div className="border-t border-border/50 bg-background/95 backdrop-blur p-4 sm:p-5">
+        <div className="max-w-2xl mx-auto">
+          {!currentRun?.final_output ? (
+            <div className="flex items-center gap-3">
+              {isRunning ? (
+                <>
+                  <Button variant="destructive" onClick={handleCancel} className="gap-2 h-11 px-5 rounded-xl flex-1 sm:flex-none">
+                    <Square className="h-4 w-4" />
+                    To'xtatish
+                  </Button>
+                  {totalSteps > 0 && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      <span>{completedSteps}/{totalSteps}</span>
+                      {estimatedTime && <span className="text-primary">• {estimatedTime}</span>}
+                    </div>
                   )}
-                </div>
+                </>
+              ) : (
+                <>
+                  <Button 
+                    onClick={handleRun} 
+                    disabled={!canRunAgent}
+                    title={runGatingMessage || undefined}
+                    className="gap-2 h-11 px-6 rounded-xl flex-1 sm:flex-none text-base font-medium"
+                  >
+                    <Play className="h-4 w-4" />
+                    Ishga tushirish
+                  </Button>
+                  <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={useWebSearch}
+                      onChange={(e) => setUseWebSearch(e.target.checked)}
+                      className="rounded border-border h-4 w-4 accent-primary"
+                    />
+                    <span className="text-muted-foreground">Web qidiruv</span>
+                  </label>
+                </>
               )}
-            </>
-          ) : (
-            <>
-              <Button 
-                onClick={handleRun} 
-                disabled={!canRunAgent}
-                title={runGatingMessage || undefined}
-                className="gap-1.5 flex-1 sm:flex-none h-9 text-sm"
-              >
-                <Play className="h-3.5 w-3.5" />
-                Ishga tushirish
-              </Button>
-              <label className="flex items-center gap-1.5 text-xs">
-                <input
-                  type="checkbox"
-                  checked={useWebSearch}
-                  onChange={(e) => setUseWebSearch(e.target.checked)}
-                  className="rounded border-border h-3.5 w-3.5"
-                />
-                <span className="text-muted-foreground">Web qidiruv</span>
-              </label>
-            </>
-          )}
+            </div>
+          ) : null}
         </div>
-      )}
+      </div>
       
-      {/* New Task Button - shown when we have results */}
-      {currentRun?.final_output && !isRunning && (
-        <div className="flex items-center gap-2 pt-1">
-          <Button 
-            variant="outline" 
-            onClick={() => {
-              setGoal("");
-              setCurrentRun(null);
-              setSteps([]);
-              setGeneratedImages([]);
-              setFiles([]);
-              setLinks([]);
-              setNotes("");
-              setConversationHistory([]); // Clear conversation history for new task
-            }}
-            className="gap-1.5 h-9 text-sm"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-            Yangi vazifa
-          </Button>
-        </div>
-      )}
-
       {/* Planning Skeleton */}
       {isRunning && steps.length === 0 && (
         <Card>
