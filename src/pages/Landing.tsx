@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,424 +9,346 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
-  Code2,
-  Briefcase,
-  BookOpen,
-  GraduationCap,
-  Home,
+  Search,
+  ImagePlus,
+  FileText,
+  Users,
   Globe,
-  Zap,
   Sparkles,
   MessageSquare,
   ArrowRight,
-  ArrowLeft,
   Check,
   Send,
-  Wallet,
-  Users,
-  FileText,
-  Search,
-  Image,
-  Shield,
-  ListTodo,
-  ExternalLink,
-  ImagePlus,
-  Download,
+  Mic,
   Paperclip,
   Camera,
-  Mic,
+  ExternalLink,
+  Download,
+  Zap,
+  Shield,
+  Clock,
 } from "lucide-react";
 import bahorLogo from "@/assets/bahor-logo.png";
 import samarkandImage from "@/assets/landing/samarkand-registan.jpg";
 import tashkentImage from "@/assets/landing/tashkent-night.jpg";
 import suzaniImage from "@/assets/landing/uzbek-suzani.jpg";
-import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { AppFooter } from "@/components/layout/AppFooter";
 import { prefetchCriticalRoutes } from "@/lib/routePrefetch";
 
-// Hero mockup with 3-page carousel showing real use cases
-function HeroMockup() {
+// Glass card component for consistent styling
+function GlassCard({ 
+  children, 
+  className = "", 
+  hover = true 
+}: { 
+  children: React.ReactNode; 
+  className?: string;
+  hover?: boolean;
+}) {
+  return (
+    <div className={`
+      relative overflow-hidden rounded-2xl
+      bg-white/[0.03] dark:bg-white/[0.03]
+      backdrop-blur-xl
+      border border-white/[0.08]
+      ${hover ? 'transition-all duration-300 hover:bg-white/[0.05] hover:border-white/[0.12] hover:scale-[1.02] hover:shadow-[0_0_40px_-10px_hsl(var(--primary)/0.3)]' : ''}
+      ${className}
+    `}>
+      {children}
+    </div>
+  );
+}
+
+// Phone mockup component with 3D effect
+function PhoneMockup() {
   const { t } = useTranslation();
-  const [activeSlide, setActiveSlide] = React.useState(0);
-  const [mousePosition, setMousePosition] = React.useState({ x: 0, y: 0 });
-  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [activeSlide, setActiveSlide] = useState(0);
   
-  // Auto-rotate slides every 5 seconds
-  React.useEffect(() => {
+  useEffect(() => {
     const timer = setInterval(() => {
       setActiveSlide((prev) => (prev + 1) % 3);
     }, 5000);
     return () => clearInterval(timer);
   }, []);
-  
-  // Mouse parallax effect (desktop only, throttled for performance)
-  const lastFrameRef = React.useRef(0);
-  const handleMouseMove = React.useCallback((e: React.MouseEvent) => {
-    // Skip on mobile or if throttled
-    if (window.innerWidth < 768) return;
-    const now = performance.now();
-    if (now - lastFrameRef.current < 16) return; // ~60fps throttle
-    lastFrameRef.current = now;
-    
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2);
-    const y = (e.clientY - rect.top - rect.height / 2) / (rect.height / 2);
-    setMousePosition({ x: x * 8, y: y * 8 }); // Max 8deg tilt
-  }, []);
-  
-  const handleMouseLeave = React.useCallback(() => {
-    setMousePosition({ x: 0, y: 0 });
-  }, []);
-  
-  const slides = [
-    { id: 'web', label: t('mockup.slide.web') },
-    { id: 'image', label: t('mockup.slide.image') },
-    { id: 'pdf', label: t('mockup.slide.pdf') },
-  ];
-  
+
   return (
-    <div 
-      ref={containerRef}
-      className="relative w-full max-w-md mx-auto perspective-1000"
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-    >
-      {/* Background decorations - optimized for mobile (smaller blur, fewer orbs) */}
-      {/* Gradient mesh orbs - mobile gets 1 smaller orb, desktop gets full effect */}
-      <div className="absolute -top-12 -left-12 w-24 h-24 md:-top-20 md:-left-20 md:w-40 md:h-40 bg-primary/15 rounded-full blur-2xl md:blur-3xl animate-pulse" />
-      <div className="hidden sm:block absolute -bottom-16 -right-16 w-32 h-32 bg-primary/10 rounded-full blur-2xl animate-[pulse_3s_ease-in-out_infinite_0.5s]" />
-      <div className="hidden md:block absolute top-1/2 -left-24 w-24 h-24 bg-accent/20 rounded-full blur-2xl animate-[pulse_4s_ease-in-out_infinite_1s]" />
+    <div className="relative mx-auto" style={{ perspective: '1200px' }}>
+      {/* Glow behind phone */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-primary/20 rounded-full blur-[100px] animate-pulse" />
+      </div>
       
-      {/* Floating particles - mobile gets 2 static dots, desktop gets animated */}
-      <div className="absolute top-8 right-0 w-1.5 h-1.5 md:w-2 md:h-2 bg-primary/40 rounded-full md:animate-[float-slow_6s_ease-in-out_infinite]" />
-      <div className="absolute bottom-8 left-4 w-1 h-1 md:w-1.5 md:h-1.5 bg-accent/40 rounded-full md:animate-[float-slow_7s_ease-in-out_infinite_0.3s]" />
-      <div className="hidden md:block absolute top-1/3 -left-8 w-1.5 h-1.5 bg-primary/30 rounded-full animate-[float-slow_5s_ease-in-out_infinite_0.5s]" />
-      <div className="hidden md:block absolute bottom-1/4 -right-4 w-1 h-1 bg-primary/50 rounded-full animate-[float-slow_4s_ease-in-out_infinite_1s]" />
-      
-      {/* Grid pattern overlay */}
-      <div className="absolute inset-0 -m-16 opacity-[0.03] pointer-events-none" 
-        style={{
-          backgroundImage: `linear-gradient(hsl(var(--primary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)`,
-          backgroundSize: '40px 40px',
-        }}
-      />
-      
-      {/* Main glow effect - mobile gets static subtle glow, desktop gets parallax */}
+      {/* iPhone-style frame */}
       <div 
-        className="absolute inset-0 bg-primary/10 md:bg-primary/20 rounded-full scale-75 md:scale-90 translate-y-4 md:translate-y-8 blur-2xl md:blur-3xl transition-transform duration-300 ease-out"
-        style={{
-          transform: window.innerWidth >= 768 
-            ? `translate(${mousePosition.x * 2}px, ${mousePosition.y * 2 + 32}px) scale(0.9)`
-            : 'translateY(16px) scale(0.75)',
-        }}
-      />
-      
-      {/* Main card with 3D tilt */}
-      <div 
-        className="relative glass-premium rounded-2xl shadow-glow-lg border border-border/40 overflow-hidden transition-transform duration-300 ease-out will-change-transform"
-        style={{
-          transform: `rotateY(${mousePosition.x}deg) rotateX(${-mousePosition.y}deg) translateZ(0)`,
+        className="relative w-[280px] sm:w-[320px] mx-auto rounded-[40px] bg-gradient-to-b from-zinc-800 to-zinc-900 p-2 shadow-[0_0_60px_-15px_hsl(var(--primary)/0.4)]"
+        style={{ 
+          transform: 'rotateX(5deg) rotateY(-2deg)',
+          transformStyle: 'preserve-3d'
         }}
       >
-        {/* Header bar */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 bg-card/50">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-secondary/60 flex items-center justify-center">
-              <ArrowLeft className="w-4 h-4 text-muted-foreground" />
-            </div>
-            <div className="flex items-center gap-2">
-              <img src={bahorLogo} alt="Bahor AI" className="w-6 h-6 object-contain" />
-              <span className="font-semibold text-foreground text-sm">Bahor AI</span>
-            </div>
-          </div>
-          {/* Model toggle */}
-          <div className="flex items-center gap-0.5 bg-secondary/60 rounded-lg p-0.5">
-            <span className="text-[10px] px-2.5 py-1 rounded-md bg-background text-foreground font-medium">Tez</span>
-            <span className="text-[10px] px-2.5 py-1 rounded-md text-muted-foreground">Aqlli</span>
-          </div>
-        </div>
+        {/* Dynamic Island */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 w-24 h-6 bg-black rounded-full z-10" />
         
-        {/* Slide content */}
-        <div className="p-4 min-h-[320px]">
-          {/* Slide 1: Web Search */}
-          {activeSlide === 0 && (
-            <div className="space-y-3">
-              {/* User message */}
-              <div className="flex justify-end opacity-0 animate-[fade-in_0.4s_ease-out_0.1s_forwards]">
-                <div className="bg-primary/15 border border-primary/30 text-foreground px-4 py-2.5 rounded-2xl rounded-tr-sm max-w-[85%]">
-                  <p className="text-sm">{t('mockup.web.userMessage')}</p>
-                </div>
-              </div>
-              
-              {/* ThinkBar */}
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/50 border border-border/30 w-fit opacity-0 animate-[fade-in_0.4s_ease-out_0.3s_forwards]">
-                <Sparkles className="w-3.5 h-3.5 text-primary" />
-                <span className="text-xs text-muted-foreground">{t('mockup.web.searching')}</span>
-                <div className="flex items-center gap-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-[pulse_1.4s_ease-in-out_infinite]" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-[pulse_1.4s_ease-in-out_0.2s_infinite]" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-[pulse_1.4s_ease-in-out_0.4s_infinite]" />
-                </div>
-              </div>
-              
-              {/* Sources row */}
-              <div className="space-y-2 opacity-0 animate-[fade-in_0.4s_ease-out_0.5s_forwards]">
-                <div className="flex items-center gap-2">
-                  <Search className="w-3 h-3 text-primary" />
-                  <span className="text-[10px] text-muted-foreground">{t('mockup.web.sourcesFound')}</span>
-                </div>
-                <div className="flex gap-1.5 flex-wrap">
-                  <span className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center gap-1 cursor-pointer hover:bg-primary/20 hover:scale-105 transition-all duration-200">
-                    <ExternalLink className="w-2.5 h-2.5" />gazeta.uz
-                  </span>
-                  <span className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center gap-1 cursor-pointer hover:bg-primary/20 hover:scale-105 transition-all duration-200">
-                    <ExternalLink className="w-2.5 h-2.5" />review.uz
-                  </span>
-                  <span className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center gap-1 cursor-pointer hover:bg-primary/20 hover:scale-105 transition-all duration-200">
-                    <ExternalLink className="w-2.5 h-2.5" />lex.uz
-                  </span>
-                </div>
-              </div>
-              
-              {/* AI response - collapsed */}
-              <div className="space-y-2 opacity-0 animate-[fade-in_0.4s_ease-out_0.7s_forwards]">
-                <p className="text-sm font-medium text-foreground">{t('mockup.web.aiTitle')}</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  {t('mockup.web.aiPreview')}
-                </p>
-                
-                {/* Fade gradient for truncated content */}
-                <div className="relative h-6 -mt-4">
-                  <div className="absolute inset-0 bg-gradient-to-t from-card via-card/80 to-transparent" />
-                </div>
-                
-                {/* Expand button */}
-                <button className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 hover:translate-y-0.5 transition-all duration-200 -mt-2">
-                  <svg className="w-3.5 h-3.5 transition-transform group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                  {t('mockup.web.showMore')}
-                </button>
-                
-                {/* Action buttons */}
-                <div className="flex items-center gap-1 pt-1 opacity-0 animate-[fade-in_0.4s_ease-out_0.9s_forwards]">
-                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 hover:scale-110 transition-all duration-200 text-muted-foreground hover:text-foreground">
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                  </button>
-                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 hover:scale-110 transition-all duration-200 text-muted-foreground hover:text-foreground">
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                  </button>
-                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 hover:scale-110 transition-all duration-200 text-muted-foreground hover:text-foreground">
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" /></svg>
-                  </button>
-                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 hover:scale-110 transition-all duration-200 text-muted-foreground hover:text-foreground">
-                    <FileText className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+        {/* Screen */}
+        <div className="relative rounded-[32px] overflow-hidden bg-background">
+          {/* Status bar */}
+          <div className="flex items-center justify-between px-6 py-2 bg-card/80">
+            <span className="text-[10px] text-muted-foreground font-medium">9:41</span>
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-2 rounded-sm bg-muted-foreground/50" />
+              <div className="w-6 h-3 rounded-sm border border-muted-foreground/50 relative">
+                <div className="absolute inset-0.5 right-1 bg-primary rounded-sm" />
               </div>
             </div>
-          )}
+          </div>
           
-          {/* Slide 2: Image Generation */}
-          {activeSlide === 1 && (
-            <div className="space-y-3">
-              {/* User message */}
-              <div className="flex justify-end opacity-0 animate-[fade-in_0.4s_ease-out_0.1s_forwards]">
-                <div className="bg-primary/15 border border-primary/30 text-foreground px-4 py-2.5 rounded-2xl rounded-tr-sm max-w-[85%]">
-                  <p className="text-sm">{t('mockup.image.userMessage')}</p>
-                </div>
-              </div>
-              
-              {/* ThinkBar - generating */}
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/50 border border-border/30 w-fit opacity-0 animate-[fade-in_0.4s_ease-out_0.3s_forwards]">
-                <ImagePlus className="w-3.5 h-3.5 text-primary" />
-                <span className="text-xs text-muted-foreground">{t('mockup.image.generating')}</span>
-                <div className="flex items-center gap-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-[pulse_1.4s_ease-in-out_infinite]" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-[pulse_1.4s_ease-in-out_0.2s_infinite]" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-[pulse_1.4s_ease-in-out_0.4s_infinite]" />
-                </div>
-              </div>
-              
-              {/* AI response with generated image */}
-              <div className="space-y-2 opacity-0 animate-[fade-in_0.4s_ease-out_0.5s_forwards]">
-                <p className="text-xs text-muted-foreground">{t('mockup.image.aiResponse')}</p>
-                
-                {/* Generated image preview */}
-                <div className="relative rounded-xl overflow-hidden border border-border/40 bg-secondary/30 opacity-0 animate-[scale-in_0.5s_ease-out_0.7s_forwards]">
-                  <img 
-                    src={samarkandImage} 
-                    alt="Generated Registan"
-                    width={400}
-                    height={144}
-                    loading="lazy"
-                    className="w-full h-36 object-cover"
-                  />
-                  {/* Image overlay actions */}
-                  <div className="absolute bottom-2 right-2 flex gap-1.5">
-                    <button className="p-1.5 rounded-lg bg-black/50 backdrop-blur-sm text-white hover:bg-black/70 hover:scale-110 transition-all duration-200">
-                      <Download className="w-3.5 h-3.5" />
-                    </button>
-                    <button className="p-1.5 rounded-lg bg-black/50 backdrop-blur-sm text-white hover:bg-black/70 hover:scale-110 transition-all duration-200">
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </button>
+          {/* App header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 bg-card/50">
+            <div className="flex items-center gap-2">
+              <img src={bahorLogo} alt="Bahor AI" className="w-6 h-6" />
+              <span className="font-semibold text-sm text-foreground">Bahor AI</span>
+            </div>
+            <div className="flex gap-0.5 bg-secondary/60 rounded-lg p-0.5">
+              <span className="text-[10px] px-2 py-1 rounded-md bg-background text-foreground font-medium">Tez</span>
+              <span className="text-[10px] px-2 py-1 rounded-md text-muted-foreground">Aqlli</span>
+            </div>
+          </div>
+          
+          {/* Chat content */}
+          <div className="p-4 min-h-[280px] space-y-3">
+            {activeSlide === 0 && (
+              <>
+                {/* User message */}
+                <div className="flex justify-end animate-fade-in">
+                  <div className="bg-primary/15 border border-primary/30 text-foreground px-3 py-2 rounded-2xl rounded-tr-sm max-w-[85%]">
+                    <p className="text-xs">O'zbekistonda eng yaxshi universitetlar qaysilar?</p>
                   </div>
                 </div>
                 
-                {/* Action buttons */}
-                <div className="flex items-center gap-1 pt-1 opacity-0 animate-[fade-in_0.4s_ease-out_0.9s_forwards]">
-                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 hover:scale-110 transition-all duration-200 text-muted-foreground hover:text-foreground">
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                  </button>
-                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 hover:scale-110 transition-all duration-200 text-muted-foreground hover:text-foreground">
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" /></svg>
-                  </button>
-                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 hover:scale-110 transition-all duration-200 text-muted-foreground hover:text-foreground">
-                    <FileText className="w-3.5 h-3.5" />
-                  </button>
+                {/* Sources */}
+                <div className="space-y-2 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                  <div className="flex items-center gap-2">
+                    <Search className="w-3 h-3 text-primary" />
+                    <span className="text-[10px] text-muted-foreground">4 manba topildi</span>
+                  </div>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {['kun.uz', 'gazeta.uz', 'lex.uz'].map((s) => (
+                      <span key={s} className="text-[9px] px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center gap-1">
+                        <ExternalLink className="w-2 h-2" />{s}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              
-              {/* Follow-up suggestions */}
-              <div className="flex gap-2 flex-wrap pt-1 opacity-0 animate-[fade-in_0.4s_ease-out_1.1s_forwards]">
-                <button className="text-[10px] px-3 py-1.5 rounded-full bg-secondary/50 border border-border/40 text-muted-foreground hover:bg-secondary hover:text-foreground hover:scale-105 transition-all duration-200">
-                  {t('mockup.image.suggestion1')}
-                </button>
-                <button className="text-[10px] px-3 py-1.5 rounded-full bg-secondary/50 border border-border/40 text-muted-foreground hover:bg-secondary hover:text-foreground hover:scale-105 transition-all duration-200">
-                  {t('mockup.image.suggestion2')}
-                </button>
-              </div>
-            </div>
-          )}
-          
-          {/* Slide 3: Text to PDF */}
-          {activeSlide === 2 && (
-            <div className="space-y-3">
-              {/* Previous AI response (truncated) */}
-              <div className="space-y-1 pb-2 border-b border-border/30 opacity-0 animate-[fade-in_0.4s_ease-out_0.1s_forwards]">
-                <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-                  {t('mockup.pdf.previousResponse')}
-                </p>
-                <button className="inline-flex items-center gap-1 text-[10px] text-primary hover:text-primary/80 hover:translate-y-0.5 transition-all duration-200">
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                  {t('mockup.web.showMore')}
-                </button>
-              </div>
-              
-              {/* User message */}
-              <div className="flex justify-end opacity-0 animate-[fade-in_0.4s_ease-out_0.3s_forwards]">
-                <div className="bg-primary/15 border border-primary/30 text-foreground px-4 py-2.5 rounded-2xl rounded-tr-sm max-w-[85%]">
-                  <p className="text-sm">{t('mockup.pdf.userMessage')}</p>
-                </div>
-              </div>
-              
-              {/* ThinkBar - creating file */}
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/50 border border-border/30 w-fit opacity-0 animate-[fade-in_0.4s_ease-out_0.5s_forwards]">
-                <FileText className="w-3.5 h-3.5 text-primary" />
-                <span className="text-xs text-muted-foreground">{t('mockup.pdf.creating')}</span>
-                <div className="flex items-center gap-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-[pulse_1.4s_ease-in-out_infinite]" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-[pulse_1.4s_ease-in-out_0.2s_infinite]" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-[pulse_1.4s_ease-in-out_0.4s_infinite]" />
-                </div>
-              </div>
-              
-              {/* AI response with PDF file */}
-              <div className="space-y-2 opacity-0 animate-[fade-in_0.4s_ease-out_0.7s_forwards]">
-                <p className="text-xs text-muted-foreground">{t('mockup.pdf.aiResponse')}</p>
                 
-                {/* PDF file card */}
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/40 border border-border/40 opacity-0 animate-[scale-in_0.5s_ease-out_0.9s_forwards] hover:bg-secondary/60 transition-colors cursor-pointer group">
-                  <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-200">
+                {/* AI Response */}
+                <div className="space-y-2 animate-fade-in" style={{ animationDelay: '0.4s' }}>
+                  <p className="text-xs font-medium text-foreground">📚 O'zbekistondagi eng yaxshi universitetlar:</p>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    1. Toshkent Davlat Universiteti<br/>
+                    2. Mirzo Ulug'bek nomidagi O'zMU<br/>
+                    3. Toshkent Tibbiyot Akademiyasi...
+                  </p>
+                </div>
+              </>
+            )}
+            
+            {activeSlide === 1 && (
+              <>
+                <div className="flex justify-end animate-fade-in">
+                  <div className="bg-primary/15 border border-primary/30 text-foreground px-3 py-2 rounded-2xl rounded-tr-sm max-w-[85%]">
+                    <p className="text-xs">Registon maydoni rasmini yarat</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/50 w-fit animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                  <ImagePlus className="w-3 h-3 text-primary" />
+                  <span className="text-[10px] text-muted-foreground">Rasm yaratilmoqda...</span>
+                  <div className="flex gap-0.5">
+                    <span className="w-1 h-1 rounded-full bg-primary animate-pulse" />
+                    <span className="w-1 h-1 rounded-full bg-primary animate-pulse" style={{ animationDelay: '0.2s' }} />
+                    <span className="w-1 h-1 rounded-full bg-primary animate-pulse" style={{ animationDelay: '0.4s' }} />
+                  </div>
+                </div>
+                
+                <div className="relative rounded-xl overflow-hidden animate-scale-in" style={{ animationDelay: '0.4s' }}>
+                  <img src={samarkandImage} alt="Registon" className="w-full h-28 object-cover" />
+                  <div className="absolute bottom-2 right-2 flex gap-1">
+                    <button className="p-1.5 rounded-lg bg-black/50 backdrop-blur-sm text-white">
+                      <Download className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+            
+            {activeSlide === 2 && (
+              <>
+                <div className="flex justify-end animate-fade-in">
+                  <div className="bg-primary/15 border border-primary/30 text-foreground px-3 py-2 rounded-2xl rounded-tr-sm max-w-[85%]">
+                    <p className="text-xs">Buni PDF qilib ber</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/50 w-fit animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                  <FileText className="w-3 h-3 text-primary" />
+                  <span className="text-[10px] text-muted-foreground">PDF tayyorlanmoqda...</span>
+                </div>
+                
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/40 border border-border/40 animate-scale-in" style={{ animationDelay: '0.4s' }}>
+                  <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
                     <FileText className="w-5 h-5 text-red-500" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{t('mockup.pdf.fileName')}</p>
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-foreground">Universitetlar_Royxati.pdf</p>
                     <p className="text-[10px] text-muted-foreground">PDF • 24 KB</p>
                   </div>
-                  <button className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 hover:scale-110 transition-all duration-200">
+                  <button className="p-2 rounded-lg bg-primary/10 text-primary">
                     <Download className="w-4 h-4" />
                   </button>
                 </div>
-                
-                {/* Action buttons */}
-                <div className="flex items-center gap-1 pt-1 opacity-0 animate-[fade-in_0.4s_ease-out_1.1s_forwards]">
-                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 hover:scale-110 transition-all duration-200 text-muted-foreground hover:text-foreground">
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                  </button>
-                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 hover:scale-110 transition-all duration-200 text-muted-foreground hover:text-foreground">
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" /></svg>
-                  </button>
-                </div>
+              </>
+            )}
+          </div>
+          
+          {/* Input bar */}
+          <div className="px-4 py-3 border-t border-border/30 bg-card/30">
+            <div className="flex items-center gap-2">
+              <button className="p-1.5 text-muted-foreground">
+                <Paperclip className="w-4 h-4" />
+              </button>
+              <button className="p-1.5 text-muted-foreground">
+                <Camera className="w-4 h-4" />
+              </button>
+              <div className="flex-1 bg-secondary/40 rounded-xl px-3 py-2 border border-border/30">
+                <span className="text-[10px] text-muted-foreground">Savolingizni yozing...</span>
               </div>
-              
-              {/* Follow-up suggestions */}
-              <div className="flex gap-2 flex-wrap pt-1 opacity-0 animate-[fade-in_0.4s_ease-out_1.3s_forwards]">
-                <button className="text-[10px] px-3 py-1.5 rounded-full bg-secondary/50 border border-border/40 text-muted-foreground hover:bg-secondary hover:text-foreground hover:scale-105 transition-all duration-200">
-                  {t('mockup.pdf.suggestion1')}
-                </button>
-                <button className="text-[10px] px-3 py-1.5 rounded-full bg-secondary/50 border border-border/40 text-muted-foreground hover:bg-secondary hover:text-foreground hover:scale-105 transition-all duration-200">
-                  {t('mockup.pdf.suggestion2')}
-                </button>
-              </div>
+              <button className="p-1.5 text-muted-foreground">
+                <Mic className="w-4 h-4" />
+              </button>
+              <button className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center">
+                <Send className="w-3.5 h-3.5 text-primary-foreground" />
+              </button>
             </div>
-          )}
-        </div>
-        
-        {/* Small dot indicators inside card */}
-        <div className="flex items-center justify-center gap-1.5 pb-3">
-          {slides.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => setActiveSlide(idx)}
-              className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
-                activeSlide === idx
-                  ? 'bg-primary w-4'
-                  : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
-              }`}
-            />
-          ))}
-        </div>
-        
-        {/* Input area */}
-        <div className="px-4 py-3 border-t border-border/30 bg-card/30">
-          <div className="flex items-center gap-2">
-            <button className="p-2 rounded-lg hover:bg-secondary/60 transition-colors text-muted-foreground">
-              <Paperclip className="w-4 h-4" />
-            </button>
-            <button className="p-2 rounded-lg hover:bg-secondary/60 transition-colors text-muted-foreground">
-              <Camera className="w-4 h-4" />
-            </button>
-            <div className="flex-1 bg-secondary/40 rounded-xl px-4 py-2.5 border border-border/30">
-              <span className="text-sm text-muted-foreground">{t('chat.input.placeholder')}</span>
-            </div>
-            <button className="p-2 rounded-lg hover:bg-secondary/60 transition-colors text-muted-foreground">
-              <Mic className="w-4 h-4" />
-            </button>
-            <button className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-              <Send className="w-4 h-4 text-primary-foreground" />
-            </button>
           </div>
         </div>
       </div>
       
-      {/* Feature tabs below mockup */}
+      {/* Slide indicators */}
       <div className="flex items-center justify-center gap-2 mt-6">
-        {slides.map((slide, idx) => (
+        {['Web qidiruv', 'Rasm yaratish', 'PDF eksport'].map((label, idx) => (
           <button
-            key={slide.id}
+            key={idx}
             onClick={() => setActiveSlide(idx)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+            className={`px-4 py-2 rounded-full text-xs font-medium transition-all duration-300 ${
               activeSlide === idx
-                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30'
-                : 'bg-transparent text-muted-foreground hover:text-foreground'
+                ? 'bg-primary text-primary-foreground shadow-[0_0_20px_-5px_hsl(var(--primary)/0.5)]'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            {slide.label}
+            {label}
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+// Bento grid feature card
+function BentoCard({ 
+  icon, 
+  title, 
+  description, 
+  className = "",
+  children,
+  badge
+}: { 
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  className?: string;
+  children?: React.ReactNode;
+  badge?: string;
+}) {
+  return (
+    <GlassCard className={`p-6 ${className}`}>
+      <div className="flex items-start justify-between mb-4">
+        <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+          {icon}
+        </div>
+        {badge && (
+          <span className="px-2 py-1 text-[10px] font-medium rounded-full bg-primary/20 text-primary border border-primary/30">
+            {badge}
+          </span>
+        )}
+      </div>
+      <h3 className="text-lg font-semibold text-foreground mb-2 tracking-tight">{title}</h3>
+      <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+      {children}
+    </GlassCard>
+  );
+}
+
+// Pricing card component
+function PricingCard({ 
+  name, 
+  price, 
+  features, 
+  cta, 
+  popular = false,
+  onAction
+}: { 
+  name: string;
+  price: string;
+  features: string[];
+  cta: string;
+  popular?: boolean;
+  onAction: () => void;
+}) {
+  return (
+    <div className={`
+      relative rounded-2xl p-6 transition-all duration-300
+      ${popular 
+        ? 'bg-white/[0.05] border-2 border-primary/50 shadow-[0_0_50px_-15px_hsl(var(--primary)/0.4)] scale-105 z-10' 
+        : 'bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.05] hover:border-white/[0.12]'
+      }
+    `}>
+      {popular && (
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+          <span className="px-4 py-1 text-xs font-semibold rounded-full bg-primary text-primary-foreground shadow-lg">
+            ⭐ Tavsiya etiladi
+          </span>
+        </div>
+      )}
+      
+      <div className="text-center mb-6">
+        <h3 className="text-lg font-semibold text-foreground mb-2">{name}</h3>
+        <div className="flex items-baseline justify-center gap-1">
+          <span className="text-5xl font-bold text-foreground tracking-tight">{price}</span>
+          <span className="text-muted-foreground text-sm">so'm/oy</span>
+        </div>
+      </div>
+      
+      <ul className="space-y-3 mb-6">
+        {features.map((feature, idx) => (
+          <li key={idx} className="flex items-start gap-3 text-sm">
+            <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+            <span className="text-foreground/90">{feature}</span>
+          </li>
+        ))}
+      </ul>
+      
+      <Button 
+        onClick={onAction}
+        className={`w-full rounded-xl h-11 font-medium transition-all duration-300 ${
+          popular 
+            ? 'bg-primary text-primary-foreground shadow-[0_0_30px_-10px_hsl(var(--primary)/0.5)] hover:shadow-[0_0_40px_-10px_hsl(var(--primary)/0.7)]' 
+            : 'bg-white/[0.05] text-foreground border border-white/[0.1] hover:bg-white/[0.1]'
+        }`}
+      >
+        {cta}
+      </Button>
     </div>
   );
 }
@@ -436,7 +358,6 @@ export default function Landing() {
   const { t } = useTranslation();
   const { user } = useAuth();
   
-  // Prefetch critical routes after landing loads for instant navigation
   useEffect(() => {
     const timer = setTimeout(prefetchCriticalRoutes, 1500);
     return () => clearTimeout(timer);
@@ -450,53 +371,11 @@ export default function Landing() {
     }
   };
 
-  const handleModeClick = (modeId: string) => {
-    if (user) {
-      navigate(`/chat/${modeId}`);
-    } else {
-      navigate(`/auth?next=${encodeURIComponent(`/chat/${modeId}`)}`);
-    }
-  };
-
   const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   };
-  
-  const heroRef = useScrollAnimation({ threshold: 0.2 });
-  const featuresRef = useScrollAnimation({ threshold: 0.1 });
-  const imageGenRef = useScrollAnimation({ threshold: 0.1 });
-  const circlesRef = useScrollAnimation({ threshold: 0.1 });
-  const stepsRef = useScrollAnimation({ threshold: 0.1 });
-  const pricingRef = useScrollAnimation({ threshold: 0.1 });
-  const faqRef = useScrollAnimation({ threshold: 0.1 });
 
-  // 6 feature cards (merged, concise)
-  const features = [
-    { icon: <Search className="w-5 h-5" />, title: t('landing.feature.webSearch.title'), desc: t('landing.feature.webSearch.desc') },
-    { icon: <ImagePlus className="w-5 h-5" />, title: t('landing.feature.imageGen.title'), desc: t('landing.feature.imageGen.desc'), badge: t('landing.badge.new') },
-    { icon: <FileText className="w-5 h-5" />, title: t('landing.feature.fileAnalysis.title'), desc: t('landing.feature.fileAnalysis.desc') },
-    { icon: <ListTodo className="w-5 h-5" />, title: t('landing.feature.aiActions.title'), desc: t('landing.feature.aiActions.desc') },
-    { icon: <Users className="w-5 h-5" />, title: t('landing.feature.circles.title'), desc: t('landing.feature.circles.desc') },
-    { icon: <Globe className="w-5 h-5" />, title: t('landing.feature.modes.title'), desc: t('landing.feature.modes.desc') },
-  ];
-
-  // 4 steps
-  const steps = [
-    { number: "1", title: t('landing.step.1.title'), desc: t('landing.step.1.desc') },
-    { number: "2", title: t('landing.step.2.title'), desc: t('landing.step.2.desc') },
-    { number: "3", title: t('landing.step.3.title'), desc: t('landing.step.3.desc') },
-    { number: "4", title: t('landing.step.4.title'), desc: t('landing.step.4.desc') },
-  ];
-
-  // Circles outcome chips
-  const circleOutcomes = [
-    t('landing.circles.outcome.plan'),
-    t('landing.circles.outcome.tasks'),
-    t('landing.circles.outcome.decisions'),
-    t('landing.circles.outcome.summary'),
-  ];
-
-  // FAQs (extended)
+  // FAQs
   const faqs = [
     { q: t('faq.1.question'), a: t('faq.1.answer') },
     { q: t('faq.2.question'), a: t('faq.2.answer') },
@@ -506,602 +385,360 @@ export default function Landing() {
     { q: t('faq.circles.question'), a: t('faq.circles.answer') },
   ];
 
-  // Pricing plans
-  const pricingPlans = [
-    {
-      name: t('pricing.free.name'),
-      price: "0",
-      features: [t('landing.pricing.free.f1'), t('landing.pricing.free.f2'), t('landing.pricing.free.f3')],
-      cta: t('button.start'),
-      action: "start",
-    },
-    {
-      name: t('pricing.monthly.name'),
-      price: "49,000",
-      features: [t('landing.pricing.monthly.f1'), t('landing.pricing.monthly.f2'), t('landing.pricing.monthly.f3'), t('landing.pricing.monthly.f4'), t('landing.pricing.monthly.f5')],
-      cta: t('button.comingSoon'),
-      action: "soon",
-      highlighted: true,
-      badge: t('pricing.monthly.badge'),
-    },
-    {
-      name: t('pricing.yearly.name'),
-      price: "340,000",
-      features: [t('landing.pricing.yearly.f1'), t('landing.pricing.yearly.f2'), t('landing.pricing.yearly.f3')],
-      cta: t('button.comingSoon'),
-      action: "soon",
-      badge: t('pricing.yearly.badge'),
-    },
-  ];
-
-  // Real AI-generated image gallery
-  const imageGallery = [
-    { label: "Samarqand", image: samarkandImage },
-    { label: "Toshkent", image: tashkentImage },
-    { label: "Suzani", image: suzaniImage },
-  ];
-
-  // Source chips
-  const sourceChips = ['kun.uz', 'gazeta.uz', 'lex.uz'];
-
   return (
     <div className="min-h-screen bg-background relative overflow-x-hidden">
-      {/* Background */}
+      {/* Background effects */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px]" />
-        <div className="absolute top-1/3 right-0 w-[500px] h-[500px] bg-primary/4 rounded-full blur-[100px]" />
+        {/* Noise texture */}
+        <div className="absolute inset-0 opacity-[0.015]" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+        }} />
+        
+        {/* Gradient orbs */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-primary/[0.07] rounded-full blur-[150px]" />
+        <div className="absolute top-1/3 right-0 w-[600px] h-[600px] bg-primary/[0.05] rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-primary/[0.04] rounded-full blur-[100px]" />
       </div>
       
-      {/* Sticky Header with Nav */}
-      <header className="glass-strong sticky top-0 z-50 border-b border-border/30">
+      {/* Header */}
+      <header className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-white/[0.05]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
-          {/* Logo - ~30% larger for visual presence */}
           <div className="flex items-center gap-3">
-            <img src={bahorLogo} alt="Bahor AI" className="h-12 sm:h-14 w-auto" />
-            <span className="text-[1.4rem] sm:text-[1.7rem] font-bold text-foreground tracking-tight">Bahor AI</span>
+            <img src={bahorLogo} alt="Bahor AI" className="h-10 sm:h-12 w-auto" />
+            <span className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Bahor AI</span>
           </div>
           
-          {/* Center Nav - hidden on mobile */}
-          <nav className="hidden md:flex items-center gap-6">
-            <button onClick={() => scrollToSection('features')} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              {t('nav.features')}
-            </button>
-            <button onClick={() => scrollToSection('image-gen')} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              {t('landing.nav.imageGen')}
-            </button>
-            <button onClick={() => scrollToSection('circles')} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              {t('nav.circles')}
-            </button>
-            <button onClick={() => scrollToSection('pricing')} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              {t('nav.pricing')}
-            </button>
-            <button onClick={() => scrollToSection('faq')} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              FAQ
-            </button>
+          <nav className="hidden md:flex items-center gap-8">
+            {[
+              { label: t('nav.features'), id: 'features' },
+              { label: t('nav.circles'), id: 'circles' },
+              { label: t('nav.pricing'), id: 'pricing' },
+              { label: 'FAQ', id: 'faq' },
+            ].map((item) => (
+              <button 
+                key={item.id}
+                onClick={() => scrollToSection(item.id)} 
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors relative group"
+              >
+                {item.label}
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full" />
+              </button>
+            ))}
           </nav>
           
-          {/* Right: Lang + CTA */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-3">
             <LanguageSwitcher variant="pill" />
-            <Button onClick={handleOpenApp} size="sm" className="h-9 px-4 rounded-xl font-medium shadow-lg shadow-primary/20">
-              <span className="hidden sm:inline">{t('button.openApp')}</span>
-              <span className="sm:hidden">{t('button.open')}</span>
+            <Button 
+              onClick={handleOpenApp} 
+              size="sm" 
+              className="h-9 px-5 rounded-full font-medium bg-primary/20 text-primary border border-primary/50 hover:bg-primary hover:text-primary-foreground transition-all duration-300 shadow-[0_0_20px_-5px_hsl(var(--primary)/0.3)] hover:shadow-[0_0_30px_-5px_hsl(var(--primary)/0.5)]"
+            >
+              {t('button.openApp')}
             </Button>
           </div>
         </div>
       </header>
 
-      {/* HERO — 2-column, tighter layout */}
-      <section className="relative pt-4 pb-8 sm:pt-6 sm:pb-12 lg:pt-8 lg:pb-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div
-            ref={heroRef.ref}
-            className={`grid lg:grid-cols-[1.1fr_0.9fr] gap-8 lg:gap-10 items-center transition-all duration-700 ${
-              heroRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-            }`}
-          >
-            {/* Left - Content (wider column, max-w ~620px) */}
-            <div className="text-center lg:text-left max-w-[620px] lg:max-w-none">
-              {/* Beta badge - tighter margin */}
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-3">
-                <Sparkles className="w-4 h-4" />
-                {t('badge.beta')}
-              </div>
-              
-              {/* Headline - slightly larger, tighter line-height */}
-              <h1 className="text-[1.75rem] sm:text-4xl lg:text-[2.75rem] xl:text-5xl font-bold mb-3 sm:mb-4 text-foreground leading-[1.15] tracking-tight">
-                {t('landing.hero.headline')}
-              </h1>
-              
-              {/* Subheadline - slightly larger max-width */}
-              <p className="text-base sm:text-lg text-muted-foreground mb-5 max-w-xl mx-auto lg:mx-0">
-                {t('landing.hero.subheadline')}
-              </p>
-              
-              {/* 3 bullet value props - tighter spacing */}
-              <ul className="space-y-1.5 mb-5 text-left max-w-xl mx-auto lg:mx-0">
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span className="text-sm text-foreground">{t('landing.hero.bullet1')}</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span className="text-sm text-foreground">{t('landing.hero.bullet2')}</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span className="text-sm text-foreground">{t('landing.hero.bullet3')}</span>
-                </li>
-              </ul>
-              
-              {/* CTA row - tighter spacing */}
-              <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start mb-4">
-                <Button onClick={handleOpenApp} size="lg" className="h-11 px-6 font-semibold rounded-xl shadow-lg shadow-primary/25 hover-lift">
-                  <MessageSquare className="w-5 h-5 mr-2" />
-                  {t('button.openApp')}
-                </Button>
-                <Button variant="outline" size="lg" className="h-11 px-6 font-medium rounded-xl" onClick={() => scrollToSection('features')}>
-                  {t('landing.hero.seeFeatures')}
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-              
-              {/* Trust strip */}
-              <div className="flex flex-col sm:flex-row items-center gap-2 justify-center lg:justify-start text-sm text-muted-foreground">
-                <span>{t('landing.hero.trustLine')}</span>
-                <div className="flex gap-1.5">
-                  {sourceChips.map((s) => (
-                    <span key={s} className="px-2 py-0.5 rounded-full bg-secondary/80 text-xs">{s}</span>
-                  ))}
-                </div>
-              </div>
-            </div>
-            
-            {/* Right - Mockup (shifted up ~20px) */}
-            <div className="mt-2 lg:mt-0 lg:-mt-5">
-              <HeroMockup />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION 1 — Asosiy imkoniyatlar (6 cards) */}
-      <section id="features" className="py-16 sm:py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div ref={featuresRef.ref} className={`text-center mb-10 transition-all duration-600 ${featuresRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
-            <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-foreground">{t('landing.features.title')}</h2>
-            <p className="text-muted-foreground max-w-xl mx-auto">{t('landing.features.subtitle')}</p>
+      {/* HERO SECTION */}
+      <section className="relative pt-16 sm:pt-24 pb-16 sm:pb-24">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          {/* Beta badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-6 animate-fade-in">
+            <Sparkles className="w-4 h-4" />
+            Beta — Bepul sinab ko'ring
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {features.map((f, i) => (
-              <div
-                key={i}
-                className={`relative p-5 rounded-2xl glass-premium border border-border/30 hover:shadow-glow transition-all duration-500 ${
-                  featuresRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-                }`}
-                style={{ transitionDelay: `${i * 60}ms` }}
-              >
-                {f.badge && (
-                  <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold">
-                    {f.badge}
-                  </span>
-                )}
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-3">
-                  {f.icon}
-                </div>
-                <h3 className="font-bold text-foreground mb-1">{f.title}</h3>
-                <p className="text-sm text-muted-foreground">{f.desc}</p>
-              </div>
-            ))}
+          {/* Headline with gradient */}
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-bold mb-6 tracking-tight leading-[1.1] animate-fade-in" style={{ animationDelay: '0.1s' }}>
+            <span className="text-foreground">Birinchi o'zbek </span>
+            <span className="bg-gradient-to-r from-primary via-primary-light to-primary bg-clip-text text-transparent">
+              sun'iy intellekti
+            </span>
+          </h1>
+          
+          {/* Subheadline */}
+          <p className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            O'zbek tili, madaniyat va kundalik ehtiyojlar uchun yaratilgan.
+            Savol so'rang, rasm yarating, hujjat tayyorlang.
+          </p>
+          
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+            <Button 
+              onClick={handleOpenApp} 
+              size="lg" 
+              className="h-12 px-8 rounded-full font-semibold text-base shadow-[0_0_40px_-10px_hsl(var(--primary)/0.5)] hover:shadow-[0_0_50px_-10px_hsl(var(--primary)/0.7)] transition-all duration-300"
+            >
+              <MessageSquare className="w-5 h-5 mr-2" />
+              Boshlash — Bepul
+            </Button>
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="h-12 px-8 rounded-full font-medium text-base border-white/[0.1] bg-white/[0.03] hover:bg-white/[0.08]"
+              onClick={() => scrollToSection('features')}
+            >
+              Imkoniyatlarni ko'ring
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
+          
+          {/* Phone Mockup */}
+          <div className="animate-fade-in" style={{ animationDelay: '0.4s' }}>
+            <PhoneMockup />
           </div>
         </div>
       </section>
 
-      {/* SECTION 2 — Rasm yaratish (AI) */}
-      <section id="image-gen" className="py-16 sm:py-20 relative">
+      {/* FEATURES - BENTO GRID */}
+      <section id="features" className="py-20 sm:py-28">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div ref={imageGenRef.ref} className={`grid lg:grid-cols-2 gap-10 items-center transition-all duration-700 ${imageGenRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4 tracking-tight">
+              Barcha imkoniyatlar bir joyda
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Qidiruv, rasm yaratish, hujjat tahlili va ko'proq — hammasi o'zbek tilida
+            </p>
+          </div>
+          
+          {/* Bento Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+            {/* Web Search - 2 cols */}
+            <BentoCard
+              icon={<Search className="w-5 h-5" />}
+              title="Internetdan qidiruv"
+              description="Eng so'nggi ma'lumotlarni real vaqtda toping. Manbalarni ko'ring, natijalarni PDF qiling."
+              className="md:col-span-2"
+            >
+              <div className="flex gap-2 flex-wrap mt-4">
+                {['kun.uz', 'gazeta.uz', 'lex.uz', 'review.uz'].map((s) => (
+                  <span key={s} className="text-[11px] px-3 py-1.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                    {s}
+                  </span>
+                ))}
+              </div>
+            </BentoCard>
+            
+            {/* Image Gen - 1 col, tall */}
+            <BentoCard
+              icon={<ImagePlus className="w-5 h-5" />}
+              title="Rasm yaratish"
+              description="Tasviringizni so'z bilan ifodalang — Bahor uni yaratadi."
+              badge="Yangi"
+              className="md:row-span-2"
+            >
+              <div className="mt-4 rounded-xl overflow-hidden relative">
+                <img src={samarkandImage} alt="Generated" className="w-full h-32 object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                <span className="absolute bottom-2 left-2 text-[11px] text-white font-medium">Registon maydoni</span>
+              </div>
+            </BentoCard>
+            
+            {/* Circles */}
+            <BentoCard
+              icon={<Users className="w-5 h-5" />}
+              title="Doiralar"
+              description="Guruh bilan ishlang. AI yordamida vazifalar, qarorlar va xulosalar."
+            >
+              <div className="flex -space-x-2 mt-4">
+                <img src="https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=64&h=64&fit=crop&crop=face" alt="" className="w-8 h-8 rounded-full border-2 border-background" />
+                <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=64&h=64&fit=crop&crop=face" alt="" className="w-8 h-8 rounded-full border-2 border-background" />
+                <div className="w-8 h-8 rounded-full bg-primary/20 border-2 border-background flex items-center justify-center text-[10px] text-primary font-medium">+3</div>
+              </div>
+            </BentoCard>
+            
+            {/* File Analysis */}
+            <BentoCard
+              icon={<FileText className="w-5 h-5" />}
+              title="Fayl tahlili"
+              description="PDF, Word, Excel yuklang — Bahor o'qiydi va javob beradi."
+            />
+            
+            {/* PDF Tools - 2 cols */}
+            <BentoCard
+              icon={<Zap className="w-5 h-5" />}
+              title="PDF asboblar"
+              description="Birlashtirish, bo'lish, siqish, suv belgisi qo'shish va boshqa 10+ asbob."
+              className="md:col-span-2"
+            >
+              <div className="flex gap-2 flex-wrap mt-4">
+                {['Birlashtirish', 'Siqish', 'Himoya', 'OCR'].map((tool) => (
+                  <span key={tool} className="text-[11px] px-3 py-1.5 rounded-full bg-secondary text-muted-foreground">
+                    {tool}
+                  </span>
+                ))}
+              </div>
+            </BentoCard>
+            
+            {/* Modes */}
+            <BentoCard
+              icon={<Globe className="w-5 h-5" />}
+              title="8+ rejim"
+              description="Kodlash, IELTS, biznes, sog'liq — har bir soha uchun maxsus yordamchi."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* CIRCLES SECTION */}
+      <section id="circles" className="py-20 sm:py-28 relative">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Content */}
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium mb-4">
-                <ImagePlus className="w-3.5 h-3.5" />
-                {t('landing.badge.new')}
+                <Users className="w-3.5 h-3.5" />
+                Guruhlar uchun
               </div>
-              <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-foreground">{t('landing.imageGen.title')}</h2>
-              <ul className="space-y-3 mb-6">
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-primary mt-0.5" />
-                  <span className="text-foreground">{t('landing.imageGen.bullet1')}</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-primary mt-0.5" />
-                  <span className="text-foreground">{t('landing.imageGen.bullet2')}</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-primary mt-0.5" />
-                  <span className="text-foreground">{t('landing.imageGen.bullet3')}</span>
-                </li>
-              </ul>
-              <Button onClick={handleOpenApp} className="h-10 px-5 rounded-xl font-medium shadow-lg shadow-primary/20">
-                {t('landing.imageGen.cta')}
+              <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4 tracking-tight">
+                Doiralar — jamoaviy AI yordamchi
+              </h2>
+              <p className="text-muted-foreground mb-8">
+                Oila, jamoa yoki do'stlar bilan birgalikda ishlang. 
+                /bahor yozing — AI vazifalar, qarorlar va xulosalarni chiqaradi.
+              </p>
+              
+              <div className="space-y-4">
+                {[
+                  { icon: <MessageSquare className="w-4 h-4" />, title: "Guruh chati", desc: "Telegram uslubida tezkor xabarlar" },
+                  { icon: <Sparkles className="w-4 h-4" />, title: "/bahor AI yordami", desc: "Suhbatni tahlil qilish, vazifa chiqarish" },
+                  { icon: <FileText className="w-4 h-4" />, title: "Fayl almashish", desc: "Hujjatlarni yuklang, AI tahlil qilsin" },
+                  { icon: <Shield className="w-4 h-4" />, title: "Xavfsiz va maxfiy", desc: "Faqat a'zolar ko'rishi mumkin" },
+                ].map((item) => (
+                  <div key={item.title} className="flex items-start gap-3 group">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary/20 transition-colors">
+                      {item.icon}
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-foreground">{item.title}</h4>
+                      <p className="text-xs text-muted-foreground">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <Button onClick={handleOpenApp} className="mt-8 rounded-xl h-11 px-6 font-medium shadow-lg shadow-primary/20">
+                Doira yaratish
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </div>
             
-            {/* Mini gallery with real AI-generated images */}
-            <div className="flex gap-3 justify-center lg:justify-end">
-              {imageGallery.map((img, i) => (
-                <div
-                  key={i}
-                  className={`w-24 h-28 sm:w-28 sm:h-32 rounded-xl overflow-hidden border border-border/40 relative group transition-all duration-500 hover:scale-105 hover:shadow-lg ${
-                    imageGenRef.isVisible ? "opacity-100 scale-100" : "opacity-0 scale-90"
-                  }`}
-                  style={{ transitionDelay: `${200 + i * 100}ms` }}
-                >
-                  <img 
-                    src={img.image} 
-                    alt={img.label}
-                    width={112}
-                    height={128}
-                    loading="lazy" 
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-                    <span className="text-xs text-white font-medium">{img.label}</span>
+            {/* Circles Mockup */}
+            <GlassCard className="p-5 max-w-md mx-auto" hover={false}>
+              <div className="flex items-center gap-3 pb-3 border-b border-white/[0.05] mb-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-lg">📊</div>
+                <div>
+                  <span className="font-semibold text-sm text-foreground">Marketing jamoasi</span>
+                  <span className="text-xs text-muted-foreground block">6 a'zo</span>
+                </div>
+                <div className="flex -space-x-1.5 ml-auto">
+                  <img src="https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=64&h=64&fit=crop&crop=face" alt="" className="w-6 h-6 rounded-full border-2 border-background" />
+                  <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=64&h=64&fit=crop&crop=face" alt="" className="w-6 h-6 rounded-full border-2 border-background" />
+                  <div className="w-6 h-6 rounded-full bg-orange-500 border-2 border-background flex items-center justify-center text-[8px] text-white">+4</div>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="flex items-start gap-2">
+                  <div className="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center text-[9px] text-white shrink-0">JA</div>
+                  <div className="bg-secondary/60 rounded-xl rounded-tl-sm px-3 py-2 text-xs text-foreground">
+                    <span className="text-primary font-medium">/bahor</span> shu hafta qanday vazifalar qoldi?
                   </div>
                 </div>
-              ))}
-            </div>
+                
+                <div className="flex items-start gap-2">
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center overflow-hidden p-0.5 shrink-0">
+                    <img src={bahorLogo} alt="" className="w-full h-full" />
+                  </div>
+                  <div className="bg-primary/10 border border-primary/20 rounded-xl rounded-tl-sm px-3 py-2 text-xs text-foreground">
+                    📋 3 ta vazifa:<br/>
+                    1. Prezentatsiya ✅<br/>
+                    2. Byudjet hisob-kitobi<br/>
+                    3. Mijozlar uchrashuvi
+                  </div>
+                </div>
+              </div>
+            </GlassCard>
           </div>
         </div>
       </section>
 
-      {/* SECTION 3 — Doiralar (Circles) */}
-      <section id="circles" className="py-16 sm:py-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div ref={circlesRef.ref} className={`grid lg:grid-cols-2 gap-8 lg:gap-12 items-start transition-all duration-700 ${circlesRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
-            {/* Realistic Circles Mockup - Larger, more appealing */}
-            <div className={`order-2 lg:order-1 transition-all duration-700 ${circlesRef.isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}>
-              <div className="glass-premium rounded-2xl p-4 sm:p-5 border border-border/40 max-w-lg mx-auto shadow-2xl">
-                {/* Header with back button, emoji, title, members, and avatars */}
-                <div className="flex items-center gap-3 pb-3 border-b border-border/30 mb-3">
-                  {/* Back button */}
-                  <button className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors group">
-                    <ArrowLeft className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-                  </button>
-                  {/* Circle emoji icon */}
-                  <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-base">
-                    📊
-                  </div>
-                  {/* Title and member count */}
-                  <div className="flex-1 min-w-0">
-                    <span className="font-semibold text-sm text-foreground block truncate">{t('landing.circles.mockupTitle')}</span>
-                    <span className="text-xs text-muted-foreground">6 {t('landing.circles.members')}</span>
-                  </div>
-                  {/* Online members mini avatars */}
-                  <div className="flex -space-x-1.5">
-                    <img src="https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=64&h=64&fit=crop&crop=face" alt="" loading="lazy" className="w-7 h-7 rounded-full border-2 border-background object-cover" />
-                    <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=64&h=64&fit=crop&crop=face" alt="" loading="lazy" className="w-7 h-7 rounded-full border-2 border-background object-cover" />
-                    <div className="w-7 h-7 rounded-full bg-orange-500 border-2 border-background flex items-center justify-center text-[9px] text-white font-medium">JA</div>
-                    <div className="w-7 h-7 rounded-full bg-green-500 border-2 border-background flex items-center justify-center text-[9px] text-white font-medium">NK</div>
-                    <div className="w-7 h-7 rounded-full bg-purple-500 border-2 border-background flex items-center justify-center text-[9px] text-white font-medium">SU</div>
-                    <div className="w-7 h-7 rounded-full bg-pink-500 border-2 border-background flex items-center justify-center text-[9px] text-white font-medium">+1</div>
-                  </div>
-                </div>
-                
-                {/* Tabs: Chat, Fayllar, AI natijalar */}
-                <div className="flex gap-1 p-1 rounded-xl bg-secondary/50 mb-3">
-                  {[
-                    { label: 'Chat', active: true },
-                    { label: 'Fayllar', active: false },
-                    { label: t('landing.circles.aiResults'), active: false }
-                  ].map((tab) => (
-                    <div 
-                      key={tab.label} 
-                      className={`flex-1 py-2 rounded-lg text-center text-xs font-medium transition-all cursor-pointer ${
-                        tab.active 
-                          ? 'bg-primary text-primary-foreground shadow-sm' 
-                          : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      {tab.label}
-                    </div>
-                  ))}
-                </div>
-                
-                {/* AI Action buttons */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {circleOutcomes.map((outcome) => (
-                    <span 
-                      key={outcome} 
-                      className="px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/20 hover:bg-primary/20 transition-colors cursor-pointer"
-                    >
-                      {outcome}
-                    </span>
-                  ))}
-                </div>
-                
-                {/* Chat messages */}
-                <div className="space-y-3 mb-3">
-                  {/* User message 1 */}
-                  <div className="flex items-start gap-2.5">
-                    <img 
-                      src="https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=64&h=64&fit=crop&crop=face" 
-                      alt="Asror" 
-                      className="w-8 h-8 rounded-full object-cover shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-medium text-foreground">Asror</span>
-                        <span className="text-[10px] text-muted-foreground">10:32</span>
-                      </div>
-                      <div className="bg-secondary/60 rounded-xl rounded-tl-sm px-3 py-2 text-xs text-foreground">
-                        Ertangi uchrashuv uchun prezentatsiya tayyor bo'ldimi?
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* User message 2 */}
-                  <div className="flex items-start gap-2.5">
-                    <img 
-                      src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=64&h=64&fit=crop&crop=face" 
-                      alt="Dilnoza" 
-                      className="w-8 h-8 rounded-full object-cover shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-medium text-foreground">Dilnoza</span>
-                        <span className="text-[10px] text-muted-foreground">10:34</span>
-                      </div>
-                      <div className="bg-secondary/60 rounded-xl rounded-tl-sm px-3 py-2 text-xs text-foreground">
-                        Ha, faylga yuklab qo'ydim ✓
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* /bahor AI request */}
-                  <div className="flex items-start gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-[10px] text-white font-medium shrink-0">
-                      JA
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-medium text-foreground">Jamshid</span>
-                        <span className="text-[10px] text-muted-foreground">10:35</span>
-                      </div>
-                      <div className="bg-secondary/60 rounded-xl rounded-tl-sm px-3 py-2 text-xs text-foreground">
-                        <span className="text-primary font-medium">/bahor</span> shu hafta qanday vazifalar qoldi?
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Bahor AI response */}
-                  <div className="flex items-start gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center shrink-0 ring-1 ring-primary/20 overflow-hidden p-0.5">
-                      <img src={bahorLogo} alt="Bahor AI" className="w-full h-full object-contain" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-medium text-primary">Bahor AI</span>
-                        <Sparkles className="w-3 h-3 text-primary" />
-                        <span className="text-[10px] text-muted-foreground">10:35</span>
-                      </div>
-                      <div className="bg-primary/10 border border-primary/20 rounded-xl rounded-tl-sm px-3 py-2.5 text-xs text-foreground leading-relaxed">
-                        📋 Shu hafta uchun 3 ta vazifa:<br/>
-                        1. Prezentatsiya tayyorlash ✅<br/>
-                        2. Byudjet hisob-kitobi<br/>
-                        3. Mijozlar bilan uchrashuv
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Input area */}
-                <div className="pt-3 border-t border-border/30">
-                  <div className="flex items-center gap-2">
-                    <button className="p-2 rounded-xl bg-secondary/60 hover:bg-secondary transition-colors">
-                      <Paperclip className="w-4 h-4 text-muted-foreground" />
-                    </button>
-                    <button className="p-2 rounded-xl bg-secondary/60 hover:bg-secondary transition-colors">
-                      <Camera className="w-4 h-4 text-muted-foreground" />
-                    </button>
-                    <div className="flex-1 px-3 py-2 rounded-xl bg-secondary/50 text-xs text-muted-foreground">
-                      {t('landing.circles.inputPlaceholder')}
-                    </div>
-                    <button className="p-2 rounded-xl bg-secondary/60 hover:bg-secondary transition-colors">
-                      <Mic className="w-4 h-4 text-muted-foreground" />
-                    </button>
-                    <button className="p-2 rounded-xl bg-primary shadow-lg shadow-primary/20">
-                      <Send className="w-4 h-4 text-primary-foreground" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+      {/* PRICING */}
+      <section id="pricing" className="py-20 sm:py-28">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4 tracking-tight">
+              Oddiy narxlar
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              Bepul boshlang, kerak bo'lganda yangilang
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+            <PricingCard
+              name="Bepul"
+              price="0"
+              features={[
+                "Kuniga 5 ta so'rov",
+                "Asosiy rejimlar",
+                "Oddiy web qidiruv",
+              ]}
+              cta="Boshlash"
+              onAction={handleOpenApp}
+            />
             
-            {/* Content with key features explanation */}
-            <div className="order-1 lg:order-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium mb-4">
-                <Users className="w-3.5 h-3.5" />
-                {t('landing.circles.badge')}
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-foreground">{t('landing.circles.title')}</h2>
-              <p className="text-muted-foreground mb-6">{t('landing.circles.desc')}</p>
-              
-              {/* Key Features List */}
-              <div className="space-y-4 mb-6">
-                <div className="flex items-start gap-3 group">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                    <MessageSquare className="w-4 h-4 text-primary" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-foreground mb-0.5">{t('landing.circles.feature.chat')}</h4>
-                    <p className="text-xs text-muted-foreground">{t('landing.circles.feature.chatDesc')}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-3 group">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                    <Sparkles className="w-4 h-4 text-primary" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-foreground mb-0.5">{t('landing.circles.feature.ai')}</h4>
-                    <p className="text-xs text-muted-foreground">{t('landing.circles.feature.aiDesc')}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-3 group">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                    <FileText className="w-4 h-4 text-primary" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-foreground mb-0.5">{t('landing.circles.feature.files')}</h4>
-                    <p className="text-xs text-muted-foreground">{t('landing.circles.feature.filesDesc')}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-3 group">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                    <ListTodo className="w-4 h-4 text-primary" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-foreground mb-0.5">{t('landing.circles.feature.outcomes')}</h4>
-                    <p className="text-xs text-muted-foreground">{t('landing.circles.feature.outcomesDesc')}</p>
-                  </div>
-                </div>
-              </div>
-              
-              <p className="text-sm text-muted-foreground mb-2">{t('landing.circles.templates')}</p>
-              <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                <span className="px-2 py-1 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">📚 Study</span>
-                <span className="px-2 py-1 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">💼 Work</span>
-                <span className="px-2 py-1 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">👨‍👩‍👧‍👦 Family</span>
-                <span className="px-2 py-1 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">🎨 Creator</span>
-                <span className="px-2 py-1 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">🏪 Small Biz</span>
-              </div>
-            </div>
+            <PricingCard
+              name="Premium"
+              price="49,000"
+              features={[
+                "Kuniga 200 ta so'rov",
+                "Barcha rejimlar",
+                "Cheksiz rasm yaratish",
+                "PDF asboblar to'plami",
+                "Tezkor javoblar",
+              ]}
+              cta="Tez kunda"
+              popular
+              onAction={() => {}}
+            />
+            
+            <PricingCard
+              name="Yillik"
+              price="340,000"
+              features={[
+                "Premium + 30% tejash",
+                "Ustuvor yordam",
+                "API kirish",
+              ]}
+              cta="Tez kunda"
+              onAction={() => {}}
+            />
           </div>
         </div>
       </section>
 
-      {/* SECTION 4 — Qanday ishlaydi (4 steps) */}
-      <section className="py-16 sm:py-20">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div ref={stepsRef.ref} className={`text-center mb-12 transition-all duration-600 ${stepsRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
-            <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-foreground">{t('section.howItWorks')}</h2>
-            <p className="text-muted-foreground">{t('section.howItWorks.subtitle.4steps')}</p>
-          </div>
-          
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            {steps.map((step, i) => (
-              <div
-                key={i}
-                className={`text-center transition-all duration-500 ${stepsRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
-                style={{ transitionDelay: `${i * 80}ms` }}
-              >
-                <div className="relative mx-auto mb-4 w-12 h-12">
-                  <div className="absolute inset-0 bg-primary/20 rounded-full blur-lg" />
-                  <div className="relative w-full h-full rounded-full bg-primary/10 border-2 border-primary/30 flex items-center justify-center">
-                    <span className="text-lg font-bold text-primary">{step.number}</span>
-                  </div>
-                </div>
-                <h3 className="font-bold text-foreground mb-1 text-sm">{step.title}</h3>
-                <p className="text-xs text-muted-foreground">{step.desc}</p>
-              </div>
-            ))}
-          </div>
-          
-          {/* Trust sources box */}
-          <div className={`mt-12 glass-premium rounded-2xl p-6 border border-border/30 text-center max-w-lg mx-auto transition-all duration-700 ${stepsRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`} style={{ transitionDelay: '400ms' }}>
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary mx-auto mb-3">
-              <ExternalLink className="w-5 h-5" />
-            </div>
-            <h3 className="font-bold text-foreground mb-2">{t('trust.title')}</h3>
-            <p className="text-sm text-muted-foreground mb-4">{t('trust.description')}</p>
-            <div className="flex flex-wrap gap-2 justify-center">
-              {sourceChips.map((source) => (
-                <span key={source} className="px-3 py-1 rounded-full bg-secondary/80 text-xs text-foreground">
-                  {source}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION 5 — Narxlar */}
-      <section id="pricing" className="py-16 sm:py-20">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div ref={pricingRef.ref} className={`text-center mb-10 transition-all duration-600 ${pricingRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
-            <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-foreground">{t('section.pricing')}</h2>
-            <p className="text-muted-foreground">{t('section.pricing.subtitle')}</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {pricingPlans.map((plan, i) => (
-              <div
-                key={i}
-                className={`relative p-6 rounded-2xl transition-all duration-500 border ${
-                  plan.highlighted ? "glass-premium border-primary/40 shadow-glow scale-[1.02]" : "glass-premium border-border/30"
-                } ${pricingRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
-                style={{ transitionDelay: `${i * 80}ms` }}
-              >
-                {plan.badge && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-semibold">
-                      {plan.badge}
-                    </span>
-                  </div>
-                )}
-                <div className="mb-4 pt-2">
-                  <h3 className="font-bold text-foreground mb-3">{plan.name}</h3>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold text-foreground">{plan.price}</span>
-                    <span className="text-sm text-muted-foreground">{t('pricing.currency')}</span>
-                  </div>
-                </div>
-                <ul className="space-y-2 mb-5">
-                  {plan.features.map((f, j) => (
-                    <li key={j} className="flex items-start gap-2 text-sm">
-                      <Check className="w-4 h-4 text-primary mt-0.5" />
-                      <span className="text-foreground">{f}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Button
-                  className={`w-full h-10 rounded-xl font-medium ${plan.highlighted ? "shadow-lg shadow-primary/25" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
-                  disabled={plan.action === "soon"}
-                  onClick={() => plan.action === "start" && handleOpenApp()}
-                >
-                  {plan.cta}
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION 6 — FAQ */}
-      <section id="faq" className="py-16 sm:py-20">
+      {/* FAQ */}
+      <section id="faq" className="py-20 sm:py-28">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div ref={faqRef.ref} className={`text-center mb-10 transition-all duration-600 ${faqRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
-            <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-foreground">{t('section.faq')}</h2>
-            <p className="text-muted-foreground">{t('section.faq.subtitle')}</p>
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4 tracking-tight">
+              Ko'p so'raladigan savollar
+            </h2>
           </div>
           
           <Accordion type="single" collapsible className="space-y-3">
-            {faqs.map((faq, i) => (
-              <AccordionItem
-                key={i}
-                value={`item-${i}`}
-                className={`border-0 rounded-xl overflow-hidden glass-premium border border-border/30 transition-all duration-500 ${faqRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-                style={{ transitionDelay: `${i * 50}ms` }}
+            {faqs.map((faq, idx) => (
+              <AccordionItem 
+                key={idx} 
+                value={`faq-${idx}`}
+                className="rounded-xl bg-white/[0.03] border border-white/[0.08] px-6 overflow-hidden"
               >
-                <AccordionTrigger className="text-sm font-semibold px-5 py-4 hover:no-underline text-foreground hover:text-primary text-left">
+                <AccordionTrigger className="text-left text-foreground hover:no-underline py-5">
                   {faq.q}
                 </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground px-5 pb-4 text-sm">
+                <AccordionContent className="text-muted-foreground pb-5">
                   {faq.a}
                 </AccordionContent>
               </AccordionItem>
@@ -1110,7 +747,28 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* FOOTER */}
+      {/* Final CTA */}
+      <section className="py-20 sm:py-28">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <GlassCard className="p-8 sm:p-12" hover={false}>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-4 tracking-tight">
+              O'zbek tilidagi eng aqlli yordamchi
+            </h2>
+            <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
+              Bepul sinab ko'ring — ro'yxatdan o'tish 30 soniya.
+            </p>
+            <Button 
+              onClick={handleOpenApp} 
+              size="lg" 
+              className="h-12 px-8 rounded-full font-semibold text-base shadow-[0_0_40px_-10px_hsl(var(--primary)/0.5)]"
+            >
+              <Sparkles className="w-5 h-5 mr-2" />
+              Hozir boshlash
+            </Button>
+          </GlassCard>
+        </div>
+      </section>
+
       <AppFooter />
     </div>
   );
