@@ -12,7 +12,6 @@ interface VoiceModeButtonProps {
   isDictating?: boolean;
 }
 
-const LONG_PRESS_THRESHOLD = 50; // ms - reduced for faster start
 const CANCEL_DISTANCE = 150; // px - more forgiving drag distance
 
 export default function VoiceModeButton({ 
@@ -24,19 +23,19 @@ export default function VoiceModeButton({
 }: VoiceModeButtonProps) {
   const { t } = useTranslation();
   const pressStartRef = useRef<{ x: number; y: number } | null>(null);
-  // Track if WE started dictation (for pointer events), separate from parent's isDictating
-  const [localActive, setLocalActive] = useState(false);
+  // Track if we started dictation locally (use ref to avoid sync issues with async start)
+  const localActiveRef = useRef(false);
   const [isPressed, setIsPressed] = useState(false);
+  // Counter to force re-render when ref changes
+  const [renderKey, setRenderKey] = useState(0);
   
-  // Sync localActive with parent's isDictating
+  // When parent's isDictating becomes false, reset local ref too
   useEffect(() => {
-    if (isDictating) {
-      setLocalActive(true);
-    } else if (!isDictating && localActive) {
-      // Parent says not dictating anymore - reset local state
-      setLocalActive(false);
+    if (!isDictating && localActiveRef.current) {
+      localActiveRef.current = false;
+      setRenderKey(k => k + 1);
     }
-  }, [isDictating, localActive]);
+  }, [isDictating]);
   
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     if (disabled) return;
@@ -45,28 +44,29 @@ export default function VoiceModeButton({
     pressStartRef.current = { x: e.clientX, y: e.clientY };
     
     // Start dictation immediately on press (no long-press delay for push-to-talk)
-    setLocalActive(true);
+    localActiveRef.current = true;
+    setRenderKey(k => k + 1); // Force re-render to show active state
     onDictationStart?.();
   }, [disabled, onDictationStart]);
   
   const handlePointerUp = useCallback(() => {
     setIsPressed(false);
     
-    if (localActive) {
+    if (localActiveRef.current) {
       // Was actively recording - end dictation
       onDictationEnd?.();
-      // Note: localActive will be reset when parent sets isDictating=false
-      // But also reset it here in case parent doesn't update
-      setLocalActive(false);
+      // Reset local state
+      localActiveRef.current = false;
+      setRenderKey(k => k + 1);
       // Haptic feedback on release
       navigator.vibrate?.(10);
     }
     
     pressStartRef.current = null;
-  }, [localActive, onDictationEnd]);
+  }, [onDictationEnd]);
   
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!pressStartRef.current || !localActive) return;
+    if (!pressStartRef.current || !localActiveRef.current) return;
     
     // Check if moved too far - cancel dictation
     const dx = e.clientX - pressStartRef.current.x;
@@ -75,27 +75,29 @@ export default function VoiceModeButton({
     
     if (distance > CANCEL_DISTANCE) {
       // Cancel dictation
-      setLocalActive(false);
+      localActiveRef.current = false;
+      setRenderKey(k => k + 1);
       pressStartRef.current = null;
       setIsPressed(false);
       onDictationEnd?.();
     }
-  }, [localActive, onDictationEnd]);
+  }, [onDictationEnd]);
   
   const handlePointerCancel = useCallback(() => {
     setIsPressed(false);
     
     // If dictation was started, end it properly
-    if (localActive) {
-      setLocalActive(false);
+    if (localActiveRef.current) {
+      localActiveRef.current = false;
+      setRenderKey(k => k + 1);
       onDictationEnd?.();
     }
     
     pressStartRef.current = null;
-  }, [localActive, onDictationEnd]);
+  }, [onDictationEnd]);
   
-  // Visual state: show active if either local or parent says so
-  const showActive = localActive || isDictating;
+  // Visual state: show active if local ref says so OR parent says so
+  const showActive = localActiveRef.current || isDictating;
   
   return (
     <button
