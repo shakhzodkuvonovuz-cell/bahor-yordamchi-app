@@ -119,14 +119,8 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
       });
       streamRef.current = stream;
 
-      // Setup audio analysis for waveform
-      audioContextRef.current = new AudioContext();
-      analyserRef.current = audioContextRef.current.createAnalyser();
-      analyserRef.current.fftSize = 256;
-      const source = audioContextRef.current.createMediaStreamSource(stream);
-      source.connect(analyserRef.current);
-
-      // Create MediaRecorder with best supported format
+      // Create MediaRecorder FIRST before any AudioContext setup
+      // This is critical for iOS Safari compatibility
       const mimeType = getSupportedMimeType();
       const options = mimeType ? { mimeType } : undefined;
       
@@ -153,7 +147,8 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
         setIsRecording(false);
       };
 
-      // Start recording
+      // Start recording BEFORE setting up AudioContext
+      // iOS Safari requires MediaRecorder to start before AudioContext connects
       mediaRecorderRef.current.start(100); // Collect data every 100ms
       startTimeRef.current = Date.now();
       setIsRecording(true);
@@ -161,8 +156,36 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
       // Haptic feedback
       navigator.vibrate?.(10);
 
-      // Start amplitude updates
-      animationFrameRef.current = requestAnimationFrame(updateAmplitude);
+      // Setup audio analysis for waveform AFTER MediaRecorder starts
+      // Use a separate audio track clone to avoid interfering with MediaRecorder on iOS
+      try {
+        const audioTrack = stream.getAudioTracks()[0];
+        if (audioTrack) {
+          // Clone the track for analysis to avoid iOS Safari conflicts
+          const analysisStream = new MediaStream([audioTrack.clone()]);
+          
+          audioContextRef.current = new AudioContext();
+          // Resume AudioContext (required for iOS Safari)
+          if (audioContextRef.current.state === "suspended") {
+            await audioContextRef.current.resume();
+          }
+          
+          analyserRef.current = audioContextRef.current.createAnalyser();
+          analyserRef.current.fftSize = 256;
+          const source = audioContextRef.current.createMediaStreamSource(analysisStream);
+          source.connect(analyserRef.current);
+          
+          // Start amplitude updates
+          animationFrameRef.current = requestAnimationFrame(updateAmplitude);
+        }
+      } catch (audioErr) {
+        // If AudioContext setup fails, just skip waveform visualization
+        console.warn("[useGroqDictation] AudioContext setup failed, skipping waveform:", audioErr);
+        // Simulate amplitude for visual feedback
+        animationFrameRef.current = requestAnimationFrame(() => {
+          setAmplitude(0.5 + Math.random() * 0.3);
+        });
+      }
 
       // Start elapsed time counter
       setElapsedSeconds(0);
