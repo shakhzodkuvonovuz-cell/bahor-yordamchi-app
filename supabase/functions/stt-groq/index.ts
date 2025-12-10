@@ -89,9 +89,10 @@ serve(async (req) => {
     const groqFormData = new FormData();
     groqFormData.append("file", audioBlob, fileName);
     groqFormData.append("model", "whisper-large-v3-turbo");
-    // NO language parameter - let Whisper auto-detect
     groqFormData.append("temperature", "0");
     groqFormData.append("response_format", "verbose_json");
+    // Steering prompt with Uzbek context to prevent Tibetan/other misdetection
+    groqFormData.append("prompt", "Salom, mening ismim... Men Toshkentdan, O'zbekistondan. Bugun qanday kunlar, yaxshimisiz? Sydney, Australia, Samarqand, Buxoro.");
 
     const startTime = Date.now();
     const groqResponse = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
