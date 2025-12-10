@@ -2,6 +2,7 @@ import { useLocation, useNavigate, NavigateOptions } from "react-router-dom";
 import { 
   PenLine,
   MessageSquare, 
+  History,
   Sparkles,
   Users, 
   FileText, 
@@ -38,6 +39,7 @@ interface NavItem {
 
 const PRIMARY_NAV: NavItem[] = [
   { id: "new-chat", labelKey: "sidebar.new_chat", icon: PenLine, path: "/chat/general", isNewChat: true },
+  { id: "chats", labelKey: "sidebar.chats", icon: History, path: "/chats" },
   { id: "chat", labelKey: "sidebar.chat", icon: MessageSquare, path: "/modes" },
   { id: "modes", labelKey: "sidebar.modes", icon: Sparkles, path: "/modes-list" },
   { id: "image-gen", labelKey: "sidebar.imageGen", icon: ImageIcon, path: "/tools/documents" },
@@ -68,6 +70,9 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
     }
     if (path === "/modes-list") {
       return location.pathname === "/modes-list";
+    }
+    if (path === "/chats") {
+      return location.pathname === "/chats";
     }
     if (path === "/circles") {
       return location.pathname.startsWith("/circles");
