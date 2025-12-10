@@ -470,8 +470,57 @@ export default function Agent() {
     }
   };
 
+  // Retry extraction handler
+  const handleRetryExtraction = async () => {
+    if (!user) return;
+    setIsRetryingExtraction(true);
+    
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      const failedFiles = files.filter(f => f.extraction_status === "failed");
+      
+      for (const file of failedFiles) {
+        // Update local status
+        setFiles(prev => prev.map(f => 
+          f.id === file.id ? { ...f, extraction_status: "pending" } : f
+        ));
+        
+        // Trigger re-extraction
+        await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-extract-file`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session?.session?.access_token}`,
+            },
+            body: JSON.stringify({
+              fileId: file.id,
+              storagePath: file.storage_path,
+              mimeType: file.mime_type,
+            }),
+          }
+        );
+      }
+      
+      toast.success("Qayta o'qish boshlandi");
+    } catch (error) {
+      console.error("Retry extraction error:", error);
+      toast.error("Xatolik yuz berdi");
+    } finally {
+      setIsRetryingExtraction(false);
+    }
+  };
+
+  // Remove files from run handler
+  const handleRemoveFilesFromRun = () => {
+    setRunWithoutFiles(true);
+    toast.info("Agent faylsiz ishga tushiriladi");
+  };
+
   const handleRun = async () => {
     if (!goal.trim() || !user) return;
+    if (!canRunAgent) return;
 
     const currentGoal = goal.trim();
     setIsRunning(true);
@@ -482,21 +531,41 @@ export default function Agent() {
     setConversationHistory(prev => [...prev, { role: "user", content: currentGoal, goal: currentGoal }]);
 
     try {
-      // Get file contents
-      const fileContents = await Promise.all(
-        files
-          .filter((f) => f.extraction_status === "ready")
-          .map(async (f) => {
-            const { data } = await supabase
-              .from("agent_files")
-              .select("extracted_text, filename")
-              .eq("id", f.id)
-              .single();
-            return data ? { filename: data.filename, text: data.extracted_text } : null;
-          })
-      );
+      // Get file contents (only if not running without files)
+      let fileContents: Array<{ filename: string; text: string | null }> = [];
+      let filesPayload: Array<{ filename: string; textLength: number }> = [];
+      
+      if (!runWithoutFiles && files.length > 0) {
+        const results = await Promise.all(
+          files
+            .filter((f) => f.extraction_status === "ready")
+            .map(async (f) => {
+              const { data } = await supabase
+                .from("agent_files")
+                .select("extracted_text, filename")
+                .eq("id", f.id)
+                .single();
+              return data ? { filename: data.filename, text: data.extracted_text } : null;
+            })
+        );
+        
+        fileContents = results.filter(Boolean) as Array<{ filename: string; text: string | null }>;
+        filesPayload = fileContents.map(f => ({
+          filename: f.filename,
+          textLength: f.text?.length || 0
+        }));
+      }
+      
+      // Capture context snapshot for debug panel
+      const totalChars = fileContents.reduce((sum, f) => sum + (f.text?.length || 0), 0);
+      setContextSnapshot({
+        goal: currentGoal,
+        filesIncluded: fileContents.length,
+        totalChars,
+        filesPayload
+      });
 
-      const validFiles = fileContents.filter(Boolean);
+      const validFiles = fileContents;
 
       const { data: session } = await supabase.auth.getSession();
       
@@ -900,6 +969,22 @@ export default function Agent() {
         </Card>
       )}
 
+      {/* File Gating Warning */}
+      {files.length > 0 && !runWithoutFiles && (
+        <AgentFileGating
+          fileReadiness={fileReadiness}
+          onRetryExtraction={handleRetryExtraction}
+          onRemoveFilesFromRun={handleRemoveFilesFromRun}
+          isRetrying={isRetryingExtraction}
+        />
+      )}
+
+      {/* Debug Panel (visible when ?debug=1 or for dev users) */}
+      <AgentDebugPanel
+        fileReadiness={fileReadiness}
+        contextSnapshot={contextSnapshot}
+      />
+
       {/* Goal Input */}
       <Card>
         <CardContent className="pt-3 space-y-2.5">
@@ -1211,8 +1296,13 @@ export default function Agent() {
                 </div>
               )}
 
-              {/* Final Output - Research Paper Style */}
-              {currentRun?.final_output ? (
+                {/* Evidence Warning - No Files */}
+                {runWithoutFiles && files.length === 0 && (
+                  <AgentEvidenceWarning type="no-files" />
+                )}
+
+                {/* Final Output - Research Paper Style */}
+                {currentRun?.final_output ? (
                 <div className="space-y-4">
                   {/* Header with actions */}
                   <div className="flex items-center justify-between flex-wrap gap-2">
@@ -1348,7 +1438,12 @@ export default function Agent() {
             </>
           ) : (
             <>
-              <Button onClick={handleRun} disabled={!goal.trim()} className="gap-1.5 flex-1 sm:flex-none h-9 text-sm">
+              <Button 
+                onClick={handleRun} 
+                disabled={!canRunAgent}
+                title={runGatingMessage || undefined}
+                className="gap-1.5 flex-1 sm:flex-none h-9 text-sm"
+              >
                 <Play className="h-3.5 w-3.5" />
                 Ishga tushirish
               </Button>
