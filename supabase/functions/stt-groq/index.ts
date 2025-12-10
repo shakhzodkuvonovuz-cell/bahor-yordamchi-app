@@ -5,9 +5,21 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Uzbek steering prompt to prevent Turkish drift
-const UZBEK_STEERING_PROMPT = 
-  "Transcribe strictly in Uzbek (O'zbek tili). Do not translate. Prefer Uzbek words over Turkish. Keep brand names and person names unchanged. Output Uzbek in Latin script unless Cyrillic is clearly spoken.";
+// Strong Uzbek steering prompt to prevent Turkish drift
+// Include common Uzbek words/phrases to anchor the language model
+const UZBEK_STEERING_PROMPT = `Bu audio O'zbek tilida. Transcribe strictly in Uzbek Latin script.
+
+Common Uzbek words to recognize:
+- Salom, Rahmat, Kechirasiz, Ha, Yo'q, Men, Siz, Bu, Nima, Qanday
+- Mening ismim, Menga yordam bering, Qancha turadi, Qaerda
+- O'zbekiston, Toshkent, Samarqand, Buxoro
+
+CRITICAL RULES:
+1. This is UZBEK (O'zbek tili), NOT Turkish (Türkçe)
+2. Use Uzbek apostrophe: o' (not ö), g' (not ğ), sh (not ş)
+3. Uzbek uses "men" not "ben", "siz" not "siz/sen", "nima" not "ne"
+4. Keep proper nouns unchanged
+5. Output Latin script unless Cyrillic clearly spoken`;
 
 // Max file size: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
