@@ -421,7 +421,13 @@ export default function DocumentTools() {
   };
 
   const handleRun = async () => {
-    if (!user) return;
+    console.log("[DocumentTools] handleRun called", { user: user?.id, selectedTool, title });
+    
+    if (!user) {
+      console.error("[DocumentTools] No user - not authenticated");
+      toast({ title: t("docs.error"), description: "Tizimga kiring", variant: "destructive" });
+      return;
+    }
     if (!title.trim()) {
       toast({ title: t("docs.error"), description: "Hujjat nomini kiriting", variant: "destructive" });
       return;
@@ -539,6 +545,9 @@ export default function DocumentTools() {
       }
 
       const { data: session } = await supabase.auth.getSession();
+      console.log("[DocumentTools] Session obtained", { hasSession: !!session.session, hasToken: !!session.session?.access_token });
+      
+      console.log("[DocumentTools] Invoking doc-run with:", { tool: selectedTool, title, inputKeys: Object.keys(inputs) });
       
       const response = await supabase.functions.invoke("doc-run", {
         body: { tool: selectedTool, title, inputs },
@@ -546,6 +555,8 @@ export default function DocumentTools() {
           Authorization: `Bearer ${session.session?.access_token}`,
         },
       });
+
+      console.log("[DocumentTools] Response:", { error: response.error, data: response.data });
 
       if (response.error || !response.data?.ok) {
         throw new Error(response.data?.error || response.error?.message || "Unknown error");
