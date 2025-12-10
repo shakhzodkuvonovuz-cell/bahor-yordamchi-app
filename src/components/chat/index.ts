@@ -9,6 +9,7 @@ export { EditingIndicator } from "./EditingIndicator";
 export { default as BahorCard, parseMessageForCards, hasCardContent } from "./BahorCard";
 export { default as ChatHeader } from "./ChatHeader";
 export { default as CollapsibleMessage } from "./CollapsibleMessage";
+export { default as MarkdownContent } from "./MarkdownContent";
 export { ChatListSkeleton, ChatMessagesSkeleton } from "./ChatListSkeleton";
 export { ReasonedChip } from "./ReasonedChip";
 export { TraceSheet } from "./TraceSheet";
