@@ -829,6 +829,14 @@ export const translations: Record<Lang, Record<string, string>> = {
     'actions.report': 'Noto\'g\'ri javobni bildirish',
     'actions.error': 'Xatolik yuz berdi',
     
+    // Sources / In-App Browser
+    'sources': 'Manbalar',
+    'loading': 'Yuklanmoqda...',
+    'openExternal': 'Tashqariga ochish',
+    'previewNotAvailable': 'Ko\'rish imkoni yo\'q',
+    'previewBlockedMessage': 'Bu sahifa ichki ko\'rishni qo\'llab-quvvatlamaydi.',
+    'openInBrowser': 'Brauzerda ochish',
+    
     // Onboarding
     'onboarding.whatCanDo': 'Bahor AI nima qila oladi?',
     'onboarding.quickAnswers': 'Savollarga tez va aniq javob',
@@ -1750,6 +1758,14 @@ export const translations: Record<Lang, Record<string, string>> = {
     'actions.report': 'Report incorrect answer',
     'actions.error': 'Error occurred',
     
+    // Sources / In-App Browser
+    'sources': 'Sources',
+    'loading': 'Loading...',
+    'openExternal': 'Open externally',
+    'previewNotAvailable': 'Preview not available',
+    'previewBlockedMessage': 'This page does not support in-app preview.',
+    'openInBrowser': 'Open in browser',
+    
     // Onboarding
     'onboarding.whatCanDo': 'What can Bahor AI do?',
     'onboarding.quickAnswers': 'Quick and accurate answers',
@@ -2565,6 +2581,14 @@ export const translations: Record<Lang, Record<string, string>> = {
     'actions.exportPdf': 'Экспорт в PDF',
     'actions.report': 'Сообщить о неверном ответе',
     'actions.error': 'Произошла ошибка',
+    
+    // Sources / In-App Browser
+    'sources': 'Источники',
+    'loading': 'Загрузка...',
+    'openExternal': 'Открыть внешне',
+    'previewNotAvailable': 'Просмотр недоступен',
+    'previewBlockedMessage': 'Эта страница не поддерживает внутренний просмотр.',
+    'openInBrowser': 'Открыть в браузере',
     
     // Onboarding
     'onboarding.whatCanDo': 'Что умеет Bahor AI?',
@@ -3382,6 +3406,14 @@ export const translations: Record<Lang, Record<string, string>> = {
     'actions.exportPdf': "PDF'e aktar",
     'actions.report': 'Yanlış cevabı bildir',
     'actions.error': 'Hata oluştu',
+    
+    // Sources / In-App Browser
+    'sources': 'Kaynaklar',
+    'loading': 'Yükleniyor...',
+    'openExternal': 'Dışarıda aç',
+    'previewNotAvailable': 'Önizleme mevcut değil',
+    'previewBlockedMessage': 'Bu sayfa uygulama içi önizlemeyi desteklemiyor.',
+    'openInBrowser': 'Tarayıcıda aç',
     
     // Onboarding
     'onboarding.whatCanDo': 'Bahor AI ne yapabilir?',

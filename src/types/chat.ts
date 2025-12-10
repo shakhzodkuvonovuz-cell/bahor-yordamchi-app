@@ -16,6 +16,12 @@ export interface ChatAttachment {
   textStatus?: 'pending' | 'processing' | 'ready' | 'failed'; // Server-side extraction status
 }
 
+export interface Citation {
+  title: string;
+  url: string;
+  favicon?: string;
+}
+
 export interface Message {
   id: string;
   role: "user" | "assistant";
@@ -24,6 +30,7 @@ export interface Message {
   attachments?: ChatAttachment[];
   reaction?: "like" | "dislike" | null;
   trace?: MessageTrace;
+  citations?: Citation[];
   meta?: {
     variant?: "shorter" | "longer" | "simplify" | "detailed" | "regen" | "continue";
     parentAssistantId?: string;

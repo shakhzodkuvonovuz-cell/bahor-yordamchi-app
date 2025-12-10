@@ -10,6 +10,7 @@ import { track } from "@/lib/analytics";
 import { ImageLightbox } from "@/components/ImageLightbox";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import MarkdownContent from "@/components/chat/MarkdownContent";
+import { SourcesList } from "@/components/chat/SourcesList";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface ChatMessageProps {
@@ -365,6 +366,11 @@ function ChatMessageComponent({
               <div className="py-3">
                 {renderAttachments()}
                 {message.content && renderContent()}
+                
+                {/* Sources/Citations section for web search results */}
+                {message.citations && message.citations.length > 0 && (
+                  <SourcesList citations={message.citations} />
+                )}
               </div>
 
               {/* Timestamp for AI - subtle, inline */}
