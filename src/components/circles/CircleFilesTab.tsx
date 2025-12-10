@@ -108,10 +108,10 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
 
       if (error) throw error;
 
-      // Get uploader profiles
+      // Get uploader profiles using safe view
       const uploaderIds = [...new Set(data?.map((f) => f.uploader_id) || [])];
       const { data: profiles } = await supabase
-        .from("profiles")
+        .from("profile_display")
         .select("user_id, first_name, last_name")
         .in("user_id", uploaderIds);
 
