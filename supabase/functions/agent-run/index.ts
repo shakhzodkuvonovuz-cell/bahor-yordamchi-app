@@ -17,41 +17,101 @@ interface AgentStep {
   tool_input?: any;
 }
 
-async function callLLM(messages: any[], options?: { model?: string; temperature?: number }) {
+async function callLLM(messages: any[], options?: { model?: string; temperature?: number; maxRetries?: number }) {
+  const maxRetries = options?.maxRetries ?? 3;
   const body: any = {
     model: options?.model || "google/gemini-2.5-flash",
     messages,
     temperature: options?.temperature ?? 0.7,
   };
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`[LLM] Attempt ${attempt}/${maxRetries}`);
+      
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("LLM error:", response.status, errorText);
-    throw new Error(`LLM error: ${response.status}`);
-  }
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[LLM] Attempt ${attempt} error:`, response.status, errorText);
+        
+        // Don't retry on 4xx errors (except 429 rate limit)
+        if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+          throw new Error(`LLM error: ${response.status} - ${errorText}`);
+        }
+        
+        lastError = new Error(`LLM error: ${response.status}`);
+        
+        // Exponential backoff before retry
+        if (attempt < maxRetries) {
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 8000);
+          console.log(`[LLM] Retrying in ${delay}ms...`);
+          await new Promise(r => setTimeout(r, delay));
+          continue;
+        }
+        throw lastError;
+      }
 
-  const responseText = await response.text();
-  if (!responseText || responseText.trim() === '') {
-    console.error("LLM returned empty response");
-    throw new Error("LLM returned empty response");
+      const responseText = await response.text();
+      if (!responseText || responseText.trim() === '') {
+        console.error(`[LLM] Attempt ${attempt}: Empty response`);
+        lastError = new Error("LLM returned empty response");
+        
+        if (attempt < maxRetries) {
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 8000);
+          console.log(`[LLM] Retrying in ${delay}ms...`);
+          await new Promise(r => setTimeout(r, delay));
+          continue;
+        }
+        throw lastError;
+      }
+      
+      try {
+        const parsed = JSON.parse(responseText);
+        console.log(`[LLM] Success on attempt ${attempt}`);
+        return parsed;
+      } catch (parseError) {
+        const errMsg = parseError instanceof Error ? parseError.message : String(parseError);
+        console.error(`[LLM] Attempt ${attempt} JSON parse error:`, errMsg, "Response:", responseText.substring(0, 500));
+        lastError = new Error(`LLM response parsing failed: ${errMsg}`);
+        
+        if (attempt < maxRetries) {
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 8000);
+          console.log(`[LLM] Retrying in ${delay}ms...`);
+          await new Promise(r => setTimeout(r, delay));
+          continue;
+        }
+        throw lastError;
+      }
+    } catch (fetchError) {
+      const errMsg = fetchError instanceof Error ? fetchError.message : String(fetchError);
+      console.error(`[LLM] Attempt ${attempt} fetch error:`, errMsg);
+      lastError = fetchError instanceof Error ? fetchError : new Error(errMsg);
+      
+      // Don't retry if it's a definitive error we already threw
+      if (errMsg.includes("LLM error: 4")) {
+        throw lastError;
+      }
+      
+      if (attempt < maxRetries) {
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 8000);
+        console.log(`[LLM] Retrying in ${delay}ms...`);
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+    }
   }
   
-  try {
-    return JSON.parse(responseText);
-  } catch (parseError) {
-    const errMsg = parseError instanceof Error ? parseError.message : String(parseError);
-    console.error("LLM JSON parse error:", errMsg, "Response:", responseText.substring(0, 500));
-    throw new Error(`LLM response parsing failed: ${errMsg}`);
-  }
+  throw lastError || new Error("LLM call failed after retries");
 }
 
 // Gemini-style research paper template
