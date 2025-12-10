@@ -127,19 +127,12 @@ async function executeWebSearch(query: string): Promise<{ output: string; source
 async function executeStep(
   step: AgentStep,
   goal: string,
-  previousResults: string[],
-  isPremium: boolean
+  previousResults: string[]
 ): Promise<{ output: string; sources: any[] }> {
   const toolName = step.tool;
   
+  // Agent has unlimited access to all tools - no premium restrictions
   if (toolName === "web_search") {
-    if (!isPremium) {
-      return { 
-        output: "⚠️ Web search requires Premium plan. Skipping this step.", 
-        sources: [] 
-      };
-    }
-    
     // Generate search query from step context
     const queryResult = await callLLM([
       { role: "system", content: "Generate a concise search query (max 10 words) for web search based on the step. Respond with just the query, no quotes." },
@@ -231,16 +224,7 @@ serve(async (req) => {
       });
     }
 
-    // Check user plan for premium features
-    const { data: profile } = await supabaseClient
-      .from("profiles")
-      .select("plan, trial_expires_at")
-      .eq("user_id", user.id)
-      .single();
-
-    const isPremium = profile?.plan === "beta_premium" || profile?.plan === "dev_unlimited" || 
-      (profile?.plan === "beta_premium" && profile?.trial_expires_at && new Date(profile.trial_expires_at) > new Date());
-
+    // Agent mode has unlimited tool access - page-level restriction will be added later
     console.log(`[Agent] Starting run for user ${user.id}, goal: ${goal.slice(0, 100)}...`);
 
     // Build context from files, links, notes
@@ -344,8 +328,7 @@ serve(async (req) => {
         const { output, sources } = await executeStep(
           plan[i],
           goal,
-          stepResults.map(r => r.output),
-          isPremium
+          stepResults.map(r => r.output)
         );
 
         stepResults.push({ title: plan[i].title, output });
