@@ -67,17 +67,24 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
     setElapsedSeconds(0);
   }, []);
 
-  // Amplitude analysis loop
+  // Amplitude analysis loop - uses ref to check recording state to avoid stale closure
+  const isRecordingRef = useRef(false);
+  
   const updateAmplitude = useCallback(() => {
-    if (analyserRef.current && isRecording) {
+    if (!isRecordingRef.current) return;
+    
+    if (analyserRef.current) {
       const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
       analyserRef.current.getByteFrequencyData(dataArray);
       const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
       const normalizedAmplitude = Math.min(1, average / 128);
       setAmplitude(normalizedAmplitude * 0.7 + 0.3);
-      animationFrameRef.current = requestAnimationFrame(updateAmplitude);
+    } else {
+      // Fallback: simulate amplitude when no analyser
+      setAmplitude(0.4 + Math.random() * 0.4);
     }
-  }, [isRecording]);
+    animationFrameRef.current = requestAnimationFrame(updateAmplitude);
+  }, []);
 
   // Get best supported audio MIME type - iOS Safari friendly
   const getSupportedMimeType = useCallback((): string | null => {
@@ -191,10 +198,14 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
       // iOS Safari requires MediaRecorder to start before AudioContext connects
       mediaRecorderRef.current.start(100); // Collect data every 100ms
       startTimeRef.current = Date.now();
+      isRecordingRef.current = true;
       setIsRecording(true);
 
       // Haptic feedback
       navigator.vibrate?.(10);
+      
+      // Start amplitude animation immediately (will use fallback if no analyser)
+      animationFrameRef.current = requestAnimationFrame(updateAmplitude);
 
       // Setup audio analysis for waveform AFTER MediaRecorder starts
       // Use a separate audio track clone to avoid interfering with MediaRecorder on iOS
@@ -214,17 +225,10 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
           analyserRef.current.fftSize = 256;
           const source = audioContextRef.current.createMediaStreamSource(analysisStream);
           source.connect(analyserRef.current);
-          
-          // Start amplitude updates
-          animationFrameRef.current = requestAnimationFrame(updateAmplitude);
         }
       } catch (audioErr) {
-        // If AudioContext setup fails, just skip waveform visualization
-        console.warn("[useGroqDictation] AudioContext setup failed, skipping waveform:", audioErr);
-        // Simulate amplitude for visual feedback
-        animationFrameRef.current = requestAnimationFrame(() => {
-          setAmplitude(0.5 + Math.random() * 0.3);
-        });
+        // If AudioContext setup fails, amplitude animation continues with fallback
+        console.warn("[useGroqDictation] AudioContext setup failed, using simulated waveform:", audioErr);
       }
 
       // Start elapsed time counter
@@ -281,6 +285,7 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
 
     return new Promise((resolve) => {
       mediaRecorderRef.current!.onstop = async () => {
+        isRecordingRef.current = false;
         setIsRecording(false);
         cleanup();
         
@@ -373,6 +378,7 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
         mediaRecorderRef.current!.stop();
       } catch (e) {
         console.error("[useGroqDictation] Error stopping MediaRecorder:", e);
+        isRecordingRef.current = false;
         setIsRecording(false);
         cleanup();
         resolve("");
@@ -390,6 +396,7 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
       }
     }
     mediaRecorderRef.current = null;
+    isRecordingRef.current = false;
     setIsRecording(false);
     setIsTranscribing(false);
     setError(null);
