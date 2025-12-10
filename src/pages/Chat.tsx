@@ -2313,7 +2313,7 @@ export default function Chat() {
                 <FileStack className="w-5 h-5" />
               </button>
               
-              <div className="relative flex-1">
+              <div className="relative flex-1 bahor-no-zoom">
                 <textarea
                   ref={inputRef}
                   value={inputValue}
@@ -2332,7 +2332,8 @@ export default function Chat() {
                   }
                   disabled={isLoading || typing}
                   rows={1}
-                  className="w-full bg-transparent border-none outline-none resize-none text-base leading-relaxed text-foreground placeholder:text-muted-foreground/60 disabled:opacity-50 max-h-[140px] overflow-y-auto py-3 px-1 [font-size:16px]"
+                  className="w-full bg-transparent border-none outline-none resize-none text-base leading-relaxed text-foreground placeholder:text-muted-foreground/60 disabled:opacity-50 max-h-[140px] overflow-y-auto py-3 px-1"
+                  style={{ fontSize: '16px' }}
                 />
               </div>
               

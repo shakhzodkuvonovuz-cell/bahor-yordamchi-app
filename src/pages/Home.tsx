@@ -403,19 +403,22 @@ export default function Home() {
                   </button>
 
                   {/* Text input - grows to fill, aligned baseline with icons */}
-                  <input
-                    type="text"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSend();
-                      }
-                    }}
-                    placeholder={t('chat.input.placeholder')}
-                    className="flex-1 h-9 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground text-base min-w-0 leading-9 [font-size:16px]"
-                  />
+                  <div className="flex-1 min-w-0 bahor-no-zoom">
+                    <input
+                      type="text"
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSend();
+                        }
+                      }}
+                      placeholder={t('chat.input.placeholder')}
+                      className="w-full h-9 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground text-base leading-9"
+                      style={{ fontSize: '16px' }}
+                    />
+                  </div>
 
                   {/* Send button */}
                   <button

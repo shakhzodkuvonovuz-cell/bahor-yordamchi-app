@@ -15,6 +15,7 @@ import { AppShellV2 } from "@/components/layout/AppShellV2";
 import { setupOAuthDeepLinkListener, isNativePlatform } from "@/lib/auth/googleAuth";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import IOSDebugOverlay from "@/components/debug/IOSDebugOverlay";
 
 // Eager load only landing (first paint) and auth (critical path)
 import Landing from "./pages/Landing";
@@ -136,6 +137,8 @@ const App = () => (
         <ThemeProvider>
           <BrowserRouter>
             <AuthProvider>
+              {/* iOS Debug Overlay - only shows in DEV mode */}
+              <IOSDebugOverlay />
               <TooltipProvider>
               {/* Visual Viewport Handler for mobile keyboard */}
                 <VisualViewportHandler />
