@@ -82,7 +82,7 @@ export function AppShellV2({ children }: AppShellV2Props) {
   };
 
   // Pages that have their own headers and don't need AppShellV2 mobile header
-  const hidesMobileHeader = location.pathname.match(/^\/circles\/[^/]+$/);
+  const hidesMobileHeader = location.pathname.match(/^\/circles\/[^/]+$/) || location.pathname.startsWith("/agent/workspace");
 
   return (
     <div className="min-h-[100dvh] bg-background flex w-full max-w-full overflow-x-hidden app-shell">
