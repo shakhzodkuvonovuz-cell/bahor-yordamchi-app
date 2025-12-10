@@ -452,10 +452,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     'common.uploadError': 'Fayllarni yuklashda xatolik',
     
     // Sidebar
-    'sidebar.chats': 'Chatlar',
+    'sidebar.chats': 'Chat tarixi',
     
     // Chats History Page
-    'chats.title': 'Chatlar',
+    'chats.title': 'Chat tarixi',
     'chats.subtitle': "Barcha rejimlar bo'yicha suhbatlar",
     'chats.searchPlaceholder': 'Chatlarni qidirish...',
     'chats.filter.all': 'Hammasi',
@@ -1483,10 +1483,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     'common.uploadError': 'Failed to upload files',
     
     // Sidebar
-    'sidebar.chats': 'Chats',
+    'sidebar.chats': 'Chat History',
     
     // Chats History Page
-    'chats.title': 'Chats',
+    'chats.title': 'Chat History',
     'chats.subtitle': 'Conversations across all modes',
     'chats.searchPlaceholder': 'Search chats...',
     'chats.filter.all': 'All',
@@ -2388,10 +2388,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     'common.uploadError': 'Ошибка загрузки файлов',
     
     // Sidebar
-    'sidebar.chats': 'Чаты',
+    'sidebar.chats': 'История чатов',
     
     // Chats History Page
-    'chats.title': 'Чаты',
+    'chats.title': 'История чатов',
     'chats.subtitle': 'Разговоры во всех режимах',
     'chats.searchPlaceholder': 'Поиск чатов...',
     'chats.filter.all': 'Все',
@@ -3249,10 +3249,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     'common.uploadError': 'Dosyalar yüklenemedi',
     
     // Sidebar
-    'sidebar.chats': 'Sohbetler',
+    'sidebar.chats': 'Sohbet Geçmişi',
     
     // Chats History Page
-    'chats.title': 'Sohbetler',
+    'chats.title': 'Sohbet Geçmişi',
     'chats.subtitle': 'Tüm modlardaki sohbetler',
     'chats.searchPlaceholder': 'Sohbet ara...',
     'chats.filter.all': 'Tümü',
