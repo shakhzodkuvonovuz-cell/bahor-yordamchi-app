@@ -12,8 +12,8 @@ interface VoiceModeButtonProps {
   isDictating?: boolean;
 }
 
-const LONG_PRESS_THRESHOLD = 180; // ms
-const CANCEL_DISTANCE = 80; // px
+const LONG_PRESS_THRESHOLD = 50; // ms - reduced for faster start
+const CANCEL_DISTANCE = 150; // px - more forgiving drag distance
 
 export default function VoiceModeButton({ 
   disabled, 
@@ -90,9 +90,15 @@ export default function VoiceModeButton({
       clearTimeout(pressTimerRef.current);
       pressTimerRef.current = null;
     }
+    
+    // If dictation was started, end it properly instead of just canceling
+    if (didStartDictationRef.current) {
+      onDictationEnd?.();
+    }
+    
     pressStartRef.current = null;
     didStartDictationRef.current = false;
-  }, []);
+  }, [onDictationEnd]);
   
   return (
     <button
@@ -101,7 +107,7 @@ export default function VoiceModeButton({
       onPointerUp={handlePointerUp}
       onPointerMove={handlePointerMove}
       onPointerCancel={handlePointerCancel}
-      onPointerLeave={handlePointerCancel}
+      // Don't use onPointerLeave - it fires too easily on mobile and kills recording
       disabled={disabled}
       aria-label={t('voice.dictation')}
       className={cn(
