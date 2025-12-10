@@ -1,5 +1,5 @@
 import { Mic } from "lucide-react";
-import { useRef, useCallback, useState } from "react";
+import { useRef, useCallback, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n/LanguageProvider";
 
@@ -23,48 +23,50 @@ export default function VoiceModeButton({
   isDictating = false,
 }: VoiceModeButtonProps) {
   const { t } = useTranslation();
-  const pressTimerRef = useRef<number | null>(null);
   const pressStartRef = useRef<{ x: number; y: number } | null>(null);
-  const didStartDictationRef = useRef(false);
+  // Track if WE started dictation (for pointer events), separate from parent's isDictating
+  const [localActive, setLocalActive] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
+  
+  // Sync localActive with parent's isDictating
+  useEffect(() => {
+    if (isDictating) {
+      setLocalActive(true);
+    } else if (!isDictating && localActive) {
+      // Parent says not dictating anymore - reset local state
+      setLocalActive(false);
+    }
+  }, [isDictating, localActive]);
   
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     if (disabled) return;
     
     setIsPressed(true);
     pressStartRef.current = { x: e.clientX, y: e.clientY };
-    didStartDictationRef.current = false;
     
-    // Start timer for long press - but also start immediately for push-to-talk feel
-    pressTimerRef.current = window.setTimeout(() => {
-      didStartDictationRef.current = true;
-      onDictationStart?.();
-    }, LONG_PRESS_THRESHOLD);
+    // Start dictation immediately on press (no long-press delay for push-to-talk)
+    setLocalActive(true);
+    onDictationStart?.();
   }, [disabled, onDictationStart]);
   
   const handlePointerUp = useCallback(() => {
     setIsPressed(false);
     
-    // Clear the timer
-    if (pressTimerRef.current) {
-      clearTimeout(pressTimerRef.current);
-      pressTimerRef.current = null;
-    }
-    
-    if (didStartDictationRef.current) {
-      // Was a long press - end dictation
+    if (localActive) {
+      // Was actively recording - end dictation
       onDictationEnd?.();
+      // Note: localActive will be reset when parent sets isDictating=false
+      // But also reset it here in case parent doesn't update
+      setLocalActive(false);
       // Haptic feedback on release
       navigator.vibrate?.(10);
     }
-    // Short tap does nothing now (no separate voice mode page)
     
     pressStartRef.current = null;
-    didStartDictationRef.current = false;
-  }, [onDictationEnd]);
+  }, [localActive, onDictationEnd]);
   
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!pressStartRef.current || !didStartDictationRef.current) return;
+    if (!pressStartRef.current || !localActive) return;
     
     // Check if moved too far - cancel dictation
     const dx = e.clientX - pressStartRef.current.x;
@@ -73,32 +75,27 @@ export default function VoiceModeButton({
     
     if (distance > CANCEL_DISTANCE) {
       // Cancel dictation
-      if (pressTimerRef.current) {
-        clearTimeout(pressTimerRef.current);
-        pressTimerRef.current = null;
-      }
-      didStartDictationRef.current = false;
+      setLocalActive(false);
       pressStartRef.current = null;
       setIsPressed(false);
-      // Note: The parent should handle cancel via onDictationEnd with empty result
+      onDictationEnd?.();
     }
-  }, []);
+  }, [localActive, onDictationEnd]);
   
   const handlePointerCancel = useCallback(() => {
     setIsPressed(false);
-    if (pressTimerRef.current) {
-      clearTimeout(pressTimerRef.current);
-      pressTimerRef.current = null;
-    }
     
-    // If dictation was started, end it properly instead of just canceling
-    if (didStartDictationRef.current) {
+    // If dictation was started, end it properly
+    if (localActive) {
+      setLocalActive(false);
       onDictationEnd?.();
     }
     
     pressStartRef.current = null;
-    didStartDictationRef.current = false;
-  }, [onDictationEnd]);
+  }, [localActive, onDictationEnd]);
+  
+  // Visual state: show active if either local or parent says so
+  const showActive = localActive || isDictating;
   
   return (
     <button
@@ -123,7 +120,7 @@ export default function VoiceModeButton({
         "hover:shadow-[0_0_20px_hsl(var(--primary)/0.25)]",
         
         // Pressed state (visual feedback before dictation starts)
-        isPressed && !isDictating && [
+        isPressed && !showActive && [
           "scale-95",
           "border-primary/60",
           "shadow-[0_0_25px_hsl(var(--primary)/0.4)]",
@@ -131,7 +128,7 @@ export default function VoiceModeButton({
         ],
         
         // Dictating state (active recording)
-        isDictating && [
+        showActive && [
           "scale-110",
           "border-primary",
           "shadow-[0_0_50px_hsl(var(--primary)/0.6)]",
@@ -148,7 +145,7 @@ export default function VoiceModeButton({
       )}
     >
       {/* Pulsing glow rings when dictating */}
-      {isDictating && (
+      {showActive && (
         <>
           <div className="absolute inset-[-8px] rounded-full border-2 border-primary/40 animate-ping" />
           <div 
@@ -164,7 +161,7 @@ export default function VoiceModeButton({
           "absolute inset-1 rounded-full transition-all duration-200",
           "bg-gradient-to-br from-primary/10 to-transparent",
           isPressed && "from-primary/20",
-          isDictating && "from-primary/40 to-primary/10"
+          showActive && "from-primary/40 to-primary/10"
         )}
       />
       
@@ -173,7 +170,7 @@ export default function VoiceModeButton({
         "w-5 h-5 relative z-10 transition-all duration-200",
         "text-primary",
         isPressed && "text-primary scale-90",
-        isDictating && "text-primary-foreground scale-110"
+        showActive && "text-primary-foreground scale-110"
       )} />
     </button>
   );
