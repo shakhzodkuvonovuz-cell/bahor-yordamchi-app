@@ -70,6 +70,25 @@
     --inline-code-bg: 220 15% 92%;
     --inline-code-fg: 220 25% 20%;
 
+    /* Syntax highlighting tokens - Light mode (vibrant but readable) */
+    --syntax-comment: 110 30% 40%;
+    --syntax-keyword: 260 70% 45%;
+    --syntax-string: 25 85% 40%;
+    --syntax-number: 175 75% 32%;
+    --syntax-function: 210 85% 45%;
+    --syntax-variable: 35 80% 42%;
+    --syntax-operator: 220 15% 35%;
+    --syntax-class: 35 85% 42%;
+    --syntax-property: 200 70% 40%;
+    --syntax-punctuation: 220 10% 45%;
+    --syntax-tag: 355 75% 48%;
+    --syntax-attr-name: 175 55% 38%;
+    --syntax-attr-value: 25 85% 40%;
+    --syntax-regex: 300 65% 48%;
+    --syntax-builtin: 280 55% 50%;
+    --syntax-deleted: 0 70% 45%;
+    --syntax-inserted: 145 60% 35%;
+
     /* Chat bubbles */
     --user-message: 175 55% 45%;
     --user-message-foreground: 0 0% 100%;
@@ -146,6 +165,25 @@
     --inline-code-bg: 200 18% 16%;
     --inline-code-fg: 200 10% 90%;
 
+    /* Syntax highlighting tokens - Dark mode (softer, easier on eyes) */
+    --syntax-comment: 110 25% 55%;
+    --syntax-keyword: 280 75% 72%;
+    --syntax-string: 35 85% 68%;
+    --syntax-number: 175 65% 60%;
+    --syntax-function: 210 90% 72%;
+    --syntax-variable: 35 80% 72%;
+    --syntax-operator: 200 10% 70%;
+    --syntax-class: 45 85% 68%;
+    --syntax-property: 175 60% 62%;
+    --syntax-punctuation: 200 10% 60%;
+    --syntax-tag: 355 80% 72%;
+    --syntax-attr-name: 175 55% 65%;
+    --syntax-attr-value: 35 85% 68%;
+    --syntax-regex: 300 70% 72%;
+    --syntax-builtin: 180 55% 62%;
+    --syntax-deleted: 0 70% 65%;
+    --syntax-inserted: 145 55% 55%;
+
     /* Chat bubbles - Dark */
     --user-message: 175 55% 42%;
     --user-message-foreground: 0 0% 100%;
@@ -181,6 +219,145 @@
     --sidebar-ring: 175 60% 48%;
   }
 }
+
+/* ============================================
+   THEME-AWARE SYNTAX HIGHLIGHTING
+   These classes are applied by react-syntax-highlighter
+   and adapt to light/dark mode automatically
+   ============================================ */
+
+/* Base token styles - applied to Prism/highlight.js class names */
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+  color: hsl(var(--syntax-comment));
+  font-style: italic;
+}
+
+.token.punctuation {
+  color: hsl(var(--syntax-punctuation));
+}
+
+.token.namespace {
+  opacity: 0.75;
+}
+
+.token.property,
+.token.boolean,
+.token.number,
+.token.constant,
+.token.symbol {
+  color: hsl(var(--syntax-number));
+}
+
+.token.tag {
+  color: hsl(var(--syntax-tag));
+}
+
+.token.selector,
+.token.attr-name,
+.token.char,
+.token.builtin {
+  color: hsl(var(--syntax-attr-name));
+}
+
+.token.builtin {
+  color: hsl(var(--syntax-builtin));
+}
+
+.token.string,
+.token.attr-value {
+  color: hsl(var(--syntax-string));
+}
+
+.token.inserted {
+  color: hsl(var(--syntax-inserted));
+}
+
+.token.deleted {
+  color: hsl(var(--syntax-deleted));
+}
+
+.token.operator,
+.token.entity,
+.token.url,
+.language-css .token.string,
+.style .token.string {
+  color: hsl(var(--syntax-operator));
+}
+
+.token.atrule,
+.token.keyword {
+  color: hsl(var(--syntax-keyword));
+  font-weight: 500;
+}
+
+.token.function,
+.token.class-name {
+  color: hsl(var(--syntax-function));
+}
+
+.token.regex,
+.token.important {
+  color: hsl(var(--syntax-regex));
+}
+
+.token.variable {
+  color: hsl(var(--syntax-variable));
+}
+
+.token.important,
+.token.bold {
+  font-weight: 600;
+}
+
+.token.italic {
+  font-style: italic;
+}
+
+.token.entity {
+  cursor: help;
+}
+
+/* Language-specific syntax adjustments */
+.language-python .token.keyword { color: hsl(var(--syntax-keyword)); }
+.language-python .token.builtin { color: hsl(var(--syntax-builtin)); }
+.language-python .token.decorator { color: hsl(var(--syntax-function)); }
+
+.language-javascript .token.template-string .token.interpolation { color: hsl(var(--syntax-variable)); }
+.language-javascript .token.template-punctuation { color: hsl(var(--syntax-string)); }
+
+.language-typescript .token.builtin { color: hsl(var(--syntax-builtin)); }
+
+.language-jsx .token.tag .token.class-name,
+.language-tsx .token.tag .token.class-name { color: hsl(var(--syntax-class)); }
+
+.language-css .token.property { color: hsl(var(--syntax-property)); }
+.language-css .token.selector { color: hsl(var(--syntax-tag)); }
+
+.language-html .token.tag { color: hsl(var(--syntax-tag)); }
+.language-html .token.attr-name { color: hsl(var(--syntax-attr-name)); }
+.language-html .token.attr-value { color: hsl(var(--syntax-attr-value)); }
+
+.language-json .token.property { color: hsl(var(--syntax-property)); }
+.language-json .token.string { color: hsl(var(--syntax-string)); }
+
+.language-sql .token.keyword { 
+  color: hsl(var(--syntax-keyword)); 
+  text-transform: uppercase; 
+}
+
+.language-bash .token.function { color: hsl(var(--syntax-function)); }
+.language-bash .token.variable { color: hsl(var(--syntax-variable)); }
+
+.language-yaml .token.key { color: hsl(var(--syntax-property)); }
+.language-yaml .token.string { color: hsl(var(--syntax-string)); }
+
+.language-markdown .token.title { color: hsl(var(--syntax-keyword)); font-weight: 600; }
+.language-markdown .token.bold { color: hsl(var(--syntax-variable)); font-weight: 600; }
+.language-markdown .token.italic { color: hsl(var(--syntax-string)); font-style: italic; }
+.language-markdown .token.url { color: hsl(var(--syntax-function)); }
 
 @layer base {
   * {
