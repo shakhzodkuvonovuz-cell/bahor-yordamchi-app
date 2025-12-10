@@ -110,9 +110,7 @@ export function AgentHistorySidebar({
     try {
       // Delete messages first
       await supabase.from("agent_messages").delete().eq("thread_id", threadId);
-      // Delete runs and steps (cascade should handle steps)
-      await supabase.from("agent_runs").delete().eq("thread_id" as any, threadId);
-      // Delete thread
+      // Delete thread (cascade will handle runs/steps via FK)
       await supabase.from("agent_threads").delete().eq("id", threadId);
       
       if (currentThreadId === threadId) {
