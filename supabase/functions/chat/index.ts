@@ -1054,22 +1054,24 @@ WEB SEARCH RESULTS (CRITICAL - USE THESE!)
 
 ${searchResults}
 
-**CRITICAL INSTRUCTIONS - READ CAREFULLY:**
+**CRITICAL CITATION INSTRUCTIONS - YOU MUST FOLLOW:**
 
 1. You performed a LIVE web search and the results above are REAL and CURRENT
 2. **SUMMARIZE THE ACTUAL CONTENT** from the search results - don't just list the source links
-3. If search results contain news articles → TELL THE USER WHAT THE NEWS IS (headlines, key facts, dates)
-4. If search results contain data → EXTRACT AND PRESENT THAT DATA
-5. If search results contain answers → GIVE THE ANSWER, not just "check this website"
-6. CITE sources naturally: "Kun.uz xabariga ko'ra..." or "...deb xabar beradi Daryo.uz"
-7. DO NOT say "I cannot search" or "check these websites" - you already searched, now summarize what you found
-8. If the snippets are short, synthesize the information into a helpful answer
+3. **USE NUMBERED CITATION MARKERS** like [1], [2], [3] inline in your text to reference sources
+   - Example: "O'zbekistonda yangi qonun qabul qilindi [1]. Bu qonun..." 
+   - Match the citation number to the order sources appear in search results
+4. Place citations RIGHT AFTER the fact or sentence that came from that source
+5. You can cite the same source multiple times with the same number
+6. If search results contain news → TELL THE USER WHAT THE NEWS IS with citations
+7. If search results contain data → EXTRACT AND PRESENT THAT DATA with citations
+8. DO NOT say "I cannot search" - you already searched, now summarize what you found
 
-**WRONG RESPONSE (don't do this):**
-"Yangiliklar uchun Kun.uz, Daryo.uz saytlariga o'ting"
+**WRONG RESPONSE (no citations):**
+"Bugungi yangiliklar quyidagilar: O'zbekistonda yangi qonun qabul qilindi."
 
-**CORRECT RESPONSE (do this instead):**
-"Bugungi asosiy yangiliklar: [actual news from snippets]. Manba: Kun.uz"
+**CORRECT RESPONSE (with inline citations):**
+"Bugungi yangiliklar quyidagilar: O'zbekistonda yangi qonun qabul qilindi [1]. Xorazm viloyatida yangi loyiha boshlandi [2]."
 ` : searchBusyMessage ? `
 ═══════════════════════════════════════════════════════════════════
 WEB SEARCH STATUS

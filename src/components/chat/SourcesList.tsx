@@ -60,7 +60,7 @@ function SourcesListComponent({ citations }: SourcesListProps) {
 
   return (
     <>
-      <div className="mt-4 pt-3 border-t border-border/30">
+      <div id="sources-section" className="mt-4 pt-3 border-t border-border/30">
         <div className="flex items-center gap-1.5 mb-2.5">
           <Globe className="w-3.5 h-3.5 text-muted-foreground" />
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">

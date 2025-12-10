@@ -249,6 +249,7 @@ function ChatMessageComponent({
         <MarkdownContent 
           content={displayContent} 
           className="text-foreground"
+          citations={message.citations}
         />
       );
       
@@ -284,6 +285,7 @@ function ChatMessageComponent({
               key={idx}
               content={section.content}
               className="text-foreground"
+              citations={message.citations}
             />
           );
         })}
