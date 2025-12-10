@@ -14,6 +14,92 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_runs: {
+        Row: {
+          created_at: string
+          final_output: string | null
+          goal: string
+          id: string
+          plan: Json | null
+          sources: Json | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          final_output?: string | null
+          goal: string
+          id?: string
+          plan?: Json | null
+          sources?: Json | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          final_output?: string | null
+          goal?: string
+          id?: string
+          plan?: Json | null
+          sources?: Json | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      agent_steps: {
+        Row: {
+          created_at: string
+          error: string | null
+          id: string
+          rationale: string | null
+          run_id: string
+          status: string
+          step_index: number
+          title: string
+          tool_input: Json | null
+          tool_name: string | null
+          tool_output: Json | null
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          rationale?: string | null
+          run_id: string
+          status?: string
+          step_index: number
+          title: string
+          tool_input?: Json | null
+          tool_name?: string | null
+          tool_output?: Json | null
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          rationale?: string | null
+          run_id?: string
+          status?: string
+          step_index?: number
+          title?: string
+          tool_input?: Json | null
+          tool_name?: string | null
+          tool_output?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_steps_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "agent_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attachment_text: {
         Row: {
           attachment_id: string

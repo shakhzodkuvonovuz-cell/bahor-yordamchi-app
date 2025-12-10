@@ -487,6 +487,21 @@ export const translations: Record<Lang, Record<string, string>> = {
     'chats.deleteConfirmTitle': "Chatni o'chirish",
     'chats.deleteConfirmDescription': "Bu chatni o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi.",
     
+    // Agent Mode
+    'agent.title': 'Agent',
+    'agent.subtitle': "AI ko'p bosqichli vazifalarni rejalashtiradi va bajaradi",
+    'agent.goalPlaceholder': "Maqsadingizni yozing... masalan: 'So'nggi AI tendensiyalarini qidiring va asosiy xulosalarni yozing'",
+    'agent.run': 'Ishga tushirish',
+    'agent.stop': "To'xtatish",
+    'agent.planning': 'Agent rejalashtirmoqda...',
+    'agent.plan': 'Bajarish rejasi',
+    'agent.result': 'Natija',
+    'agent.sources': 'Manbalar',
+    'agent.completed': 'Agent vazifani yakunladi!',
+    'agent.cancelled': 'Agent vazifasi bekor qilindi',
+    'agent.retry': 'Qayta urinish',
+    'agent.saveCard': 'Karta sifatida saqlash',
+    
     // Speech-to-Text (STT) Dictation
     'stt.recording': 'Yozilmoqda...',
     'stt.transcribing': 'Transkriptsiya...',
@@ -1518,6 +1533,21 @@ export const translations: Record<Lang, Record<string, string>> = {
     'chats.deleteConfirmTitle': 'Delete chat',
     'chats.deleteConfirmDescription': 'Are you sure you want to delete this chat? This action cannot be undone.',
     
+    // Agent Mode
+    'agent.title': 'Agent',
+    'agent.subtitle': 'Let AI plan and execute multi-step tasks',
+    'agent.goalPlaceholder': "Describe your goal... e.g., 'Research the latest AI trends and summarize key findings'",
+    'agent.run': 'Run Agent',
+    'agent.stop': 'Stop',
+    'agent.planning': 'Agent is planning...',
+    'agent.plan': 'Execution Plan',
+    'agent.result': 'Result',
+    'agent.sources': 'Sources',
+    'agent.completed': 'Agent completed!',
+    'agent.cancelled': 'Agent run cancelled',
+    'agent.retry': 'Retry',
+    'agent.saveCard': 'Save as Card',
+    
     // Speech-to-Text (STT) Dictation
     'stt.recording': 'Recording...',
     'stt.transcribing': 'Transcribing...',
@@ -2423,6 +2453,21 @@ export const translations: Record<Lang, Record<string, string>> = {
     'chats.deleteConfirmTitle': 'Удалить чат',
     'chats.deleteConfirmDescription': 'Вы уверены, что хотите удалить этот чат? Это действие нельзя отменить.',
     
+    // Agent Mode
+    'agent.title': 'Агент',
+    'agent.subtitle': 'ИИ планирует и выполняет многоэтапные задачи',
+    'agent.goalPlaceholder': 'Опишите вашу цель... например: "Исследуйте последние тенденции ИИ и обобщите ключевые выводы"',
+    'agent.run': 'Запустить',
+    'agent.stop': 'Остановить',
+    'agent.planning': 'Агент планирует...',
+    'agent.plan': 'План выполнения',
+    'agent.result': 'Результат',
+    'agent.sources': 'Источники',
+    'agent.completed': 'Агент завершил!',
+    'agent.cancelled': 'Запуск агента отменён',
+    'agent.retry': 'Повторить',
+    'agent.saveCard': 'Сохранить как карточку',
+    
     // Speech-to-Text (STT) Dictation
     'stt.recording': 'Запись...',
     'stt.transcribing': 'Транскрипция...',
@@ -3283,6 +3328,21 @@ export const translations: Record<Lang, Record<string, string>> = {
     'chats.renamePlaceholder': 'Yeni ad...',
     'chats.deleteConfirmTitle': 'Sohbeti sil',
     'chats.deleteConfirmDescription': 'Bu sohbeti silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
+    
+    // Agent Mode
+    'agent.title': 'Ajan',
+    'agent.subtitle': 'Yapay zeka çok adımlı görevleri planlar ve yürütür',
+    'agent.goalPlaceholder': "Hedefinizi tanımlayın... örn: 'En son yapay zeka trendlerini araştırın ve önemli bulguları özetleyin'",
+    'agent.run': 'Çalıştır',
+    'agent.stop': 'Durdur',
+    'agent.planning': 'Ajan planlıyor...',
+    'agent.plan': 'Yürütme Planı',
+    'agent.result': 'Sonuç',
+    'agent.sources': 'Kaynaklar',
+    'agent.completed': 'Ajan tamamlandı!',
+    'agent.cancelled': 'Ajan çalışması iptal edildi',
+    'agent.retry': 'Tekrar Dene',
+    'agent.saveCard': 'Kart Olarak Kaydet',
     
     // Speech-to-Text (STT) Dictation
     'stt.recording': 'Kayıt yapılıyor...',

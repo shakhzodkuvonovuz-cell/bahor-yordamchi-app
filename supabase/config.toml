@@ -51,3 +51,6 @@ verify_jwt = false
 [functions.translate]
 verify_jwt = false
 
+[functions.agent-run]
+verify_jwt = false
+
