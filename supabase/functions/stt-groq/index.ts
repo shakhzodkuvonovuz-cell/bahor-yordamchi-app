@@ -152,9 +152,27 @@ serve(async (req) => {
       const result = await groqResponse.json();
       console.log(`[stt-groq:${requestId}] Transcription successful, text length: ${result.text?.length || 0}`);
 
+      // Check if transcription is empty (no speech detected)
+      if (!result.text || result.text.trim().length === 0) {
+        console.warn(`[stt-groq:${requestId}] Empty transcription - no speech detected`);
+        return new Response(
+          JSON.stringify({ 
+            error: "no_speech",
+            message: uiLanguage === "uz" 
+              ? "Ovoz aniqlanmadi. Balandroq gapiring."
+              : uiLanguage === "ru"
+              ? "Речь не обнаружена. Говорите громче."
+              : uiLanguage === "tr"
+              ? "Ses algılanmadı. Daha yüksek sesle konuşun."
+              : "No speech detected. Please speak louder."
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       return new Response(
         JSON.stringify({
-          text: result.text || "",
+          text: result.text,
           language: result.language || "uz",
           model: "whisper-large-v3-turbo",
           duration_seconds_estimate: result.duration || durationSeconds,
