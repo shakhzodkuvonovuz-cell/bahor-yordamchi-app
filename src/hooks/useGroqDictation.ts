@@ -202,6 +202,7 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
         pushDebug(`RECORDER_CREATED mime=${actualMime}`);
         
         mediaRecorderRef.current.ondataavailable = (event) => {
+          pushDebug(`CHUNK size=${event.data.size}`);
           if (event.data.size > 0) {
             audioChunksRef.current.push(event.data);
           }
@@ -224,8 +225,9 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
           isStartingRef.current = false;
         };
 
-        // Start recording with timeslice for chunks
-        mediaRecorderRef.current.start(250); // Collect data every 250ms
+        // Start recording WITHOUT timeslice - some browsers don't fire ondataavailable with timeslice
+        // Instead, we'll get all data in one chunk when stop() is called
+        mediaRecorderRef.current.start();
         startTimeRef.current = Date.now();
         isRecordingRef.current = true;
         setIsRecording(true);
