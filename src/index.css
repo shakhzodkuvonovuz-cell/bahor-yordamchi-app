@@ -200,42 +200,56 @@
   /* ============================================
      MOBILE INPUT ZOOM PREVENTION
      iOS Safari/WKWebView auto-zooms inputs < 16px
-     Use @supports for iOS-specific fix + media for Android
+     
+     CRITICAL: This must be the HIGHEST specificity rule
+     to override Tailwind's text-sm (14px) class.
      ============================================ */
   
-  /* iOS Safari / WKWebView specific (Capacitor APK) */
-  @supports (-webkit-touch-callout: none) {
+  /* Universal mobile fix - all touch devices */
+  @media (pointer: coarse), (hover: none) {
     input,
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="search"],
+    input[type="tel"],
+    input[type="url"],
+    input[type="number"],
     textarea,
-    select {
+    select,
+    [contenteditable="true"] {
       font-size: 16px !important;
-    }
-    
-    /* Targeted class for critical inputs like chat composer */
-    .bahor-no-zoom,
-    .bahor-no-zoom input,
-    .bahor-no-zoom textarea,
-    .bahor-no-zoom select {
-      font-size: 16px !important;
-      /* Prevent any override from Tailwind text-sm etc */
-      -webkit-text-size-adjust: 100%;
+      -webkit-text-size-adjust: 100% !important;
+      text-size-adjust: 100% !important;
     }
   }
   
-  /* Fallback for Android and other mobile browsers */
+  /* iOS Safari / WKWebView specific - higher specificity */
+  @supports (-webkit-touch-callout: none) {
+    input,
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="search"],
+    input[type="tel"],
+    input[type="url"],
+    input[type="number"],
+    textarea,
+    select,
+    [contenteditable="true"] {
+      font-size: 16px !important;
+      -webkit-text-size-adjust: 100% !important;
+    }
+  }
+  
+  /* Fallback for max-width based detection */
   @media screen and (max-width: 768px) {
     input,
     textarea,
     select {
       font-size: 16px !important;
-      -webkit-text-size-adjust: 100%;
-      text-size-adjust: 100%;
-    }
-    
-    .bahor-no-zoom,
-    .bahor-no-zoom input,
-    .bahor-no-zoom textarea {
-      font-size: 16px !important;
+      -webkit-text-size-adjust: 100% !important;
+      text-size-adjust: 100% !important;
     }
   }
 
