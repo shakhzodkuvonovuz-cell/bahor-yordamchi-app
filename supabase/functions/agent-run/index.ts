@@ -564,19 +564,19 @@ serve(async (req) => {
 
     const supabaseClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     
+    // Use service role client to verify the JWT token
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await createClient(
-      SUPABASE_URL,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: `Bearer ${token}` } } }
-    ).auth.getUser();
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
 
     if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Invalid token" }), {
+      console.error("[Agent] Auth error:", userError?.message);
+      return new Response(JSON.stringify({ error: "Invalid token", details: userError?.message }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    
+    console.log("[Agent] Authenticated user:", user.email);
 
     const { goal, runId, action, threadId, constraints, files, links, notes } = await req.json();
 
