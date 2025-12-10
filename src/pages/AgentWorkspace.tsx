@@ -223,32 +223,9 @@ export default function AgentWorkspace() {
       
       toast.info("Davom etish uchun sahifani yangilang");
       setIsSendingFollowUp(false);
-      return;
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-followup`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.session?.access_token}`,
-          },
-          body: JSON.stringify({
-            runId: run.id,
-            message: content,
-            reportContext: run.final_report_md || run.final_output,
-          }),
-        }
-      );
-      
-      if (!response.ok) {
-        throw new Error("Follow-up failed");
-      }
-      
-      // Response will be added via realtime subscription
-      toast.success("Javob keldi");
     } catch (error) {
       console.error("Follow-up error:", error);
       toast.error("Xabar yuborishda xato");
-    } finally {
       setIsSendingFollowUp(false);
     }
   };
