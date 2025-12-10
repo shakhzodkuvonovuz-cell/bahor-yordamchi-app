@@ -43,6 +43,13 @@ interface AgentRun {
   created_at: string;
 }
 
+interface ConversationTurn {
+  role: "user" | "assistant";
+  content: string;
+  goal?: string;
+  sources?: any[];
+}
+
 interface AgentFile {
   id: string;
   filename: string;
@@ -91,6 +98,9 @@ export default function Agent() {
   const [showHistory, setShowHistory] = useState(false);
   const [pastRuns, setPastRuns] = useState<AgentRun[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  
+  // Conversation history for follow-ups
+  const [conversationHistory, setConversationHistory] = useState<ConversationTurn[]>([]);
   
   // Constraints
   const [showConstraints, setShowConstraints] = useState(false);
@@ -240,10 +250,21 @@ export default function Agent() {
           filter: `id=eq.${currentRun.id}`,
         },
         (payload) => {
-          setCurrentRun(payload.new as unknown as AgentRun);
+          const updatedRun = payload.new as unknown as AgentRun;
+          setCurrentRun(updatedRun);
           if (payload.new.status === "done") {
             setIsRunning(false);
+            setGoal(""); // Clear goal after successful completion
             toast.success("Agent vazifani bajardi!");
+            
+            // Add assistant response to conversation history
+            if (updatedRun.final_output) {
+              setConversationHistory(prev => [...prev, { 
+                role: "assistant", 
+                content: updatedRun.final_output || "",
+                sources: updatedRun.sources as any[] || []
+              }]);
+            }
           } else if (payload.new.status === "cancelled") {
             setIsRunning(false);
           } else if (payload.new.status === "error") {
@@ -413,10 +434,13 @@ export default function Agent() {
   const handleRun = async () => {
     if (!goal.trim() || !user) return;
 
+    const currentGoal = goal.trim();
     setIsRunning(true);
-    setCurrentRun(null);
     setSteps([]);
     setGeneratedImages([]); // Clear previous images
+    
+    // Add user turn to conversation history
+    setConversationHistory(prev => [...prev, { role: "user", content: currentGoal, goal: currentGoal }]);
 
     try {
       // Get file contents
@@ -446,12 +470,13 @@ export default function Agent() {
             Authorization: `Bearer ${session?.session?.access_token}`,
           },
           body: JSON.stringify({
-            goal: goal.trim(),
+            goal: currentGoal,
             constraints,
             files: validFiles,
             links,
             notes,
             useWebSearch,
+            conversationHistory, // Send conversation history to backend
           }),
         }
       );
@@ -1044,6 +1069,53 @@ export default function Agent() {
 
             {/* Results Tab */}
             <TabsContent value="results" className="mt-0 space-y-4">
+              {/* Conversation History */}
+              {conversationHistory.length > 0 && (
+                <div className="space-y-3">
+                  {conversationHistory.map((turn, i) => (
+                    <div 
+                      key={i}
+                      className={cn(
+                        "rounded-lg p-3 text-sm",
+                        turn.role === "user" 
+                          ? "bg-primary/10 border border-primary/20 ml-8" 
+                          : "bg-muted/50 border border-border/50 mr-4"
+                      )}
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        {turn.role === "user" ? (
+                          <>
+                            <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                              <span className="text-[10px] font-medium">Siz</span>
+                            </div>
+                            <span className="text-xs font-medium text-primary">Savol</span>
+                          </>
+                        ) : (
+                          <>
+                            <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                              <Bot className="h-3 w-3 text-primary-foreground" />
+                            </div>
+                            <span className="text-xs font-medium">Bahor AI</span>
+                            {turn.sources && (turn.sources as any[]).length > 0 && (
+                              <Badge variant="outline" className="text-[9px] h-4">
+                                {(turn.sources as any[]).length} manba
+                              </Badge>
+                            )}
+                          </>
+                        )}
+                      </div>
+                      {turn.role === "user" ? (
+                        <p className="text-sm">{turn.goal || turn.content}</p>
+                      ) : (
+                        <div className="prose prose-sm dark:prose-invert max-w-none">
+                          <AiResponseRenderer content={turn.content} />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Generated Images Gallery */}
               {generatedImages.length > 0 && (
                 <div className="space-y-2">
@@ -1268,7 +1340,8 @@ export default function Agent() {
               setFiles([]);
               setLinks([]);
               setNotes("");
-            }} 
+              setConversationHistory([]); // Clear conversation history for new task
+            }}
             className="gap-1.5 h-9 text-sm"
           >
             <RotateCcw className="h-3.5 w-3.5" />
