@@ -643,10 +643,13 @@ serve(async (req) => {
     let contextParts: string[] = [];
     const fileMetadata: Array<{ filename: string; textLength: number; status: string }> = [];
     
+    console.log(`[Agent] Received files payload:`, files ? files.map((f: any) => ({ filename: f.filename, hasText: !!f.text, textLen: f.text?.length || 0 })) : 'none');
+    
     if (files && files.length > 0) {
       contextParts.push("=== UPLOADED FILES ===");
       for (const file of files) {
         const textLen = file.text?.length || 0;
+        console.log(`[Agent] Processing file: ${file.filename}, text length: ${textLen}`);
         fileMetadata.push({ 
           filename: file.filename, 
           textLength: textLen,
@@ -654,6 +657,7 @@ serve(async (req) => {
         });
         contextParts.push(`\n--- File: ${file.filename} (${textLen} chars) ---\n${file.text?.slice(0, 15000) || "[No content extracted]"}`);
       }
+      console.log(`[Agent] Total context length: ${contextParts.join('').length} chars`);
     }
     
     if (links && links.length > 0) {
