@@ -29,8 +29,6 @@ export { default as OutputFormatButtons } from "./OutputFormatButtons";
 // Document tools
 export { ExportToPdfModal } from "./ExportToPdfModal";
 
-// Voice dictation
-export { InputWaveform } from "./InputWaveform";
 
 // Layout components
 export { FocusCanvas, MessageArea } from "./FocusCanvas";

@@ -51,5 +51,3 @@ verify_jwt = false
 [functions.translate]
 verify_jwt = false
 
-[functions.stt-groq]
-verify_jwt = false
