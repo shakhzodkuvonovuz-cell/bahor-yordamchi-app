@@ -203,6 +203,8 @@
      
      CRITICAL: This must be the HIGHEST specificity rule
      to override Tailwind's text-sm (14px) class.
+     
+     FIXES: iOS Safari focus-zoom when tapping inputs
      ============================================ */
   
   /* Universal mobile fix - all touch devices */
@@ -224,8 +226,9 @@
     }
   }
   
-  /* iOS Safari / WKWebView specific - higher specificity */
+  /* iOS Safari / WKWebView specific - MAXIMUM specificity */
   @supports (-webkit-touch-callout: none) {
+    /* All form inputs must be 16px to prevent iOS focus zoom */
     input,
     input[type="text"],
     input[type="email"],
@@ -237,6 +240,16 @@
     textarea,
     select,
     [contenteditable="true"] {
+      font-size: 16px !important;
+      -webkit-text-size-adjust: 100% !important;
+      line-height: 1.4 !important;
+    }
+    
+    /* Explicit class for inputs that absolutely must not zoom */
+    .bahor-no-zoom,
+    .bahor-no-zoom input,
+    .bahor-no-zoom textarea,
+    .bahor-no-zoom select {
       font-size: 16px !important;
       -webkit-text-size-adjust: 100% !important;
     }
