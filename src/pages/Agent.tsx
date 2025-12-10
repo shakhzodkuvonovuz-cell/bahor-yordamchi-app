@@ -432,15 +432,15 @@ export default function Agent() {
   const totalSteps = steps.length;
 
   return (
-    <div className="flex flex-col h-full max-w-4xl mx-auto p-4 md:p-6 space-y-4">
+    <div className="flex flex-col h-full max-w-4xl mx-auto px-3 py-2 md:p-4 space-y-2.5">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-xl bg-primary/10">
-          <Bot className="h-6 w-6 text-primary" />
+      <div className="flex items-center gap-2">
+        <div className="p-1.5 rounded-lg bg-primary/10">
+          <Bot className="h-5 w-5 text-primary" />
         </div>
         <div>
-          <h1 className="text-xl font-semibold">{t("agent.title") || "Agent"}</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-lg font-semibold">{t("agent.title") || "Agent"}</h1>
+          <p className="text-xs text-muted-foreground">
             AI ko'p bosqichli vazifalarni rejalashtiradi va bajaradi
           </p>
         </div>
@@ -448,25 +448,25 @@ export default function Agent() {
 
       {/* Goal Input */}
       <Card>
-        <CardContent className="pt-4 space-y-4">
+        <CardContent className="pt-3 space-y-2.5">
           <Textarea
             placeholder="Maqsadingizni yozing... Masalan: 'Yangi mobil ilova uchun marketing strategiyasini tuzing'"
             value={goal}
             onChange={(e) => setGoal(e.target.value)}
-            className="min-h-[100px] resize-none text-base"
+            className="min-h-[80px] resize-none text-sm"
             disabled={isRunning}
           />
           
           {/* Sample goals */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {SAMPLE_GOALS.map((sample, i) => (
               <button
                 key={i}
                 onClick={() => setGoal(sample)}
-                className="text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors"
+                className="text-[11px] px-2 py-1 rounded-full bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors"
                 disabled={isRunning}
               >
-                {sample.slice(0, 40)}...
+                {sample.slice(0, 35)}...
               </button>
             ))}
           </div>
@@ -474,48 +474,48 @@ export default function Agent() {
           {/* Constraints Accordion */}
           <Collapsible open={showConstraints} onOpenChange={setShowConstraints}>
             <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
-                <Settings2 className="h-4 w-4" />
+              <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground h-7 text-xs">
+                <Settings2 className="h-3.5 w-3.5" />
                 Qo'shimcha sozlamalar
-                {showConstraints ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                {showConstraints ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
               </Button>
             </CollapsibleTrigger>
-            <CollapsibleContent className="pt-3 space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+            <CollapsibleContent className="pt-2 space-y-2">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Ohang</label>
+                  <label className="text-[10px] text-muted-foreground mb-0.5 block">Ohang</label>
                   <Input
                     placeholder="Rasmiy, do'stona..."
                     value={constraints.tone}
                     onChange={(e) => setConstraints((c) => ({ ...c, tone: e.target.value }))}
-                    className="text-sm"
+                    className="text-xs h-8"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Hajmi</label>
+                  <label className="text-[10px] text-muted-foreground mb-0.5 block">Hajmi</label>
                   <Input
                     placeholder="Qisqa, batafsil..."
                     value={constraints.length}
                     onChange={(e) => setConstraints((c) => ({ ...c, length: e.target.value }))}
-                    className="text-sm"
+                    className="text-xs h-8"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Auditoriya</label>
+                  <label className="text-[10px] text-muted-foreground mb-0.5 block">Auditoriya</label>
                   <Input
                     placeholder="Talabalar, biznesmenlar..."
                     value={constraints.audience}
                     onChange={(e) => setConstraints((c) => ({ ...c, audience: e.target.value }))}
-                    className="text-sm"
+                    className="text-xs h-8"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Til</label>
+                  <label className="text-[10px] text-muted-foreground mb-0.5 block">Til</label>
                   <Input
                     placeholder="O'zbekcha, English..."
                     value={constraints.language}
                     onChange={(e) => setConstraints((c) => ({ ...c, language: e.target.value }))}
-                    className="text-sm"
+                    className="text-xs h-8"
                   />
                 </div>
               </div>
@@ -525,36 +525,36 @@ export default function Agent() {
       </Card>
 
       {/* Workspace Tabs */}
-      <Card>
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <CardHeader className="pb-0">
-            <TabsList className="grid grid-cols-4 w-full">
-              <TabsTrigger value="files" className="text-xs gap-1.5">
-                <File className="h-3.5 w-3.5" />
+      <Card className="flex-1 min-h-0 overflow-hidden flex flex-col">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+          <CardHeader className="py-2 px-3">
+            <TabsList className="grid grid-cols-4 w-full h-8">
+              <TabsTrigger value="files" className="text-[11px] gap-1 h-7">
+                <File className="h-3 w-3" />
                 <span className="hidden sm:inline">Fayllar</span>
-                {files.length > 0 && <Badge variant="secondary" className="h-4 w-4 p-0 text-[10px] justify-center">{files.length}</Badge>}
+                {files.length > 0 && <Badge variant="secondary" className="h-3.5 w-3.5 p-0 text-[9px] justify-center">{files.length}</Badge>}
               </TabsTrigger>
-              <TabsTrigger value="links" className="text-xs gap-1.5">
-                <Link2 className="h-3.5 w-3.5" />
+              <TabsTrigger value="links" className="text-[11px] gap-1 h-7">
+                <Link2 className="h-3 w-3" />
                 <span className="hidden sm:inline">Havolalar</span>
-                {links.length > 0 && <Badge variant="secondary" className="h-4 w-4 p-0 text-[10px] justify-center">{links.length}</Badge>}
+                {links.length > 0 && <Badge variant="secondary" className="h-3.5 w-3.5 p-0 text-[9px] justify-center">{links.length}</Badge>}
               </TabsTrigger>
-              <TabsTrigger value="notes" className="text-xs gap-1.5">
-                <StickyNote className="h-3.5 w-3.5" />
+              <TabsTrigger value="notes" className="text-[11px] gap-1 h-7">
+                <StickyNote className="h-3 w-3" />
                 <span className="hidden sm:inline">Eslatmalar</span>
               </TabsTrigger>
-              <TabsTrigger value="results" className="text-xs gap-1.5">
-                <FileText className="h-3.5 w-3.5" />
+              <TabsTrigger value="results" className="text-[11px] gap-1 h-7">
+                <FileText className="h-3 w-3" />
                 <span className="hidden sm:inline">Natijalar</span>
               </TabsTrigger>
             </TabsList>
           </CardHeader>
 
-          <CardContent className="pt-4">
+          <CardContent className="pt-2 pb-3 px-3 flex-1 overflow-auto">
             {/* Files Tab */}
-            <TabsContent value="files" className="mt-0 space-y-3">
+            <TabsContent value="files" className="mt-0 space-y-2">
               <div
-                className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer"
+                className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:border-primary/50 transition-colors cursor-pointer"
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
                   e.preventDefault();
@@ -562,11 +562,11 @@ export default function Agent() {
                 }}
                 onClick={() => document.getElementById("agent-file-input")?.click()}
               >
-                <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">
+                <Upload className="h-6 w-6 mx-auto text-muted-foreground mb-1.5" />
+                <p className="text-xs text-muted-foreground">
                   Fayllarni shu yerga tashlang yoki <span className="text-primary">tanlang</span>
                 </p>
-                <p className="text-xs text-muted-foreground/70 mt-1">
+                <p className="text-[10px] text-muted-foreground/70 mt-0.5">
                   PDF, DOCX, TXT, rasmlar (max 10MB)
                 </p>
                 <input
@@ -580,16 +580,16 @@ export default function Agent() {
               </div>
 
               {files.length > 0 && (
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {files.map((file) => (
                     <div
                       key={file.id}
-                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
+                      className="flex items-center gap-2 p-2 rounded-lg bg-muted/50"
                     >
-                      <File className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <File className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{file.filename}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs font-medium truncate">{file.filename}</p>
+                        <p className="text-[10px] text-muted-foreground">
                           {file.size_bytes ? `${(file.size_bytes / 1024).toFixed(1)} KB` : ""}
                         </p>
                       </div>
@@ -597,10 +597,10 @@ export default function Agent() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 w-7 p-0"
+                        className="h-6 w-6 p-0"
                         onClick={() => handleRemoveFile(file.id, file.storage_path)}
                       >
-                        <X className="h-4 w-4" />
+                        <X className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   ))}
@@ -609,29 +609,29 @@ export default function Agent() {
             </TabsContent>
 
             {/* Links Tab */}
-            <TabsContent value="links" className="mt-0 space-y-3">
+            <TabsContent value="links" className="mt-0 space-y-2">
               <div className="flex gap-2">
                 <Input
                   placeholder="https://..."
                   value={newLink}
                   onChange={(e) => setNewLink(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleAddLink()}
-                  className="flex-1"
+                  className="flex-1 h-8 text-xs"
                 />
-                <Button onClick={handleAddLink} size="sm">
+                <Button onClick={handleAddLink} size="sm" className="h-8 text-xs">
                   Qo'shish
                 </Button>
               </div>
               {links.length > 0 && (
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {links.map((link, i) => (
-                    <div key={i} className="flex items-center gap-2 p-2 rounded bg-muted/50">
-                      <Link2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                      <span className="text-sm truncate flex-1">{link}</span>
+                    <div key={i} className="flex items-center gap-2 p-1.5 rounded bg-muted/50">
+                      <Link2 className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                      <span className="text-xs truncate flex-1">{link}</span>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-6 w-6 p-0"
+                        className="h-5 w-5 p-0"
                         onClick={() => setLinks((prev) => prev.filter((_, idx) => idx !== i))}
                       >
                         <X className="h-3 w-3" />
@@ -648,38 +648,38 @@ export default function Agent() {
                 placeholder="Qo'shimcha ma'lumotlar, talablar, yoki kontekst..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="min-h-[120px] resize-none"
+                className="min-h-[80px] resize-none text-xs"
               />
             </TabsContent>
 
             {/* Results Tab */}
             <TabsContent value="results" className="mt-0">
               {currentRun?.final_output ? (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Badge variant="secondary" className="gap-1">
-                      <Check className="h-3 w-3" />
+                    <Badge variant="secondary" className="gap-1 text-[10px]">
+                      <Check className="h-2.5 w-2.5" />
                       Tayyor
                     </Badge>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={handleCopyResult} className="gap-1.5">
-                        <Copy className="h-3.5 w-3.5" />
+                    <div className="flex gap-1.5">
+                      <Button variant="outline" size="sm" onClick={handleCopyResult} className="gap-1 h-7 text-xs">
+                        <Copy className="h-3 w-3" />
                         Nusxa
                       </Button>
-                      <Button variant="outline" size="sm" className="gap-1.5">
-                        <Save className="h-3.5 w-3.5" />
+                      <Button variant="outline" size="sm" className="gap-1 h-7 text-xs">
+                        <Save className="h-3 w-3" />
                         Saqlash
                       </Button>
                     </div>
                   </div>
-                  <div className="prose prose-sm dark:prose-invert max-w-none">
+                  <div className="prose prose-sm dark:prose-invert max-w-none text-sm">
                     <AiResponseRenderer content={currentRun.final_output} />
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                  <p>Natijalar bu yerda ko'rsatiladi</p>
+                <div className="text-center py-6 text-muted-foreground">
+                  <FileText className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                  <p className="text-xs">Natijalar bu yerda ko'rsatiladi</p>
                 </div>
               )}
             </TabsContent>
@@ -688,32 +688,32 @@ export default function Agent() {
       </Card>
 
       {/* Run Button */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 pt-1">
         {isRunning ? (
           <>
-            <Button variant="destructive" onClick={handleCancel} className="gap-2 flex-1 sm:flex-none">
-              <Square className="h-4 w-4" />
+            <Button variant="destructive" onClick={handleCancel} className="gap-1.5 flex-1 sm:flex-none h-9 text-sm">
+              <Square className="h-3.5 w-3.5" />
               To'xtatish
             </Button>
             {totalSteps > 0 && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 <span>{completedSteps}/{totalSteps} qadam</span>
               </div>
             )}
           </>
         ) : (
           <>
-            <Button onClick={handleRun} disabled={!goal.trim()} className="gap-2 flex-1 sm:flex-none">
-              <Play className="h-4 w-4" />
+            <Button onClick={handleRun} disabled={!goal.trim()} className="gap-1.5 flex-1 sm:flex-none h-9 text-sm">
+              <Play className="h-3.5 w-3.5" />
               Ishga tushirish
             </Button>
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex items-center gap-1.5 text-xs">
               <input
                 type="checkbox"
                 checked={useWebSearch}
                 onChange={(e) => setUseWebSearch(e.target.checked)}
-                className="rounded border-border"
+                className="rounded border-border h-3.5 w-3.5"
               />
               <span className="text-muted-foreground">Web qidiruv</span>
             </label>
@@ -724,16 +724,16 @@ export default function Agent() {
       {/* Planning Skeleton */}
       {isRunning && steps.length === 0 && (
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="py-2 px-3">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 animate-pulse text-primary" />
-              <span className="text-sm font-medium">Reja tuzilmoqda...</span>
+              <Sparkles className="h-3.5 w-3.5 animate-pulse text-primary" />
+              <span className="text-xs font-medium">Reja tuzilmoqda...</span>
             </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-5/6" />
-            <Skeleton className="h-8 w-4/6" />
+          <CardContent className="space-y-2 px-3 py-2">
+            <Skeleton className="h-6 w-full" />
+            <Skeleton className="h-6 w-5/6" />
+            <Skeleton className="h-6 w-4/6" />
           </CardContent>
         </Card>
       )}
