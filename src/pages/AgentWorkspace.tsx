@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
   Bot, ArrowLeft, FileText, MessageSquare, Files, Settings2, 
   Copy, Download, Save, Share2, Plus, Clock, Check, Loader2,
   ExternalLink, ChevronDown, ChevronUp, Link2, StickyNote,
-  Paperclip, Send, RefreshCw, X, Eye, Image, AlertCircle
+  Paperclip, Send, RefreshCw, X, Eye, Image, AlertCircle, Upload,
+  FileIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +23,12 @@ import { useTranslation } from "@/i18n/LanguageProvider";
 import { AiResponseRenderer } from "@/components/ai/AiResponseRenderer";
 import { cn } from "@/lib/utils";
 import { downloadPDF } from "@/lib/pdfGenerator";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface AgentRun {
   id: string;
@@ -87,6 +94,11 @@ export default function AgentWorkspace() {
   // Edit title state
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState("");
+  
+  // File upload state
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
 
   // Load run data
   useEffect(() => {
@@ -138,7 +150,25 @@ export default function AgentWorkspace() {
           setSteps(stepsData as unknown as AgentStep[]);
         }
         
-        // Load messages - skip for now since run_id column is new
+        // Load existing messages from agent_messages table
+        const { data: messagesData } = await supabase
+          .from("agent_messages")
+          .select("*")
+          .eq("thread_id", runId)
+          .order("created_at", { ascending: true });
+        
+        if (messagesData && messagesData.length > 0) {
+          setMessages(messagesData.map((msg: any) => ({
+            id: msg.id,
+            run_id: runId,
+            role: msg.role,
+            content: msg.content,
+            created_at: msg.created_at,
+            metadata: msg.metadata,
+          })));
+        }
+        
+        // Load messages from separate run messages table if exists
         // Will be enabled once types regenerate
         
         // Load files
@@ -185,10 +215,41 @@ export default function AgentWorkspace() {
           event: "INSERT",
           schema: "public",
           table: "agent_messages",
-          filter: `run_id=eq.${runId}`,
+          filter: `thread_id=eq.${runId}`,
         },
         (payload) => {
           setMessages(prev => [...prev, payload.new as unknown as AgentMessage]);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "agent_files",
+          filter: `run_id=eq.${runId}`,
+        },
+        (payload) => {
+          // Update file status when extraction completes
+          setFiles(prev => prev.map(f => 
+            f.id === payload.new.id ? { ...f, ...payload.new } as AgentFile : f
+          ));
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "agent_files",
+          filter: `run_id=eq.${runId}`,
+        },
+        (payload) => {
+          // Add new file
+          setFiles(prev => {
+            if (prev.some(f => f.id === payload.new.id)) return prev;
+            return [...prev, payload.new as unknown as AgentFile];
+          });
         }
       )
       .subscribe();
@@ -289,6 +350,23 @@ export default function AgentWorkspace() {
     toast.success("Nusxa olindi");
   };
 
+  // Copy as Google Docs friendly format (plain text with formatting preserved)
+  const handleCopyAsGoogleDoc = () => {
+    const content = run?.final_report_md || run?.final_output || "";
+    // Convert markdown to clean text for Google Docs
+    const cleanContent = content
+      .replace(/^#{1,6}\s+/gm, '') // Remove heading markers but keep text
+      .replace(/\*\*(.+?)\*\*/g, '$1') // Bold
+      .replace(/\*(.+?)\*/g, '$1') // Italic
+      .replace(/`(.+?)`/g, '$1') // Code
+      .replace(/^\s*[-*]\s+/gm, '• ') // List items
+      .replace(/^\s*\d+\.\s+/gm, (m, i) => `${i + 1}. `) // Numbered lists
+      .replace(/\n{3,}/g, '\n\n'); // Multiple newlines
+    
+    navigator.clipboard.writeText(cleanContent);
+    toast.success("Google Docs uchun nusxa olindi");
+  };
+
   const handleExportPDF = async () => {
     if (!run) return;
     
@@ -307,6 +385,81 @@ export default function AgentWorkspace() {
     } catch (error) {
       toast.dismiss();
       toast.error("PDF yaratishda xato");
+    }
+  };
+  
+  // File upload handler
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = e.target.files;
+    if (!selectedFiles || selectedFiles.length === 0 || !run || !user) return;
+    
+    setIsUploadingFile(true);
+    
+    try {
+      for (const file of Array.from(selectedFiles)) {
+        const ext = file.name.split('.').pop() || 'bin';
+        const path = `${user.id}/${run.id}/${Date.now()}-${file.name}`;
+        
+        // Upload to storage
+        const { error: uploadError } = await supabase.storage
+          .from("agent-files")
+          .upload(path, file);
+        
+        if (uploadError) {
+          console.error("Upload error:", uploadError);
+          toast.error(`Fayl yuklashda xato: ${file.name}`);
+          continue;
+        }
+        
+        // Create file record
+        const { data: fileData, error: fileError } = await supabase
+          .from("agent_files")
+          .insert({
+            user_id: user.id,
+            run_id: run.id,
+            filename: file.name,
+            storage_path: path,
+            mime_type: file.type,
+            size_bytes: file.size,
+            extraction_status: "pending",
+          })
+          .select()
+          .single();
+        
+        if (fileError) {
+          console.error("File record error:", fileError);
+          continue;
+        }
+        
+        // Add to local state
+        if (fileData) {
+          setFiles(prev => [...prev, fileData as unknown as AgentFile]);
+        }
+        
+        // Trigger extraction
+        const { data: session } = await supabase.auth.getSession();
+        fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-extract-file`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session?.session?.access_token}`,
+            },
+            body: JSON.stringify({ fileId: fileData.id }),
+          }
+        ).catch(console.error);
+      }
+      
+      toast.success("Fayl(lar) yuklandi");
+    } catch (error) {
+      console.error("File upload error:", error);
+      toast.error("Fayl yuklashda xato");
+    } finally {
+      setIsUploadingFile(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -390,10 +543,10 @@ export default function AgentWorkspace() {
   const reportContent = run.final_report_md || run.final_output || "";
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden max-w-full">
       {/* Header */}
-      <div className="flex items-center gap-2 p-3 border-b bg-background/95 backdrop-blur shrink-0">
-        <Button 
+      <div className="flex items-center gap-2 p-2 sm:p-3 border-b bg-background/95 backdrop-blur shrink-0 min-w-0">
+        <Button
           variant="ghost" 
           size="sm" 
           onClick={() => navigate("/agent")}
@@ -402,23 +555,23 @@ export default function AgentWorkspace() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 overflow-hidden">
           {isEditingTitle ? (
             <div className="flex items-center gap-2">
               <Input
                 value={editedTitle}
                 onChange={(e) => setEditedTitle(e.target.value)}
-                className="h-7 text-sm"
+                className="h-7 text-sm flex-1 min-w-0"
                 autoFocus
                 onKeyDown={(e) => e.key === "Enter" && handleSaveTitle()}
               />
-              <Button size="sm" className="h-7" onClick={handleSaveTitle}>
+              <Button size="sm" className="h-7 shrink-0" onClick={handleSaveTitle}>
                 <Check className="h-3 w-3" />
               </Button>
               <Button 
                 size="sm" 
                 variant="ghost" 
-                className="h-7"
+                className="h-7 shrink-0"
                 onClick={() => setIsEditingTitle(false)}
               >
                 <X className="h-3 w-3" />
@@ -427,16 +580,16 @@ export default function AgentWorkspace() {
           ) : (
             <button 
               onClick={() => setIsEditingTitle(true)}
-              className="text-left hover:bg-muted/50 rounded px-1 -ml-1"
+              className="text-left hover:bg-muted/50 rounded px-1 -ml-1 max-w-full"
             >
-              <h1 className="text-sm font-semibold truncate">
-                {run.title || run.goal.slice(0, 60)}
+              <h1 className="text-xs sm:text-sm font-semibold truncate max-w-[200px] sm:max-w-none">
+                {run.title || run.goal.slice(0, 50)}
               </h1>
             </button>
           )}
-          <div className="flex items-center gap-2 mt-0.5">
+          <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 flex-wrap">
             {getStatusBadge()}
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-[9px] sm:text-[10px] text-muted-foreground hidden xs:inline">
               {new Date(run.created_at).toLocaleDateString("uz-UZ", {
                 day: "2-digit",
                 month: "short",
@@ -448,21 +601,46 @@ export default function AgentWorkspace() {
           </div>
         </div>
         
-        <div className="flex items-center gap-1">
-          <Button variant="outline" size="sm" className="h-8 gap-1.5" onClick={handleCopyReport}>
-            <Copy className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Nusxa</span>
-          </Button>
+        <div className="flex items-center gap-1 shrink-0">
+          {/* Copy dropdown for mobile, separate buttons for desktop */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-1.5">
+                <Copy className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Nusxa</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-popover">
+              <DropdownMenuItem onClick={handleCopyReport}>
+                <Copy className="h-3.5 w-3.5 mr-2" />
+                Markdown nusxa
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleCopyAsGoogleDoc}>
+                <FileText className="h-3.5 w-3.5 mr-2" />
+                Google Docs uchun
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button variant="outline" size="sm" className="h-8 gap-1.5" onClick={handleExportPDF}>
             <Download className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">PDF</span>
           </Button>
-          <Button size="sm" className="h-8 gap-1.5" onClick={() => navigate("/agent")}>
+          <Button size="sm" className="h-8 gap-1.5 bg-primary" onClick={() => navigate("/agent")}>
             <Plus className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Yangi</span>
           </Button>
         </div>
       </div>
+      
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept=".pdf,.doc,.docx,.txt,.csv,.xlsx,.xls,.png,.jpg,.jpeg,.webp"
+        className="hidden"
+        onChange={handleFileUpload}
+      />
 
       {/* Main Content - Two Column Layout */}
       <div className="flex-1 flex overflow-hidden">
@@ -591,23 +769,25 @@ export default function AgentWorkspace() {
         </div>
         
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="grid w-full grid-cols-3 shrink-0 mx-3 mt-3" style={{ width: 'calc(100% - 1.5rem)' }}>
-              <TabsTrigger value="report" className="gap-1.5 text-xs">
-                <FileText className="h-3.5 w-3.5" />
-                Hisobot
-              </TabsTrigger>
-              <TabsTrigger value="chat" className="gap-1.5 text-xs">
-                <MessageSquare className="h-3.5 w-3.5" />
-                Suhbat
-              </TabsTrigger>
-              <TabsTrigger value="files" className="gap-1.5 text-xs lg:hidden">
-                <Files className="h-3.5 w-3.5" />
-                Fayllar
-              </TabsTrigger>
-            </TabsList>
+            <div className="px-3 pt-3 shrink-0">
+              <TabsList className="grid w-full grid-cols-3 h-9">
+                <TabsTrigger value="report" className="gap-1 text-xs px-2">
+                  <FileText className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">Hisobot</span>
+                </TabsTrigger>
+                <TabsTrigger value="chat" className="gap-1 text-xs px-2">
+                  <MessageSquare className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">Suhbat</span>
+                </TabsTrigger>
+                <TabsTrigger value="files" className="gap-1 text-xs px-2 lg:hidden">
+                  <Files className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">Fayllar</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
             
             {/* Report Tab */}
             <TabsContent value="report" className="flex-1 overflow-hidden mt-0 p-3">
@@ -785,8 +965,23 @@ export default function AgentWorkspace() {
                   {/* Prompt */}
                   <Card className="p-3">
                     <h3 className="text-xs font-medium text-muted-foreground mb-2">Savol</h3>
-                    <p className="text-sm">{run.goal}</p>
+                    <p className="text-sm break-words">{run.goal}</p>
                   </Card>
+                  
+                  {/* Upload button */}
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploadingFile}
+                  >
+                    {isUploadingFile ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4" />
+                    )}
+                    Fayl qo'shish
+                  </Button>
                   
                   {/* Files */}
                   {files.length > 0 ? (
@@ -797,7 +992,7 @@ export default function AgentWorkspace() {
                       <div className="space-y-2">
                         {files.map((file) => (
                           <Card key={file.id} className="p-3 flex items-center gap-3">
-                            <FileText className="h-5 w-5 text-muted-foreground" />
+                            <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium truncate">{file.filename}</p>
                               {file.size_bytes && (
@@ -806,8 +1001,8 @@ export default function AgentWorkspace() {
                                 </p>
                               )}
                             </div>
-                            <Badge variant={file.extraction_status === "ready" ? "secondary" : "outline"}>
-                              {file.extraction_status === "ready" ? "Tayyor" : "Kutilmoqda"}
+                            <Badge variant={file.extraction_status === "ready" ? "secondary" : "outline"} className="shrink-0">
+                              {file.extraction_status === "ready" ? "Tayyor" : "..."}
                             </Badge>
                           </Card>
                         ))}
@@ -830,8 +1025,8 @@ export default function AgentWorkspace() {
                         <Card key={step.id} className="p-2 flex items-start gap-2">
                           <Badge variant="outline" className="shrink-0">{i + 1}</Badge>
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium">{step.title}</p>
-                            <div className="flex items-center gap-2 mt-1">
+                            <p className="text-xs font-medium break-words">{step.title}</p>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
                               {step.tool_name && (
                                 <Badge variant="secondary" className="text-[9px]">
                                   {step.tool_name}
