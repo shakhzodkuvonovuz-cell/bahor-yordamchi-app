@@ -42,6 +42,19 @@ async function callLLM(messages: any[], options?: { model?: string; temperature?
   return await response.json();
 }
 
+// Generate a short title for the thread
+async function generateThreadTitle(goal: string): Promise<string> {
+  try {
+    const result = await callLLM([
+      { role: "system", content: "Generate a very short title (max 6 words) for this task. Respond with just the title, no quotes." },
+      { role: "user", content: goal }
+    ], { temperature: 0.3 });
+    return result.choices[0].message.content.trim().slice(0, 100);
+  } catch {
+    return goal.slice(0, 60);
+  }
+}
+
 async function generatePlan(goal: string, context: string, conversationHistory?: any[]): Promise<AgentStep[]> {
   let systemPrompt = `You are Bahor AI Agent, an intelligent assistant that breaks down complex tasks into actionable steps.
 Given a user's goal, create a plan with 2-8 clear steps. Each step should be specific and actionable.
@@ -492,6 +505,25 @@ IMPORTANT: This is a follow-up response. Build upon and reference the previous c
   return result.choices[0].message.content;
 }
 
+// Load conversation history from agent_messages table
+async function loadConversationHistory(supabase: any, threadId: string): Promise<any[]> {
+  const { data: messages } = await supabase
+    .from("agent_messages")
+    .select("role, content, metadata")
+    .eq("thread_id", threadId)
+    .order("created_at", { ascending: true })
+    .limit(20); // Last 20 messages
+
+  if (!messages || messages.length === 0) return [];
+
+  return messages.map((m: any) => ({
+    role: m.role,
+    content: m.content,
+    goal: m.metadata?.goal,
+    sources: m.metadata?.sources
+  }));
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -522,7 +554,7 @@ serve(async (req) => {
       });
     }
 
-    const { goal, runId, action, constraints, files, links, notes, conversationHistory } = await req.json();
+    const { goal, runId, action, threadId, constraints, files, links, notes } = await req.json();
 
     // Handle cancellation
     if (action === "cancel" && runId) {
@@ -545,6 +577,43 @@ serve(async (req) => {
     }
 
     console.log(`[Agent] Starting run for user ${user.id}, goal: ${goal.slice(0, 100)}...`);
+
+    // === THREAD MANAGEMENT ===
+    let activeThreadId = threadId;
+    
+    // Create new thread if not provided
+    if (!activeThreadId) {
+      const threadTitle = await generateThreadTitle(goal);
+      const { data: newThread, error: threadError } = await supabaseClient
+        .from("agent_threads")
+        .insert({
+          user_id: user.id,
+          title: threadTitle,
+        })
+        .select()
+        .single();
+      
+      if (threadError) {
+        console.error("Failed to create thread:", threadError);
+        throw new Error("Failed to create agent thread");
+      }
+      
+      activeThreadId = newThread.id;
+      console.log(`[Agent] Created new thread: ${activeThreadId}`);
+    }
+
+    // Load conversation history from the thread
+    const conversationHistory = await loadConversationHistory(supabaseClient, activeThreadId);
+    console.log(`[Agent] Loaded ${conversationHistory.length} messages from thread history`);
+
+    // Save user message to thread
+    await supabaseClient.from("agent_messages").insert({
+      thread_id: activeThreadId,
+      user_id: user.id,
+      role: "user",
+      content: goal,
+      metadata: { goal, files: files?.length || 0, links: links?.length || 0 }
+    });
 
     // Build context from files, links, notes
     let contextParts: string[] = [];
@@ -574,11 +643,12 @@ serve(async (req) => {
     
     const context = contextParts.join("\n");
 
-    // Create the run
+    // Create the run linked to thread
     const { data: run, error: runError } = await supabaseClient
       .from("agent_runs")
       .insert({
         user_id: user.id,
+        thread_id: activeThreadId,
         goal,
         status: "planning",
         constraints_json: constraints || {},
@@ -591,7 +661,7 @@ serve(async (req) => {
       throw new Error("Failed to create agent run");
     }
 
-    console.log(`[Agent] Created run ${run.id}`);
+    console.log(`[Agent] Created run ${run.id} in thread ${activeThreadId}`);
 
     // Execute the agent in background using waitUntil
     const executeAgentRun = async () => {
@@ -706,6 +776,30 @@ serve(async (req) => {
           })
           .eq("id", run.id);
 
+        // Save assistant message to thread
+        await supabaseClient.from("agent_messages").insert({
+          thread_id: activeThreadId,
+          user_id: user.id,
+          role: "assistant",
+          content: finalOutput,
+          metadata: { 
+            run_id: run.id,
+            sources: uniqueSources,
+            images: generatedImages,
+            steps_count: plan.length 
+          }
+        });
+
+        // Update thread's rolling summary (brief summary of latest exchange)
+        const summaryText = `${goal.slice(0, 100)}${goal.length > 100 ? '...' : ''}`;
+        await supabaseClient
+          .from("agent_threads")
+          .update({ 
+            rolling_summary: summaryText,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", activeThreadId);
+
         console.log(`[Agent] Run ${run.id} completed with ${uniqueSources.length} sources, ${generatedImages.length} images`);
 
       } catch (bgError: any) {
@@ -720,6 +814,15 @@ serve(async (req) => {
             updated_at: new Date().toISOString(),
           })
           .eq("id", run.id);
+
+        // Save error message to thread
+        await supabaseClient.from("agent_messages").insert({
+          thread_id: activeThreadId,
+          user_id: user.id,
+          role: "assistant",
+          content: `⚠️ Xato yuz berdi: ${bgError.message || "Agent execution failed"}`,
+          metadata: { run_id: run.id, error: true }
+        });
       }
     };
 
@@ -727,9 +830,10 @@ serve(async (req) => {
     // Use globalThis.EdgeRuntime for Supabase Edge Functions
     (globalThis as any).EdgeRuntime?.waitUntil?.(executeAgentRun()) ?? executeAgentRun().catch(console.error);
 
-    // Return immediately with runId - frontend uses Realtime for updates
+    // Return immediately with runId and threadId - frontend uses Realtime for updates
     return new Response(JSON.stringify({ 
       runId: run.id, 
+      threadId: activeThreadId,
       status: "planning",
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
