@@ -42,8 +42,8 @@ async function callLLM(messages: any[], options?: { model?: string; temperature?
   return await response.json();
 }
 
-async function generatePlan(goal: string, context: string): Promise<AgentStep[]> {
-  const systemPrompt = `You are Bahor AI Agent, an intelligent assistant that breaks down complex tasks into actionable steps.
+async function generatePlan(goal: string, context: string, conversationHistory?: any[]): Promise<AgentStep[]> {
+  let systemPrompt = `You are Bahor AI Agent, an intelligent assistant that breaks down complex tasks into actionable steps.
 Given a user's goal, create a plan with 2-8 clear steps. Each step should be specific and actionable.
 
 Available tools you can use in steps:
@@ -60,10 +60,35 @@ Available tools you can use in steps:
 
 Choose tools wisely based on what the goal requires. You can use multiple web_search steps if needed.
 ${context ? `User has provided additional context/files that you should reference in your plan.` : ""}
+${conversationHistory && conversationHistory.length > 0 ? `
+
+IMPORTANT: This is a follow-up question. The user has already received previous responses in this conversation.
+Build upon the previous context - don't repeat research that was already done unless the user asks for updates.
+Reference and extend the previous findings when relevant.` : ""}
 
 Respond with a JSON object: { "steps": [{ "title": "Step description", "rationale": "Why this step", "tool": "tool_name or null" }] }`;
 
-  const userMessage = context 
+  // Build user message with conversation history context
+  let userMessage = "";
+  
+  if (conversationHistory && conversationHistory.length > 0) {
+    userMessage += "=== PREVIOUS CONVERSATION ===\n";
+    for (const turn of conversationHistory.slice(-6)) { // Last 6 turns (3 exchanges)
+      if (turn.role === "user") {
+        userMessage += `User asked: ${turn.goal || turn.content}\n`;
+      } else {
+        // Truncate long responses
+        const content = turn.content.length > 2000 
+          ? turn.content.slice(0, 2000) + "...[truncated]" 
+          : turn.content;
+        userMessage += `Assistant answered: ${content}\n`;
+      }
+      userMessage += "\n";
+    }
+    userMessage += "=== CURRENT REQUEST ===\n";
+  }
+  
+  userMessage += context 
     ? `Goal: ${goal}\n\nAdditional Context:\n${context}\n\nCreate a step-by-step plan to achieve this goal, making use of the provided context.`
     : `Goal: ${goal}\n\nCreate a step-by-step plan to achieve this goal.`;
 
@@ -425,9 +450,28 @@ async function generateFinalOutput(
   goal: string,
   steps: { title: string; output: string }[],
   allSources: any[],
-  generatedImages: string[]
+  generatedImages: string[],
+  conversationHistory?: any[]
 ): Promise<string> {
   const stepsContext = steps.map((s, i) => `Step ${i + 1} (${s.title}):\n${s.output}`).join("\n\n---\n\n");
+  
+  // Build conversation context for final output
+  let conversationContext = "";
+  if (conversationHistory && conversationHistory.length > 0) {
+    conversationContext = "\n\n=== PREVIOUS CONVERSATION (for context) ===\n";
+    for (const turn of conversationHistory.slice(-4)) {
+      if (turn.role === "user") {
+        conversationContext += `User: ${turn.goal || turn.content}\n`;
+      } else {
+        // Very brief summary for context
+        const brief = turn.content.length > 500 
+          ? turn.content.slice(0, 500) + "..." 
+          : turn.content;
+        conversationContext += `Assistant: ${brief}\n`;
+      }
+    }
+    conversationContext += "=== END PREVIOUS CONVERSATION ===\n";
+  }
   
   const result = await callLLM([
     { role: "system", content: `You are Bahor AI Agent. Synthesize the results from multiple steps into a comprehensive, well-structured final answer. 
@@ -439,8 +483,10 @@ Use markdown formatting:
 - Use code blocks for code
 - Include any generated images with proper markdown: ![description](url)
 
-Be thorough but well-organized. If sources were used, they will be displayed separately - don't list URLs in your response.` },
-    { role: "user", content: `Goal: ${goal}\n\nStep Results:\n${stepsContext}\n\n${generatedImages.length > 0 ? `Generated Images: ${generatedImages.join(', ')}` : ''}\n\nProvide the final comprehensive answer.` }
+Be thorough but well-organized. If sources were used, they will be displayed separately - don't list URLs in your response.
+${conversationHistory && conversationHistory.length > 0 ? `
+IMPORTANT: This is a follow-up response. Build upon and reference the previous conversation when relevant. Don't repeat information already covered unless the user asked for clarification.` : ""}` },
+    { role: "user", content: `Goal: ${goal}${conversationContext}\n\nStep Results:\n${stepsContext}\n\n${generatedImages.length > 0 ? `Generated Images: ${generatedImages.join(', ')}` : ''}\n\nProvide the final comprehensive answer.` }
   ]);
   
   return result.choices[0].message.content;
@@ -476,7 +522,7 @@ serve(async (req) => {
       });
     }
 
-    const { goal, runId, action, constraints, files, links, notes } = await req.json();
+    const { goal, runId, action, constraints, files, links, notes, conversationHistory } = await req.json();
 
     // Handle cancellation
     if (action === "cancel" && runId) {
@@ -550,8 +596,8 @@ serve(async (req) => {
     // Execute the agent in background using waitUntil
     const executeAgentRun = async () => {
       try {
-        // Generate plan with context
-        const plan = await generatePlan(goal, context);
+        // Generate plan with context and conversation history
+        const plan = await generatePlan(goal, context, conversationHistory);
         console.log(`[Agent] Generated plan with ${plan.length} steps:`, plan.map(s => s.tool || 'general').join(', '));
 
         // Update run with plan
@@ -640,9 +686,9 @@ serve(async (req) => {
           }
         }
 
-        // Generate final output
+        // Generate final output with conversation history
         console.log(`[Agent] Generating final output from ${stepResults.length} steps`);
-        const finalOutput = await generateFinalOutput(goal, stepResults, allSources, generatedImages);
+        const finalOutput = await generateFinalOutput(goal, stepResults, allSources, generatedImages, conversationHistory);
 
         // Deduplicate sources
         const uniqueSources = allSources.filter((s, i, arr) => 
