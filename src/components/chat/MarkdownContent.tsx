@@ -4,43 +4,41 @@ import remarkGfm from "remark-gfm";
 import rehypeSanitize from "rehype-sanitize";
 import type { Components } from "react-markdown";
 import { Check, Copy } from "lucide-react";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 interface MarkdownContentProps {
   content: string;
   className?: string;
 }
 
-// Code block with copy button
-function CodeBlock({ children, className }: { children: React.ReactNode; className?: string }) {
+// Code block with syntax highlighting and copy button
+function CodeBlock({ children, language }: { children: string; language?: string }) {
   const [copied, setCopied] = useState(false);
   
   const handleCopy = useCallback(() => {
-    const text = String(children).replace(/\n$/, "");
-    navigator.clipboard.writeText(text).then(() => {
+    navigator.clipboard.writeText(children).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });
   }, [children]);
   
-  // Extract language from className (e.g., "language-javascript")
-  const language = className?.replace("language-", "") || "";
-  
   return (
-    <div className="relative group/code my-3">
+    <div className="relative group/code my-3 rounded-xl overflow-hidden border border-border/30">
       {/* Language label + Copy button */}
-      <div className="flex items-center justify-between px-4 py-2 bg-secondary/90 border-b border-border/30 rounded-t-xl">
-        <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+      <div className="flex items-center justify-between px-4 py-2 bg-[#282c34] border-b border-border/20">
+        <span className="text-xs text-gray-400 font-medium uppercase tracking-wide">
           {language || "code"}
         </span>
         <button
           onClick={handleCopy}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors"
           aria-label="Copy code"
         >
           {copied ? (
             <>
-              <Check className="w-3.5 h-3.5 text-green-500" />
-              <span className="text-green-500">Copied!</span>
+              <Check className="w-3.5 h-3.5 text-green-400" />
+              <span className="text-green-400">Copied!</span>
             </>
           ) : (
             <>
@@ -50,10 +48,26 @@ function CodeBlock({ children, className }: { children: React.ReactNode; classNa
           )}
         </button>
       </div>
-      {/* Code content */}
-      <pre className="rounded-t-none rounded-b-xl bg-secondary/70 text-foreground text-[13px] p-4 overflow-x-auto max-w-full">
-        <code className={`font-mono ${className || ""}`}>{children}</code>
-      </pre>
+      {/* Syntax highlighted code */}
+      <SyntaxHighlighter
+        style={oneDark}
+        language={language || "text"}
+        PreTag="div"
+        customStyle={{
+          margin: 0,
+          padding: "1rem",
+          fontSize: "13px",
+          borderRadius: 0,
+          background: "#1e1e1e",
+        }}
+        codeTagProps={{
+          style: {
+            fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+          }
+        }}
+      >
+        {children}
+      </SyntaxHighlighter>
     </div>
   );
 }
@@ -132,39 +146,41 @@ const markdownComponents: Components = {
   
   // Code - differentiate inline vs block
   code: ({ className, children, ...props }) => {
-    // Check if this is inside a pre (block code) or standalone (inline)
-    const isInline = !className;
+    const match = /language-(\w+)/.exec(className || "");
+    const isBlock = match || (typeof children === "string" && children.includes("\n"));
     
-    if (isInline) {
+    if (isBlock) {
+      // Will be handled by pre wrapper
       return (
-        <code 
-          className="px-1.5 py-0.5 rounded-md bg-secondary/80 text-[13px] font-mono text-foreground border border-border/20" 
-          {...props}
-        >
+        <code className={className} {...props}>
           {children}
         </code>
       );
     }
     
-    // Block code - will be wrapped in CodeBlock via pre
+    // Inline code
     return (
-      <code className={`font-mono text-[13px] ${className || ""}`} {...props}>
+      <code 
+        className="px-1.5 py-0.5 rounded-md bg-secondary/80 text-[13px] font-mono text-foreground border border-border/20" 
+        {...props}
+      >
         {children}
       </code>
     );
   },
   
-  // Pre - wrapper for code blocks with copy button
+  // Pre - wrapper for code blocks with syntax highlighting
   pre: ({ children }) => {
-    // Extract code element and its props
     const codeElement = children as React.ReactElement;
-    if (codeElement?.props?.children) {
-      return (
-        <CodeBlock className={codeElement.props.className}>
-          {codeElement.props.children}
-        </CodeBlock>
-      );
+    if (codeElement?.props) {
+      const { className, children: codeChildren } = codeElement.props;
+      const match = /language-(\w+)/.exec(className || "");
+      const language = match ? match[1] : "";
+      const codeString = String(codeChildren).replace(/\n$/, "");
+      
+      return <CodeBlock language={language}>{codeString}</CodeBlock>;
     }
+    
     return (
       <pre className="my-3 rounded-xl bg-secondary/70 text-foreground text-[13px] p-4 overflow-x-auto max-w-full font-mono">
         {children}
