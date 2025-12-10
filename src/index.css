@@ -210,6 +210,16 @@
     select {
       font-size: 16px !important;
     }
+    
+    /* Targeted class for critical inputs like chat composer */
+    .bahor-no-zoom,
+    .bahor-no-zoom input,
+    .bahor-no-zoom textarea,
+    .bahor-no-zoom select {
+      font-size: 16px !important;
+      /* Prevent any override from Tailwind text-sm etc */
+      -webkit-text-size-adjust: 100%;
+    }
   }
   
   /* Fallback for Android and other mobile browsers */
@@ -220,6 +230,12 @@
       font-size: 16px !important;
       -webkit-text-size-adjust: 100%;
       text-size-adjust: 100%;
+    }
+    
+    .bahor-no-zoom,
+    .bahor-no-zoom input,
+    .bahor-no-zoom textarea {
+      font-size: 16px !important;
     }
   }
 

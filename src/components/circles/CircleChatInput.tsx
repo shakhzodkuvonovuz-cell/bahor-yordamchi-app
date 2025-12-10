@@ -199,29 +199,32 @@ export default function CircleChatInput({
           </div>
 
           {/* Text input */}
-          <textarea
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={t('circleChat.messagePlaceholder')}
-            disabled={disabled || uploading}
-            rows={1}
-            className={cn(
-              "flex-1 px-4 py-2.5 rounded-xl bg-secondary border-none outline-none text-foreground text-base [font-size:16px]",
-              "placeholder:text-muted-foreground resize-none min-h-[44px] max-h-[120px]",
-              "focus:ring-1 focus:ring-primary/30 transition-all duration-200",
-              (disabled || uploading) && "opacity-50"
-            )}
-            style={{
-              height: "auto",
-              minHeight: "44px",
-            }}
-            onInput={(e) => {
-              const target = e.target as HTMLTextAreaElement;
-              target.style.height = "auto";
-              target.style.height = Math.min(target.scrollHeight, 120) + "px";
-            }}
-          />
+          <div className="relative flex-1 bahor-no-zoom">
+            <textarea
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={t('circleChat.messagePlaceholder')}
+              disabled={disabled || uploading}
+              rows={1}
+              className={cn(
+                "w-full px-4 py-2.5 rounded-xl bg-secondary border-none outline-none text-foreground text-base",
+                "placeholder:text-muted-foreground resize-none min-h-[44px] max-h-[120px]",
+                "focus:ring-1 focus:ring-primary/30 transition-all duration-200",
+                (disabled || uploading) && "opacity-50"
+              )}
+              style={{
+                fontSize: '16px',
+                height: "auto",
+                minHeight: "44px",
+              }}
+              onInput={(e) => {
+                const target = e.target as HTMLTextAreaElement;
+                target.style.height = "auto";
+                target.style.height = Math.min(target.scrollHeight, 120) + "px";
+              }}
+            />
+          </div>
 
           {/* Mic button (push-to-talk) */}
           <button
