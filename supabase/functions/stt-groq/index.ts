@@ -9,16 +9,25 @@ const corsHeaders = {
 const UZBEK_STEERING_PROMPT = 
   "Transcribe strictly in Uzbek (O'zbek tili). Do not translate. Prefer Uzbek words over Turkish. Keep brand names and person names unchanged. Output Uzbek in Latin script unless Cyrillic is clearly spoken.";
 
-// Allowed audio MIME types
+// Allowed audio MIME types - expanded for iOS Safari compatibility
 const ALLOWED_MIME_TYPES = new Set([
   "audio/webm",
   "audio/webm;codecs=opus",
   "audio/mp4",
+  "audio/mp4;codecs=mp4a.40.2",
+  "audio/x-m4a",
   "audio/m4a",
+  "audio/aac",
   "audio/wav",
+  "audio/wave",
+  "audio/x-wav",
   "audio/mpeg",
+  "audio/mp3",
   "audio/ogg",
   "audio/ogg;codecs=opus",
+  // iOS Safari sometimes reports these
+  "audio/x-caf",
+  "audio/caf",
 ]);
 
 // Max file size: 10MB
