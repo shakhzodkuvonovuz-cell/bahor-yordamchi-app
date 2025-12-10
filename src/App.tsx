@@ -40,7 +40,6 @@ const JoinCircle = lazy(() => import("./pages/JoinCircle"));
 const ModesList = lazy(() => import("./pages/ModesList"));
 const Tarjimon = lazy(() => import("./pages/Tarjimon"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-const Logos = lazy(() => import("./pages/Logos"));
 
 const queryClient = new QueryClient();
 
@@ -148,7 +147,6 @@ const App = () => (
                 <Routes>
                   {/* Public routes - Landing is eager loaded for fast first paint */}
                   <Route path="/" element={<Landing />} />
-                  <Route path="/logos" element={<LazyRoute><Logos /></LazyRoute>} />
                   <Route path="/terms" element={<LazyRoute><Terms /></LazyRoute>} />
                   <Route path="/privacy" element={<LazyRoute><Privacy /></LazyRoute>} />
                   
