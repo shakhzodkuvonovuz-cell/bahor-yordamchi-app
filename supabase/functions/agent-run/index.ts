@@ -39,7 +39,19 @@ async function callLLM(messages: any[], options?: { model?: string; temperature?
     throw new Error(`LLM error: ${response.status}`);
   }
 
-  return await response.json();
+  const responseText = await response.text();
+  if (!responseText || responseText.trim() === '') {
+    console.error("LLM returned empty response");
+    throw new Error("LLM returned empty response");
+  }
+  
+  try {
+    return JSON.parse(responseText);
+  } catch (parseError) {
+    const errMsg = parseError instanceof Error ? parseError.message : String(parseError);
+    console.error("LLM JSON parse error:", errMsg, "Response:", responseText.substring(0, 500));
+    throw new Error(`LLM response parsing failed: ${errMsg}`);
+  }
 }
 
 // Gemini-style research paper template
