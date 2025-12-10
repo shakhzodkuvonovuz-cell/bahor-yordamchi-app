@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -132,6 +133,7 @@ export default function DocumentTools() {
   const [showLimitSheet, setShowLimitSheet] = useState(false);
   const [limitData, setLimitData] = useState<{ used: number; limit: number } | null>(null);
   const [showImageGenModal, setShowImageGenModal] = useState(false);
+  const [previewPdf, setPreviewPdf] = useState<{ url: string; title: string } | null>(null);
   
   // Form states
   const [title, setTitle] = useState("");
@@ -562,14 +564,12 @@ export default function DocumentTools() {
         throw new Error(response.data?.error || response.error?.message || "Unknown error");
       }
 
-      // Auto-download the generated file
+      // Show preview modal instead of auto-download
       if (response.data?.file?.signed_url) {
-        const link = document.createElement("a");
-        link.href = response.data.file.signed_url;
-        link.download = `${title}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        setPreviewPdf({ 
+          url: response.data.file.signed_url, 
+          title: `${title}.pdf` 
+        });
       }
 
       toast({ title: t("docs.success"), description: title });
@@ -1073,6 +1073,42 @@ export default function DocumentTools() {
         onOpenChange={setShowImageGenModal}
         onImageGenerated={() => loadFiles()}
       />
+
+      {/* PDF Preview Modal */}
+      <Dialog open={!!previewPdf} onOpenChange={(open) => !open && setPreviewPdf(null)}>
+        <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0">
+          <DialogHeader className="px-6 py-4 border-b border-border shrink-0">
+            <DialogTitle className="flex items-center justify-between pr-8">
+              <span className="truncate">{previewPdf?.title}</span>
+              <Button
+                size="sm"
+                onClick={() => {
+                  if (previewPdf?.url) {
+                    const link = document.createElement("a");
+                    link.href = previewPdf.url;
+                    link.download = previewPdf.title;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }
+                }}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {language === "uz" ? "Yuklab olish" : language === "ru" ? "Скачать" : "Download"}
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 min-h-0 bg-muted">
+            {previewPdf?.url && (
+              <iframe
+                src={previewPdf.url}
+                className="w-full h-full border-0"
+                title="PDF Preview"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
