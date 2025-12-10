@@ -9,7 +9,7 @@ import { DeleteChatModal } from "@/components/DeleteChatModal";
 import DailyUsageIndicator from "@/components/DailyUsageIndicator";
 import LimitReachedSheet from "@/components/LimitReachedSheet";
 
-import { VoiceModeButton } from "@/components/voice";
+
 import {
   ScrollToBottom,
   FollowUpSuggestions,
@@ -20,7 +20,7 @@ import {
   VirtualizedMessageList,
   type VirtualizedMessageListHandle,
 } from "@/components/chat";
-import { InputWaveform } from "@/components/chat/InputWaveform";
+
 import { ChatListSkeleton, ChatMessagesSkeleton } from "@/components/chat/ChatListSkeleton";
 import { ChatMigrationModal, checkMigrationNeeded } from "@/components/ChatMigrationModal";
 import { ReasonedChip } from "@/components/chat/ReasonedChip";
@@ -54,7 +54,7 @@ import { isVisionSupportedImage } from "@/services/visionService";
 import { detectReplyLanguage } from "@/lib/languageDetect";
 import { extractTextFromFile, isImageFile, isPdfFile, getFileReadStatusLabel } from "@/lib/fileTextExtractor";
 import { getPreferencesPromptContext } from "@/components/UserPreferencesSection";
-import { useGroqDictation } from "@/hooks/useGroqDictation";
+
 import { useRealtimeChat, useRealtimeThreads } from "@/hooks/useRealtimeChat";
 
 // Helper to format relative time
@@ -213,7 +213,7 @@ export default function Chat() {
   const [isUploading, setIsUploading] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<string | null>(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  // Voice mode panel removed - now using push-to-talk dictation only
+  
   const [searchUsed, setSearchUsed] = useState(false);
   const [searchUrls, setSearchUrls] = useState<string[]>([]);
   const [failedMessageContent, setFailedMessageContent] = useState<string | null>(null);
@@ -244,14 +244,6 @@ export default function Chat() {
   const [exportPdfContent, setExportPdfContent] = useState("");
   const [exportPdfTitle, setExportPdfTitle] = useState("");
   
-  // Push-to-talk dictation (using Groq Whisper API)
-  const dictation = useGroqDictation({
-    language,
-    onError: (errorMsg) => {
-      toast({ description: errorMsg, variant: "destructive" });
-    },
-  });
-  const [preDictationText, setPreDictationText] = useState("");
   
   // Network status
   const { isOnline } = useNetworkStatus();
@@ -619,41 +611,10 @@ export default function Chat() {
     }
   }, [location.search, user, mode, t.chat.defaultChatTitle, navigate]);
 
-  // Auto-stop dictation at max duration
-  useEffect(() => {
-    if (dictation.hasReachedMaxDuration && dictation.isRecording) {
-      handleDictationEnd();
-    }
-  }, [dictation.hasReachedMaxDuration, dictation.isRecording]);
 
   const scrollToBottom = useCallback(() => {
     virtuosoRef.current?.scrollToBottom();
   }, []);
-
-  // Handle dictation start
-  const handleDictationStart = useCallback(() => {
-    // Save current input text before dictation
-    setPreDictationText(inputValue);
-    dictation.handlers.start();
-  }, [dictation.handlers, inputValue]);
-
-  // Handle dictation end
-  const handleDictationEnd = useCallback(async () => {
-    const result = await dictation.handlers.stop();
-    
-    if (result) {
-      const separator = preDictationText ? " " : "";
-      setInputValue(preDictationText + separator + result);
-    } else {
-      // No result - restore original text
-      setInputValue(preDictationText);
-    }
-    
-    setPreDictationText("");
-    
-    // Focus input after dictation
-    setTimeout(() => inputRef.current?.focus(), 100);
-  }, [dictation.handlers, preDictationText]);
 
   // Copy message content
   const handleCopyMessage = (content: string) => {
@@ -2346,30 +2307,6 @@ export default function Chat() {
               </button>
               
               <div className="relative flex-1">
-                {/* Waveform overlay for dictation */}
-                <InputWaveform 
-                  active={dictation.isRecording} 
-                  amplitude={dictation.amplitude}
-                  className="rounded-xl"
-                />
-                
-                {/* Transcribing indicator */}
-                {dictation.isTranscribing && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded-xl z-10">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                      {language === "uz" ? "Transkriptsiya..." : language === "ru" ? "Транскрипция..." : language === "tr" ? "Transkripsiyon..." : "Transcribing..."}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Recording timer */}
-                {dictation.isRecording && (
-                  <div className="absolute top-1 right-2 text-xs text-primary font-mono z-10">
-                    {String(Math.floor(dictation.elapsedSeconds / 60)).padStart(2, '0')}:{String(dictation.elapsedSeconds % 60).padStart(2, '0')}
-                  </div>
-                )}
-                
                 <textarea
                   ref={inputRef}
                   value={inputValue}
@@ -2384,32 +2321,17 @@ export default function Chat() {
                           : language === "tr"
                           ? "Günlük limit doldu — Premium veya yarın devam edin"
                           : "Daily limit reached — Premium or continue tomorrow")
-                      : dictation.isRecording 
-                      ? (language === "uz" ? "Yozilmoqda… Qo'yib yuboring" : language === "ru" ? "Запись… Отпустите" : language === "tr" ? "Kayıt yapılıyor… Bırakın" : "Recording… Release to finish")
-                      : dictation.isTranscribing
-                      ? (language === "uz" ? "Transkriptsiya..." : language === "ru" ? "Транскрипция..." : language === "tr" ? "Transkripsiyon..." : "Transcribing...")
                       : t.chatPlaceholder
                   }
-                  disabled={isLoading || typing || dictation.isRecording || dictation.isTranscribing}
+                  disabled={isLoading || typing}
                   rows={1}
-                  className={clsx(
-                    "w-full bg-transparent border-none outline-none resize-none text-base leading-relaxed text-foreground placeholder:text-muted-foreground/60 disabled:opacity-50 max-h-[140px] overflow-y-auto py-3 px-1 [font-size:16px]",
-                    dictation.isRecording && "text-primary"
-                  )}
+                  className="w-full bg-transparent border-none outline-none resize-none text-base leading-relaxed text-foreground placeholder:text-muted-foreground/60 disabled:opacity-50 max-h-[140px] overflow-y-auto py-3 px-1 [font-size:16px]"
                 />
               </div>
               
-              <VoiceModeButton
-                disabled={isLoading || typing || dictation.isTranscribing}
-                className="flex-shrink-0"
-                onDictationStart={handleDictationStart}
-                onDictationEnd={handleDictationEnd}
-                isDictating={dictation.isRecording}
-              />
-              
               <button
                 type="submit"
-                disabled={(!inputValue.trim() && pendingAttachments.length === 0) || isLoading || typing || dictation.isRecording || dictation.isTranscribing || hasReachedLimit}
+                disabled={(!inputValue.trim() && pendingAttachments.length === 0) || isLoading || typing || hasReachedLimit}
                 className="p-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0 active:scale-95 glow-primary-subtle hover:glow-primary"
                 aria-label={language === "uz" ? "Yuborish" : language === "en" ? "Send" : language === "ru" ? "Отправить" : "Gönder"}
               >
