@@ -54,6 +54,12 @@ function ChatMessageComponent({
   const [isPressed, setIsPressed] = useState(false);
   const [showMobileSheet, setShowMobileSheet] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [highlightedCitation, setHighlightedCitation] = useState<number | null>(null);
+
+  // Handle citation click - scroll to and highlight source
+  const handleCitationClick = (index: number) => {
+    setHighlightedCitation(index);
+  };
 
   // Get user initials for avatar fallback
   const getUserInitials = () => {
@@ -250,6 +256,7 @@ function ChatMessageComponent({
           content={displayContent} 
           className="text-foreground"
           citations={message.citations}
+          onCitationClick={handleCitationClick}
         />
       );
       
@@ -286,6 +293,7 @@ function ChatMessageComponent({
               content={section.content}
               className="text-foreground"
               citations={message.citations}
+              onCitationClick={handleCitationClick}
             />
           );
         })}
@@ -371,7 +379,11 @@ function ChatMessageComponent({
                 
                 {/* Sources/Citations section for web search results */}
                 {message.citations && message.citations.length > 0 && (
-                  <SourcesList citations={message.citations} />
+                  <SourcesList 
+                    citations={message.citations} 
+                    highlightedIndex={highlightedCitation}
+                    onHighlightClear={() => setHighlightedCitation(null)}
+                  />
                 )}
               </div>
 
