@@ -6,10 +6,13 @@ import type { Components } from "react-markdown";
 import { Check, Copy } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import type { Citation } from "@/types/chat";
 
 interface MarkdownContentProps {
   content: string;
   className?: string;
+  citations?: Citation[];
+  onCitationClick?: (index: number) => void;
 }
 
 // Code block with syntax highlighting and copy button
@@ -233,9 +236,131 @@ const markdownComponents: Components = {
   ),
 };
 
-function MarkdownContentComponent({ content, className = "" }: MarkdownContentProps) {
-  // Memoize the processed content
-  const processedContent = useMemo(() => content, [content]);
+// Citation badge component - Perplexity-style inline markers
+function CitationBadge({ 
+  number, 
+  citation, 
+  onClick 
+}: { 
+  number: number; 
+  citation?: Citation;
+  onClick?: () => void;
+}) {
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    onClick?.();
+    
+    // Scroll to the sources section
+    const sourcesSection = document.getElementById("sources-section");
+    if (sourcesSection) {
+      sourcesSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+  
+  return (
+    <button
+      onClick={handleClick}
+      className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 mx-0.5 text-[10px] font-semibold bg-primary/20 text-primary hover:bg-primary/30 rounded-full align-super cursor-pointer transition-colors"
+      title={citation?.title || `Source ${number}`}
+    >
+      {number}
+    </button>
+  );
+}
+
+// Process content to replace [1], [2], etc. with citation badges
+function processContentWithCitations(
+  content: string,
+  citations?: Citation[],
+  onCitationClick?: (index: number) => void
+): React.ReactNode[] {
+  // Match citation patterns like [1], [2], [3], etc.
+  const citationPattern = /\[(\d+)\]/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+  let keyIndex = 0;
+  
+  while ((match = citationPattern.exec(content)) !== null) {
+    // Add text before the citation
+    if (match.index > lastIndex) {
+      parts.push(content.slice(lastIndex, match.index));
+    }
+    
+    const citationNumber = parseInt(match[1], 10);
+    const citation = citations?.[citationNumber - 1]; // 1-indexed to 0-indexed
+    
+    parts.push(
+      <CitationBadge
+        key={`citation-${keyIndex++}`}
+        number={citationNumber}
+        citation={citation}
+        onClick={() => onCitationClick?.(citationNumber - 1)}
+      />
+    );
+    
+    lastIndex = match.index + match[0].length;
+  }
+  
+  // Add remaining text
+  if (lastIndex < content.length) {
+    parts.push(content.slice(lastIndex));
+  }
+  
+  return parts.length > 0 ? parts : [content];
+}
+
+function MarkdownContentComponent({ content, className = "", citations, onCitationClick }: MarkdownContentProps) {
+  // Create custom components that handle citations in text
+  const componentsWithCitations = useMemo((): Components => {
+    // If no citations, use default components
+    if (!citations || citations.length === 0) {
+      return markdownComponents;
+    }
+    
+    // Create a text processor that converts [1], [2] to badges
+    const processText = (children: React.ReactNode): React.ReactNode => {
+      if (typeof children === "string") {
+        const processed = processContentWithCitations(children, citations, onCitationClick);
+        // If only one element and it's the same string, return it
+        if (processed.length === 1 && processed[0] === children) {
+          return children;
+        }
+        return <>{processed}</>;
+      }
+      
+      if (Array.isArray(children)) {
+        return children.map((child, i) => {
+          if (typeof child === "string") {
+            const processed = processContentWithCitations(child, citations, onCitationClick);
+            if (processed.length === 1 && processed[0] === child) {
+              return child;
+            }
+            return <span key={i}>{processed}</span>;
+          }
+          return child;
+        });
+      }
+      
+      return children;
+    };
+    
+    return {
+      ...markdownComponents,
+      // Override paragraph to process citations
+      p: ({ children }) => (
+        <p className="mb-4 last:mb-0 leading-7">{processText(children)}</p>
+      ),
+      // Override list items
+      li: ({ children }) => (
+        <li className="leading-7 pl-1.5">{processText(children)}</li>
+      ),
+      // Override strong (bold text may contain citations)
+      strong: ({ children }) => (
+        <strong className="font-semibold text-foreground">{processText(children)}</strong>
+      ),
+    };
+  }, [citations, onCitationClick]);
 
   return (
     <div 
@@ -248,9 +373,9 @@ function MarkdownContentComponent({ content, className = "" }: MarkdownContentPr
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeSanitize]}
-        components={markdownComponents}
+        components={componentsWithCitations}
       >
-        {processedContent}
+        {content}
       </ReactMarkdown>
     </div>
   );
@@ -258,7 +383,9 @@ function MarkdownContentComponent({ content, className = "" }: MarkdownContentPr
 
 // Memoize to prevent re-renders when content hasn't changed
 const MarkdownContent = memo(MarkdownContentComponent, (prev, next) => {
-  return prev.content === next.content && prev.className === next.className;
+  return prev.content === next.content && 
+         prev.className === next.className &&
+         prev.citations === next.citations;
 });
 
 export default MarkdownContent;
