@@ -3,7 +3,7 @@ import {
   Bot, Play, Square, RotateCcw, Check, Loader2, AlertCircle, Sparkles, 
   ExternalLink, ChevronDown, ChevronUp, Save, Upload, File, X, Link2,
   StickyNote, FileText, Copy, Settings2, Image, Download, ZoomIn, History,
-  Clock, Trash2, Eye, RefreshCw
+  Clock, Trash2, Eye, RefreshCw, FileDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +20,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { AiResponseRenderer } from "@/components/ai/AiResponseRenderer";
 import { cn } from "@/lib/utils";
+import { downloadPDF } from "@/lib/pdfGenerator";
 
 interface AgentStep {
   id: string;
@@ -630,6 +631,32 @@ export default function Agent() {
   const completedSteps = steps.filter((s) => s.status === "done").length;
   const totalSteps = steps.length;
 
+  const handleExportPDF = async () => {
+    if (!currentRun?.final_output) return;
+    
+    try {
+      toast.loading("PDF tayyorlanmoqda...");
+      
+      await downloadPDF({
+        title: currentRun.goal.slice(0, 60),
+        content: currentRun.final_output,
+        date: new Date(currentRun.created_at).toLocaleDateString("uz-UZ", {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+        }),
+        filename: `agent-${new Date().toISOString().split('T')[0]}.pdf`,
+      });
+      
+      toast.dismiss();
+      toast.success("PDF yuklab olindi!");
+    } catch (error) {
+      console.error("PDF export error:", error);
+      toast.dismiss();
+      toast.error("PDF yaratishda xato");
+    }
+  };
+
 
   return (
     <div className="flex flex-col h-full">
@@ -1025,6 +1052,10 @@ export default function Agent() {
                       <Button variant="outline" size="sm" onClick={handleCopyResult} className="gap-1 h-7 text-xs">
                         <Copy className="h-3 w-3" />
                         Nusxa
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={handleExportPDF} className="gap-1 h-7 text-xs">
+                        <FileDown className="h-3 w-3" />
+                        PDF
                       </Button>
                       <Button 
                         variant="outline" 
