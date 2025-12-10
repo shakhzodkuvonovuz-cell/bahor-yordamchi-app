@@ -416,6 +416,67 @@ export default function Agent() {
     }
   };
 
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSaveToFiles = async () => {
+    if (!currentRun?.final_output || !user || isSaving) return;
+
+    setIsSaving(true);
+    try {
+      // Create markdown content
+      const timestamp = new Date().toISOString();
+      const dateStr = new Date().toLocaleDateString("uz-UZ", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).replace(/\//g, "-");
+      
+      const mdContent = `# ${currentRun.goal}\n\n*Yaratilgan: ${new Date().toLocaleString("uz-UZ")}*\n\n---\n\n${currentRun.final_output}`;
+      
+      // Convert to blob
+      const blob = new Blob([mdContent], { type: "text/markdown" });
+      const fileName = `agent-${dateStr}-${currentRun.id.slice(0, 8)}.md`;
+      const storagePath = `${user.id}/agent-results/${fileName}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from("user-files")
+        .upload(storagePath, blob, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Create file record
+      const { error: dbError } = await supabase
+        .from("user_files")
+        .insert({
+          user_id: user.id,
+          path: storagePath,
+          bucket: "user-files",
+          title: currentRun.goal.slice(0, 100),
+          tool: "agent",
+          mime_type: "text/markdown",
+          size_bytes: blob.size,
+          status: "success",
+          source: "agent",
+          meta: {
+            run_id: currentRun.id,
+            goal: currentRun.goal,
+            steps_count: steps.length,
+            images_count: generatedImages.length,
+          },
+        });
+
+      if (dbError) throw dbError;
+
+      toast.success("Fayllarimga saqlandi!");
+    } catch (error: any) {
+      console.error("Save error:", error);
+      toast.error("Saqlashda xato yuz berdi");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleDownloadImage = async (imageUrl: string, index: number) => {
     try {
       const response = await fetch(imageUrl);
@@ -770,9 +831,19 @@ export default function Agent() {
                         <Copy className="h-3 w-3" />
                         Nusxa
                       </Button>
-                      <Button variant="outline" size="sm" className="gap-1 h-7 text-xs">
-                        <Save className="h-3 w-3" />
-                        Saqlash
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={handleSaveToFiles} 
+                        disabled={isSaving}
+                        className="gap-1 h-7 text-xs"
+                      >
+                        {isSaving ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Save className="h-3 w-3" />
+                        )}
+                        {isSaving ? "Saqlanmoqda..." : "Saqlash"}
                       </Button>
                     </div>
                   </div>
