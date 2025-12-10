@@ -218,10 +218,43 @@ export default function AgentWorkspace() {
       };
       setMessages(prev => [...prev, userMsg]);
       
-      // Insert user message - skip until types regenerate
-      // The follow-up functionality will work after migration completes
+      // Call follow-up edge function
+      const { data: session } = await supabase.auth.getSession();
       
-      toast.info("Davom etish uchun sahifani yangilang");
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-followup`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.session?.access_token}`,
+          },
+          body: JSON.stringify({ 
+            runId: run.id, 
+            message: content,
+            reportContext: run.final_output 
+          }),
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error("Follow-up request failed");
+      }
+      
+      const result = await response.json();
+      
+      // Add assistant message
+      if (result.content) {
+        const assistantMsg: AgentMessage = {
+          id: result.message?.id || crypto.randomUUID(),
+          run_id: run.id,
+          role: "assistant",
+          content: result.content,
+          created_at: new Date().toISOString(),
+        };
+        setMessages(prev => [...prev, assistantMsg]);
+      }
+      
       setIsSendingFollowUp(false);
     } catch (error) {
       console.error("Follow-up error:", error);

@@ -34,47 +34,63 @@ async function callLLM(messages: any[], options?: { model?: string; temperature?
 }
 
 // Gemini-style research paper template
-const REPORT_TEMPLATE = `You are generating a professional research report. Structure your response using this EXACT format:
+const REPORT_TEMPLATE = `You are updating a professional research report. Structure your response using this EXACT format:
 
 # [Title - derived from the research goal]
 
-## Abstract
-[3-6 sentences summarizing the key findings and conclusions]
+## Executive Summary
+[5-8 bullet points summarizing the key findings and conclusions, incorporating any follow-up additions]
+
+## Scope & Inputs Used
+[List all sources used: files, links, user notes, web searches]
+
+### Files Analyzed
+- [filename1] - [brief description]
+
+### Web Sources
+- 〔1〕 [source] - [title]
+
+### User Notes
+[Summarize any notes provided]
 
 ## Problem / Question
 [Clear statement of what was investigated]
 
 ## Methodology
-[What sources were used, what tools were invoked, how information was gathered]
+[What sources were used, how information was gathered]
 
 ## Key Findings
-[Bullet points of the most important discoveries]
-- Finding 1
-- Finding 2
-- Finding 3
+[Bullet points with citations using 〔n〕 notation]
+- Finding 1 〔1〕
+- Finding 2 〔2〕
 
 ## Detailed Analysis
-[Organized analysis with subheadings as needed]
+[Organized analysis with subheadings]
 
 ### [Subtopic 1]
-[Analysis with citations using 〔1〕 〔2〕 format]
+[Analysis with citations]
 
 ### [Subtopic 2]
 [More analysis]
 
-## Contradictions & Uncertainties
-[List any conflicting information found, areas of uncertainty, proposed verification steps]
+## Evidence & Citations
+[Map findings to sources]
+- 〔1〕 [Source] - "quoted text..."
+- 〔2〕 [Source] - "quoted text..."
 
 ## Recommendations
 
 ### Immediate (Today)
-- [Actionable recommendation]
+- [Recommendation]
 
 ### This Week
-- [Short-term recommendation]
+- [Recommendation]
 
 ### This Month
-- [Medium-term recommendation]
+- [Recommendation]
+
+## Risks & Mitigations
+- **Risk**: [description] → **Mitigation**: [action]
 
 ## Action Plan
 
@@ -86,22 +102,20 @@ const REPORT_TEMPLATE = `You are generating a professional research report. Stru
 ### 30-Day Plan
 [Monthly plan overview]
 
-## Appendix
+## Updates from Follow-up Discussion
+[NEW: Summarize any clarifications, additions, or changes from follow-up conversation]
 
-### Sources
-[List sources with 〔n〕 notation linking to URLs]
-
-### File Inventory
-[List any files that were analyzed]
+## Assumptions & What's Missing
+[Only if there are gaps]
 
 ---
 
 CRITICAL RULES:
-- Use 〔1〕 〔2〕 notation for citations (not [1] or superscripts)
-- Every factual claim must have a citation
-- Be thorough but well-organized
-- Use proper markdown formatting
-- Write in the same language as the original research goal`;
+- Use 〔n〕 notation for ALL citations
+- EVERY factual claim must have a citation
+- NEVER invent information not in the inputs
+- Include the "Updates from Follow-up Discussion" section if there were follow-ups
+- Write in the same language as the original goal`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -119,14 +133,12 @@ serve(async (req) => {
 
     const supabaseClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     
+    // Use service role client to verify the JWT token
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await createClient(
-      SUPABASE_URL,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: `Bearer ${token}` } } }
-    ).auth.getUser();
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
 
     if (userError || !user) {
+      console.error("[Agent Update Report] Auth error:", userError?.message);
       return new Response(JSON.stringify({ error: "Invalid token" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -166,12 +178,27 @@ serve(async (req) => {
       .eq("run_id", runId)
       .order("step_index", { ascending: true });
 
-    // Load follow-up messages
+    // Load follow-up messages from thread
     const { data: messages } = await supabaseClient
       .from("agent_messages")
       .select("*")
-      .eq("run_id", runId)
+      .eq("thread_id", run.thread_id)
       .order("created_at", { ascending: true });
+
+    // Load files
+    const { data: filesData } = await supabaseClient
+      .from("agent_files")
+      .select("filename, extracted_text")
+      .eq("run_id", runId);
+
+    // Build file context
+    let fileContext = "";
+    if (filesData && filesData.length > 0) {
+      fileContext = "\n\n=== FILES ===\n";
+      for (const file of filesData) {
+        fileContext += `\n--- ${file.filename} ---\n${file.extracted_text?.slice(0, 5000) || "[No content]"}\n`;
+      }
+    }
 
     // Build context from steps
     const stepsContext = steps?.map((s: any, i: number) => {
@@ -180,25 +207,27 @@ serve(async (req) => {
     }).join("\n\n---\n\n") || "";
 
     // Build follow-up context
-    const followUpContext = messages?.filter((m: any) => m.role === "user")
-      .map((m: any) => `Follow-up: ${m.content}`)
-      .join("\n") || "";
+    const followUpContext = messages?.filter((m: any) => m.metadata?.type === "followup")
+      .map((m: any) => `${m.role === "user" ? "User" : "Agent"}: ${m.content}`)
+      .join("\n\n") || "";
 
     // Generate updated report
     const userMessage = `
 === ORIGINAL RESEARCH GOAL ===
 ${run.goal}
+${fileContext}
 
 === STEP RESULTS ===
 ${stepsContext}
 
-=== FOLLOW-UP QUESTIONS AND ADDITIONS ===
+=== FOLLOW-UP CONVERSATION ===
 ${followUpContext || "None"}
 
 === SOURCES ===
 ${JSON.stringify(run.sources || [], null, 2)}
 
 Generate a comprehensive, updated research report incorporating all the above information and any follow-up clarifications.
+ONLY use information from the provided inputs. Do NOT invent details.
 `;
 
     const result = await callLLM([
@@ -212,7 +241,7 @@ Generate a comprehensive, updated research report incorporating all the above in
     const { error: updateError } = await supabaseClient
       .from("agent_runs")
       .update({
-        final_report_md: updatedReport,
+        final_output: updatedReport,
         updated_at: new Date().toISOString(),
       })
       .eq("id", runId);
