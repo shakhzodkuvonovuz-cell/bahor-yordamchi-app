@@ -241,8 +241,14 @@ export default function Agent() {
         },
         (payload) => {
           setCurrentRun(payload.new as unknown as AgentRun);
-          if (payload.new.status === "done" || payload.new.status === "cancelled") {
+          if (payload.new.status === "done") {
             setIsRunning(false);
+            toast.success("Agent vazifani bajardi!");
+          } else if (payload.new.status === "cancelled") {
+            setIsRunning(false);
+          } else if (payload.new.status === "error") {
+            setIsRunning(false);
+            toast.error("Agent xatoga uchradi");
           }
         }
       )
@@ -456,7 +462,7 @@ export default function Agent() {
         throw new Error(result.error || "Agent run failed");
       }
 
-      // Load the completed run
+      // Load the initial run - Realtime will handle updates
       const { data: run } = await supabase
         .from("agent_runs")
         .select("*")
@@ -466,8 +472,8 @@ export default function Agent() {
       if (run) {
         setCurrentRun(run as unknown as AgentRun);
       }
-
-      toast.success("Agent vazifani bajardi!");
+      
+      // Don't show success toast here - Realtime will notify when done
     } catch (error: any) {
       console.error("Agent error:", error);
       toast.error(error.message || "Failed to run agent");
