@@ -42,6 +42,113 @@ async function callLLM(messages: any[], options?: { model?: string; temperature?
   return await response.json();
 }
 
+// Gemini-style research paper template
+const REPORT_TEMPLATE = `You are generating a professional research report. Structure your response using this EXACT format:
+
+# [Title - derived from the research goal]
+
+## Executive Summary
+[5-8 bullet points summarizing the key findings and conclusions]
+
+## Scope & Inputs Used
+[List all sources used: files, links, user notes, web searches. Be explicit about what was analyzed.]
+
+### Files Analyzed
+- [filename1] - [brief description of content]
+- [filename2] - [brief description of content]
+
+### Web Sources
+- [source1] - [title]
+- [source2] - [title]
+
+### User Notes
+[Summarize any notes provided]
+
+## Problem / Question
+[Clear statement of what was investigated]
+
+## Methodology
+[What sources were used, what tools were invoked, how information was gathered]
+
+## Key Findings
+[Bullet points of the most important discoveries]
+- Finding 1 〔1〕
+- Finding 2 〔2〕
+- Finding 3 〔3〕
+
+## Detailed Analysis
+[Organized analysis with subheadings as needed]
+
+### [Subtopic 1]
+[Analysis with citations using 〔1〕 〔2〕 format]
+
+### [Subtopic 2]
+[More analysis]
+
+## Evidence & Citations
+[Map each finding to specific file/page/message references]
+- 〔1〕 [File: filename.pdf | Page: 3] - "quoted text..."
+- 〔2〕 [Source: url] - "quoted text..."
+- 〔3〕 [From user notes] - "quoted text..."
+
+## Recommendations
+
+### Immediate (Today)
+- [Actionable recommendation]
+
+### This Week
+- [Short-term recommendation]
+
+### This Month
+- [Medium-term recommendation]
+
+## Risks & Mitigations
+- **Risk 1**: [description] → **Mitigation**: [action]
+- **Risk 2**: [description] → **Mitigation**: [action]
+
+## Action Plan
+
+### 7-Day Sprint
+1. Day 1-2: [Actions]
+2. Day 3-4: [Actions]
+3. Day 5-7: [Actions]
+
+### 30-Day Plan
+[Monthly plan overview]
+
+## Assumptions & What's Missing
+[Only include if there are gaps - be explicit about what information was NOT available]
+
+---
+
+CRITICAL RULES:
+- Use 〔1〕 〔2〕 notation for citations linking to sources
+- EVERY factual claim MUST have a citation from provided inputs
+- NEVER invent product features, company details, or facts not in the inputs
+- If critical info is missing, create a "Missing Information" section asking for it
+- Write in the same language as the original research goal
+- Be thorough but well-organized`;
+
+// Validation: Check if output contains domain keywords not in inputs
+const UNRELATED_DOMAIN_KEYWORDS = [
+  "community creators", "event tickets", "moderation tools", "ticketing platform",
+  "live streaming", "gaming platform", "e-commerce store", "real estate listing"
+];
+
+function validateOutputAgainstInputs(output: string, inputs: string): { valid: boolean; issues: string[] } {
+  const issues: string[] = [];
+  const inputLower = inputs.toLowerCase();
+  const outputLower = output.toLowerCase();
+  
+  for (const keyword of UNRELATED_DOMAIN_KEYWORDS) {
+    if (outputLower.includes(keyword) && !inputLower.includes(keyword)) {
+      issues.push(`Contains unrelated keyword "${keyword}" not found in inputs`);
+    }
+  }
+  
+  return { valid: issues.length === 0, issues };
+}
+
 // Generate a short title for the thread
 async function generateThreadTitle(goal: string): Promise<string> {
   try {
@@ -63,7 +170,27 @@ async function generatePlan(goal: string, context: string, conversationHistory?:
   
   let systemPrompt = `You are Bahor AI Agent, an intelligent assistant that breaks down complex tasks into actionable steps.
 
-=== EVIDENCE RULES (MANDATORY - NEVER VIOLATE) ===
+=== STRICT INPUT CONTRACT (MANDATORY - NEVER VIOLATE) ===
+
+You may ONLY use information from:
+1. The user's prompt and extra notes
+2. Uploaded files attached to this agent run (if provided and accessible)
+3. Links explicitly provided by the user
+4. Web search results (if search tool is used)
+5. The current conversation context
+
+You MUST NOT:
+- Invent product features, company details, or facts not explicitly in the inputs
+- Make assumptions about the user's business or project
+- Generate content about unrelated domains
+- Fabricate statistics or quotes
+
+If required information is missing:
+- Output a "Missing Information" section
+- Ask the user to provide the needed data
+- Do NOT guess or fill in with generic content
+
+=== EVIDENCE RULES (MANDATORY) ===
 
 1. EVIDENCE RULE (hard):
    - If you cannot access full text of attached files OR total extracted text is < 200 chars, you MUST respond ONLY with:
@@ -72,7 +199,7 @@ async function generatePlan(goal: string, context: string, conversationHistory?:
    - STOP. No guessing, no inferred analysis.
 
 2. CITATION RULE (hard):
-   - Every factual claim from files must include a citation: [File: <filename> | Section: <heading>]
+   - Every factual claim from files must include a citation: 〔File: <filename> | Section: <heading>〕
    - If you cannot cite, you must not claim.
 
 3. PROOF-OF-READING (mandatory):
@@ -81,7 +208,7 @@ async function generatePlan(goal: string, context: string, conversationHistory?:
    - "3 short quotes" — 10-25 words from 3 different sections
    If you can't do this, fail with Evidence Rule.
 
-=== END EVIDENCE RULES ===
+=== END RULES ===
 
 ${!filesReady && hasFiles ? `
 ⚠️ CRITICAL: Files were attached but extraction returned < 200 chars total (${totalChars} chars).
@@ -100,7 +227,7 @@ Available tools you can use in steps:
 - reason: Deep reasoning for complex problems
 - code: Write or analyze code
 
-${context ? `User has provided additional context/files.` : ""}
+${context ? `User has provided additional context/files. ONLY use information from these inputs.` : "No additional context provided."}
 ${conversationHistory && conversationHistory.length > 0 ? `This is a follow-up question. Build upon previous context.` : ""}
 
 Respond with JSON: { "steps": [{ "title": "Step description", "rationale": "Why", "tool": "tool_name or null" }] }`;
@@ -110,11 +237,10 @@ Respond with JSON: { "steps": [{ "title": "Step description", "rationale": "Why"
   
   if (conversationHistory && conversationHistory.length > 0) {
     userMessage += "=== PREVIOUS CONVERSATION ===\n";
-    for (const turn of conversationHistory.slice(-6)) { // Last 6 turns (3 exchanges)
+    for (const turn of conversationHistory.slice(-6)) {
       if (turn.role === "user") {
         userMessage += `User asked: ${turn.goal || turn.content}\n`;
       } else {
-        // Truncate long responses
         const content = turn.content.length > 2000 
           ? turn.content.slice(0, 2000) + "...[truncated]" 
           : turn.content;
@@ -126,8 +252,8 @@ Respond with JSON: { "steps": [{ "title": "Step description", "rationale": "Why"
   }
   
   userMessage += context 
-    ? `Goal: ${goal}\n\nAdditional Context:\n${context}\n\nCreate a step-by-step plan to achieve this goal, making use of the provided context.`
-    : `Goal: ${goal}\n\nCreate a step-by-step plan to achieve this goal.`;
+    ? `Goal: ${goal}\n\nAdditional Context (ONLY use information from here):\n${context}\n\nCreate a step-by-step plan using ONLY the provided inputs.`
+    : `Goal: ${goal}\n\nNo files or additional context provided. Create a step-by-step plan. If the goal requires specific information not available, plan to ask for it.`;
 
   const result = await callLLM([
     { role: "system", content: systemPrompt },
@@ -147,7 +273,7 @@ Respond with JSON: { "steps": [{ "title": "Step description", "rationale": "Why"
   }
   
   return [
-    { title: "Analyze the goal and context", rationale: "Understand requirements" },
+    { title: "Analyze the goal and available inputs", rationale: "Understand requirements" },
     { title: "Research and gather information", tool: "web_search" },
     { title: "Synthesize findings and create response" }
   ];
@@ -165,7 +291,6 @@ async function executeWebSearch(query: string): Promise<{ output: string; source
   }
 
   try {
-    // Agent can do up to 10 results per search
     const url = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_SEARCH_API_KEY}&cx=${GOOGLE_CX}&q=${encodeURIComponent(query)}&num=10`;
     const response = await fetch(url);
     const data = await response.json();
@@ -181,7 +306,7 @@ async function executeWebSearch(query: string): Promise<{ output: string; source
       snippet: item.snippet
     }));
     
-    const resultText = sources.map((s: any, i: number) => `[${i+1}] ${s.title}: ${s.snippet}`).join("\n\n");
+    const resultText = sources.map((s: any, i: number) => `〔${i+1}〕 ${s.title}: ${s.snippet}`).join("\n\n");
     console.log(`[Agent] Web search returned ${sources.length} results for: ${query}`);
     return { output: resultText || "No results found", sources };
   } catch (e) {
@@ -191,7 +316,6 @@ async function executeWebSearch(query: string): Promise<{ output: string; source
 }
 
 async function executeDeepSearch(topic: string, goal: string): Promise<{ output: string; sources: any[] }> {
-  // Generate multiple search queries for comprehensive coverage
   const queryResult = await callLLM([
     { role: "system", content: "Generate 3-5 different search queries to comprehensively research a topic. Return as JSON array of strings." },
     { role: "user", content: `Topic: ${topic}\nGoal: ${goal}\n\nGenerate diverse search queries.` }
@@ -214,7 +338,6 @@ async function executeDeepSearch(topic: string, goal: string): Promise<{ output:
     allSources.push(...sources);
   }
   
-  // Deduplicate sources
   const uniqueSources = allSources.filter((s, i, arr) => 
     arr.findIndex(x => x.url === s.url) === i
   );
@@ -227,7 +350,6 @@ async function executeImageGenerate(prompt: string, userId: string, supabase: an
   console.log(`[Agent] Generating image: ${prompt.slice(0, 100)}...`);
   
   try {
-    // Use Lovable AI's image generation model
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -251,12 +373,10 @@ async function executeImageGenerate(prompt: string, userId: string, supabase: an
     const imageData = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
     
     if (imageData) {
-      // Store the image in Supabase storage
       const imageId = crypto.randomUUID();
       const now = new Date();
       const path = `${userId}/agent/${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${imageId}.png`;
       
-      // Convert base64 to bytes
       const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
       const bytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
       
@@ -273,7 +393,6 @@ async function executeImageGenerate(prompt: string, userId: string, supabase: an
         };
       }
       
-      // Get signed URL
       const { data: signedData } = await supabase.storage
         .from('user-files')
         .createSignedUrl(path, 3600);
@@ -351,7 +470,6 @@ async function executeTranslate(text: string, targetLang: string, sourceLang?: s
 async function executeReason(problem: string, context: string): Promise<{ output: string; sources: any[] }> {
   console.log(`[Agent] Deep reasoning on problem`);
   
-  // Use the more powerful model for complex reasoning
   const result = await callLLM([
     { role: "system", content: `You are an expert problem solver. Think through the problem step by step, showing your reasoning. Consider multiple angles and approaches. Be thorough but clear.` },
     { role: "user", content: `Problem: ${problem}\n\n${context ? `Context:\n${context}\n\n` : ''}Solve this step by step.` }
@@ -391,7 +509,6 @@ async function executeStep(
   
   console.log(`[Agent] Executing tool: ${toolName || 'general'}`);
   
-  // Web Search
   if (toolName === "web_search") {
     const queryResult = await callLLM([
       { role: "system", content: "Generate a concise, effective search query (max 12 words) for web search. Respond with just the query, no quotes or explanation." },
@@ -401,12 +518,10 @@ async function executeStep(
     return await executeWebSearch(query);
   }
   
-  // Deep Search (multiple queries)
   if (toolName === "deep_search") {
     return await executeDeepSearch(step.title, goal);
   }
   
-  // Image Generation
   if (toolName === "image_generate") {
     const promptResult = await callLLM([
       { role: "system", content: "Generate a detailed image prompt based on the step. Be specific about style, composition, and details. Respond with just the prompt, no explanation." },
@@ -416,9 +531,7 @@ async function executeStep(
     return await executeImageGenerate(prompt, userId, supabase);
   }
   
-  // Image Analysis
   if (toolName === "image_analyze") {
-    // Look for image URL in context
     const urlMatch = prevContext.match(/https?:\/\/[^\s]+\.(jpg|jpeg|png|gif|webp)/i) || 
                      prevContext.match(/data:image\/[^;]+;base64,[^\s]+/);
     if (urlMatch) {
@@ -427,27 +540,21 @@ async function executeStep(
     return { output: "No image URL found in context to analyze", sources: [] };
   }
   
-  // Translation
   if (toolName === "translate") {
     const langMatch = step.title.match(/to\s+(english|uzbek|russian|turkish|spanish|french|german|chinese|japanese|korean|arabic)/i);
     const targetLang = langMatch ? langMatch[1] : "English";
-    
-    // Get text to translate from context
     const textToTranslate = prevContext || goal;
     return await executeTranslate(textToTranslate, targetLang);
   }
   
-  // Deep Reasoning
   if (toolName === "reason") {
     return await executeReason(step.title, prevContext);
   }
   
-  // Code
   if (toolName === "code") {
     return await executeCode(`${goal}\n\nSpecific task: ${step.title}\n\nContext:\n${prevContext}`);
   }
   
-  // Summarize
   if (toolName === "summarize") {
     const result = await callLLM([
       { role: "system", content: "Summarize the content into clear, actionable key points. Use bullet points. Be concise but comprehensive." },
@@ -456,7 +563,6 @@ async function executeStep(
     return { output: `📝 **Summary:**\n\n${result.choices[0].message.content}`, sources: [] };
   }
   
-  // Analyze
   if (toolName === "analyze") {
     const result = await callLLM([
       { role: "system", content: "Analyze the content thoroughly. Identify patterns, insights, issues, and opportunities. Be detailed." },
@@ -465,7 +571,6 @@ async function executeStep(
     return { output: `🔍 **Analysis:**\n\n${result.choices[0].message.content}`, sources: [] };
   }
   
-  // Calculate
   if (toolName === "calculate") {
     const result = await callLLM([
       { role: "system", content: "Perform the calculation or data analysis. Show your work step by step. Be precise with numbers." },
@@ -476,55 +581,88 @@ async function executeStep(
   
   // Default: general LLM execution
   const result = await callLLM([
-    { role: "system", content: `You are executing a step in a multi-step plan. Be thorough and actionable.` },
-    { role: "user", content: `Goal: ${goal}\nStep: ${step.title}\nPrevious results:\n${prevContext}\n\nExecute this step and provide the result.` }
+    { role: "system", content: `You are executing a step in a multi-step plan. Be thorough and actionable. ONLY use information from the provided context.` },
+    { role: "user", content: `Goal: ${goal}\nStep: ${step.title}\nPrevious results:\n${prevContext}\n\nExecute this step and provide the result using ONLY the available information.` }
   ]);
   
   return { output: result.choices[0].message.content, sources: [] };
 }
 
-async function generateFinalOutput(
+// Generate structured research report
+async function generateFinalReport(
   goal: string,
   steps: { title: string; output: string }[],
   allSources: any[],
   generatedImages: string[],
+  fileMetadata: any[],
+  notes: string,
+  links: string[],
   conversationHistory?: any[]
 ): Promise<string> {
   const stepsContext = steps.map((s, i) => `Step ${i + 1} (${s.title}):\n${s.output}`).join("\n\n---\n\n");
   
-  // Build conversation context for final output
+  // Build input summary for transparency
+  let inputSummary = "=== INPUTS USED ===\n";
+  
+  if (fileMetadata && fileMetadata.length > 0) {
+    inputSummary += "\nFILES:\n";
+    for (const file of fileMetadata) {
+      inputSummary += `- ${file.filename} (${file.textLength} chars)\n`;
+    }
+  } else {
+    inputSummary += "\nFILES: None provided\n";
+  }
+  
+  if (links && links.length > 0) {
+    inputSummary += "\nLINKS:\n";
+    for (const link of links) {
+      inputSummary += `- ${link}\n`;
+    }
+  }
+  
+  if (notes && notes.trim()) {
+    inputSummary += `\nUSER NOTES:\n${notes}\n`;
+  }
+  
+  if (allSources && allSources.length > 0) {
+    inputSummary += "\nWEB SOURCES:\n";
+    for (let i = 0; i < Math.min(allSources.length, 15); i++) {
+      inputSummary += `〔${i+1}〕 ${allSources[i].title} - ${allSources[i].url}\n`;
+    }
+  }
+  
+  // Conversation context
   let conversationContext = "";
   if (conversationHistory && conversationHistory.length > 0) {
-    conversationContext = "\n\n=== PREVIOUS CONVERSATION (for context) ===\n";
+    conversationContext = "\n\n=== PREVIOUS CONVERSATION ===\n";
     for (const turn of conversationHistory.slice(-4)) {
       if (turn.role === "user") {
         conversationContext += `User: ${turn.goal || turn.content}\n`;
       } else {
-        // Very brief summary for context
         const brief = turn.content.length > 500 
           ? turn.content.slice(0, 500) + "..." 
           : turn.content;
         conversationContext += `Assistant: ${brief}\n`;
       }
     }
-    conversationContext += "=== END PREVIOUS CONVERSATION ===\n";
   }
   
   const result = await callLLM([
-    { role: "system", content: `You are Bahor AI Agent. Synthesize the results from multiple steps into a comprehensive, well-structured final answer. 
+    { role: "system", content: REPORT_TEMPLATE },
+    { role: "user", content: `Goal: ${goal}
+${inputSummary}
+${conversationContext}
 
-Use markdown formatting:
-- Use ## headers for sections
-- Use **bold** for emphasis
-- Use bullet lists for key points
-- Use code blocks for code
-- Include any generated images with proper markdown: ![description](url)
+=== STEP RESULTS ===
+${stepsContext}
 
-Be thorough but well-organized. If sources were used, they will be displayed separately - don't list URLs in your response.
-${conversationHistory && conversationHistory.length > 0 ? `
-IMPORTANT: This is a follow-up response. Build upon and reference the previous conversation when relevant. Don't repeat information already covered unless the user asked for clarification.` : ""}` },
-    { role: "user", content: `Goal: ${goal}${conversationContext}\n\nStep Results:\n${stepsContext}\n\n${generatedImages.length > 0 ? `Generated Images: ${generatedImages.join(', ')}` : ''}\n\nProvide the final comprehensive answer.` }
-  ]);
+${generatedImages.length > 0 ? `Generated Images: ${generatedImages.join(', ')}` : ''}
+
+Generate a comprehensive research report following the exact template structure. 
+Use 〔n〕 notation for ALL citations, mapping to the sources listed above.
+ONLY include information from the provided inputs. Do NOT invent details.
+If critical information is missing, add a "Missing Information" section.` }
+  ], { model: "google/gemini-2.5-pro", temperature: 0.4 });
   
   return result.choices[0].message.content;
 }
@@ -536,7 +674,7 @@ async function loadConversationHistory(supabase: any, threadId: string): Promise
     .select("role, content, metadata")
     .eq("thread_id", threadId)
     .order("created_at", { ascending: true })
-    .limit(20); // Last 20 messages
+    .limit(20);
 
   if (!messages || messages.length === 0) return [];
 
@@ -605,7 +743,6 @@ serve(async (req) => {
     // === THREAD MANAGEMENT ===
     let activeThreadId = threadId;
     
-    // Create new thread if not provided
     if (!activeThreadId) {
       const threadTitle = await generateThreadTitle(goal);
       const { data: newThread, error: threadError } = await supabaseClient
@@ -646,7 +783,7 @@ serve(async (req) => {
     console.log(`[Agent] Received files payload:`, files ? files.map((f: any) => ({ filename: f.filename, hasText: !!f.text, textLen: f.text?.length || 0 })) : 'none');
     
     if (files && files.length > 0) {
-      contextParts.push("=== UPLOADED FILES ===");
+      contextParts.push("=== UPLOADED FILES (USE ONLY THIS CONTENT) ===");
       for (const file of files) {
         const textLen = file.text?.length || 0;
         console.log(`[Agent] Processing file: ${file.filename}, text length: ${textLen}`);
@@ -698,14 +835,13 @@ serve(async (req) => {
 
     console.log(`[Agent] Created run ${run.id} in thread ${activeThreadId}`);
 
-    // Execute the agent in background using waitUntil
+    // Execute the agent in background
     const executeAgentRun = async () => {
       try {
-        // Generate plan with context, conversation history, and file metadata
+        // Generate plan with strict input contract
         const plan = await generatePlan(goal, context, conversationHistory, fileMetadata);
         console.log(`[Agent] Generated plan with ${plan.length} steps:`, plan.map(s => s.tool || 'general').join(', '));
 
-        // Update run with plan
         await supabaseClient
           .from("agent_runs")
           .update({ plan, status: "running" })
@@ -731,7 +867,6 @@ serve(async (req) => {
         const generatedImages: string[] = [];
 
         for (let i = 0; i < plan.length; i++) {
-          // Check if run was cancelled
           const { data: currentRun } = await supabaseClient
             .from("agent_runs")
             .select("status")
@@ -743,7 +878,6 @@ serve(async (req) => {
             break;
           }
 
-          // Update step to running
           await supabaseClient
             .from("agent_steps")
             .update({ status: "running" })
@@ -765,7 +899,6 @@ serve(async (req) => {
             allSources.push(...sources);
             if (imageUrl) generatedImages.push(imageUrl);
 
-            // Update step to done
             await supabaseClient
               .from("agent_steps")
               .update({
@@ -791,21 +924,37 @@ serve(async (req) => {
           }
         }
 
-        // Generate final output with conversation history
-        console.log(`[Agent] Generating final output from ${stepResults.length} steps`);
-        const finalOutput = await generateFinalOutput(goal, stepResults, allSources, generatedImages, conversationHistory);
+        // Generate structured research report
+        console.log(`[Agent] Generating final research report from ${stepResults.length} steps`);
+        const finalReport = await generateFinalReport(
+          goal, 
+          stepResults, 
+          allSources, 
+          generatedImages,
+          fileMetadata,
+          notes || "",
+          links || [],
+          conversationHistory
+        );
+
+        // Validate output against inputs
+        const validation = validateOutputAgainstInputs(finalReport, context + goal + (notes || ""));
+        if (!validation.valid) {
+          console.warn(`[Agent] Output validation issues:`, validation.issues);
+          // Could regenerate here, but for now just log
+        }
 
         // Deduplicate sources
         const uniqueSources = allSources.filter((s, i, arr) => 
           arr.findIndex(x => x.url === s.url) === i
         );
 
-        // Update run to done
+        // Update run to done with both final_output and final_report_md
         await supabaseClient
           .from("agent_runs")
           .update({
             status: "done",
-            final_output: finalOutput,
+            final_output: finalReport,
             sources: uniqueSources,
             updated_at: new Date().toISOString(),
           })
@@ -816,7 +965,7 @@ serve(async (req) => {
           thread_id: activeThreadId,
           user_id: user.id,
           role: "assistant",
-          content: finalOutput,
+          content: finalReport,
           metadata: { 
             run_id: run.id,
             sources: uniqueSources,
@@ -825,7 +974,7 @@ serve(async (req) => {
           }
         });
 
-        // Update thread's rolling summary (brief summary of latest exchange)
+        // Update thread's rolling summary
         const summaryText = `${goal.slice(0, 100)}${goal.length > 100 ? '...' : ''}`;
         await supabaseClient
           .from("agent_threads")
@@ -840,7 +989,6 @@ serve(async (req) => {
       } catch (bgError: any) {
         console.error(`[Agent] Background execution error for run ${run.id}:`, bgError);
         
-        // Mark run as failed
         await supabaseClient
           .from("agent_runs")
           .update({
@@ -850,7 +998,6 @@ serve(async (req) => {
           })
           .eq("id", run.id);
 
-        // Save error message to thread
         await supabaseClient.from("agent_messages").insert({
           thread_id: activeThreadId,
           user_id: user.id,
@@ -861,11 +1008,9 @@ serve(async (req) => {
       }
     };
 
-    // Start background execution without blocking response
-    // Use globalThis.EdgeRuntime for Supabase Edge Functions
+    // Start background execution
     (globalThis as any).EdgeRuntime?.waitUntil?.(executeAgentRun()) ?? executeAgentRun().catch(console.error);
 
-    // Return immediately with runId and threadId - frontend uses Realtime for updates
     return new Response(JSON.stringify({ 
       runId: run.id, 
       threadId: activeThreadId,

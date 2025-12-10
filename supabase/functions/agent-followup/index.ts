@@ -49,15 +49,13 @@ serve(async (req) => {
 
     const supabaseClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     
+    // Use service role client to verify the JWT token (same fix as agent-run)
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await createClient(
-      SUPABASE_URL,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: `Bearer ${token}` } } }
-    ).auth.getUser();
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
 
     if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Invalid token" }), {
+      console.error("[Agent Followup] Auth error:", userError?.message);
+      return new Response(JSON.stringify({ error: "Invalid token", details: userError?.message }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -89,11 +87,26 @@ serve(async (req) => {
       });
     }
 
-    // Load previous messages for context
+    // Load files attached to this run
+    const { data: filesData } = await supabaseClient
+      .from("agent_files")
+      .select("filename, extracted_text")
+      .eq("run_id", runId);
+
+    // Build file context
+    let fileContext = "";
+    if (filesData && filesData.length > 0) {
+      fileContext = "\n\n=== FILES FROM THIS RUN ===\n";
+      for (const file of filesData) {
+        fileContext += `\n--- ${file.filename} ---\n${file.extracted_text?.slice(0, 5000) || "[No content]"}\n`;
+      }
+    }
+
+    // Load previous messages for context (thread-based)
     const { data: previousMessages } = await supabaseClient
       .from("agent_messages")
       .select("role, content")
-      .eq("run_id", runId)
+      .eq("thread_id", run.thread_id)
       .order("created_at", { ascending: true })
       .limit(20);
 
@@ -103,25 +116,45 @@ serve(async (req) => {
       content: m.content
     })) || [];
 
-    // System prompt for follow-up
+    // System prompt for follow-up with strict input contract
     const systemPrompt = `You are Bahor AI Agent continuing a conversation about a research task.
+
+=== STRICT INPUT CONTRACT ===
+You may ONLY reference information from:
+1. The original research report below
+2. The files attached to this run
+3. The previous conversation messages
+4. Web searches if explicitly requested
+
+You MUST NOT invent product features, statistics, or facts not in the sources.
+If asked about something not in the research, say "This wasn't covered in the research. Would you like me to search for more information?"
 
 === ORIGINAL TASK ===
 ${run.goal}
 
 === RESEARCH REPORT ===
-${reportContext?.slice(0, 8000) || run.final_output?.slice(0, 8000) || "No report available"}
+${reportContext?.slice(0, 10000) || run.final_output?.slice(0, 10000) || "No report available"}
+${fileContext}
 
 === INSTRUCTIONS ===
-1. Answer the user's follow-up question based on the research report above
-2. If asked for clarification, provide detailed explanations from the report
+1. Answer the user's follow-up question based on the research report and files above
+2. If asked for clarification, provide detailed explanations WITH citations: 〔Section name〕
 3. If asked to update or modify findings, acknowledge and provide updated analysis
 4. Use proper markdown formatting (headers, lists, bold, etc.)
 5. Cite specific sections from the report when relevant
 6. If the question is about something not covered in the report, acknowledge this clearly
-7. Be helpful, thorough, and professional
+7. If asked to "add a section" or "update the report", provide the new content in markdown format
 
 Respond in the same language as the user's message (Uzbek, Russian, English, or Turkish).`;
+
+    // Save user message to thread first
+    await supabaseClient.from("agent_messages").insert({
+      thread_id: run.thread_id,
+      user_id: user.id,
+      role: "user",
+      content: message,
+      metadata: { type: "followup", run_id: runId }
+    });
 
     // Generate response
     const result = await callLLM([
@@ -132,16 +165,17 @@ Respond in the same language as the user's message (Uzbek, Russian, English, or 
 
     const assistantContent = result.choices[0].message.content;
 
-    // Save assistant message
+    // Save assistant message to thread
     const { data: savedMessage, error: saveError } = await supabaseClient
       .from("agent_messages")
       .insert({
-        run_id: runId,
+        thread_id: run.thread_id,
         user_id: user.id,
         role: "assistant",
         content: assistantContent,
         metadata: {
           type: "followup",
+          run_id: runId,
           tokens_in: result.usage?.prompt_tokens,
           tokens_out: result.usage?.completion_tokens,
         }
@@ -152,6 +186,12 @@ Respond in the same language as the user's message (Uzbek, Russian, English, or 
     if (saveError) {
       console.error("Failed to save message:", saveError);
     }
+
+    // Update thread's updated_at
+    await supabaseClient
+      .from("agent_threads")
+      .update({ updated_at: new Date().toISOString() })
+      .eq("id", run.thread_id);
 
     console.log(`[Agent Followup] Generated response for run ${runId}`);
 
