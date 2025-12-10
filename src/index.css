@@ -199,17 +199,24 @@
 
   /* ============================================
      MOBILE INPUT ZOOM PREVENTION
-     iOS Safari auto-zooms inputs < 16px
-     Apply globally to ALL form inputs on mobile
+     iOS Safari/WKWebView auto-zooms inputs < 16px
+     Use @supports for iOS-specific fix + media for Android
      ============================================ */
-  @media screen and (max-width: 768px) {
-    /* Global: prevent zoom on ALL inputs on mobile */
+  
+  /* iOS Safari / WKWebView specific (Capacitor APK) */
+  @supports (-webkit-touch-callout: none) {
     input,
     textarea,
-    select,
-    .chat-composer-input,
-    .chat-composer-input textarea,
-    .chat-composer-input input {
+    select {
+      font-size: 16px !important;
+    }
+  }
+  
+  /* Fallback for Android and other mobile browsers */
+  @media screen and (max-width: 768px) {
+    input,
+    textarea,
+    select {
       font-size: 16px !important;
       -webkit-text-size-adjust: 100%;
       text-size-adjust: 100%;
