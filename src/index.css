@@ -62,6 +62,14 @@
 
     --radius: 0.75rem;
 
+    /* Code block theming - Light mode */
+    --code-bg: 220 15% 96%;
+    --code-fg: 220 25% 15%;
+    --code-border: 220 15% 88%;
+    --code-header-bg: 220 15% 92%;
+    --inline-code-bg: 220 15% 92%;
+    --inline-code-fg: 220 25% 20%;
+
     /* Chat bubbles */
     --user-message: 175 55% 45%;
     --user-message-foreground: 0 0% 100%;
@@ -129,6 +137,14 @@
     --border: 200 18% 18%;
     --input: 200 18% 15%;
     --ring: 175 60% 48%;
+
+    /* Code block theming - Dark mode */
+    --code-bg: 200 20% 10%;
+    --code-fg: 200 10% 92%;
+    --code-border: 200 18% 20%;
+    --code-header-bg: 200 20% 13%;
+    --inline-code-bg: 200 18% 16%;
+    --inline-code-fg: 200 10% 90%;
 
     /* Chat bubbles - Dark */
     --user-message: 175 55% 42%;

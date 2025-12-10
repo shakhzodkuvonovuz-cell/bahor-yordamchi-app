@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { haptic } from "@/lib/haptics";
 import { downloadPDF, generatePDF, sanitizeFilename, openHTMLPrintFallback } from "@/lib/pdfGenerator";
+import { AiResponseRenderer } from "@/components/ai/AiResponseRenderer";
 
 interface AICard {
   id: string;
@@ -179,9 +180,11 @@ export function CircleAICard({ card, circleId, onDelete, onSendToChat, isLatest 
       {expanded && (
         <div className="border-t">
           <div className="p-3 max-h-64 overflow-auto">
-            <pre className="text-sm whitespace-pre-wrap font-sans leading-relaxed">
-              {card.content_md}
-            </pre>
+            <AiResponseRenderer 
+              content={card.content_md} 
+              variant="circle"
+              className="text-foreground"
+            />
           </div>
 
           {/* Actions */}

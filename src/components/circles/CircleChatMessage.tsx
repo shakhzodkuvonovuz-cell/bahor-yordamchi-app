@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { AiResponseRenderer } from "@/components/ai/AiResponseRenderer";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -428,9 +429,17 @@ export default function CircleChatMessage({
             {/* Reply preview */}
             {renderReplyPreview()}
 
-            {/* Content */}
+            {/* Content - Use AiResponseRenderer for AI messages */}
             {message.content && (
-              <p className="text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{message.content}</p>
+              isAi ? (
+                <AiResponseRenderer 
+                  content={message.content} 
+                  variant="circle"
+                  className="text-foreground"
+                />
+              ) : (
+                <p className="text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{message.content}</p>
+              )
             )}
 
             {/* Attachments */}

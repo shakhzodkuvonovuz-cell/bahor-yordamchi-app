@@ -18,6 +18,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptics";
 import { downloadPDF, generatePDF, sanitizeFilename, openHTMLPrintFallback, downloadAsMarkdown } from "@/lib/pdfGenerator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { AiResponseRenderer } from "@/components/ai/AiResponseRenderer";
 
 interface CircleAIActionsPanelProps {
   circleId: string;
@@ -894,9 +895,11 @@ export function CircleAIActionsPanel({ circleId, onSendToChat }: CircleAIActions
                   {/* Scrollable Content - Main focus */}
                   <ScrollArea ref={resultsRef} className="flex-1 min-h-0">
                     <div className="p-3">
-                      <pre className="text-sm whitespace-pre-wrap font-sans leading-relaxed text-foreground">
-                        {selectedCard.content_md}
-                      </pre>
+                      <AiResponseRenderer 
+                        content={selectedCard.content_md} 
+                        variant="circle"
+                        className="text-foreground"
+                      />
                     </div>
                   </ScrollArea>
 
