@@ -115,7 +115,6 @@ serve(async (req) => {
         metadata = { type: "text", charCount: extractedText.length };
       } else if (mimeType === "application/pdf") {
         // For PDFs, we'll use a simple text extraction approach
-        // In production, you'd use a proper PDF parser
         const textContent = new TextDecoder("utf-8", { fatal: false }).decode(fileBytes);
         
         // Try to extract readable text from PDF
@@ -128,7 +127,6 @@ serve(async (req) => {
           extractedText = extractedParts.join(" ").slice(0, 50000);
           metadata = { type: "pdf", extracted: true };
         } else {
-          // Use AI to describe what we can see
           extractedText = "[PDF document - text extraction limited. Consider using OCR for scanned documents.]";
           metadata = { type: "pdf", extracted: false };
         }
@@ -136,22 +134,75 @@ serve(async (req) => {
         mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
         mimeType === "application/msword"
       ) {
-        // DOCX - extract text from XML content
-        const textContent = new TextDecoder("utf-8", { fatal: false }).decode(fileBytes);
-        
-        // Look for text in document.xml within the docx
-        const textMatches = textContent.match(/<w:t[^>]*>([^<]+)<\/w:t>/g) || [];
-        const extractedParts = textMatches.map(m => {
-          const match = m.match(/>([^<]+)</);
-          return match ? match[1] : "";
-        });
-        
-        if (extractedParts.length > 0) {
-          extractedText = extractedParts.join(" ").slice(0, 50000);
-          metadata = { type: "docx", wordCount: extractedText.split(/\s+/).length };
-        } else {
-          extractedText = "[Word document uploaded - text extraction pending]";
-          metadata = { type: "docx", extracted: false };
+        // DOCX files are ZIP archives containing XML
+        try {
+          // Import JSZip dynamically for DOCX parsing
+          const JSZip = (await import("https://esm.sh/jszip@3.10.1")).default;
+          const zip = await JSZip.loadAsync(fileBytes);
+          
+          // Find document.xml (main content)
+          const documentXml = zip.file("word/document.xml");
+          
+          if (documentXml) {
+            const xmlContent = await documentXml.async("string");
+            
+            // Parse paragraphs properly - split by </w:p> and extract text from each
+            let fullText = "";
+            const paragraphs = xmlContent.split(/<\/w:p>/);
+            
+            for (const para of paragraphs) {
+              // Match all <w:t> tags in this paragraph (with or without attributes)
+              const paraTextMatches = para.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g);
+              const paraTexts: string[] = [];
+              for (const m of paraTextMatches) {
+                if (m[1]) paraTexts.push(m[1]);
+              }
+              if (paraTexts.length > 0) {
+                fullText += paraTexts.join("") + "\n";
+              }
+            }
+            
+            extractedText = fullText.trim().slice(0, 50000);
+            
+            if (extractedText.length > 0) {
+              const words = extractedText.split(/\s+/).filter(w => w.length > 0);
+              const paras = fullText.split("\n").filter(p => p.trim().length > 0);
+              metadata = { 
+                type: "docx", 
+                extracted: true,
+                wordCount: words.length,
+                paragraphs: paras.length
+              };
+              console.log(`[Extract] DOCX: extracted ${words.length} words, ${paras.length} paragraphs`);
+            } else {
+              extractedText = "[Word document appears to be empty or contains only images/tables]";
+              metadata = { type: "docx", extracted: false };
+            }
+          } else {
+            // Try to find any XML with text content
+            const files = Object.keys(zip.files);
+            console.log(`[Extract] DOCX structure: ${files.slice(0, 10).join(", ")}`);
+            extractedText = "[Word document structure not recognized - no document.xml found]";
+            metadata = { type: "docx", extracted: false, availableFiles: files.slice(0, 10) };
+          }
+        } catch (zipError: any) {
+          console.error(`[Extract] DOCX ZIP parsing error:`, zipError.message);
+          
+          // Fallback: try raw text extraction for legacy .doc files
+          const textContent = new TextDecoder("utf-8", { fatal: false }).decode(fileBytes);
+          const textMatches = textContent.match(/<w:t[^>]*>([^<]+)<\/w:t>/g) || [];
+          const extractedParts = textMatches.map(m => {
+            const match = m.match(/>([^<]+)</);
+            return match ? match[1] : "";
+          });
+          
+          if (extractedParts.length > 0) {
+            extractedText = extractedParts.join(" ").slice(0, 50000);
+            metadata = { type: "doc-legacy", wordCount: extractedText.split(/\s+/).length };
+          } else {
+            extractedText = "[Word document - could not extract text. File may be corrupted or password-protected.]";
+            metadata = { type: "docx", extracted: false, error: zipError.message };
+          }
         }
       } else {
         extractedText = `[File uploaded: ${mimeType || "unknown type"}]`;
