@@ -57,8 +57,9 @@ export function useCircleChat({ spaceId, userId }: UseCircleChatOptions) {
     const newIds = userIds.filter((id) => !profileMapRef.current[id]);
     if (newIds.length === 0) return profileMapRef.current;
 
+    // Use profile_display view (safe subset of profiles) for other users' display info
     const { data: profiles } = await supabase
-      .from("profiles")
+      .from("profile_display")
       .select("user_id, first_name, last_name, avatar_url")
       .in("user_id", newIds);
 

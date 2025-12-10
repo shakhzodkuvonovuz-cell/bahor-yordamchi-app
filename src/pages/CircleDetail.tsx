@@ -205,9 +205,10 @@ export default function SpaceDetail() {
         return;
       }
 
+      // Use profile_display view (safe subset of profiles) - email not exposed for privacy
       const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, first_name, last_name, email, avatar_url")
+        .from("profile_display")
+        .select("user_id, first_name, last_name, avatar_url")
         .in("user_id", userIds);
 
       const profileMap = Object.fromEntries(
@@ -215,7 +216,6 @@ export default function SpaceDetail() {
           p.user_id,
           {
             name: `${p.first_name || ""} ${p.last_name || ""}`.trim() || "User",
-            email: p.email || "",
             avatar_url: p.avatar_url || null,
           },
         ])
@@ -225,7 +225,7 @@ export default function SpaceDetail() {
         (data || []).map((m) => ({
           ...m,
           name: profileMap[m.user_id]?.name || "User",
-          email: profileMap[m.user_id]?.email || "",
+          email: "", // Email not exposed in profile_display for privacy
           avatar_url: profileMap[m.user_id]?.avatar_url || null,
         }))
       );
@@ -261,8 +261,9 @@ export default function SpaceDetail() {
 
       if (requestsWithMissingData.length > 0) {
         const requesterIds = requestsWithMissingData.map((r) => r.requester_id);
+        // Use profile_display view for display info
         const { data: profiles } = await supabase
-          .from("profiles")
+          .from("profile_display")
           .select("user_id, first_name, last_name, avatar_url")
           .in("user_id", requesterIds);
 
