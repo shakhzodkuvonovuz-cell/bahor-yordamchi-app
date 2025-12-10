@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { 
   Bot, Play, Square, RotateCcw, Check, Loader2, AlertCircle, Sparkles, 
   ExternalLink, ChevronDown, ChevronUp, Save, Upload, File, X, Link2,
@@ -21,6 +21,10 @@ import { useTranslation } from "@/i18n/LanguageProvider";
 import { AiResponseRenderer } from "@/components/ai/AiResponseRenderer";
 import { cn } from "@/lib/utils";
 import { downloadPDF } from "@/lib/pdfGenerator";
+import { useAgentFileStatus } from "@/hooks/useAgentFileStatus";
+import { AgentDebugPanel } from "@/components/agent/AgentDebugPanel";
+import { AgentFileGating } from "@/components/agent/AgentFileGating";
+import { AgentEvidenceWarning } from "@/components/agent/AgentEvidenceWarning";
 
 interface AgentStep {
   id: string;
@@ -63,6 +67,13 @@ interface GeneratedImage {
   url: string;
   stepIndex: number;
   stepTitle: string;
+}
+
+interface ContextSnapshot {
+  goal: string;
+  filesIncluded: number;
+  totalChars: number;
+  filesPayload?: Array<{ filename: string; textLength: number }>;
 }
 
 const SAMPLE_GOALS = [
@@ -110,6 +121,34 @@ export default function Agent() {
     language: language as string,
     audience: "",
   });
+  
+  // File gating state
+  const [runWithoutFiles, setRunWithoutFiles] = useState(false);
+  const [isRetryingExtraction, setIsRetryingExtraction] = useState(false);
+  const [contextSnapshot, setContextSnapshot] = useState<ContextSnapshot | null>(null);
+  
+  // File IDs for gating check
+  const fileIds = useMemo(() => files.map(f => f.id), [files]);
+  const fileReadiness = useAgentFileStatus(fileIds);
+  
+  // Determine if agent can run
+  const canRunAgent = useMemo(() => {
+    if (!goal.trim() || isRunning) return false;
+    if (runWithoutFiles) return true; // User explicitly chose to run without files
+    if (files.length === 0) return true; // No files attached
+    if (fileReadiness.hasProcessingFiles) return false; // Block if still processing
+    if (fileReadiness.allFilesReady) return true; // All files ready
+    // Has failed files but no processing - allow with warning
+    return fileReadiness.failedCount > 0 && fileReadiness.processingCount === 0;
+  }, [goal, isRunning, runWithoutFiles, files.length, fileReadiness]);
+  
+  // Run gating message
+  const runGatingMessage = useMemo(() => {
+    if (files.length > 0 && fileReadiness.hasProcessingFiles && !runWithoutFiles) {
+      return "Fayllar o'qilmoqda...";
+    }
+    return null;
+  }, [files.length, fileReadiness.hasProcessingFiles, runWithoutFiles]);
 
   // Load history
   const loadHistory = useCallback(async () => {

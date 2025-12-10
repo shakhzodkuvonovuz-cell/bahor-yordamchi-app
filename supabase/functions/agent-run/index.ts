@@ -55,31 +55,55 @@ async function generateThreadTitle(goal: string): Promise<string> {
   }
 }
 
-async function generatePlan(goal: string, context: string, conversationHistory?: any[]): Promise<AgentStep[]> {
+async function generatePlan(goal: string, context: string, conversationHistory?: any[], fileMetadata?: any[]): Promise<AgentStep[]> {
+  // Check if files were provided but have insufficient content
+  const hasFiles = fileMetadata && fileMetadata.length > 0;
+  const totalChars = fileMetadata?.reduce((sum, f) => sum + (f.textLength || 0), 0) || 0;
+  const filesReady = !hasFiles || totalChars >= 200;
+  
   let systemPrompt = `You are Bahor AI Agent, an intelligent assistant that breaks down complex tasks into actionable steps.
-Given a user's goal, create a plan with 2-8 clear steps. Each step should be specific and actionable.
+
+=== EVIDENCE RULES (MANDATORY - NEVER VIOLATE) ===
+
+1. EVIDENCE RULE (hard):
+   - If you cannot access full text of attached files OR total extracted text is < 200 chars, you MUST respond ONLY with:
+     "I can't access the file content yet. Please re-upload or wait until extraction says 'Tayyor/Ready'."
+   - List which files are missing text and their statuses
+   - STOP. No guessing, no inferred analysis.
+
+2. CITATION RULE (hard):
+   - Every factual claim from files must include a citation: [File: <filename> | Section: <heading>]
+   - If you cannot cite, you must not claim.
+
+3. PROOF-OF-READING (mandatory):
+   Before any file-based analysis, you MUST include:
+   - "Top headings detected" — list first 10 headings from the file(s)
+   - "3 short quotes" — 10-25 words from 3 different sections
+   If you can't do this, fail with Evidence Rule.
+
+=== END EVIDENCE RULES ===
+
+${!filesReady && hasFiles ? `
+⚠️ CRITICAL: Files were attached but extraction returned < 200 chars total (${totalChars} chars).
+You MUST refuse to analyze and ask user to re-upload or wait.
+` : ''}
 
 Available tools you can use in steps:
-- web_search: Search the web for current information (news, facts, articles, documentation)
-- deep_search: Multiple web searches to gather comprehensive information on a topic
-- image_generate: Generate an image based on a text description
-- image_analyze: Analyze/describe an image (requires image URL or base64)
+- web_search: Search the web for current information
+- deep_search: Multiple web searches for comprehensive research
+- image_generate: Generate an image from text description
+- image_analyze: Analyze/describe an image
 - translate: Translate text between languages
-- summarize: Summarize long content into key points
+- summarize: Summarize long content
 - analyze: Analyze data, text, or code in detail
-- calculate: Perform calculations or data analysis
-- reason: Deep reasoning for complex problems (math, logic, planning)
+- calculate: Perform calculations
+- reason: Deep reasoning for complex problems
 - code: Write or analyze code
 
-Choose tools wisely based on what the goal requires. You can use multiple web_search steps if needed.
-${context ? `User has provided additional context/files that you should reference in your plan.` : ""}
-${conversationHistory && conversationHistory.length > 0 ? `
+${context ? `User has provided additional context/files.` : ""}
+${conversationHistory && conversationHistory.length > 0 ? `This is a follow-up question. Build upon previous context.` : ""}
 
-IMPORTANT: This is a follow-up question. The user has already received previous responses in this conversation.
-Build upon the previous context - don't repeat research that was already done unless the user asks for updates.
-Reference and extend the previous findings when relevant.` : ""}
-
-Respond with a JSON object: { "steps": [{ "title": "Step description", "rationale": "Why this step", "tool": "tool_name or null" }] }`;
+Respond with JSON: { "steps": [{ "title": "Step description", "rationale": "Why", "tool": "tool_name or null" }] }`;
 
   // Build user message with conversation history context
   let userMessage = "";
@@ -615,13 +639,20 @@ serve(async (req) => {
       metadata: { goal, files: files?.length || 0, links: links?.length || 0 }
     });
 
-    // Build context from files, links, notes
+    // Build context from files, links, notes with metadata
     let contextParts: string[] = [];
+    const fileMetadata: Array<{ filename: string; textLength: number; status: string }> = [];
     
     if (files && files.length > 0) {
       contextParts.push("=== UPLOADED FILES ===");
       for (const file of files) {
-        contextParts.push(`\n--- File: ${file.filename} ---\n${file.text?.slice(0, 15000) || "[No content extracted]"}`);
+        const textLen = file.text?.length || 0;
+        fileMetadata.push({ 
+          filename: file.filename, 
+          textLength: textLen,
+          status: textLen >= 200 ? "ready" : "insufficient"
+        });
+        contextParts.push(`\n--- File: ${file.filename} (${textLen} chars) ---\n${file.text?.slice(0, 15000) || "[No content extracted]"}`);
       }
     }
     
@@ -666,8 +697,8 @@ serve(async (req) => {
     // Execute the agent in background using waitUntil
     const executeAgentRun = async () => {
       try {
-        // Generate plan with context and conversation history
-        const plan = await generatePlan(goal, context, conversationHistory);
+        // Generate plan with context, conversation history, and file metadata
+        const plan = await generatePlan(goal, context, conversationHistory, fileMetadata);
         console.log(`[Agent] Generated plan with ${plan.length} steps:`, plan.map(s => s.tool || 'general').join(', '));
 
         // Update run with plan
