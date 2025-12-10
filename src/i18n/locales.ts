@@ -451,6 +451,18 @@ export const translations: Record<Lang, Record<string, string>> = {
     'common.fileTooLarge': 'Fayl hajmi 10MB dan oshmasligi kerak',
     'common.uploadError': 'Fayllarni yuklashda xatolik',
     
+    // Speech-to-Text (STT) Dictation
+    'stt.recording': 'Yozilmoqda...',
+    'stt.transcribing': 'Transkriptsiya...',
+    'stt.releaseToFinish': "Qo'yib yuboring",
+    'stt.audioTooLarge': 'Audio fayl juda katta (max 10MB)',
+    'stt.tryAgain': 'Qayta urinib ko\'ring',
+    'stt.micPermissionDenied': 'Mikrofonga ruxsat berilmadi',
+    'stt.recordingError': 'Yozishda xatolik yuz berdi',
+    'stt.transcriptionFailed': 'Transkriptsiyada xatolik. Qayta urinib ko\'ring.',
+    'stt.rateLimit': "Juda ko'p so'rov. Biroz kuting.",
+    'stt.serviceUnavailable': 'STT xizmati vaqtincha mavjud emas',
+    
     // Starter Cards
     'chat.starterCards.ielts': 'IELTS Task 2 reja',
     'chat.starterCards.english': 'Inglizcha matn tekshirish',
@@ -1426,6 +1438,18 @@ export const translations: Record<Lang, Record<string, string>> = {
     'common.fileTooLarge': 'File size must not exceed 10MB',
     'common.uploadError': 'Failed to upload files',
     
+    // Speech-to-Text (STT) Dictation
+    'stt.recording': 'Recording...',
+    'stt.transcribing': 'Transcribing...',
+    'stt.releaseToFinish': 'Release to finish',
+    'stt.audioTooLarge': 'Audio file too large (max 10MB)',
+    'stt.tryAgain': 'Try again',
+    'stt.micPermissionDenied': 'Microphone permission denied',
+    'stt.recordingError': 'Recording error occurred',
+    'stt.transcriptionFailed': 'Transcription failed. Please try again.',
+    'stt.rateLimit': 'Too many requests. Please wait.',
+    'stt.serviceUnavailable': 'STT service temporarily unavailable',
+    
     // Starter Cards
     'chat.starterCards.ielts': 'IELTS Task 2 outline',
     'chat.starterCards.english': 'Check English text',
@@ -2275,6 +2299,18 @@ export const translations: Record<Lang, Record<string, string>> = {
     'common.fileTooLarge': 'Размер файла не должен превышать 10МБ',
     'common.uploadError': 'Ошибка загрузки файлов',
     
+    // Speech-to-Text (STT) Dictation
+    'stt.recording': 'Запись...',
+    'stt.transcribing': 'Транскрипция...',
+    'stt.releaseToFinish': 'Отпустите для завершения',
+    'stt.audioTooLarge': 'Аудиофайл слишком большой (макс 10МБ)',
+    'stt.tryAgain': 'Попробуйте снова',
+    'stt.micPermissionDenied': 'Доступ к микрофону запрещен',
+    'stt.recordingError': 'Ошибка записи',
+    'stt.transcriptionFailed': 'Ошибка транскрипции. Попробуйте снова.',
+    'stt.rateLimit': 'Слишком много запросов. Подождите.',
+    'stt.serviceUnavailable': 'Сервис временно недоступен',
+    
     // Starter Cards
     'chat.starterCards.ielts': 'План IELTS Task 2',
     'chat.starterCards.english': 'Проверить английский текст',
@@ -3079,6 +3115,18 @@ export const translations: Record<Lang, Record<string, string>> = {
     'common.error': 'Hata',
     'common.fileTooLarge': 'Dosya boyutu 10MB\'ı geçmemeli',
     'common.uploadError': 'Dosyalar yüklenemedi',
+    
+    // Speech-to-Text (STT) Dictation
+    'stt.recording': 'Kayıt yapılıyor...',
+    'stt.transcribing': 'Transkripsiyon...',
+    'stt.releaseToFinish': 'Bitirmek için bırakın',
+    'stt.audioTooLarge': 'Ses dosyası çok büyük (maks 10MB)',
+    'stt.tryAgain': 'Tekrar deneyin',
+    'stt.micPermissionDenied': 'Mikrofon izni reddedildi',
+    'stt.recordingError': 'Kayıt hatası oluştu',
+    'stt.transcriptionFailed': 'Transkripsiyon başarısız. Tekrar deneyin.',
+    'stt.rateLimit': 'Çok fazla istek. Biraz bekleyin.',
+    'stt.serviceUnavailable': 'Servis geçici olarak kullanılamıyor',
     
     // Starter Cards
     'chat.starterCards.ielts': 'IELTS Task 2 planı',
