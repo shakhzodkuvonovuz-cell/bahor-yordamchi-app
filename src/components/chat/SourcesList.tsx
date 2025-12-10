@@ -1,7 +1,6 @@
-import { memo, useState } from "react";
+import { memo } from "react";
 import { ExternalLink, Globe } from "lucide-react";
 import { Citation } from "@/types/chat";
-import { InAppBrowserModal } from "./InAppBrowserModal";
 import { useTranslation } from "@/i18n/LanguageProvider";
 
 interface SourcesListProps {
@@ -40,7 +39,6 @@ function isValidUrl(url: string): boolean {
 
 function SourcesListComponent({ citations }: SourcesListProps) {
   const { t } = useTranslation();
-  const [selectedUrl, setSelectedUrl] = useState<{ url: string; title: string } | null>(null);
 
   if (!citations || citations.length === 0) {
     return null;
@@ -54,7 +52,7 @@ function SourcesListComponent({ citations }: SourcesListProps) {
 
   const handleSourceClick = (citation: Citation) => {
     if (isValidUrl(citation.url)) {
-      setSelectedUrl({ url: citation.url, title: citation.title });
+      window.open(citation.url, "_blank", "noopener,noreferrer");
     }
   };
 
@@ -101,14 +99,6 @@ function SourcesListComponent({ citations }: SourcesListProps) {
           ))}
         </div>
       </div>
-
-      {/* In-App Browser Modal */}
-      <InAppBrowserModal
-        url={selectedUrl?.url || ""}
-        title={selectedUrl?.title}
-        open={!!selectedUrl}
-        onClose={() => setSelectedUrl(null)}
-      />
     </>
   );
 }
