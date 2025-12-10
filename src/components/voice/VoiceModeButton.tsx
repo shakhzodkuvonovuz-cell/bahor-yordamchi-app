@@ -37,6 +37,31 @@ export default function VoiceModeButton({
     }
   }, [isDictating]);
   
+  // Handle window blur and visibility changes to stop recording
+  useEffect(() => {
+    const handleStop = () => {
+      if (localActiveRef.current) {
+        console.log("[VoiceModeButton] Window blur/hidden - stopping recording");
+        localActiveRef.current = false;
+        setRenderKey(k => k + 1);
+        setIsPressed(false);
+        onDictationEnd?.();
+      }
+    };
+    
+    const handleVisibility = () => {
+      if (document.hidden) handleStop();
+    };
+    
+    window.addEventListener("blur", handleStop);
+    document.addEventListener("visibilitychange", handleVisibility);
+    
+    return () => {
+      window.removeEventListener("blur", handleStop);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [onDictationEnd]);
+  
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     if (disabled) return;
     

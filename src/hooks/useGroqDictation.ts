@@ -42,9 +42,15 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
   const timerRef = useRef<number | null>(null);
   const lastRecordingTimeRef = useRef<number>(0);
   const startTimeRef = useRef<number>(0);
+  
+  // Track if start() is in progress to prevent stop() during initialization
+  const isStartingRef = useRef(false);
+  // Promise that resolves when start() completes
+  const startPromiseRef = useRef<Promise<void> | null>(null);
 
   // Cleanup function
   const cleanup = useCallback(() => {
+    console.log("[useGroqDictation] cleanup called");
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
@@ -137,6 +143,14 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
 
   // Start recording
   const start = useCallback(async () => {
+    console.log("[useGroqDictation] start() called");
+    
+    // Prevent multiple starts
+    if (isStartingRef.current || isRecordingRef.current) {
+      console.log("[useGroqDictation] Already starting or recording, skipping");
+      return;
+    }
+    
     // Check debounce
     const now = Date.now();
     if (now - lastRecordingTimeRef.current < DEBOUNCE_MS) {
@@ -144,147 +158,177 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
       return;
     }
 
+    isStartingRef.current = true;
     setError(null);
     audioChunksRef.current = [];
 
-    try {
-      // Request microphone access
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        } 
-      });
-      streamRef.current = stream;
+    const startInternal = async () => {
+      try {
+        console.log("[useGroqDictation] Requesting microphone...");
+        // Request microphone access
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          } 
+        });
+        console.log("[useGroqDictation] Microphone acquired");
+        streamRef.current = stream;
 
-      // Check if MediaRecorder is supported
-      const mimeType = getSupportedMimeType();
-      if (mimeType === null) {
-        throw new Error("MediaRecorder not supported");
-      }
-
-      // Create MediaRecorder FIRST before any AudioContext setup
-      // This is critical for iOS Safari compatibility
-      // If mimeType is empty string, don't pass options - let browser pick
-      const options = mimeType ? { mimeType } : undefined;
-      
-      console.log(`[useGroqDictation] Creating MediaRecorder with options:`, options);
-      mediaRecorderRef.current = new MediaRecorder(stream, options);
-      console.log(`[useGroqDictation] MediaRecorder created, actual mimeType: ${mediaRecorderRef.current.mimeType}`);
-      
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
+        // Check if MediaRecorder is supported
+        const mimeType = getSupportedMimeType();
+        if (mimeType === null) {
+          throw new Error("MediaRecorder not supported");
         }
-      };
 
-      mediaRecorderRef.current.onerror = (event) => {
-        console.error("[useGroqDictation] MediaRecorder error:", event);
-        const errorMsg = language === "uz" 
-          ? "Yozishda xatolik yuz berdi"
-          : language === "ru"
-          ? "Ошибка записи"
-          : language === "tr"
-          ? "Kayıt hatası"
-          : "Recording error";
+        // Create MediaRecorder FIRST before any AudioContext setup
+        // This is critical for iOS Safari compatibility
+        // If mimeType is empty string, don't pass options - let browser pick
+        const options = mimeType ? { mimeType } : undefined;
+        
+        console.log(`[useGroqDictation] Creating MediaRecorder with options:`, options);
+        mediaRecorderRef.current = new MediaRecorder(stream, options);
+        console.log(`[useGroqDictation] MediaRecorder created, actual mimeType: ${mediaRecorderRef.current.mimeType}`);
+        
+        mediaRecorderRef.current.ondataavailable = (event) => {
+          console.log(`[useGroqDictation] ondataavailable: ${event.data.size} bytes`);
+          if (event.data.size > 0) {
+            audioChunksRef.current.push(event.data);
+          }
+        };
+
+        mediaRecorderRef.current.onerror = (event) => {
+          console.error("[useGroqDictation] MediaRecorder error:", event);
+          const errorMsg = language === "uz" 
+            ? "Yozishda xatolik yuz berdi"
+            : language === "ru"
+            ? "Ошибка записи"
+            : language === "tr"
+            ? "Kayıt hatası"
+            : "Recording error";
+          setError(errorMsg);
+          onError?.(errorMsg);
+          cleanup();
+          isRecordingRef.current = false;
+          setIsRecording(false);
+          isStartingRef.current = false;
+        };
+
+        // Start recording with timeslice for chunks
+        console.log("[useGroqDictation] Starting MediaRecorder with 250ms timeslice...");
+        mediaRecorderRef.current.start(250); // Collect data every 250ms
+        startTimeRef.current = Date.now();
+        isRecordingRef.current = true;
+        setIsRecording(true);
+        isStartingRef.current = false;
+        console.log("[useGroqDictation] Recording started!");
+
+        // Haptic feedback
+        navigator.vibrate?.(10);
+        
+        // Start amplitude animation immediately (will use fallback if no analyser)
+        animationFrameRef.current = requestAnimationFrame(updateAmplitude);
+
+        // Setup audio analysis for waveform AFTER MediaRecorder starts
+        // Use a separate audio track clone to avoid interfering with MediaRecorder on iOS
+        try {
+          const audioTrack = stream.getAudioTracks()[0];
+          if (audioTrack) {
+            // Clone the track for analysis to avoid iOS Safari conflicts
+            const analysisStream = new MediaStream([audioTrack.clone()]);
+            
+            audioContextRef.current = new AudioContext();
+            // Resume AudioContext (required for iOS Safari)
+            if (audioContextRef.current.state === "suspended") {
+              await audioContextRef.current.resume();
+            }
+            
+            analyserRef.current = audioContextRef.current.createAnalyser();
+            analyserRef.current.fftSize = 256;
+            const source = audioContextRef.current.createMediaStreamSource(analysisStream);
+            source.connect(analyserRef.current);
+            console.log("[useGroqDictation] Audio analysis setup complete");
+          }
+        } catch (audioErr) {
+          // If AudioContext setup fails, amplitude animation continues with fallback
+          console.warn("[useGroqDictation] AudioContext setup failed, using simulated waveform:", audioErr);
+        }
+
+        // Start elapsed time counter
+        setElapsedSeconds(0);
+        timerRef.current = window.setInterval(() => {
+          const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+          setElapsedSeconds(elapsed);
+
+          // Auto-stop at max duration
+          if (elapsed >= MAX_DURATION_SECONDS) {
+            console.log("[useGroqDictation] Max duration reached, auto-stopping");
+            // Will be handled by the component
+          }
+        }, 1000);
+
+      } catch (err) {
+        console.error("[useGroqDictation] Failed to start recording:", err);
+        isStartingRef.current = false;
+        
+        let errorMsg: string;
+        if ((err as Error).name === "NotAllowedError") {
+          errorMsg = language === "uz" 
+            ? "Mikrofonga ruxsat berilmadi"
+            : language === "ru"
+            ? "Доступ к микрофону запрещен"
+            : language === "tr"
+            ? "Mikrofon izni reddedildi"
+            : "Microphone permission denied";
+        } else {
+          errorMsg = language === "uz" 
+            ? "Mikrofonni ishga tushirib bo'lmadi"
+            : language === "ru"
+            ? "Не удалось запустить микрофон"
+            : language === "tr"
+            ? "Mikrofon başlatılamadı"
+            : "Could not start microphone";
+        }
+        
         setError(errorMsg);
         onError?.(errorMsg);
         cleanup();
+        isRecordingRef.current = false;
         setIsRecording(false);
-      };
-
-      // Start recording BEFORE setting up AudioContext
-      // iOS Safari requires MediaRecorder to start before AudioContext connects
-      mediaRecorderRef.current.start(100); // Collect data every 100ms
-      startTimeRef.current = Date.now();
-      isRecordingRef.current = true;
-      setIsRecording(true);
-
-      // Haptic feedback
-      navigator.vibrate?.(10);
-      
-      // Start amplitude animation immediately (will use fallback if no analyser)
-      animationFrameRef.current = requestAnimationFrame(updateAmplitude);
-
-      // Setup audio analysis for waveform AFTER MediaRecorder starts
-      // Use a separate audio track clone to avoid interfering with MediaRecorder on iOS
-      try {
-        const audioTrack = stream.getAudioTracks()[0];
-        if (audioTrack) {
-          // Clone the track for analysis to avoid iOS Safari conflicts
-          const analysisStream = new MediaStream([audioTrack.clone()]);
-          
-          audioContextRef.current = new AudioContext();
-          // Resume AudioContext (required for iOS Safari)
-          if (audioContextRef.current.state === "suspended") {
-            await audioContextRef.current.resume();
-          }
-          
-          analyserRef.current = audioContextRef.current.createAnalyser();
-          analyserRef.current.fftSize = 256;
-          const source = audioContextRef.current.createMediaStreamSource(analysisStream);
-          source.connect(analyserRef.current);
-        }
-      } catch (audioErr) {
-        // If AudioContext setup fails, amplitude animation continues with fallback
-        console.warn("[useGroqDictation] AudioContext setup failed, using simulated waveform:", audioErr);
+        navigator.vibrate?.([30, 20, 30]); // Error haptic
       }
+    };
 
-      // Start elapsed time counter
-      setElapsedSeconds(0);
-      timerRef.current = window.setInterval(() => {
-        const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
-        setElapsedSeconds(elapsed);
-
-        // Auto-stop at max duration
-        if (elapsed >= MAX_DURATION_SECONDS) {
-          console.log("[useGroqDictation] Max duration reached, auto-stopping");
-          // Will be handled by the component
-        }
-      }, 1000);
-
-    } catch (err) {
-      console.error("[useGroqDictation] Failed to start recording:", err);
-      
-      let errorMsg: string;
-      if ((err as Error).name === "NotAllowedError") {
-        errorMsg = language === "uz" 
-          ? "Mikrofonga ruxsat berilmadi"
-          : language === "ru"
-          ? "Доступ к микрофону запрещен"
-          : language === "tr"
-          ? "Mikrofon izni reddedildi"
-          : "Microphone permission denied";
-      } else {
-        errorMsg = language === "uz" 
-          ? "Mikrofonni ishga tushirib bo'lmadi"
-          : language === "ru"
-          ? "Не удалось запустить микрофон"
-          : language === "tr"
-          ? "Mikrofon başlatılamadı"
-          : "Could not start microphone";
-      }
-      
-      setError(errorMsg);
-      onError?.(errorMsg);
-      cleanup();
-      setIsRecording(false);
-      navigator.vibrate?.([30, 20, 30]); // Error haptic
-    }
+    startPromiseRef.current = startInternal();
+    await startPromiseRef.current;
   }, [language, onError, cleanup, updateAmplitude, getSupportedMimeType]);
 
   // Stop recording and transcribe
   const stop = useCallback(async (): Promise<string> => {
-    if (!mediaRecorderRef.current || !isRecording) {
+    console.log("[useGroqDictation] stop() called, isRecording:", isRecordingRef.current, "isStarting:", isStartingRef.current);
+    
+    // If start is still in progress, wait for it
+    if (isStartingRef.current && startPromiseRef.current) {
+      console.log("[useGroqDictation] Waiting for start to complete...");
+      await startPromiseRef.current;
+    }
+    
+    // Now check if we have a recorder
+    if (!mediaRecorderRef.current || !isRecordingRef.current) {
+      console.log("[useGroqDictation] No active recording to stop");
       return "";
     }
 
     lastRecordingTimeRef.current = Date.now();
     const duration = Math.floor((Date.now() - startTimeRef.current) / 1000);
+    console.log(`[useGroqDictation] Stopping recording after ${duration}s`);
 
     return new Promise((resolve) => {
-      mediaRecorderRef.current!.onstop = async () => {
+      const recorder = mediaRecorderRef.current!;
+      
+      recorder.onstop = async () => {
+        console.log("[useGroqDictation] MediaRecorder.onstop fired");
         isRecordingRef.current = false;
         setIsRecording(false);
         cleanup();
@@ -293,31 +337,35 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
         navigator.vibrate?.(10);
 
         // Check if we have audio data
-        if (audioChunksRef.current.length === 0) {
+        const chunks = audioChunksRef.current;
+        console.log(`[useGroqDictation] Audio chunks collected: ${chunks.length}`);
+        
+        if (chunks.length === 0) {
           console.log("[useGroqDictation] No audio data recorded");
           resolve("");
           return;
         }
 
         // Create blob from chunks
-        const mimeType = mediaRecorderRef.current?.mimeType || "audio/webm";
-        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        const mimeType = recorder.mimeType || "audio/webm";
+        const audioBlob = new Blob(chunks, { type: mimeType });
         
         console.log(`[useGroqDictation] Audio blob: ${audioBlob.size} bytes, type: ${mimeType}`);
 
         // Skip if too small (likely empty)
         if (audioBlob.size < 1000) {
-          console.log("[useGroqDictation] Audio too small, skipping transcription");
+          console.log("[useGroqDictation] Audio too small (<1000 bytes), skipping transcription");
           resolve("");
           return;
         }
 
         setIsTranscribing(true);
+        console.log("[useGroqDictation] Starting transcription...");
 
         try {
           // Prepare form data with correct file extension based on actual MIME type
           const formData = new FormData();
-          const actualMime = mediaRecorderRef.current?.mimeType || mimeType;
+          const actualMime = recorder.mimeType || mimeType;
           const extension = actualMime.includes("mp4") || actualMime.includes("m4a") ? "m4a" 
                           : actualMime.includes("webm") ? "webm"
                           : actualMime.includes("ogg") ? "ogg"
@@ -373,9 +421,17 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
         }
       };
 
+      // Force a final data chunk before stopping
+      try {
+        recorder.requestData();
+      } catch (e) {
+        console.warn("[useGroqDictation] requestData() not supported or failed:", e);
+      }
+      
       // Stop recording
       try {
-        mediaRecorderRef.current!.stop();
+        console.log("[useGroqDictation] Calling MediaRecorder.stop()...");
+        recorder.stop();
       } catch (e) {
         console.error("[useGroqDictation] Error stopping MediaRecorder:", e);
         isRecordingRef.current = false;
@@ -384,10 +440,11 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
         resolve("");
       }
     });
-  }, [isRecording, language, onError, cleanup]);
+  }, [language, onError, cleanup]);
 
   // Cancel recording without transcribing
   const cancel = useCallback(() => {
+    console.log("[useGroqDictation] cancel() called");
     if (mediaRecorderRef.current && isRecordingRef.current) {
       try {
         mediaRecorderRef.current.stop();
@@ -397,6 +454,7 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
     }
     mediaRecorderRef.current = null;
     isRecordingRef.current = false;
+    isStartingRef.current = false;
     setIsRecording(false);
     setIsTranscribing(false);
     setError(null);
