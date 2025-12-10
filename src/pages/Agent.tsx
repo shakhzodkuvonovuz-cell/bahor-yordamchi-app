@@ -635,7 +635,45 @@ export default function Agent() {
   };
 
   const completedSteps = steps.filter((s) => s.status === "done").length;
+  const runningSteps = steps.filter((s) => s.status === "running").length;
   const totalSteps = steps.length;
+  
+  // Calculate estimated time remaining
+  const [runStartTime, setRunStartTime] = useState<number | null>(null);
+  
+  useEffect(() => {
+    if (isRunning && !runStartTime) {
+      setRunStartTime(Date.now());
+    } else if (!isRunning) {
+      setRunStartTime(null);
+    }
+  }, [isRunning]);
+  
+  const getEstimatedTimeRemaining = () => {
+    if (!runStartTime || totalSteps === 0 || completedSteps === 0) {
+      // Default estimate: ~5 seconds per step
+      const remainingSteps = totalSteps - completedSteps;
+      if (remainingSteps > 0) {
+        const seconds = remainingSteps * 5;
+        return seconds >= 60 ? `~${Math.ceil(seconds / 60)} daqiqa` : `~${seconds} soniya`;
+      }
+      return null;
+    }
+    
+    const elapsedMs = Date.now() - runStartTime;
+    const msPerStep = elapsedMs / completedSteps;
+    const remainingSteps = totalSteps - completedSteps;
+    const remainingMs = remainingSteps * msPerStep;
+    const remainingSeconds = Math.ceil(remainingMs / 1000);
+    
+    if (remainingSeconds <= 0) return null;
+    if (remainingSeconds >= 60) {
+      return `~${Math.ceil(remainingSeconds / 60)} daqiqa`;
+    }
+    return `~${remainingSeconds} soniya`;
+  };
+  
+  const estimatedTime = isRunning ? getEstimatedTimeRemaining() : null;
 
   const handleExportPDF = async () => {
     if (!currentRun?.final_output) return;
@@ -1103,9 +1141,12 @@ export default function Agent() {
               To'xtatish
             </Button>
             {totalSteps > 0 && (
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 <span>{completedSteps}/{totalSteps} qadam</span>
+                {estimatedTime && (
+                  <span className="text-primary/70">• {estimatedTime} qoldi</span>
+                )}
               </div>
             )}
           </>
@@ -1156,6 +1197,21 @@ export default function Agent() {
                 {completedSteps}/{totalSteps}
               </Badge>
             </CardTitle>
+            {/* Progress bar and time estimate */}
+            {isRunning && totalSteps > 0 && (
+              <div className="space-y-1.5 pt-2">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{Math.round((completedSteps / totalSteps) * 100)}% bajarildi</span>
+                  {estimatedTime && <span>{estimatedTime} qoldi</span>}
+                </div>
+                <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-primary transition-all duration-500 ease-out"
+                    style={{ width: `${(completedSteps / totalSteps) * 100}%` }}
+                  />
+                </div>
+              </div>
+            )}
           </CardHeader>
           <CardContent className="space-y-2">
             {steps.map((step, index) => (
