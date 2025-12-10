@@ -79,21 +79,53 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
     }
   }, [isRecording]);
 
-  // Get best supported audio MIME type
-  const getSupportedMimeType = useCallback((): string => {
-    const types = [
-      "audio/webm;codecs=opus",
-      "audio/webm",
-      "audio/mp4",
-      "audio/ogg;codecs=opus",
-      "audio/ogg",
-    ];
+  // Get best supported audio MIME type - iOS Safari friendly
+  const getSupportedMimeType = useCallback((): string | null => {
+    // Check if MediaRecorder exists at all
+    if (typeof MediaRecorder === "undefined") {
+      console.warn("[useGroqDictation] MediaRecorder not supported");
+      return null;
+    }
+    
+    // Detect iOS Safari
+    const isIOSSafari = /iPad|iPhone|iPod/.test(navigator.userAgent) && 
+                        !(window as any).MSStream &&
+                        /Safari/.test(navigator.userAgent);
+    
+    // Priority order differs by platform
+    // iOS Safari: prefer mp4/m4a, or let browser pick (empty string)
+    // Chrome/Android: prefer webm/opus
+    const types = isIOSSafari
+      ? [
+          "audio/mp4",
+          "audio/aac", 
+          "audio/mpeg",
+          "", // Let browser pick - often works best on iOS
+        ]
+      : [
+          "audio/webm;codecs=opus",
+          "audio/webm",
+          "audio/mp4",
+          "audio/ogg;codecs=opus",
+          "audio/ogg",
+          "", // Fallback: let browser pick
+        ];
+    
     for (const type of types) {
+      // Empty string = let browser pick
+      if (type === "") {
+        console.log("[useGroqDictation] Using browser default MIME type");
+        return "";
+      }
       if (MediaRecorder.isTypeSupported(type)) {
+        console.log(`[useGroqDictation] Selected MIME type: ${type}`);
         return type;
       }
     }
-    return ""; // Browser default
+    
+    // Final fallback: let browser pick
+    console.log("[useGroqDictation] No specific MIME supported, using browser default");
+    return "";
   }, []);
 
   // Start recording
@@ -119,12 +151,20 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
       });
       streamRef.current = stream;
 
+      // Check if MediaRecorder is supported
+      const mimeType = getSupportedMimeType();
+      if (mimeType === null) {
+        throw new Error("MediaRecorder not supported");
+      }
+
       // Create MediaRecorder FIRST before any AudioContext setup
       // This is critical for iOS Safari compatibility
-      const mimeType = getSupportedMimeType();
+      // If mimeType is empty string, don't pass options - let browser pick
       const options = mimeType ? { mimeType } : undefined;
       
+      console.log(`[useGroqDictation] Creating MediaRecorder with options:`, options);
       mediaRecorderRef.current = new MediaRecorder(stream, options);
+      console.log(`[useGroqDictation] MediaRecorder created, actual mimeType: ${mediaRecorderRef.current.mimeType}`);
       
       mediaRecorderRef.current.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -270,16 +310,28 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
         setIsTranscribing(true);
 
         try {
-          // Prepare form data
+          // Prepare form data with correct file extension based on actual MIME type
           const formData = new FormData();
-          formData.append("file", audioBlob, "recording.webm");
+          const actualMime = mediaRecorderRef.current?.mimeType || mimeType;
+          const extension = actualMime.includes("mp4") || actualMime.includes("m4a") ? "m4a" 
+                          : actualMime.includes("webm") ? "webm"
+                          : actualMime.includes("ogg") ? "ogg"
+                          : actualMime.includes("aac") ? "aac"
+                          : actualMime.includes("mpeg") ? "mp3"
+                          : "webm"; // Default fallback
+          
+          console.log(`[useGroqDictation] Sending to STT: mime=${actualMime}, ext=${extension}, size=${audioBlob.size}`);
+          
+          formData.append("file", audioBlob, `recording.${extension}`);
           formData.append("ui_language", language);
           formData.append("duration_seconds", String(duration));
 
           // Call edge function
+          console.log("[useGroqDictation] Invoking stt-groq edge function...");
           const { data, error: funcError } = await supabase.functions.invoke("stt-groq", {
             body: formData,
           });
+          console.log("[useGroqDictation] Edge function response:", { data, error: funcError });
 
           if (funcError) {
             console.error("[useGroqDictation] Edge function error:", funcError);
