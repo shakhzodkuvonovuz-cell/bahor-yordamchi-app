@@ -388,7 +388,7 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
 
   // Cancel recording without transcribing
   const cancel = useCallback(() => {
-    if (mediaRecorderRef.current && isRecording) {
+    if (mediaRecorderRef.current && isRecordingRef.current) {
       try {
         mediaRecorderRef.current.stop();
       } catch (e) {
@@ -402,17 +402,36 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
     setError(null);
     cleanup();
     lastRecordingTimeRef.current = Date.now();
-  }, [isRecording, cleanup]);
+  }, [cleanup]);
 
   // Check if max duration reached
   const hasReachedMaxDuration = elapsedSeconds >= MAX_DURATION_SECONDS;
 
-  // Cleanup on unmount
+  // Cleanup on unmount only - stable ref to avoid re-running on state changes
   useEffect(() => {
     return () => {
-      cancel();
+      // Use refs to check state, not the state values directly
+      if (isRecordingRef.current && mediaRecorderRef.current) {
+        try {
+          mediaRecorderRef.current.stop();
+        } catch (e) {
+          // Ignore
+        }
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+        audioContextRef.current.close();
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
     };
-  }, [cancel]);
+  }, []); // Empty deps - only run on unmount
 
   return {
     isRecording,
