@@ -170,6 +170,24 @@ serve(async (req) => {
         );
       }
 
+      // Handle "audio too short" error specifically - likely WebM container issue
+      if (errorText.includes("too short")) {
+        console.log(`[stt-groq:${requestId}] Audio too short error - trying with different format hint`);
+        return new Response(
+          JSON.stringify({ 
+            error: "audio_too_short",
+            message: uiLanguage === "uz" 
+              ? "Audio juda qisqa. Kamida 1 soniya gapiring."
+              : uiLanguage === "ru"
+              ? "Аудио слишком короткое. Говорите минимум 1 секунду."
+              : uiLanguage === "tr"
+              ? "Ses çok kısa. En az 1 saniye konuşun."
+              : "Audio too short. Speak for at least 1 second."
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       // Generic error
       return new Response(
         JSON.stringify({ 
