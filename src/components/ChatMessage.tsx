@@ -9,6 +9,7 @@ import { formatAssistantText } from "@/lib/formatAssistant";
 import { track } from "@/lib/analytics";
 import { ImageLightbox } from "@/components/ImageLightbox";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import MarkdownContent from "@/components/chat/MarkdownContent";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface ChatMessageProps {
@@ -232,18 +233,26 @@ function ChatMessageComponent({
     const displayContent = isUser ? message.content : formatAssistantText(message.content, 'uz');
     
     if (!parsedSections) {
+      // User messages: plain text with simple styling (no markdown parsing needed)
+      if (isUser) {
+        const contentElement = (
+          <div className="text-[15px] leading-7 tracking-[0.01em] whitespace-pre-wrap [overflow-wrap:anywhere] [word-break:break-word] text-primary-foreground">
+            {displayContent}
+          </div>
+        );
+        return contentElement;
+      }
+      
+      // AI messages: render with full Markdown support
       const contentElement = (
-        <div
-          className={`text-[15px] leading-[1.75] whitespace-pre-wrap [overflow-wrap:anywhere] [word-break:break-word] [&_pre]:mt-3 [&_pre]:rounded-xl [&_pre]:bg-secondary/80 [&_pre]:text-foreground [&_pre]:text-[13px] [&_pre]:p-4 [&_pre]:overflow-x-auto [&_pre]:max-w-full [&_code]:font-mono [&_code]:text-[13px] [&_a]:text-primary [&_a]:underline [&_a]:break-all ${
-            isUser ? "text-primary-foreground" : "text-foreground"
-          }`}
-        >
-          {displayContent}
-        </div>
+        <MarkdownContent 
+          content={displayContent} 
+          className="text-foreground"
+        />
       );
       
       // Wrap long assistant messages in CollapsibleMessage
-      if (!isUser && displayContent.length > 900) {
+      if (displayContent.length > 900) {
         return (
           <CollapsibleMessage content={displayContent} maxLines={12} maxChars={900}>
             {contentElement}
@@ -268,13 +277,13 @@ function ChatMessageComponent({
               />
             );
           }
+          // Use MarkdownContent for card text sections too
           return (
-            <div
+            <MarkdownContent
               key={idx}
-              className="text-[15px] leading-[1.75] whitespace-pre-wrap [overflow-wrap:anywhere] [word-break:break-word] text-foreground"
-            >
-              {section.content}
-            </div>
+              content={section.content}
+              className="text-foreground"
+            />
           );
         })}
       </div>
