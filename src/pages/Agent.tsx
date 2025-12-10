@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { 
   Bot, Play, Square, RotateCcw, Check, Loader2, AlertCircle, Sparkles, 
   ExternalLink, ChevronDown, ChevronUp, Save, Upload, File, X, Link2,
-  StickyNote, FileText, Copy, Settings2, Image, Download, ZoomIn
+  StickyNote, FileText, Copy, Settings2, Image, Download, ZoomIn, History,
+  Clock, Trash2, Eye, RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -85,6 +86,11 @@ export default function Agent() {
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   
+  // History state
+  const [showHistory, setShowHistory] = useState(false);
+  const [pastRuns, setPastRuns] = useState<AgentRun[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  
   // Constraints
   const [showConstraints, setShowConstraints] = useState(false);
   const [constraints, setConstraints] = useState({
@@ -93,6 +99,91 @@ export default function Agent() {
     language: language as string,
     audience: "",
   });
+
+  // Load history
+  const loadHistory = useCallback(async () => {
+    if (!user) return;
+    setLoadingHistory(true);
+    try {
+      const { data } = await supabase
+        .from("agent_runs")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      
+      if (data) {
+        setPastRuns(data as unknown as AgentRun[]);
+      }
+    } catch (error) {
+      console.error("Load history error:", error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (showHistory && user) {
+      loadHistory();
+    }
+  }, [showHistory, user, loadHistory]);
+
+  const handleViewPastRun = async (run: AgentRun) => {
+    setCurrentRun(run);
+    setShowHistory(false);
+    setActiveTab("results");
+    setGeneratedImages([]);
+    
+    // Load steps for this run
+    const { data: stepsData } = await supabase
+      .from("agent_steps")
+      .select("*")
+      .eq("run_id", run.id)
+      .order("step_index", { ascending: true });
+    
+    if (stepsData) {
+      setSteps(stepsData as unknown as AgentStep[]);
+      
+      // Extract images from steps
+      const images: GeneratedImage[] = [];
+      stepsData.forEach((step: any) => {
+        if (step.tool_output?.imageUrl) {
+          images.push({
+            url: step.tool_output.imageUrl,
+            stepIndex: step.step_index,
+            stepTitle: step.title,
+          });
+        }
+      });
+      setGeneratedImages(images);
+    }
+  };
+
+  const handleRerun = (run: AgentRun) => {
+    setGoal(run.goal);
+    setCurrentRun(null);
+    setSteps([]);
+    setGeneratedImages([]);
+    setShowHistory(false);
+    toast.info("Maqsad kiritildi. Ishga tushirish uchun bosing.");
+  };
+
+  const handleDeleteRun = async (runId: string) => {
+    try {
+      await supabase.from("agent_steps").delete().eq("run_id", runId);
+      await supabase.from("agent_runs").delete().eq("id", runId);
+      setPastRuns((prev) => prev.filter((r) => r.id !== runId));
+      if (currentRun?.id === runId) {
+        setCurrentRun(null);
+        setSteps([]);
+        setGeneratedImages([]);
+      }
+      toast.success("O'chirildi");
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error("O'chirishda xato");
+    }
+  };
 
   // Subscribe to step updates
   useEffect(() => {
@@ -546,13 +637,114 @@ export default function Agent() {
         <div className="p-1.5 rounded-lg bg-primary/10">
           <Bot className="h-5 w-5 text-primary" />
         </div>
-        <div>
+        <div className="flex-1">
           <h1 className="text-lg font-semibold">{t("agent.title") || "Agent"}</h1>
           <p className="text-xs text-muted-foreground">
             AI ko'p bosqichli vazifalarni rejalashtiradi va bajaradi
           </p>
         </div>
+        <Button 
+          variant={showHistory ? "secondary" : "outline"} 
+          size="sm" 
+          onClick={() => setShowHistory(!showHistory)}
+          className="gap-1.5 h-8 text-xs"
+        >
+          <History className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Tarix</span>
+        </Button>
       </div>
+
+      {/* History Panel */}
+      {showHistory && (
+        <Card className="border-primary/20">
+          <CardHeader className="py-2 px-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Clock className="h-4 w-4 text-primary" />
+                Oldingi ishlar
+              </CardTitle>
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setShowHistory(false)}>
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="px-3 pb-3 max-h-[240px] overflow-auto">
+            {loadingHistory ? (
+              <div className="space-y-2">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+            ) : pastRuns.length === 0 ? (
+              <div className="text-center py-4 text-muted-foreground">
+                <History className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                <p className="text-xs">Hali hech qanday ish bajarilmagan</p>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                {pastRuns.map((run) => (
+                  <div
+                    key={run.id}
+                    className={cn(
+                      "flex items-start gap-2 p-2 rounded-lg transition-colors hover:bg-muted/50",
+                      currentRun?.id === run.id && "bg-primary/5 border border-primary/20"
+                    )}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium line-clamp-2">{run.goal}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge 
+                          variant={run.status === "done" ? "secondary" : run.status === "error" ? "destructive" : "outline"} 
+                          className="text-[9px] h-4"
+                        >
+                          {run.status === "done" ? "Tayyor" : run.status === "error" ? "Xato" : run.status}
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground">
+                          {new Date(run.created_at).toLocaleDateString("uz-UZ", {
+                            day: "2-digit",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex gap-1 flex-shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0"
+                        onClick={() => handleViewPastRun(run)}
+                        title="Ko'rish"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0"
+                        onClick={() => handleRerun(run)}
+                        title="Qayta ishga tushirish"
+                      >
+                        <RefreshCw className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                        onClick={() => handleDeleteRun(run.id)}
+                        title="O'chirish"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Goal Input */}
       <Card>
