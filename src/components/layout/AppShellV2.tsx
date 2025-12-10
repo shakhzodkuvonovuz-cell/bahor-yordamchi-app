@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SidebarV2 } from "./SidebarV2";
+import { useNativeHaptics } from "@/hooks/useNativeHaptics";
 import bahorLogo from "@/assets/bahor-logo.png";
 
 interface AppShellV2Props {
@@ -13,6 +14,7 @@ export function AppShellV2({ children }: AppShellV2Props) {
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const { onSidebarToggle } = useNativeHaptics();
 
   // Close drawer on route change
   useEffect(() => {
@@ -55,8 +57,15 @@ export function AppShellV2({ children }: AppShellV2Props) {
 
   // Handle drawer close with callback for sidebar navigation
   const handleDrawerClose = useCallback(() => {
+    onSidebarToggle();
     setDrawerOpen(false);
-  }, []);
+  }, [onSidebarToggle]);
+
+  // Handle drawer open
+  const handleDrawerOpen = useCallback(() => {
+    onSidebarToggle();
+    setDrawerOpen(true);
+  }, [onSidebarToggle]);
 
   // Get page title based on current route
   const getPageTitle = () => {
@@ -92,8 +101,8 @@ export function AppShellV2({ children }: AppShellV2Props) {
       {!hidesMobileHeader && (
         <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-background/95 backdrop-blur-md border-b border-border z-40 flex items-center justify-between px-4 safe-area-top">
           <button
-            onClick={() => setDrawerOpen(true)}
-            className="p-2 -ml-2 rounded-lg hover:bg-accent transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+            onClick={handleDrawerOpen}
+            className="p-2 -ml-2 rounded-lg hover:bg-accent transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center touch-feedback"
             aria-label="Open menu"
           >
             <Menu className="w-5 h-5 text-foreground" />
@@ -133,7 +142,7 @@ export function AppShellV2({ children }: AppShellV2Props) {
         <div className="flex items-center justify-end p-2 border-b border-border safe-area-top">
           <button
             onClick={handleDrawerClose}
-            className="p-2 rounded-lg hover:bg-accent transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="p-2 rounded-lg hover:bg-accent transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center touch-feedback"
             aria-label="Close menu"
           >
             <X className="w-5 h-5 text-foreground" />

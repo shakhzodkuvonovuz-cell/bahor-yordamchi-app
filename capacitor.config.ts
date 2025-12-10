@@ -13,6 +13,22 @@ const config: CapacitorConfig = {
   plugins: {
     Browser: {},
     App: {},
+    Haptics: {},
+    Keyboard: {
+      // Resize behavior - adjusts viewport when keyboard opens
+      resize: 'body',
+      // Don't auto-scroll to focused input (we handle this manually)
+      scrollAssist: false,
+    },
+  },
+  ios: {
+    // Smooth scrolling and keyboard handling
+    scrollEnabled: true,
+    allowsLinkPreview: false,
+  },
+  android: {
+    // Use adjustResize for keyboard handling
+    adjustResize: true,
   },
 };
 

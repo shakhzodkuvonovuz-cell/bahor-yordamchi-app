@@ -267,16 +267,40 @@
 
 /* ============================================
    MOBILE PERFORMANCE OPTIMIZATIONS
-   Reduce heavy blur/shadows that cause jank
+   Platform-aware blur/shadow reduction
    ============================================ */
-@media screen and (max-width: 768px) {
-  /* Reduce backdrop-filter intensity on mobile (iOS hates blur-2xl) */
+
+/* iOS-specific optimizations - more aggressive blur reduction */
+@supports (-webkit-touch-callout: none) {
+  /* iOS devices only */
   .glass,
   .glass-strong,
   .glass-card,
   .glass-premium {
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+  }
+  
+  /* Reduce blur on large overlays for iOS */
+  .glass-strong,
+  .glass-premium {
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  /* Reduce backdrop-filter intensity on mobile */
+  .glass,
+  .glass-card {
     backdrop-filter: blur(8px) !important;
     -webkit-backdrop-filter: blur(8px) !important;
+  }
+  
+  .glass-strong,
+  .glass-premium {
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
   }
   
   /* Disable heavy blur on large overlays */
@@ -285,11 +309,14 @@
     -webkit-backdrop-filter: none !important;
   }
   
-  /* Reduce animation complexity */
+  /* Keep animations but reduce complexity on mobile */
   .animate-float,
-  .animate-float-slow,
+  .animate-float-slow {
+    animation-duration: 8s !important;
+  }
+  
   .animate-pulse-glow {
-    animation: none !important;
+    animation-duration: 4s !important;
   }
   
   /* Optimize transforms for GPU */
@@ -302,6 +329,51 @@
   .elevation-3,
   .elevation-4 {
     box-shadow: var(--elevation-2) !important;
+  }
+}
+
+/* GPU acceleration hints for smooth scrolling */
+.gpu-accelerated {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* ============================================
+   NATIVE TOUCH FEEDBACK (pressed states)
+   Makes buttons feel responsive on mobile
+   ============================================ */
+.touch-feedback {
+  @apply transition-all duration-100;
+}
+
+.touch-feedback:active {
+  @apply scale-[0.97] opacity-90;
+}
+
+/* Button pressed state for all interactive elements */
+button:not(:disabled):active,
+[role="button"]:not(:disabled):active {
+  transform: scale(0.98);
+  opacity: 0.95;
+}
+
+/* Prevent double-tap zoom on interactive elements */
+button,
+[role="button"],
+a,
+input,
+textarea,
+select {
+  touch-action: manipulation;
+}
+
+/* Smooth tap highlight for iOS */
+@supports (-webkit-touch-callout: none) {
+  button,
+  [role="button"],
+  a {
+    -webkit-tap-highlight-color: hsl(var(--primary) / 0.1);
   }
 }
 
