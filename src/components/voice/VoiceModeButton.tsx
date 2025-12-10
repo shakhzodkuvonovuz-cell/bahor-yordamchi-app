@@ -6,13 +6,10 @@ import { useTranslation } from "@/i18n/LanguageProvider";
 interface VoiceModeButtonProps {
   disabled?: boolean;
   className?: string;
-  // Push-to-talk props
   onDictationStart?: () => void;
   onDictationEnd?: () => void;
   isDictating?: boolean;
 }
-
-const CANCEL_DISTANCE = 150; // px - more forgiving drag distance
 
 export default function VoiceModeButton({ 
   disabled, 
@@ -22,30 +19,38 @@ export default function VoiceModeButton({
   isDictating = false,
 }: VoiceModeButtonProps) {
   const { t } = useTranslation();
-  const pressStartRef = useRef<{ x: number; y: number } | null>(null);
-  // Track if we started dictation locally (use ref to avoid sync issues with async start)
-  const localActiveRef = useRef(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const pointerIdRef = useRef<number | null>(null);
   const [isPressed, setIsPressed] = useState(false);
-  // Counter to force re-render when ref changes
-  const [renderKey, setRenderKey] = useState(0);
+  // Track if we initiated recording (prevents double-stop calls)
+  const hasStartedRef = useRef(false);
   
-  // When parent's isDictating becomes false, reset local ref too
-  useEffect(() => {
-    if (!isDictating && localActiveRef.current) {
-      localActiveRef.current = false;
-      setRenderKey(k => k + 1);
+  // Cleanup function to stop recording
+  const stopRecording = useCallback(() => {
+    if (hasStartedRef.current) {
+      console.log("[VoiceModeButton] stopRecording called");
+      hasStartedRef.current = false;
+      setIsPressed(false);
+      onDictationEnd?.();
+      navigator.vibrate?.(10);
     }
-  }, [isDictating]);
-  
-  // Handle window blur and visibility changes to stop recording
+    // Release pointer capture if held
+    if (buttonRef.current && pointerIdRef.current !== null) {
+      try {
+        buttonRef.current.releasePointerCapture(pointerIdRef.current);
+      } catch (e) {
+        // Ignore - pointer may already be released
+      }
+      pointerIdRef.current = null;
+    }
+  }, [onDictationEnd]);
+
+  // Global safety stops for mobile (tab switch, app background, call)
   useEffect(() => {
     const handleStop = () => {
-      if (localActiveRef.current) {
-        console.log("[VoiceModeButton] Window blur/hidden - stopping recording");
-        localActiveRef.current = false;
-        setRenderKey(k => k + 1);
-        setIsPressed(false);
-        onDictationEnd?.();
+      if (hasStartedRef.current) {
+        console.log("[VoiceModeButton] Window blur/visibility - stopping");
+        stopRecording();
       }
     };
     
@@ -60,78 +65,71 @@ export default function VoiceModeButton({
       window.removeEventListener("blur", handleStop);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [onDictationEnd]);
+  }, [stopRecording]);
+
+  // Sync with parent isDictating state
+  useEffect(() => {
+    if (!isDictating && hasStartedRef.current) {
+      // Parent says not dictating but we think we started - sync state
+      hasStartedRef.current = false;
+      setIsPressed(false);
+    }
+  }, [isDictating]);
   
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     if (disabled) return;
     
-    setIsPressed(true);
-    pressStartRef.current = { x: e.clientX, y: e.clientY };
+    e.preventDefault();
+    e.stopPropagation();
     
-    // Start dictation immediately on press (no long-press delay for push-to-talk)
-    localActiveRef.current = true;
-    setRenderKey(k => k + 1); // Force re-render to show active state
+    // Set pointer capture to ensure we get pointerup even if finger moves
+    if (buttonRef.current) {
+      try {
+        buttonRef.current.setPointerCapture(e.pointerId);
+        pointerIdRef.current = e.pointerId;
+      } catch (err) {
+        console.warn("[VoiceModeButton] setPointerCapture failed:", err);
+      }
+    }
+    
+    console.log("[VoiceModeButton] pointerDown - starting recording");
+    setIsPressed(true);
+    hasStartedRef.current = true;
     onDictationStart?.();
   }, [disabled, onDictationStart]);
   
-  const handlePointerUp = useCallback(() => {
-    setIsPressed(false);
-    
-    if (localActiveRef.current) {
-      // Was actively recording - end dictation
-      onDictationEnd?.();
-      // Reset local state
-      localActiveRef.current = false;
-      setRenderKey(k => k + 1);
-      // Haptic feedback on release
-      navigator.vibrate?.(10);
-    }
-    
-    pressStartRef.current = null;
-  }, [onDictationEnd]);
-  
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!pressStartRef.current || !localActiveRef.current) return;
-    
-    // Check if moved too far - cancel dictation
-    const dx = e.clientX - pressStartRef.current.x;
-    const dy = e.clientY - pressStartRef.current.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    
-    if (distance > CANCEL_DISTANCE) {
-      // Cancel dictation
-      localActiveRef.current = false;
-      setRenderKey(k => k + 1);
-      pressStartRef.current = null;
-      setIsPressed(false);
-      onDictationEnd?.();
-    }
-  }, [onDictationEnd]);
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log("[VoiceModeButton] pointerUp - stopping recording");
+    stopRecording();
+  }, [stopRecording]);
   
   const handlePointerCancel = useCallback(() => {
-    setIsPressed(false);
-    
-    // If dictation was started, end it properly
-    if (localActiveRef.current) {
-      localActiveRef.current = false;
-      setRenderKey(k => k + 1);
-      onDictationEnd?.();
+    console.log("[VoiceModeButton] pointerCancel - stopping recording");
+    stopRecording();
+  }, [stopRecording]);
+
+  const handlePointerLeave = useCallback(() => {
+    // Only stop if we're actively recording and pointer left without capture
+    // With pointer capture, pointerleave shouldn't fire, but as fallback:
+    if (hasStartedRef.current && pointerIdRef.current === null) {
+      console.log("[VoiceModeButton] pointerLeave without capture - stopping");
+      stopRecording();
     }
-    
-    pressStartRef.current = null;
-  }, [onDictationEnd]);
+  }, [stopRecording]);
   
-  // Visual state: show active if local ref says so OR parent says so
-  const showActive = localActiveRef.current || isDictating;
+  // Visual state
+  const showActive = isPressed || isDictating;
   
   return (
     <button
+      ref={buttonRef}
       type="button"
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
-      onPointerMove={handlePointerMove}
       onPointerCancel={handlePointerCancel}
-      // Don't use onPointerLeave - it fires too easily on mobile and kills recording
+      onPointerLeave={handlePointerLeave}
       disabled={disabled}
       aria-label={t('voice.dictation')}
       className={cn(
