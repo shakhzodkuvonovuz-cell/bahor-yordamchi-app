@@ -344,14 +344,16 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
         pushDebug("RECORDER_ONSTOP");
         isRecordingRef.current = false;
         setIsRecording(false);
-        cleanup();
         
         // Haptic feedback
         navigator.vibrate?.(10);
 
-        // Check if we have audio data
-        const chunks = audioChunksRef.current;
+        // CRITICAL: Copy chunks BEFORE cleanup (cleanup clears the array!)
+        const chunks = [...audioChunksRef.current];
         pushDebug(`CHUNKS_COUNT=${chunks.length}`);
+        
+        // Now cleanup (after copying chunks)
+        cleanup();
         
         if (chunks.length === 0) {
           pushDebug("NO_CHUNKS");
