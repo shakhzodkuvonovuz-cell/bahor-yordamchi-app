@@ -543,7 +543,7 @@ export default function AgentWorkspace() {
   const reportContent = run.final_report_md || run.final_output || "";
 
   return (
-    <div className="flex flex-col h-full overflow-hidden max-w-full">
+    <div className="flex flex-col h-[100dvh] overflow-hidden max-w-full">
       {/* Header */}
       <div className="flex items-center gap-2 p-2 sm:p-3 border-b bg-background/95 backdrop-blur shrink-0 min-w-0">
         <Button
@@ -790,9 +790,8 @@ export default function AgentWorkspace() {
             </div>
             
             {/* Report Tab */}
-            <TabsContent value="report" className="flex-1 overflow-auto mt-0 p-3 data-[state=inactive]:hidden">
-              <ScrollArea className="h-full w-full">
-                <div className="max-w-3xl mx-auto">
+            <TabsContent value="report" className="flex-1 overflow-y-auto mt-0 p-3">
+              <div className="max-w-3xl mx-auto pb-8">
                   {/* Report Content */}
                   <Card className="p-4 md:p-6">
                     <AiResponseRenderer content={reportContent} />
@@ -877,9 +876,8 @@ export default function AgentWorkspace() {
                       <RefreshCw className="h-3.5 w-3.5" />
                       Yangilash
                     </Button>
-                  </div>
                 </div>
-              </ScrollArea>
+              </div>
             </TabsContent>
             
             {/* Chat Tab */}
