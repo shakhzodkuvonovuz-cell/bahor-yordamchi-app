@@ -186,7 +186,7 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
       </div>
 
       {/* Primary Navigation */}
-      <nav className="flex-1 py-2 px-3 space-y-1 overflow-y-auto">
+      <nav className="flex-1 py-1.5 px-3 space-y-0.5 overflow-y-auto">
         {PRIMARY_NAV.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.path, item.isNewChat);
@@ -199,17 +199,17 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
               title={collapsed ? t(item.labelKey) : undefined}
               className={cn(
                 "w-full flex items-center gap-3 rounded-lg transition-all duration-200",
-                collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2.5",
+                collapsed ? "justify-center px-2 py-2" : "px-3 py-[9px]",
                 isNewChatBtn 
-                  ? "bg-secondary/60 text-foreground hover:bg-secondary font-medium border border-border/50 mb-1" 
+                  ? "bg-secondary/60 text-foreground hover:bg-secondary font-medium border border-border/50 mb-0.5" 
                   : active 
                     ? "bg-accent text-accent-foreground font-medium" 
                     : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
               )}
             >
-              <Icon className="flex-shrink-0 w-5 h-5" />
+              <Icon className="flex-shrink-0 w-[18px] h-[18px]" />
               {!collapsed && (
-                <span className="text-sm truncate">{t(item.labelKey)}</span>
+                <span className="text-[13px] truncate">{t(item.labelKey)}</span>
               )}
             </button>
           );
@@ -217,12 +217,12 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
       </nav>
 
       {/* Divider */}
-      <div className="px-4 py-1.5">
+      <div className="px-4 py-1">
         <div className="h-px bg-border/60" />
       </div>
 
       {/* Secondary Navigation */}
-      <nav className="py-1.5 px-3 space-y-0.5">
+      <nav className="py-1 px-3 space-y-0">
         {SECONDARY_NAV.map((item) => {
           const Icon = item.icon;
           const isPremium = item.id === "premium";
@@ -233,7 +233,7 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
               title={collapsed ? t(item.labelKey) : undefined}
               className={cn(
                 "w-full flex items-center gap-2.5 rounded-lg transition-all duration-200",
-                collapsed ? "justify-center px-2 py-2" : "px-3 py-2",
+                collapsed ? "justify-center px-2 py-1.5" : "px-3 py-1.5",
                 isPremium 
                   ? "text-amber-500 hover:bg-amber-500/10"
                   : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
@@ -244,7 +244,7 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
                 isPremium && "text-amber-500"
               )} />
               {!collapsed && (
-                <span className="text-[13px] truncate">{t(item.labelKey)}</span>
+                <span className="text-xs truncate">{t(item.labelKey)}</span>
               )}
             </button>
           );
@@ -252,7 +252,7 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
       </nav>
 
       {/* Account Section */}
-      <div className="px-3 py-2 border-t border-border">
+      <div className="px-3 py-1.5 border-t border-border">
         <button
           onClick={() => { 
             onNavigate?.(); 
@@ -261,24 +261,21 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
           }}
           title={collapsed ? t("sidebar.account") : undefined}
           className={cn(
-            "w-full flex items-center gap-2.5 rounded-lg transition-all duration-200 hover:bg-accent/50",
-            collapsed ? "justify-center px-2 py-2" : "px-3 py-2",
+            "w-full flex items-center gap-2 rounded-lg transition-all duration-200 hover:bg-accent/50",
+            collapsed ? "justify-center px-2 py-1.5" : "px-2.5 py-1.5",
             location.pathname === "/settings" && "bg-accent"
           )}
         >
-          <Avatar className="h-7 w-7 flex-shrink-0">
+          <Avatar className="h-6 w-6 flex-shrink-0">
             <AvatarImage src={profile?.avatar_url || undefined} alt="Avatar" />
-            <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-medium">
+            <AvatarFallback className="bg-primary/10 text-primary text-[9px] font-medium">
               {getUserInitials()}
             </AvatarFallback>
           </Avatar>
           {!collapsed && (
             <div className="flex-1 text-left min-w-0">
-              <p className="text-sm font-medium text-foreground truncate leading-tight">
+              <p className="text-xs font-medium text-foreground truncate leading-tight">
                 {profile?.first_name || profile?.full_name?.split(" ")[0] || t("sidebar.account")}
-              </p>
-              <p className="text-[10px] text-muted-foreground/70 truncate leading-tight">
-                v1.0 beta
               </p>
             </div>
           )}
