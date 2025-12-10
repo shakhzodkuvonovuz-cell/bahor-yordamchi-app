@@ -142,6 +142,29 @@ export default function Agent() {
     return fileReadiness.failedCount > 0 && fileReadiness.processingCount === 0;
   }, [goal, isRunning, runWithoutFiles, files.length, fileReadiness]);
   
+  // Sync files state with extraction status from hook
+  useEffect(() => {
+    if (fileReadiness.fileStatuses.length === 0) return;
+    
+    setFiles(prevFiles => {
+      let hasChanges = false;
+      const updated = prevFiles.map(f => {
+        const hookStatus = fileReadiness.fileStatuses.find(s => s.id === f.id);
+        if (hookStatus) {
+          const newExtractionStatus = hookStatus.status === "ready" ? "ready" : 
+                                       hookStatus.status === "processing" ? "extracting" : 
+                                       hookStatus.status === "failed" ? "failed" : f.extraction_status;
+          if (f.extraction_status !== newExtractionStatus) {
+            hasChanges = true;
+            return { ...f, extraction_status: newExtractionStatus };
+          }
+        }
+        return f;
+      });
+      return hasChanges ? updated : prevFiles;
+    });
+  }, [fileReadiness.fileStatuses]);
+  
   // Run gating message
   const runGatingMessage = useMemo(() => {
     if (files.length > 0 && fileReadiness.hasProcessingFiles && !runWithoutFiles) {
