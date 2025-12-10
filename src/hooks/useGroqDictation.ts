@@ -13,6 +13,7 @@ export interface GroqDictationState {
   error: string | null;
   amplitude: number;
   elapsedSeconds: number;
+  debugTrail: string[]; // Debug trail for troubleshooting
 }
 
 export interface GroqDictationHandlers {
@@ -32,6 +33,7 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
   const [error, setError] = useState<string | null>(null);
   const [amplitude, setAmplitude] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [debugTrail, setDebugTrail] = useState<string[]>([]);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -47,6 +49,14 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
   const isStartingRef = useRef(false);
   // Promise that resolves when start() completes
   const startPromiseRef = useRef<Promise<void> | null>(null);
+
+  // Debug trail helper
+  const pushDebug = useCallback((msg: string) => {
+    const timestamp = new Date().toISOString().slice(11, 19);
+    const entry = `${timestamp} ${msg}`;
+    console.log(`[STT_DEBUG] ${entry}`);
+    setDebugTrail(prev => [...prev.slice(-9), entry]);
+  }, []);
 
   // Cleanup function
   const cleanup = useCallback(() => {
@@ -143,18 +153,18 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
 
   // Start recording
   const start = useCallback(async () => {
-    console.log("[useGroqDictation] start() called");
+    pushDebug("START_PRESSED");
     
     // Prevent multiple starts
     if (isStartingRef.current || isRecordingRef.current) {
-      console.log("[useGroqDictation] Already starting or recording, skipping");
+      pushDebug("SKIP: already starting/recording");
       return;
     }
     
     // Check debounce
     const now = Date.now();
     if (now - lastRecordingTimeRef.current < DEBOUNCE_MS) {
-      console.log("[useGroqDictation] Debounce active, skipping start");
+      pushDebug("SKIP: debounce active");
       return;
     }
 
@@ -164,7 +174,7 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
 
     const startInternal = async () => {
       try {
-        console.log("[useGroqDictation] Requesting microphone...");
+        pushDebug("GETUSERMEDIA...");
         // Request microphone access
         const stream = await navigator.mediaDevices.getUserMedia({ 
           audio: {
@@ -173,7 +183,7 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
             autoGainControl: true,
           } 
         });
-        console.log("[useGroqDictation] Microphone acquired");
+        pushDebug("GETUSERMEDIA_OK");
         streamRef.current = stream;
 
         // Check if MediaRecorder is supported
@@ -187,19 +197,18 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
         // If mimeType is empty string, don't pass options - let browser pick
         const options = mimeType ? { mimeType } : undefined;
         
-        console.log(`[useGroqDictation] Creating MediaRecorder with options:`, options);
         mediaRecorderRef.current = new MediaRecorder(stream, options);
-        console.log(`[useGroqDictation] MediaRecorder created, actual mimeType: ${mediaRecorderRef.current.mimeType}`);
+        const actualMime = mediaRecorderRef.current.mimeType || "(default)";
+        pushDebug(`RECORDER_CREATED mime=${actualMime}`);
         
         mediaRecorderRef.current.ondataavailable = (event) => {
-          console.log(`[useGroqDictation] ondataavailable: ${event.data.size} bytes`);
           if (event.data.size > 0) {
             audioChunksRef.current.push(event.data);
           }
         };
 
         mediaRecorderRef.current.onerror = (event) => {
-          console.error("[useGroqDictation] MediaRecorder error:", event);
+          pushDebug(`RECORDER_ERROR: ${(event as any).error?.message || "unknown"}`);
           const errorMsg = language === "uz" 
             ? "Yozishda xatolik yuz berdi"
             : language === "ru"
@@ -216,13 +225,12 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
         };
 
         // Start recording with timeslice for chunks
-        console.log("[useGroqDictation] Starting MediaRecorder with 250ms timeslice...");
         mediaRecorderRef.current.start(250); // Collect data every 250ms
         startTimeRef.current = Date.now();
         isRecordingRef.current = true;
         setIsRecording(true);
         isStartingRef.current = false;
-        console.log("[useGroqDictation] Recording started!");
+        pushDebug("RECORDER_STARTED");
 
         // Haptic feedback
         navigator.vibrate?.(10);
@@ -248,11 +256,10 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
             analyserRef.current.fftSize = 256;
             const source = audioContextRef.current.createMediaStreamSource(analysisStream);
             source.connect(analyserRef.current);
-            console.log("[useGroqDictation] Audio analysis setup complete");
           }
         } catch (audioErr) {
           // If AudioContext setup fails, amplitude animation continues with fallback
-          console.warn("[useGroqDictation] AudioContext setup failed, using simulated waveform:", audioErr);
+          pushDebug("AUDIOCONTEXT_FALLBACK");
         }
 
         // Start elapsed time counter
@@ -263,17 +270,18 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
 
           // Auto-stop at max duration
           if (elapsed >= MAX_DURATION_SECONDS) {
-            console.log("[useGroqDictation] Max duration reached, auto-stopping");
-            // Will be handled by the component
+            pushDebug("MAX_DURATION_REACHED");
           }
         }, 1000);
 
       } catch (err) {
-        console.error("[useGroqDictation] Failed to start recording:", err);
+        const errMsg = (err as Error).message || "unknown";
+        pushDebug(`START_ERROR: ${errMsg}`);
         isStartingRef.current = false;
         
         let errorMsg: string;
         if ((err as Error).name === "NotAllowedError") {
+          pushDebug("PERMISSION_DENIED");
           errorMsg = language === "uz" 
             ? "Mikrofonga ruxsat berilmadi"
             : language === "ru"
@@ -302,33 +310,36 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
 
     startPromiseRef.current = startInternal();
     await startPromiseRef.current;
-  }, [language, onError, cleanup, updateAmplitude, getSupportedMimeType]);
+  }, [language, onError, cleanup, updateAmplitude, getSupportedMimeType, pushDebug]);
 
   // Stop recording and transcribe
   const stop = useCallback(async (): Promise<string> => {
-    console.log("[useGroqDictation] stop() called, isRecording:", isRecordingRef.current, "isStarting:", isStartingRef.current);
+    pushDebug("STOP_TRIGGERED");
     
     // If start is still in progress, wait for it
     if (isStartingRef.current && startPromiseRef.current) {
-      console.log("[useGroqDictation] Waiting for start to complete...");
+      pushDebug("WAITING_FOR_START...");
       await startPromiseRef.current;
     }
     
     // Now check if we have a recorder
     if (!mediaRecorderRef.current || !isRecordingRef.current) {
-      console.log("[useGroqDictation] No active recording to stop");
+      pushDebug("NO_ACTIVE_RECORDING");
       return "";
     }
 
     lastRecordingTimeRef.current = Date.now();
     const duration = Math.floor((Date.now() - startTimeRef.current) / 1000);
-    console.log(`[useGroqDictation] Stopping recording after ${duration}s`);
+    pushDebug(`STOPPING after ${duration}s`);
+
+    // Set transcribing state IMMEDIATELY before any async work
+    setIsTranscribing(true);
 
     return new Promise((resolve) => {
       const recorder = mediaRecorderRef.current!;
       
       recorder.onstop = async () => {
-        console.log("[useGroqDictation] MediaRecorder.onstop fired");
+        pushDebug("RECORDER_ONSTOP");
         isRecordingRef.current = false;
         setIsRecording(false);
         cleanup();
@@ -338,10 +349,11 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
 
         // Check if we have audio data
         const chunks = audioChunksRef.current;
-        console.log(`[useGroqDictation] Audio chunks collected: ${chunks.length}`);
+        pushDebug(`CHUNKS_COUNT=${chunks.length}`);
         
         if (chunks.length === 0) {
-          console.log("[useGroqDictation] No audio data recorded");
+          pushDebug("NO_CHUNKS");
+          setIsTranscribing(false);
           resolve("");
           return;
         }
@@ -349,18 +361,15 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
         // Create blob from chunks
         const mimeType = recorder.mimeType || "audio/webm";
         const audioBlob = new Blob(chunks, { type: mimeType });
-        
-        console.log(`[useGroqDictation] Audio blob: ${audioBlob.size} bytes, type: ${mimeType}`);
+        pushDebug(`BLOB_READY size=${audioBlob.size}`);
 
         // Skip if too small (likely empty)
         if (audioBlob.size < 1000) {
-          console.log("[useGroqDictation] Audio too small (<1000 bytes), skipping transcription");
+          pushDebug("BLOB_TOO_SMALL");
+          setIsTranscribing(false);
           resolve("");
           return;
         }
-
-        setIsTranscribing(true);
-        console.log("[useGroqDictation] Starting transcription...");
 
         try {
           // Prepare form data with correct file extension based on actual MIME type
@@ -373,26 +382,23 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
                           : actualMime.includes("mpeg") ? "mp3"
                           : "webm"; // Default fallback
           
-          console.log(`[useGroqDictation] Sending to STT: mime=${actualMime}, ext=${extension}, size=${audioBlob.size}`);
-          
           formData.append("file", audioBlob, `recording.${extension}`);
           formData.append("ui_language", language);
           formData.append("duration_seconds", String(duration));
 
           // Call edge function
-          console.log("[useGroqDictation] Invoking stt-groq edge function...");
+          pushDebug("CALLING_STT...");
           const { data, error: funcError } = await supabase.functions.invoke("stt-groq", {
             body: formData,
           });
-          console.log("[useGroqDictation] Edge function response:", { data, error: funcError });
 
           if (funcError) {
-            console.error("[useGroqDictation] Edge function error:", funcError);
+            pushDebug(`STT_FUNC_ERROR: ${funcError.message}`);
             throw new Error(funcError.message);
           }
 
           if (data?.error) {
-            console.error("[useGroqDictation] STT error:", data.error);
+            pushDebug(`STT_ERROR: ${data.error}`);
             const errorMsg = data.message || data.error;
             setError(errorMsg);
             onError?.(errorMsg);
@@ -401,11 +407,12 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
           }
 
           const transcript = data?.text || "";
-          console.log(`[useGroqDictation] Transcription result: "${transcript.substring(0, 50)}..."`);
+          pushDebug(`STT_OK len=${transcript.length}`);
           resolve(transcript);
 
         } catch (err) {
-          console.error("[useGroqDictation] Transcription failed:", err);
+          const errMsg = (err as Error).message || "unknown";
+          pushDebug(`STT_CATCH: ${errMsg}`);
           const errorMsg = language === "uz" 
             ? "Transkriptsiyada xatolik. Qayta urinib ko'ring."
             : language === "ru"
@@ -425,26 +432,27 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
       try {
         recorder.requestData();
       } catch (e) {
-        console.warn("[useGroqDictation] requestData() not supported or failed:", e);
+        pushDebug("requestData_FAILED");
       }
       
       // Stop recording
       try {
-        console.log("[useGroqDictation] Calling MediaRecorder.stop()...");
         recorder.stop();
+        pushDebug("RECORDER_STOP_CALLED");
       } catch (e) {
-        console.error("[useGroqDictation] Error stopping MediaRecorder:", e);
+        pushDebug(`STOP_ERROR: ${(e as Error).message}`);
         isRecordingRef.current = false;
         setIsRecording(false);
+        setIsTranscribing(false);
         cleanup();
         resolve("");
       }
     });
-  }, [language, onError, cleanup]);
+  }, [language, onError, cleanup, pushDebug]);
 
   // Cancel recording without transcribing
   const cancel = useCallback(() => {
-    console.log("[useGroqDictation] cancel() called");
+    pushDebug("CANCEL");
     if (mediaRecorderRef.current && isRecordingRef.current) {
       try {
         mediaRecorderRef.current.stop();
@@ -460,7 +468,7 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
     setError(null);
     cleanup();
     lastRecordingTimeRef.current = Date.now();
-  }, [cleanup]);
+  }, [cleanup, pushDebug]);
 
   // Check if max duration reached
   const hasReachedMaxDuration = elapsedSeconds >= MAX_DURATION_SECONDS;
@@ -499,6 +507,7 @@ export function useGroqDictation({ language, onError }: UseGroqDictationOptions)
     elapsedSeconds,
     hasReachedMaxDuration,
     maxDuration: MAX_DURATION_SECONDS,
+    debugTrail, // Expose debug trail for UI display
     handlers: { start, stop, cancel },
   };
 }
