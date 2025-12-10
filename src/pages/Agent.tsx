@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   Bot, Play, Square, RotateCcw, Check, Loader2, AlertCircle, Sparkles, 
   ExternalLink, ChevronDown, ChevronUp, Save, Upload, File, X, Link2,
@@ -86,6 +87,7 @@ const SAMPLE_GOALS = [
 export default function Agent() {
   const { t, language } = useTranslation();
   const { user } = useAuth();
+  const navigate = useNavigate();
   
   const [goal, setGoal] = useState("");
   const [currentRun, setCurrentRun] = useState<AgentRun | null>(null);
@@ -319,14 +321,8 @@ export default function Agent() {
             setGoal(""); // Clear goal after successful completion
             toast.success("Agent vazifani bajardi!");
             
-            // Add assistant response to conversation history
-            if (updatedRun.final_output) {
-              setConversationHistory(prev => [...prev, { 
-                role: "assistant", 
-                content: updatedRun.final_output || "",
-                sources: updatedRun.sources as any[] || []
-              }]);
-            }
+            // Navigate to workspace
+            navigate(`/agent/workspace/${updatedRun.id}`);
           } else if (payload.new.status === "cancelled") {
             setIsRunning(false);
           } else if (payload.new.status === "error") {
@@ -341,7 +337,7 @@ export default function Agent() {
       supabase.removeChannel(channel);
       supabase.removeChannel(runChannel);
     };
-  }, [currentRun?.id]);
+  }, [currentRun?.id, navigate]);
 
   // Load steps when run changes
   useEffect(() => {
