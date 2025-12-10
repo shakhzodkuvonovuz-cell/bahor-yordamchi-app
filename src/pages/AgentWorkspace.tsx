@@ -769,9 +769,9 @@ export default function AgentWorkspace() {
         </div>
         
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        <div className="flex-1 flex flex-col min-h-0 min-w-0">
           {/* Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
             <div className="px-3 pt-3 shrink-0">
               <TabsList className="grid w-full grid-cols-3 h-9">
                 <TabsTrigger value="report" className="gap-1 text-xs px-2">
@@ -790,8 +790,8 @@ export default function AgentWorkspace() {
             </div>
             
             {/* Report Tab */}
-            <TabsContent value="report" className="flex-1 overflow-hidden mt-0 p-3">
-              <ScrollArea className="h-full">
+            <TabsContent value="report" className="flex-1 overflow-auto mt-0 p-3 data-[state=inactive]:hidden">
+              <ScrollArea className="h-full w-full">
                 <div className="max-w-3xl mx-auto">
                   {/* Report Content */}
                   <Card className="p-4 md:p-6">
