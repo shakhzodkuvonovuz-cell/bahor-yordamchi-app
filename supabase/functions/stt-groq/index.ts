@@ -22,12 +22,10 @@ serve(async (req) => {
   console.log(`[stt-groq:${requestId}] Request received`);
 
   try {
-    // Try Lovable AI Gateway first (uses OpenAI Whisper), fallback to Groq
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
     
-    if (!LOVABLE_API_KEY && !GROQ_API_KEY) {
-      console.error(`[stt-groq:${requestId}] No API keys configured`);
+    if (!GROQ_API_KEY) {
+      console.error(`[stt-groq:${requestId}] GROQ_API_KEY not configured`);
       return new Response(
         JSON.stringify({ error: "STT service not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -37,7 +35,7 @@ serve(async (req) => {
     // Parse multipart form data
     const formData = await req.formData();
     const audioFile = formData.get("file") as File | null;
-    const uiLanguage = formData.get("ui_language") as string | null;
+    const uiLanguage = formData.get("ui_language") as string || "uz";
     const durationSeconds = parseInt(formData.get("duration_seconds") as string || "0", 10);
 
     if (!audioFile) {
@@ -66,6 +64,24 @@ serve(async (req) => {
       );
     }
 
+    // Minimum duration check - require at least 1 second of speech
+    if (durationSeconds < 1) {
+      console.error(`[stt-groq:${requestId}] Duration too short: ${durationSeconds}s`);
+      return new Response(
+        JSON.stringify({ 
+          error: "audio_too_short",
+          message: uiLanguage === "uz" 
+            ? "Audio juda qisqa. Kamida 1 soniya gapiring."
+            : uiLanguage === "ru"
+            ? "Аудио слишком короткое. Говорите минимум 1 секунду."
+            : uiLanguage === "tr"
+            ? "Ses çok kısa. En az 1 saniye konuşun."
+            : "Audio too short. Speak for at least 1 second."
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Minimum file size check (likely empty recording)
     if (audioFile.size < 1000) {
       console.error(`[stt-groq:${requestId}] File too small: ${audioFile.size} bytes`);
@@ -86,132 +102,128 @@ serve(async (req) => {
 
     console.log(`[stt-groq:${requestId}] Processing audio: ${audioFile.size} bytes, type: ${audioFile.type}, duration: ${durationSeconds}s`);
 
-    // Use OpenAI Whisper via Lovable AI Gateway (better WebM support)
-    if (LOVABLE_API_KEY) {
-      console.log(`[stt-groq:${requestId}] Using OpenAI Whisper via Lovable Gateway`);
-      
-      const openaiFormData = new FormData();
-      openaiFormData.append("file", audioFile, audioFile.name || "audio.webm");
-      openaiFormData.append("model", "whisper-1");
-      openaiFormData.append("language", "uz");
-      openaiFormData.append("prompt", UZBEK_STEERING_PROMPT);
+    // Get audio bytes
+    const audioBytes = await audioFile.arrayBuffer();
+    
+    // Groq has issues with WebM duration metadata, try with different file extension
+    // Using .ogg extension sometimes works better with Groq for WebM/Opus files
+    const fileName = audioFile.type.includes("webm") ? "audio.ogg" : (audioFile.name || "audio.webm");
+    
+    // Create a new blob with audio/ogg type for better Groq compatibility
+    const audioBlob = new Blob([audioBytes], { 
+      type: audioFile.type.includes("webm") ? "audio/ogg" : audioFile.type 
+    });
+    
+    console.log(`[stt-groq:${requestId}] Using Groq Whisper with filename: ${fileName}`);
+    
+    const groqFormData = new FormData();
+    groqFormData.append("file", audioBlob, fileName);
+    groqFormData.append("model", "whisper-large-v3-turbo");
+    groqFormData.append("language", "uz");
+    groqFormData.append("temperature", "0");
+    groqFormData.append("response_format", "verbose_json");
+    groqFormData.append("prompt", UZBEK_STEERING_PROMPT);
 
-      const startTime = Date.now();
-      const openaiResponse = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-        },
-        body: openaiFormData,
-      });
+    const startTime = Date.now();
+    const groqResponse = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${GROQ_API_KEY}`,
+      },
+      body: groqFormData,
+    });
 
-      const latencyMs = Date.now() - startTime;
-      console.log(`[stt-groq:${requestId}] OpenAI Whisper responded in ${latencyMs}ms, status: ${openaiResponse.status}`);
+    const latencyMs = Date.now() - startTime;
+    console.log(`[stt-groq:${requestId}] Groq API responded in ${latencyMs}ms, status: ${groqResponse.status}`);
 
-      if (openaiResponse.ok) {
-        const result = await openaiResponse.json();
-        console.log(`[stt-groq:${requestId}] Transcription successful, text length: ${result.text?.length || 0}`);
+    if (groqResponse.ok) {
+      const result = await groqResponse.json();
+      console.log(`[stt-groq:${requestId}] Transcription successful, text length: ${result.text?.length || 0}`);
 
-        return new Response(
-          JSON.stringify({
-            text: result.text || "",
-            language: "uz",
-            model: "whisper-1",
-            duration_seconds_estimate: durationSeconds,
-            latency_ms: latencyMs,
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      // Log error but continue to Groq fallback
-      const errorText = await openaiResponse.text();
-      console.warn(`[stt-groq:${requestId}] OpenAI failed (${openaiResponse.status}): ${errorText}`);
-      
-      // If rate limited or payment required, return error
-      if (openaiResponse.status === 429 || openaiResponse.status === 402) {
-        return new Response(
-          JSON.stringify({ 
-            error: openaiResponse.status === 429 ? "rate_limit" : "payment_required",
-            message: uiLanguage === "uz" 
-              ? "Xizmat band. Biroz kuting."
-              : "Service busy. Please wait."
-          }),
-          { status: openaiResponse.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
+      return new Response(
+        JSON.stringify({
+          text: result.text || "",
+          language: result.language || "uz",
+          model: "whisper-large-v3-turbo",
+          duration_seconds_estimate: result.duration || durationSeconds,
+          latency_ms: latencyMs,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    // Fallback to Groq if OpenAI fails or not available
-    if (GROQ_API_KEY) {
-      console.log(`[stt-groq:${requestId}] Falling back to Groq Whisper`);
-      
-      const groqFormData = new FormData();
-      groqFormData.append("file", audioFile, audioFile.name || "audio.webm");
-      groqFormData.append("model", "whisper-large-v3-turbo");
-      groqFormData.append("language", "uz");
-      groqFormData.append("temperature", "0");
-      groqFormData.append("response_format", "json");
-      groqFormData.append("prompt", UZBEK_STEERING_PROMPT);
+    const errorText = await groqResponse.text();
+    console.error(`[stt-groq:${requestId}] Groq API error: ${groqResponse.status} - ${errorText}`);
 
-      const startTime = Date.now();
-      const groqResponse = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
+    // Handle rate limit
+    if (groqResponse.status === 429) {
+      return new Response(
+        JSON.stringify({ 
+          error: "rate_limit",
+          message: uiLanguage === "uz" 
+            ? "Juda ko'p so'rov. Biroz kuting."
+            : "Too many requests. Please wait."
+        }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Handle "audio too short" - this is a Groq WebM parsing bug
+    // Retry with mp3 filename as workaround
+    if (errorText.includes("too short")) {
+      console.log(`[stt-groq:${requestId}] Retrying with .mp3 filename workaround`);
+      
+      const retryFormData = new FormData();
+      const retryBlob = new Blob([audioBytes], { type: "audio/mpeg" });
+      retryFormData.append("file", retryBlob, "audio.mp3");
+      retryFormData.append("model", "whisper-large-v3-turbo");
+      retryFormData.append("language", "uz");
+      retryFormData.append("temperature", "0");
+      retryFormData.append("response_format", "verbose_json");
+      retryFormData.append("prompt", UZBEK_STEERING_PROMPT);
+
+      const retryResponse = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${GROQ_API_KEY}`,
         },
-        body: groqFormData,
+        body: retryFormData,
       });
 
-      const latencyMs = Date.now() - startTime;
-      console.log(`[stt-groq:${requestId}] Groq API responded in ${latencyMs}ms, status: ${groqResponse.status}`);
-
-      if (groqResponse.ok) {
-        const result = await groqResponse.json();
-        console.log(`[stt-groq:${requestId}] Transcription successful, text length: ${result.text?.length || 0}`);
+      if (retryResponse.ok) {
+        const result = await retryResponse.json();
+        console.log(`[stt-groq:${requestId}] Retry successful, text length: ${result.text?.length || 0}`);
 
         return new Response(
           JSON.stringify({
             text: result.text || "",
-            language: "uz",
+            language: result.language || "uz",
             model: "whisper-large-v3-turbo",
-            duration_seconds_estimate: durationSeconds,
-            latency_ms: latencyMs,
+            duration_seconds_estimate: result.duration || durationSeconds,
+            latency_ms: Date.now() - startTime,
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      const errorText = await groqResponse.text();
-      console.error(`[stt-groq:${requestId}] Groq API error: ${groqResponse.status} - ${errorText}`);
-
-      // Handle specific errors
-      if (groqResponse.status === 429) {
+      const retryError = await retryResponse.text();
+      console.error(`[stt-groq:${requestId}] Retry also failed: ${retryError}`);
+      
+      // If retry still fails with "too short", it's a real issue
+      if (retryError.includes("too short")) {
         return new Response(
           JSON.stringify({ 
-            error: "rate_limit",
+            error: "audio_format_error",
             message: uiLanguage === "uz" 
-              ? "Juda ko'p so'rov. Biroz kuting."
-              : "Too many requests. Please wait."
-          }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      if (errorText.includes("too short")) {
-        return new Response(
-          JSON.stringify({ 
-            error: "audio_too_short",
-            message: uiLanguage === "uz" 
-              ? "Audio juda qisqa. Kamida 2 soniya gapiring."
-              : "Audio too short. Speak for at least 2 seconds."
+              ? "Audio formatida xato. Qayta yozing."
+              : "Audio format error. Please record again."
           }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
     }
 
-    // All providers failed
+    // Generic error
     return new Response(
       JSON.stringify({ 
         error: "transcription_failed",
