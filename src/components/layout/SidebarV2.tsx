@@ -18,6 +18,7 @@ import { useTranslation } from "@/i18n/LanguageProvider";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
+import { useNativeHaptics } from "@/hooks/useNativeHaptics";
 import bahorLogo from "@/assets/bahor-logo.png";
 
 interface SidebarV2Props {
@@ -57,6 +58,7 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
   const navigate = useNavigate();
   const { profile } = useAuth();
   const { toast } = useToast();
+  const { onNewChat, onModeSwitch, onSidebarToggle } = useNativeHaptics();
 
   const isActive = (path: string, isNewChat?: boolean) => {
     // New chat button is never "active" visually
@@ -77,6 +79,13 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
   };
 
   const handleNavClick = (item: NavItem) => {
+    // Haptic feedback
+    if (item.isNewChat) {
+      onNewChat();
+    } else {
+      onModeSwitch();
+    }
+    
     // Close sidebar FIRST on mobile, then navigate
     onNavigate?.();
     
@@ -104,6 +113,11 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
     
     // Execute navigation immediately for smooth UX
     doNavigate();
+  };
+
+  const handleCollapseToggle = () => {
+    onSidebarToggle();
+    onCollapse?.(!collapsed);
   };
 
   const getUserInitials = () => {
@@ -146,8 +160,8 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
         {/* Collapse Toggle in Header */}
         {onCollapse && !collapsed && (
           <button
-            onClick={() => onCollapse(!collapsed)}
-            className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            onClick={handleCollapseToggle}
+            className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors touch-feedback"
             aria-label="Collapse sidebar"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -155,8 +169,8 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
         )}
         {onCollapse && collapsed && (
           <button
-            onClick={() => onCollapse(!collapsed)}
-            className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            onClick={handleCollapseToggle}
+            className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors touch-feedback"
             aria-label="Expand sidebar"
           >
             <ChevronRight className="w-4 h-4" />

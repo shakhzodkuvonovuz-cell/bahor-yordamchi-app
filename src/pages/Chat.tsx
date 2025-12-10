@@ -43,8 +43,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useDailyUsageServer } from "@/hooks/useEntitlements";
 import * as chatStore from "@/lib/chatStore";
 
-import { useHaptics } from "@/hooks/useHaptics";
-import { haptic } from "@/lib/haptics";
+import { useNativeHaptics } from "@/hooks/useNativeHaptics";
 import { useIsMobile } from "@/hooks/use-mobile";
 import clsx from "clsx";
 import { useToast } from "@/hooks/use-toast";
@@ -186,7 +185,7 @@ export default function Chat() {
   const t = getTranslation(language);
   const { user, session, profile, refreshProfile } = useAuth();
   const isMobile = useIsMobile();
-  const { lightTap } = useHaptics();
+  const { onSend, onCopy, onNewChat, onSuccess, onError, lightTap } = useNativeHaptics();
   
   // Supabase-backed state
   const [threads, setThreads] = useState<chatStore.ChatThread[]>([]);
@@ -2124,7 +2123,7 @@ export default function Chat() {
                   language={language}
                   mode={mode}
                   onTraceClick={(messageId) => {
-                    haptic("selection");
+                    lightTap();
                     setSelectedTraceMessageId(messageId);
                     setTraceSheetOpen(true);
                   }}
