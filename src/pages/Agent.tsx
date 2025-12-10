@@ -204,34 +204,8 @@ export default function Agent() {
   }, [showHistory, user, loadHistory]);
 
   const handleViewPastRun = async (run: AgentRun) => {
-    setCurrentRun(run);
-    setShowHistory(false);
-    setActiveTab("results");
-    setGeneratedImages([]);
-    
-    // Load steps for this run
-    const { data: stepsData } = await supabase
-      .from("agent_steps")
-      .select("*")
-      .eq("run_id", run.id)
-      .order("step_index", { ascending: true });
-    
-    if (stepsData) {
-      setSteps(stepsData as unknown as AgentStep[]);
-      
-      // Extract images from steps
-      const images: GeneratedImage[] = [];
-      stepsData.forEach((step: any) => {
-        if (step.tool_output?.imageUrl) {
-          images.push({
-            url: step.tool_output.imageUrl,
-            stepIndex: step.step_index,
-            stepTitle: step.title,
-          });
-        }
-      });
-      setGeneratedImages(images);
-    }
+    // Navigate to the Agent Workspace for this run
+    navigate(`/agent/workspace/${run.id}`);
   };
 
   const handleRerun = (run: AgentRun) => {
@@ -1500,173 +1474,161 @@ export default function Agent() {
         </div>
       </div>
       
-      {/* Planning Skeleton */}
-      {isRunning && steps.length === 0 && (
-        <Card>
-          <CardHeader className="py-2 px-3">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-3.5 w-3.5 animate-pulse text-primary" />
-              <span className="text-xs font-medium">Reja tuzilmoqda...</span>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-2 px-3 py-2">
-            <Skeleton className="h-6 w-full" />
-            <Skeleton className="h-6 w-5/6" />
-            <Skeleton className="h-6 w-4/6" />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Steps Progress */}
-      {steps.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" />
-              Bajarish rejasi
-              <Badge variant="outline" className="ml-auto text-xs">
-                {completedSteps}/{totalSteps}
-              </Badge>
-            </CardTitle>
-            {/* Progress bar and time estimate */}
-            {isRunning && totalSteps > 0 && (
-              <div className="space-y-1.5 pt-2">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{Math.round((completedSteps / totalSteps) * 100)}% bajarildi</span>
-                  {estimatedTime && <span>{estimatedTime} qoldi</span>}
+      {/* Modern Floating Steps Progress */}
+      {(isRunning || steps.length > 0) && (
+        <div className="fixed bottom-24 left-4 right-4 sm:left-auto sm:right-6 sm:w-80 z-40 pointer-events-auto">
+          <div className="bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 bg-muted/30">
+              <div className="flex items-center gap-2">
+                <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Sparkles className="h-3.5 w-3.5 text-primary" />
                 </div>
+                <span className="text-sm font-medium">
+                  {isRunning && steps.length === 0 ? "Reja tuzilmoqda..." : "Bajarilmoqda"}
+                </span>
+              </div>
+              <Badge variant="outline" className="text-[10px] h-5 rounded-md bg-background/50">
+                {completedSteps}/{totalSteps || "..."}
+              </Badge>
+            </div>
+
+            {/* Progress Bar */}
+            {totalSteps > 0 && (
+              <div className="px-4 py-2 border-b border-border/20">
                 <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                   <div 
-                    className="h-full bg-primary transition-all duration-500 ease-out"
-                    style={{ width: `${(completedSteps / totalSteps) * 100}%` }}
+                    className="h-full bg-gradient-to-r from-primary to-primary/70 transition-all duration-500 ease-out rounded-full"
+                    style={{ width: `${totalSteps > 0 ? (completedSteps / totalSteps) * 100 : 0}%` }}
                   />
+                </div>
+                <div className="flex items-center justify-between mt-1.5 text-[10px] text-muted-foreground">
+                  <span>{totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0}%</span>
+                  {estimatedTime && <span className="text-primary">{estimatedTime}</span>}
                 </div>
               </div>
             )}
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {steps.map((step, index) => (
-              <Collapsible
-                key={step.id}
-                open={expandedSteps.has(index)}
-                onOpenChange={() => toggleStepExpanded(index)}
-              >
-                <div
-                  className={cn(
-                    "flex items-start gap-3 p-3 rounded-lg transition-colors",
-                    step.status === "running" && "bg-primary/5",
-                    step.status === "done" && "bg-green-500/5",
-                    step.status === "error" && "bg-destructive/5"
-                  )}
-                >
-                  <div className="mt-0.5">{getStepIcon(step.status)}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm">{step.title}</span>
-                      {step.tool_name && (
-                        <Badge variant="secondary" className="text-xs">
-                          {step.tool_name}
+
+            {/* Steps List */}
+            <div className="max-h-[200px] overflow-auto">
+              {steps.length === 0 ? (
+                <div className="px-4 py-3 space-y-2">
+                  <Skeleton className="h-5 w-full rounded-lg" />
+                  <Skeleton className="h-5 w-4/5 rounded-lg" />
+                  <Skeleton className="h-5 w-3/5 rounded-lg" />
+                </div>
+              ) : (
+                <div className="divide-y divide-border/20">
+                  {steps.map((step) => (
+                    <div
+                      key={step.id}
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-2.5 transition-colors",
+                        step.status === "running" && "bg-primary/5",
+                        step.status === "done" && "opacity-60"
+                      )}
+                    >
+                      <div className="shrink-0">
+                        {step.status === "done" ? (
+                          <div className="h-5 w-5 rounded-full bg-green-500/10 flex items-center justify-center">
+                            <Check className="h-3 w-3 text-green-500" />
+                          </div>
+                        ) : step.status === "running" ? (
+                          <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                          </div>
+                        ) : step.status === "error" ? (
+                          <div className="h-5 w-5 rounded-full bg-destructive/10 flex items-center justify-center">
+                            <AlertCircle className="h-3 w-3 text-destructive" />
+                          </div>
+                        ) : (
+                          <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/20" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={cn(
+                          "text-xs font-medium truncate",
+                          step.status === "running" && "text-primary"
+                        )}>
+                          {step.title}
+                        </p>
+                        {step.tool_name && step.status === "running" && (
+                          <p className="text-[10px] text-muted-foreground truncate">
+                            {step.tool_name === "web_search" ? "Web qidirilmoqda..." : 
+                             step.tool_name === "generate_image" ? "Rasm yaratilmoqda..." : 
+                             "Bajarilmoqda..."}
+                          </p>
+                        )}
+                      </div>
+                      {step.status === "done" && step.tool_name === "web_search" && step.tool_output?.sources && (
+                        <Badge variant="outline" className="text-[9px] h-4 shrink-0">
+                          {(step.tool_output.sources as any[]).length}
                         </Badge>
                       )}
                     </div>
-                    {step.rationale && (
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {step.rationale}
-                      </p>
-                    )}
-                    
-                    <CollapsibleContent>
-                      {step.tool_output?.result && (
-                        <div className="mt-2 p-2 bg-muted/50 rounded text-sm">
-                          <AiResponseRenderer content={step.tool_output.result} />
-                        </div>
-                      )}
-                      {step.error && (
-                        <div className="mt-2 p-2 bg-destructive/10 rounded text-sm text-destructive flex items-center justify-between">
-                          <span>{step.error}</span>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 gap-1"
-                          >
-                            <RotateCcw className="h-3 w-3" />
-                            Qayta
-                          </Button>
-                        </div>
-                      )}
-                    </CollapsibleContent>
-                  </div>
-                  
-                  {(step.tool_output?.result || step.error) && (
-                    <CollapsibleTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                        {expandedSteps.has(index) ? (
-                          <ChevronUp className="h-4 w-4" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </CollapsibleTrigger>
-                  )}
+                  ))}
                 </div>
-              </Collapsible>
-            ))}
-          </CardContent>
-        </Card>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* Sources Strip */}
-      {currentRun?.sources && currentRun.sources.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Manbalar</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {currentRun.sources.map((source: any, i: number) => (
+      {/* Modern Sources Strip */}
+      {currentRun?.sources && (currentRun.sources as any[]).length > 0 && !isRunning && (
+        <div className="fixed bottom-24 left-4 right-4 sm:left-6 sm:right-auto sm:w-auto sm:max-w-md z-30">
+          <div className="bg-background/95 backdrop-blur-xl border border-border/50 rounded-xl p-3 shadow-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <ExternalLink className="h-3.5 w-3.5 text-primary" />
+              <span className="text-xs font-medium">Manbalar</span>
+              <Badge variant="secondary" className="text-[9px] h-4 ml-auto">
+                {(currentRun.sources as any[]).length}
+              </Badge>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {(currentRun.sources as any[]).slice(0, 6).map((source: any, i: number) => (
                 <a
                   key={i}
                   href={source.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted hover:bg-muted/80 rounded-full text-sm transition-colors"
+                  className="inline-flex items-center gap-1.5 px-2 py-1 bg-muted/50 hover:bg-muted rounded-lg text-[10px] transition-colors max-w-[140px]"
                 >
                   <img
                     src={`https://www.google.com/s2/favicons?domain=${new URL(source.url).hostname}&sz=16`}
                     alt=""
-                    className="h-4 w-4 rounded-sm"
+                    className="h-3 w-3 rounded-sm shrink-0"
                   />
-                  <span className="truncate max-w-[200px]">{source.title}</span>
-                  <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                  <span className="truncate">{source.title || new URL(source.url).hostname}</span>
                 </a>
               ))}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Image Lightbox */}
       <Dialog open={!!lightboxImage} onOpenChange={() => setLightboxImage(null)}>
-        <DialogContent className="max-w-4xl p-0 bg-black/95 border-none">
+        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-transparent border-none">
           {lightboxImage && (
             <div className="relative">
               <img
                 src={lightboxImage}
                 alt="Full size"
-                className="w-full h-auto max-h-[85vh] object-contain"
+                className="w-full h-auto rounded-lg"
               />
-              <div className="absolute bottom-4 right-4 flex gap-2">
+              <div className="absolute top-2 right-2 flex gap-2">
                 <Button
-                  variant="secondary"
                   size="sm"
-                  className="gap-1.5"
+                  variant="secondary"
+                  className="gap-1"
                   onClick={() => {
                     const idx = generatedImages.findIndex(img => img.url === lightboxImage);
-                    handleDownloadImage(lightboxImage, idx >= 0 ? idx : 0);
+                    if (idx >= 0) handleDownloadImage(lightboxImage, idx);
                   }}
                 >
-                  <Download className="h-4 w-4" />
-                  Yuklab olish
+                  <Download className="h-3.5 w-3.5" />
+                  Yuklash
                 </Button>
               </div>
             </div>

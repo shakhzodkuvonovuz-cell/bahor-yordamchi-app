@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   History, Clock, Plus, Search, Eye, RefreshCw, Trash2, X, 
-  Loader2, MessageSquare, ChevronRight
+  Loader2, MessageSquare, ChevronRight, ExternalLink
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +39,7 @@ export function AgentHistorySidebar({
   isOpen,
   onClose,
 }: AgentHistorySidebarProps) {
+  const navigate = useNavigate();
   const [threads, setThreads] = useState<AgentThread[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -214,7 +216,8 @@ export function AgentHistorySidebar({
                       <button
                         key={thread.id}
                         onClick={() => {
-                          onSelectThread(thread.id);
+                          // Navigate to workspace for this thread
+                          navigate(`/agent/workspace/${thread.id}`);
                           onClose();
                         }}
                         className={cn(
