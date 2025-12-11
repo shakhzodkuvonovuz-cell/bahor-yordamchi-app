@@ -24,7 +24,10 @@ serve(async (req) => {
 
     // Verify auth
     const authHeader = req.headers.get('Authorization');
+    console.log('[admin-entitlements] Auth header present:', !!authHeader);
+    
     if (!authHeader) {
+      console.log('[admin-entitlements] No auth header');
       return new Response(
         JSON.stringify({ error: 'AUTH_REQUIRED' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -34,9 +37,12 @@ serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
     
+    console.log('[admin-entitlements] getUser result:', user?.email, 'error:', userError?.message);
+    
     if (userError || !user) {
+      console.log('[admin-entitlements] Auth failed:', userError?.message);
       return new Response(
-        JSON.stringify({ error: 'AUTH_REQUIRED' }),
+        JSON.stringify({ error: 'AUTH_REQUIRED', details: userError?.message }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
