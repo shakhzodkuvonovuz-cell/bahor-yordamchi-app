@@ -446,6 +446,11 @@ export default function Chat() {
       const fetchedMessages = await chatStore.getMessagesWithAttachments(threadId, { limit: 30, offset });
       const uiMessages = fetchedMessages.map(dbMessageToUI);
       
+      // CRITICAL: Initialize seen IDs BEFORE setting messages to prevent realtime duplicates
+      if (!append && uiMessages.length > 0) {
+        initializeSeenIds(uiMessages);
+      }
+      
       if (append) {
         setMessages(prev => [...uiMessages, ...prev]);
       } else {
@@ -474,7 +479,7 @@ export default function Chat() {
     } finally {
       setIsLoadingMessages(false);
     }
-  }, [messageOffset, language, toast]);
+  }, [messageOffset, language, toast, initializeSeenIds]);
 
   // Load more (earlier) messages
   const loadMoreMessages = useCallback(async () => {
