@@ -113,12 +113,19 @@ export default function ImageStudio() {
     if (!user) return;
     
     try {
-      // Refresh session to ensure we have a valid token
-      const { data: { session: freshSession }, error: sessionError } = await supabase.auth.getSession();
+      // Use supabase.functions.invoke which handles auth automatically
+      const { data, error } = await supabase.functions.invoke("admin-entitlements", {
+        method: "GET",
+      });
       
-      if (sessionError || !freshSession?.access_token) {
-        console.error("Session invalid or expired, user needs to re-login");
-        // Session is invalid - the auth hook should handle redirect
+      if (error) {
+        console.error("Failed to fetch entitlement:", error);
+        // If 401, the session is invalid server-side - sign out to force re-login
+        if (error.message?.includes("401") || error.message?.includes("AUTH_REQUIRED")) {
+          console.warn("Session invalid server-side, signing out...");
+          await supabase.auth.signOut();
+          return;
+        }
         return;
       }
       
@@ -128,26 +135,6 @@ export default function ImageStudio() {
         .select("*", { count: "exact", head: true })
         .eq("user_id", user.id)
         .gte("created_at", today);
-
-      // Fetch from admin-entitlements which properly checks DEV_UNLIMITED_EMAILS
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-entitlements?action=my-entitlement`,
-        {
-          method: "GET",
-          headers: {
-            "Authorization": `Bearer ${freshSession.access_token}`,
-            "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      
-      let data = null;
-      if (response.ok) {
-        data = await response.json();
-      } else {
-        console.error("Failed to fetch entitlement:", response.status, await response.text());
-      }
 
       const isDevBypass = data?.isDevBypass === true;
       const isPremium = data?.plan === "beta_premium" || data?.plan === "premium";
