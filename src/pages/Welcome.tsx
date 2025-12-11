@@ -1,8 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { Sparkles } from "lucide-react";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 export default function Welcome() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-b from-background to-primary-glow/20">
@@ -23,13 +25,13 @@ export default function Welcome() {
             Bahor AI
           </h1>
           <p className="text-xl text-muted-foreground font-medium">
-            Birinchi O'zbek sun'iy intellekti
+            {t('welcome.tagline')}
           </p>
         </div>
 
         {/* Description */}
         <p className="text-base text-muted-foreground leading-relaxed max-w-sm mx-auto">
-          Har qanday savol, uy vazifasi yoki ingliz tilini o'rganish uchun sizning shaxsiy yordamchingiz
+          {t('welcome.description')}
         </p>
 
         {/* CTA Button */}
@@ -37,12 +39,12 @@ export default function Welcome() {
           onClick={() => navigate("/")}
           className="w-full max-w-xs mx-auto bg-primary hover:bg-primary-light text-primary-foreground font-semibold py-4 px-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 active:scale-95 text-lg"
         >
-          Boshlash
+          {t('welcome.start')}
         </button>
 
         {/* Version indicator */}
         <p className="text-xs text-muted-foreground/60 pt-4">
-          Test versiyasi v0.1
+          {t('welcome.version')}
         </p>
       </div>
     </div>
