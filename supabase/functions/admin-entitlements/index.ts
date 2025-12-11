@@ -51,7 +51,8 @@ serve(async (req) => {
     const action = url.searchParams.get('action');
 
     // GET: my-entitlement - any authenticated user can check their own status
-    if (req.method === 'GET' && action === 'my-entitlement') {
+    // Default action for GET requests without explicit action parameter
+    if (req.method === 'GET' && (!action || action === 'my-entitlement')) {
       // Ensure trial is initialized for the user (same as chat function)
       const TRIAL_DAYS = 7;
       if (!isDevBypass) {
