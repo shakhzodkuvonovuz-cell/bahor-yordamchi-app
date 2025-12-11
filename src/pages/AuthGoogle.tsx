@@ -6,6 +6,7 @@ import { Loader2, ArrowLeft, AlertCircle } from "lucide-react";
 import { signInWithGoogleUnified, isNativePlatform } from "@/lib/auth/googleAuth";
 import { trackSignupStarted } from "@/lib/analytics";
 import { useTranslation } from "@/i18n/LanguageProvider";
+import { SEO } from "@/components/SEO";
 
 export default function AuthGoogle() {
   const navigate = useNavigate();
@@ -48,7 +49,14 @@ export default function AuthGoogle() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-background to-primary/5">
+    <>
+      <SEO 
+        title="Google orqali kirish"
+        description="Bahor AI hisobingizga Google hisobingiz orqali tez va xavfsiz kiring."
+        url="/auth/google"
+        noIndex
+      />
+      <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-background to-primary/5">
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-[420px] mx-auto animate-fade-in">
           {/* Logo & Header */}
@@ -150,5 +158,6 @@ export default function AuthGoogle() {
         </div>
       </div>
     </div>
+    </>
   );
 }

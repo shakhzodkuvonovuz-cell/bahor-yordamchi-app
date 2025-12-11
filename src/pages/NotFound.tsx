@@ -1,6 +1,7 @@
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { useTranslation } from "@/i18n/LanguageProvider";
+import { SEO } from "@/components/SEO";
 
 const NotFound = () => {
   const location = useLocation();
@@ -11,7 +12,13 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
+    <>
+      <SEO 
+        title="Sahifa topilmadi"
+        description="Kechirasiz, siz izlayotgan sahifa topilmadi."
+        noIndex
+      />
+      <div className="flex min-h-screen items-center justify-center bg-background">
       <div className="text-center">
         <h1 className="mb-4 text-4xl font-bold text-foreground">{t('notFound.title')}</h1>
         <p className="mb-4 text-xl text-muted-foreground">{t('notFound.message')}</p>
@@ -20,6 +27,7 @@ const NotFound = () => {
         </a>
       </div>
     </div>
+    </>
   );
 };
 

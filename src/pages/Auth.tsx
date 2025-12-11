@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import bahorLogo from "@/assets/bahor-logo.png";
 import { Mail, Phone, Shield, Info } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageProvider";
+import { SEO } from "@/components/SEO";
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
@@ -11,7 +12,14 @@ export default function Auth() {
   const { t } = useTranslation();
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-background to-primary/5">
+    <>
+      <SEO 
+        title="Kirish"
+        description="Bahor AI hisobingizga kiring. Email, Google yoki telefon raqami orqali kirish imkoniyati."
+        url="/auth"
+        noIndex
+      />
+      <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-background to-primary/5">
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-[420px] mx-auto animate-fade-in">
           {/* Logo & Header */}
@@ -143,5 +151,6 @@ export default function Auth() {
         </div>
       </div>
     </div>
+    </>
   );
 }

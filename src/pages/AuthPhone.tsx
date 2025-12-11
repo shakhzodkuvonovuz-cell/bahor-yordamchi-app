@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, ArrowLeft, Phone, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "@/i18n/LanguageProvider";
+import { SEO } from "@/components/SEO";
 
 export default function AuthPhone() {
   const navigate = useNavigate();
@@ -108,7 +109,14 @@ export default function AuthPhone() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 bg-gradient-to-b from-background to-muted/30">
+    <>
+      <SEO 
+        title="Telefon orqali kirish"
+        description="Bahor AI hisobingizga telefon raqamingiz orqali SMS kod bilan kiring."
+        url="/auth/phone"
+        noIndex
+      />
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 bg-gradient-to-b from-background to-muted/30">
       <div className="w-full max-w-[420px] mx-auto">
         {/* Logo & Header */}
         <div className="text-center mb-8">
@@ -279,5 +287,6 @@ export default function AuthPhone() {
         </p>
       </div>
     </div>
+    </>
   );
 }
