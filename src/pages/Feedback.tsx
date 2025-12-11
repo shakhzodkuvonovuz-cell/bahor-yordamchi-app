@@ -94,6 +94,18 @@ export default function Feedback() {
 
       if (error) throw error;
 
+      // Send email notification (fire and forget)
+      supabase.functions.invoke("notify-feedback", {
+        body: {
+          category,
+          message: message.trim(),
+          email: user?.email || null,
+          screenshot_url: screenshotUrl,
+          route: window.location.pathname,
+          app_version: APP_VERSION,
+        },
+      }).catch((err) => console.error("Failed to send notification:", err));
+
       toast({
         description: t('feedback.success'),
       });
