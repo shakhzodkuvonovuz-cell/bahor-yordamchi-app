@@ -15,7 +15,7 @@ import {
   FollowUpSuggestions,
   ChatEmptyState,
   EditingIndicator,
-  ExportToPdfModal,
+  ExportToDocxModal,
   ThinkBar,
   VirtualizedMessageList,
   type VirtualizedMessageListHandle,
@@ -2545,8 +2545,8 @@ export default function Chat() {
         language={language}
       />
 
-      {/* Export to PDF Modal */}
-      <ExportToPdfModal
+      {/* Export to DOCX Modal */}
+      <ExportToDocxModal
         open={exportPdfModalOpen}
         onOpenChange={setExportPdfModalOpen}
         messageContent={exportPdfContent}

@@ -9,19 +9,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
-import { downloadPDF, openHTMLPrintFallback } from "@/lib/pdfGenerator";
+import { downloadDocx } from "@/lib/docxGenerator";
 
-interface ExportToPdfModalProps {
+interface ExportToDocxModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   messageContent: string;
@@ -29,21 +22,19 @@ interface ExportToPdfModalProps {
   citations?: Array<{ title: string; url: string }>;
 }
 
-export function ExportToPdfModal({
+export function ExportToDocxModal({
   open,
   onOpenChange,
   messageContent,
   defaultTitle,
   citations = [],
-}: ExportToPdfModalProps) {
+}: ExportToDocxModalProps) {
   const { toast } = useToast();
   const { language } = useLanguage();
   const [title, setTitle] = useState(defaultTitle);
-  const [template, setTemplate] = useState("clean");
   const [includeCitations, setIncludeCitations] = useState(citations.length > 0);
   const [loading, setLoading] = useState(false);
 
-  // Reset title when defaultTitle changes
   useEffect(() => {
     setTitle(defaultTitle);
   }, [defaultTitle]);
@@ -51,55 +42,39 @@ export function ExportToPdfModal({
   const t = (key: string) => {
     const labels: Record<string, Record<string, string>> = {
       uz: {
-        title: "PDFga eksport qilish",
+        title: "Word hujjatiga eksport",
         docTitle: "Hujjat nomi",
-        template: "Shablon",
-        "template.clean": "Oddiy",
-        "template.assignment": "Vazifa",
-        "template.report": "Hisobot",
         includeCitations: "Manbalarni qo'shish",
         export: "Eksport qilish",
         exporting: "Tayyorlanmoqda...",
-        success: "PDF yuklandi!",
+        success: "DOCX yuklandi!",
         error: "Xatolik yuz berdi",
       },
       en: {
-        title: "Export to PDF",
+        title: "Export to Word",
         docTitle: "Document title",
-        template: "Template",
-        "template.clean": "Clean",
-        "template.assignment": "Assignment",
-        "template.report": "Report",
         includeCitations: "Include citations",
         export: "Export",
         exporting: "Processing...",
-        success: "PDF downloaded!",
+        success: "DOCX downloaded!",
         error: "An error occurred",
       },
       ru: {
-        title: "Экспорт в PDF",
+        title: "Экспорт в Word",
         docTitle: "Название документа",
-        template: "Шаблон",
-        "template.clean": "Простой",
-        "template.assignment": "Задание",
-        "template.report": "Отчёт",
         includeCitations: "Включить источники",
         export: "Экспортировать",
         exporting: "Обработка...",
-        success: "PDF скачан!",
+        success: "DOCX скачан!",
         error: "Произошла ошибка",
       },
       tr: {
-        title: "PDF'e Aktar",
+        title: "Word'e Aktar",
         docTitle: "Belge adı",
-        template: "Şablon",
-        "template.clean": "Basit",
-        "template.assignment": "Ödev",
-        "template.report": "Rapor",
         includeCitations: "Kaynakları dahil et",
         export: "Aktar",
         exporting: "İşleniyor...",
-        success: "PDF indirildi!",
+        success: "DOCX indirildi!",
         error: "Bir hata oluştu",
       },
     };
@@ -115,7 +90,6 @@ export function ExportToPdfModal({
     setLoading(true);
 
     try {
-      // Prepare content with title and citations
       let content = messageContent;
       
       // Add citations if included
@@ -127,58 +101,21 @@ export function ExportToPdfModal({
         });
       }
 
-      // Format date properly (uz-UZ locale not well supported, use manual formatting)
-      const dateObj = new Date();
-      const formatDate = () => {
-        const day = dateObj.getDate();
-        const year = dateObj.getFullYear();
-        const monthNames: Record<string, string[]> = {
-          uz: ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'],
-          en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
-          ru: ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'],
-          tr: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'],
-        };
-        const months = monthNames[language] || monthNames.en;
-        return `${day} ${months[dateObj.getMonth()]} ${year}`;
-      };
-      const today = formatDate();
-
-      // Use the proper PDF generator with Unicode font support
-      await downloadPDF({
+      await downloadDocx({
         title,
         content,
-        date: today,
-        filename: `${title.replace(/[^a-zA-Z0-9\u0400-\u04FF\-_\s]/g, "").trim() || "document"}.pdf`,
+        filename: `${title.replace(/[^a-zA-Z0-9\u0400-\u04FF\-_\s]/g, "").trim() || "document"}.docx`,
       });
 
       toast({ title: t("success") });
       onOpenChange(false);
     } catch (error) {
-      console.error("[PDF Export] Error with @react-pdf/renderer:", error);
-      
-      // Fallback to HTML print dialog
-      try {
-        const today = new Date().toLocaleDateString(
-          language === 'uz' ? 'uz-UZ' : language === 'ru' ? 'ru-RU' : language === 'tr' ? 'tr-TR' : 'en-US',
-          { year: 'numeric', month: 'long', day: 'numeric' }
-        );
-        
-        openHTMLPrintFallback({
-          title,
-          content: messageContent,
-          date: today,
-        });
-        
-        toast({ title: t("success"), description: "Use Ctrl+P / Cmd+P to save as PDF" });
-        onOpenChange(false);
-      } catch (fallbackError) {
-        console.error("[PDF Export] HTML fallback also failed:", fallbackError);
-        toast({
-          title: t("error"),
-          description: error instanceof Error ? error.message : "Unknown error",
-          variant: "destructive",
-        });
-      }
+      console.error("[DOCX Export] Error:", error);
+      toast({
+        title: t("error"),
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -196,27 +133,13 @@ export function ExportToPdfModal({
 
         <div className="space-y-4 py-4">
           <div>
-            <Label htmlFor="pdf-title">{t("docTitle")}</Label>
+            <Label htmlFor="docx-title">{t("docTitle")}</Label>
             <Input
-              id="pdf-title"
+              id="docx-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="mt-1.5"
             />
-          </div>
-
-          <div>
-            <Label>{t("template")}</Label>
-            <Select value={template} onValueChange={setTemplate}>
-              <SelectTrigger className="mt-1.5">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="clean">{t("template.clean")}</SelectItem>
-                <SelectItem value="assignment">{t("template.assignment")}</SelectItem>
-                <SelectItem value="report">{t("template.report")}</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           {citations.length > 0 && (
