@@ -177,6 +177,19 @@ function dbMessageToUI(msg: chatStore.ChatMessageWithAttachments): Message {
   };
 }
 
+// CRITICAL: Safe message adder that prevents duplicate keys using Map-based dedupe
+function addMessageSafe(prev: Message[], newMsg: Message): Message[] {
+  const messageMap = new Map(prev.map(m => [m.id, m]));
+  if (messageMap.has(newMsg.id)) {
+    console.log("[Chat] Duplicate message blocked:", newMsg.id);
+    return prev; // Return same reference to avoid re-render
+  }
+  messageMap.set(newMsg.id, newMsg);
+  return Array.from(messageMap.values()).sort((a, b) => 
+    new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  );
+}
+
 export default function Chat() {
   const { mode } = useParams<{ mode: string }>();
   const navigate = useNavigate();
@@ -282,13 +295,16 @@ export default function Chat() {
     }
     
     setMessages((prev) => {
-      // Double-check dedupe in state
-      if (prev.some(m => m.id === newMessage.id)) {
-        return prev;
+      // CRITICAL: Use Map to dedupe by ID - prevents duplicate key errors
+      const messageMap = new Map(prev.map(m => [m.id, m]));
+      if (messageMap.has(newMessage.id)) {
+        console.log("[Realtime] Duplicate message blocked in setState:", newMessage.id);
+        return prev; // Return same reference to avoid re-render
       }
+      messageMap.set(newMessage.id, newMessage);
       
-      // Insert in correct order by timestamp
-      const updated = [...prev, newMessage].sort((a, b) => 
+      // Convert back to sorted array
+      const updated = Array.from(messageMap.values()).sort((a, b) => 
         new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
       );
       return updated;
@@ -1187,7 +1203,7 @@ export default function Chat() {
       attachments: attachmentsToProcess.length > 0 ? attachmentsToProcess : undefined,
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => addMessageSafe(prev, userMessage));
     setInputValue("");
     setPendingAttachments([]);
     setIsLoading(true);
@@ -1522,7 +1538,7 @@ export default function Chat() {
             attachments: [imageAttachment],
           };
           
-          setMessages((prev) => [...prev, imageMessage]);
+          setMessages((prev) => addMessageSafe(prev, imageMessage));
           setTyping(false);
           setIsLoading(false);
           setIsGeneratingImage(false);
@@ -1585,7 +1601,7 @@ export default function Chat() {
             timestamp: new Date(),
           };
           
-          setMessages((prev) => [...prev, errorMessage]);
+          setMessages((prev) => addMessageSafe(prev, errorMessage));
           setTyping(false);
           setIsLoading(false);
           setIsGeneratingImage(false);
@@ -1692,7 +1708,7 @@ export default function Chat() {
               content: analysisPrefix + chunk,
               timestamp: new Date(),
             };
-            setMessages((prev) => [...prev, newAssistantMessage]);
+            setMessages((prev) => addMessageSafe(prev, newAssistantMessage));
             setLastAssistantMessageId(assistantId);
             assistantMessageCreated = true;
           } else {
