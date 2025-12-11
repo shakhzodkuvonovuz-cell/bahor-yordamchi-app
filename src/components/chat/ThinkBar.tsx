@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { ChevronDown, ChevronUp, Check, Sparkles, FileText, Image, Clock, Globe, Zap } from "lucide-react";
+import { ChevronDown, ChevronUp, Check, Sparkles, FileText, Image, Clock, Globe, Zap, Brain } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getTraceStepLabel, getUILabels } from "@/lib/traceLabels";
 import type { MessageTrace, TraceStepDetail } from "@/types/trace";
@@ -216,10 +216,23 @@ export function ThinkBar({
         )}
         onClick={handleBarClick}
       >
+        {/* Reasoner mode badge */}
+        {modelPreference === 'reasoner' && (
+          <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-purple-500/20 dark:bg-purple-400/20 border border-purple-500/30">
+            <Brain className="w-3 h-3 text-purple-500 dark:text-purple-400" />
+            <span className="text-[10px] font-medium text-purple-600 dark:text-purple-400">
+              {language === 'uz' ? 'Chuqur' : language === 'ru' ? 'Глубокий' : 'Deep'}
+            </span>
+          </div>
+        )}
+        
         {/* Status icon */}
         {isGenerating && !isComplete ? (
           <div className="flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
+            <Sparkles className={cn(
+              "w-3.5 h-3.5 animate-pulse",
+              modelPreference === 'reasoner' ? "text-purple-500 dark:text-purple-400" : "text-primary"
+            )} />
             <span className="text-foreground/70 font-medium min-w-[80px]">
               {activeStep && (
                 <TypewriterText 
@@ -231,7 +244,10 @@ export function ThinkBar({
           </div>
         ) : (
           <div className="flex items-center gap-2">
-            <Check className="w-3.5 h-3.5 text-primary" />
+            <Check className={cn(
+              "w-3.5 h-3.5",
+              modelPreference === 'reasoner' ? "text-purple-500 dark:text-purple-400" : "text-primary"
+            )} />
             <span className="text-foreground/70">
               {labels.doneIn} <span className="font-mono">{elapsedSeconds}s</span>
             </span>
