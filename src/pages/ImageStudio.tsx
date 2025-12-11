@@ -110,7 +110,7 @@ export default function ImageStudio() {
   // Fetch usage info using the proper entitlements endpoint that handles dev bypass
   const fetchUsage = useCallback(async () => {
     // Wait for both user and session to be available
-    if (!user || !session) return;
+    if (!user || !session?.access_token) return;
     
     try {
       const today = new Date().toISOString().split("T")[0];
@@ -121,13 +121,24 @@ export default function ImageStudio() {
         .gte("created_at", today);
 
       // Fetch from admin-entitlements which properly checks DEV_UNLIMITED_EMAILS
-      // Use POST with action in body since functions.invoke handles auth headers properly
-      const { data, error } = await supabase.functions.invoke("admin-entitlements", {
-        body: { action: "my-entitlement" },
-      });
+      // Use GET method with query params - simpler and works reliably
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-entitlements?action=my-entitlement`,
+        {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${session.access_token}`,
+            "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            "Content-Type": "application/json",
+          },
+        }
+      );
       
-      if (error) {
-        console.error("Failed to fetch entitlement:", error);
+      let data = null;
+      if (response.ok) {
+        data = await response.json();
+      } else {
+        console.error("Failed to fetch entitlement:", response.status, await response.text());
       }
 
       const isDevBypass = data?.isDevBypass === true;
