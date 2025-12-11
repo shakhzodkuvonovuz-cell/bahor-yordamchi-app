@@ -107,28 +107,12 @@ export default function ImageStudio() {
 
   const MAX_PROMPT_LENGTH = 500;
 
-  // Fetch usage info using the proper entitlements endpoint that handles dev bypass
+  // Fetch usage info - gracefully handle auth errors without crashing
   const fetchUsage = useCallback(async () => {
-    // Wait for user to be available
     if (!user) return;
     
     try {
-      // Use supabase.functions.invoke which handles auth automatically
-      const { data, error } = await supabase.functions.invoke("admin-entitlements", {
-        method: "GET",
-      });
-      
-      if (error) {
-        console.error("Failed to fetch entitlement:", error);
-        // If 401, the session is invalid server-side - sign out to force re-login
-        if (error.message?.includes("401") || error.message?.includes("AUTH_REQUIRED")) {
-          console.warn("Session invalid server-side, signing out...");
-          await supabase.auth.signOut();
-          return;
-        }
-        return;
-      }
-      
+      // Get today's image count first (this works even if entitlement check fails)
       const today = new Date().toISOString().split("T")[0];
       const { count } = await supabase
         .from("image_generations")
@@ -136,8 +120,24 @@ export default function ImageStudio() {
         .eq("user_id", user.id)
         .gte("created_at", today);
 
-      const isDevBypass = data?.isDevBypass === true;
-      const isPremium = data?.plan === "beta_premium" || data?.plan === "premium";
+      // Try to fetch entitlement, but don't crash if it fails
+      let isDevBypass = false;
+      let isPremium = false;
+      
+      try {
+        const { data, error } = await supabase.functions.invoke("admin-entitlements", {
+          method: "GET",
+        });
+        
+        if (!error && data) {
+          isDevBypass = data.isDevBypass === true;
+          isPremium = data.plan === "beta_premium" || data.plan === "premium";
+        }
+      } catch (entitlementError) {
+        // Silently fail - use default free tier limits
+        console.warn("Entitlement check failed, using defaults:", entitlementError);
+      }
+
       const dailyLimit = isDevBypass ? -1 : (isPremium ? 20 : 5);
 
       setUsage({
@@ -147,6 +147,8 @@ export default function ImageStudio() {
       });
     } catch (error) {
       console.error("Failed to fetch usage:", error);
+      // Set safe defaults on any error
+      setUsage({ used: 0, limit: 5, isUnlimited: false });
     }
   }, [user]);
 
