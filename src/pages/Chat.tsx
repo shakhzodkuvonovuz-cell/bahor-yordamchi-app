@@ -1640,6 +1640,13 @@ export default function Chat() {
 
       let assistantContent = "";
       
+      // If we're here with an SSE stream, backend routed to text, not image - clear image generating state
+      if (isGeneratingImage) {
+        console.log('[Chat] Backend routed to text instead of image, clearing image state');
+        setIsGeneratingImage(false);
+        setProcessingStatus(null);
+      }
+      
       // Reset trace state and start live timer
       traceStepsRef.current.clear();
       setActiveTrace({ steps: [], elapsedMs: 0, sources: [], isComplete: false });
