@@ -46,25 +46,28 @@ const DEEPSEEK_REASONER_MODEL = Deno.env.get("DEEPSEEK_REASONER_MODEL") || "deep
 // BRAND PROTECTION - OUTPUT SANITIZATION
 // ============================================
 
-// IDENTITY LEAK PATTERNS ONLY - We no longer block mentioning real AI products in news context
-// We ONLY block the AI from claiming to BE these models
+const FORBIDDEN_TERMS = [
+  "deepseek", "openai", "chatgpt", "gpt-4", "gpt-5", "gpt4", "gpt5",
+  "gemini", "claude", "anthropic", "mistral", "llama", "meta ai",
+  "azure openai", "bard", "palm", "vicuna", "falcon",
+  "ai model", "ai modeli", "til modeli", "language model"
+];
+
 const IDENTITY_LEAK_PATTERNS = [
-  // "I am X" patterns - blocks AI from claiming to be another model
-  /aslida\s+(deepseek|openai|chatgpt)/gi,
-  /men\s+(deepseek|openai|chatgpt)\s*(man|masan)?/gi,
-  /i('m| am)\s+(actually\s+)?(deepseek|openai|chatgpt)/gi,
-  /я\s+(deepseek|chatgpt)/gi,
-  // "based on/powered by X" - blocks revealing underlying model
-  /based on\s+(deepseek|openai|chatgpt)/gi,
-  /powered by\s+(deepseek|openai|chatgpt)/gi,
-  /asosida\s+ishlayman/gi,
-  /texnik\s*asos:?/gi,
-  /\*\*texnik\s*asos:?\*\*/gi,
-  // "as an AI model" boilerplate
+  /aslida\s+(deepseek|openai|chatgpt|gemini|claude|anthropic)/gi,
+  /men\s+(deepseek|openai|chatgpt|gemini|claude)/gi,
+  /i('m| am)\s+(actually\s+)?(deepseek|openai|chatgpt|gemini|claude)/gi,
+  /based on\s+(deepseek|openai|chatgpt|gemini|claude)/gi,
+  /powered by\s+(deepseek|openai|chatgpt|gemini|claude)/gi,
+  /я\s+(deepseek|chatgpt|gemini|claude)/gi,
+  /tomonidan\s+yaratilgan/gi,
   /as an ai (model|assistant)/gi,
   /as a language model/gi,
   /ai model(i|eli)?\s*asosida/gi,
   /til model(i|eli)?\s*asosida/gi,
+  /men\s+.{0,30}asosida\s+ishlayman/gi,
+  /texnik\s*asos:?/gi,
+  /\*\*texnik\s*asos:?\*\*/gi,
   /sun'iy\s+intellekt\s+model/gi,
   /языков(ая|ой)\s+модел/gi,
   /модель\s+ии/gi,
@@ -96,9 +99,12 @@ const TRUNCATION_PATTERNS = [
 
 function sanitizeOutput(text: string): string {
   let result = text;
-  // Only apply identity leak patterns - allow mentioning real AI products in news context
   for (const pattern of IDENTITY_LEAK_PATTERNS) {
     result = result.replace(pattern, "Bahor AI");
+  }
+  for (const term of FORBIDDEN_TERMS) {
+    const regex = new RegExp(`\\b${term}\\b`, "gi");
+    result = result.replace(regex, "Bahor AI");
   }
   // Remove truncation phrases - exact string matches first
   for (const phrase of TRUNCATION_PHRASES) {
@@ -497,28 +503,8 @@ If someone asks "Are you DeepSeek/ChatGPT/etc?":
 - Simply say you're Bahor AI (don't confirm or deny other names)
 - Example: "Yo'q, men Bahor AI. Sizga qanday yordam bera olaman?" or "No, I'm Bahor AI. How can I help?"
 
-FORBIDDEN (never CLAIM TO BE these): DeepSeek, OpenAI, ChatGPT, GPT-4, GPT-5
+FORBIDDEN (never mention these names): DeepSeek, OpenAI, ChatGPT, GPT-4, GPT-5, Gemini, Claude, Anthropic, Mistral, LLaMA
 FORBIDDEN phrases: "based on X model", "powered by X", "X asosida ishlayman", "texnik asos"
-
-═══════════════════════════════════════════════════════════════════
-DISCUSSING AI PRODUCTS (MANDATORY - READ CAREFULLY)
-═══════════════════════════════════════════════════════════════════
-
-When users ask about AI news, technology, AI companies, or compare AI products:
-
-MUST DO:
-- Write product names IN FULL: "Gemini 2.0", "Claude 3.5 Sonnet", "GPT-4o", "GPT-5", "Copilot"
-- Discuss Google AI, Anthropic, OpenAI, Microsoft AI freely and professionally
-- Share news about AI developments, features, comparisons naturally
-- Act like a tech journalist covering the AI industry
-
-NEVER DO:
-- Replace letters with asterisks (like "G**ini" or "**3**" or "Cla*de")
-- Use weird spacing or symbols to hide product names
-- Censor or abbreviate product names in any way
-- Act like mentioning AI products is forbidden
-
-You ARE Bahor AI. You can talk ABOUT other AI products normally - you just don't claim to BE them.
 
 ═══════════════════════════════════════════════════════════════════
 BRAND VOICE & TONE (APPLY TO ALL RESPONSES)
