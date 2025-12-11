@@ -1029,22 +1029,42 @@ export default function Chat() {
             // Mark as seen for realtime dedupe
             markAttachmentSeen(dbAttachment.id);
             
-            // Trigger server-side text extraction (fire-and-forget for non-images)
+            // For non-images: either use client-extracted text OR trigger server extraction
             if (!isImage) {
-              attachment.readStatus = 'processing';
-              supabase.functions.invoke('extract-attachment-text', {
-                body: { attachment_id: dbAttachment.id },
-              }).then((result) => {
-                console.log('[Extract] Server extraction result:', result.data);
-                // Update status in pending attachments
-                setPendingAttachments(prev => prev.map(a => 
-                  a.dbId === dbAttachment.id 
-                    ? { ...a, readStatus: result.data?.status === 'ready' ? 'ready' : (result.data?.error ? 'error' : a.readStatus) }
-                    : a
-                ));
-              }).catch(err => {
-                console.error('[Extract] Server extraction error:', err);
-              });
+              if (extractedText && extractedText.length > 50) {
+                // Client-side extraction succeeded (including OCR) - store directly
+                console.log('[Extract] Using client-extracted text:', extractedText.length, 'chars');
+                attachment.readStatus = 'ready';
+                supabase
+                  .from('attachment_text')
+                  .upsert({
+                    attachment_id: dbAttachment.id,
+                    user_id: user.id,
+                    status: 'ready',
+                    text: extractedText.slice(0, 60000), // Cap at 60k chars
+                    char_count: extractedText.length,
+                    updated_at: new Date().toISOString(),
+                  }, { onConflict: 'attachment_id' })
+                  .then(({ error }) => {
+                    if (error) console.error('[Extract] Failed to store client text:', error);
+                    else console.log('[Extract] Client text stored successfully');
+                  });
+              } else {
+                // No client text - try server-side extraction
+                attachment.readStatus = 'processing';
+                supabase.functions.invoke('extract-attachment-text', {
+                  body: { attachment_id: dbAttachment.id },
+                }).then((result) => {
+                  console.log('[Extract] Server extraction result:', result.data);
+                  setPendingAttachments(prev => prev.map(a => 
+                    a.dbId === dbAttachment.id 
+                      ? { ...a, readStatus: result.data?.status === 'ready' ? 'ready' : (result.data?.error ? 'error' : a.readStatus) }
+                      : a
+                  ));
+                }).catch(err => {
+                  console.error('[Extract] Server extraction error:', err);
+                });
+              }
             }
           } catch (err) {
             console.error("Error saving attachment to DB:", err);
