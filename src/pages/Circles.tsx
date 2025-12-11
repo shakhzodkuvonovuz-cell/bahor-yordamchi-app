@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { SEO } from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
 import { Plus, Users, ArrowLeft, ChevronRight, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -182,7 +183,13 @@ export default function Circles() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      <SEO 
+        title="Doiralar" 
+        description="Bahor AI Doiralar - guruh suhbati va AI hamkorlik platformasi."
+        url="/circles"
+      />
+      <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -321,5 +328,6 @@ export default function Circles() {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 }

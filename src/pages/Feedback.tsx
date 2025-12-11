@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { SEO } from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Send, Camera, Loader2, Bug, Lightbulb, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -136,7 +137,14 @@ export default function Feedback() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      <SEO 
+        title="Fikr bildirish" 
+        description="Bahor AI haqida fikr bildiring. Xato, taklif yoki boshqa fikrlaringizni yuboring."
+        url="/feedback"
+        noIndex
+      />
+      <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 bg-card/95 backdrop-blur-lg border-b border-border/40 shadow-premium-sm z-10">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
@@ -247,5 +255,6 @@ export default function Feedback() {
         </p>
       </div>
     </div>
+    </>
   );
 }

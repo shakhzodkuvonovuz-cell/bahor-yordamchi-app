@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { SEO } from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
 import { 
   Sparkles, 
@@ -409,7 +410,13 @@ export default function ImageStudio() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      <SEO 
+        title="Rasm yaratish" 
+        description="Bahor AI bilan sun'iy intellekt yordamida rasmlar yarating. O'zbek tilida tavsiflang."
+        url="/images"
+      />
+      <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -833,5 +840,6 @@ export default function ImageStudio() {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 }

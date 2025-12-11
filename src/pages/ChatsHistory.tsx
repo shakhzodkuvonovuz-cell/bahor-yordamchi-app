@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { SEO } from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
 import { 
   Search, 
@@ -403,7 +404,14 @@ export default function ChatsHistory() {
   };
   
   return (
-    <div className="flex flex-col h-full bg-background">
+    <>
+      <SEO 
+        title="Suhbatlar tarixi" 
+        description="Barcha suhbatlar tarixi. O'tgan suhbatlarni ko'ring va davom ettiring."
+        url="/chats"
+        noIndex
+      />
+      <div className="flex flex-col h-full bg-background">
       {/* Header */}
       <div className="flex-shrink-0 px-4 pt-6 pb-4 border-b border-border">
         <div className="flex items-center justify-between mb-1">
@@ -568,5 +576,6 @@ export default function ChatsHistory() {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 }

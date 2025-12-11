@@ -2,13 +2,20 @@ import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTranslation } from "@/i18n/LanguageProvider";
+import { SEO } from "@/components/SEO";
 
 export default function Privacy() {
   const navigate = useNavigate();
   const { t, language } = useTranslation();
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      <SEO 
+        title="Maxfiylik siyosati" 
+        description="Bahor AI maxfiylik siyosati va ma'lumotlarni himoya qilish qoidalari."
+        url="/privacy"
+      />
+      <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 bg-card/95 backdrop-blur-lg border-b border-border/40 shadow-premium-sm z-10">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
@@ -95,5 +102,6 @@ export default function Privacy() {
         </div>
       </ScrollArea>
     </div>
+    </>
   );
 }

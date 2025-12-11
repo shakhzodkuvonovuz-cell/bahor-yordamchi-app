@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { SEO } from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, FileText, Images, Merge, Split, Minimize2, Droplet, Hash, ScanText, Download, RefreshCw, Loader2, File, X, Plus, FileUp, Image, RotateCw, Lock, Unlock, Wrench, Eye, Trash2, MoreVertical, Sparkles } from "lucide-react";
 import { FileActionsSheet } from "@/components/documents/FileActionsSheet";
@@ -623,7 +624,13 @@ export default function DocumentTools() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      <SEO 
+        title="Hujjat vositalari" 
+        description="PDF va hujjat vositalari. Yaratish, birlashtirish, bo'lish va boshqa imkoniyatlar."
+        url="/tools"
+      />
+      <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border">
         <div className="flex items-center justify-between p-4 max-w-3xl mx-auto">
@@ -1110,5 +1117,6 @@ export default function DocumentTools() {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 }

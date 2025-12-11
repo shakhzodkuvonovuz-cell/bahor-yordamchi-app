@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { SEO } from "@/components/SEO";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -387,7 +388,13 @@ export default function Tarjimon() {
   ];
 
   return (
-    <div className="min-h-[calc(100dvh-4rem)] md:min-h-screen flex flex-col bg-background">
+    <>
+      <SEO 
+        title="Tarjimon" 
+        description="Bahor AI Tarjimon - 100+ tilda professional tarjima. O'zbek, ingliz, rus va boshqa tillar."
+        url="/translate"
+      />
+      <div className="min-h-[calc(100dvh-4rem)] md:min-h-screen flex flex-col bg-background">
       {/* Header */}
       <div className="px-4 pt-6 pb-4 border-b border-border/50">
         <div className="max-w-4xl mx-auto">
@@ -746,5 +753,6 @@ export default function Tarjimon() {
         </div>
       </div>
     </div>
+    </>
   );
 }

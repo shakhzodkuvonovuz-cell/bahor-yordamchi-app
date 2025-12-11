@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
+import { SEO } from "@/components/SEO";
 import { Settings } from "lucide-react";
 import ModeCard from "@/components/ModeCard";
 import { PRIMARY_MODES, LEARNING_MODES } from "@/data/modes";
@@ -22,7 +23,13 @@ export default function ModeSelection() {
   };
 
   return (
-    <AppLayout className="bg-gradient-to-b from-background to-primary-glow/10">
+    <>
+      <SEO 
+        title="Rejimlar" 
+        description="Bahor AI rejimlarini tanlang. IELTS, kod yozish, uy vazifasi va boshqa ko'plab imkoniyatlar."
+        url="/modes-list"
+      />
+      <AppLayout className="bg-gradient-to-b from-background to-primary-glow/10">
       {/* Header */}
       <div className="sticky top-0 bg-background/95 backdrop-blur-sm border-b border-border z-10">
         <AppContainer className="py-4 flex items-center justify-between">
@@ -96,5 +103,6 @@ export default function ModeSelection() {
         </div>
       </AppContainer>
     </AppLayout>
+    </>
   );
 }

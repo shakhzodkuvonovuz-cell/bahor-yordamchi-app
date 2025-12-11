@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { SEO } from "@/components/SEO";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { ArrowLeft, User, Globe, Moon, Sun, Shield, HelpCircle, FileText, Mail, LogOut, ChevronRight, CreditCard, Bell, Zap, Edit, Crown, Lock, RotateCcw, Loader2, Infinity, Download, Trash2 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
@@ -123,7 +124,14 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
+    <>
+      <SEO 
+        title="Sozlamalar" 
+        description="Bahor AI sozlamalari. Profil, mavzu, til va boshqa sozlamalarni boshqaring."
+        url="/settings"
+        noIndex
+      />
+      <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Header - 44px min hit area */}
       <header className="sticky top-0 bg-card/95 backdrop-blur-lg border-b border-border/40 shadow-premium-sm z-10">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
@@ -602,5 +610,6 @@ export default function Settings() {
         onOpenChange={setDataManagementOpen}
       />
     </div>
+    </>
   );
 }
