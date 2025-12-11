@@ -283,7 +283,8 @@ const PDFDocument: React.FC<PDFDocumentProps> = ({ title, content }) => {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {/* Clean document - no header, just content */}
+        {/* Document title */}
+        <Text style={styles.title}>{sanitizeEmojis(title)}</Text>
         
         <View style={styles.content}>
           {parsedLines.map((line, index) => {
