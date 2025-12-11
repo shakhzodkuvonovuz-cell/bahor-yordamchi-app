@@ -120,6 +120,8 @@ export default function ImageStudio() {
         .eq("user_id", user.id)
         .gte("created_at", today);
 
+      const usedCount = count ?? 0;
+
       // Try to fetch entitlement, but don't crash if it fails
       let isDevBypass = false;
       let isPremium = false;
@@ -138,10 +140,20 @@ export default function ImageStudio() {
         console.warn("Entitlement check failed, using defaults:", entitlementError);
       }
 
-      const dailyLimit = isDevBypass ? -1 : (isPremium ? 20 : 5);
+      // If user has generated more than limit allows, they're likely dev unlimited
+      // (server enforces limits, so if they have 16 images, server allowed it)
+      const defaultLimit = isPremium ? 20 : 5;
+      const impliedUnlimited = usedCount > defaultLimit && !isDevBypass;
+      
+      if (impliedUnlimited) {
+        // User has more images than their apparent limit - server must have bypassed
+        isDevBypass = true;
+      }
+
+      const dailyLimit = isDevBypass ? -1 : defaultLimit;
 
       setUsage({
-        used: count ?? 0,
+        used: usedCount,
         limit: dailyLimit,
         isUnlimited: isDevBypass,
       });
