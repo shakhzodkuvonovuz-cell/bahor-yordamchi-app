@@ -7,11 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Loader2, ArrowLeft, Mail, AlertCircle, CheckCircle, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { trackSignupStarted, trackSignupCompleted, trackLoginCompleted } from "@/lib/analytics";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 export default function AuthEmail() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('next') || '/modes';
+  const { t } = useTranslation();
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,25 +35,25 @@ export default function AuthEmail() {
     const msg = err?.message?.toLowerCase() || "";
     
     if (msg.includes("invalid login") || msg.includes("invalid credentials")) {
-      return "Email yoki parol noto'g'ri.";
+      return t('auth.error.invalidCredentials');
     }
     if (msg.includes("already registered") || msg.includes("user already registered")) {
-      return "Bu email bilan hisob allaqachon mavjud.";
+      return t('auth.error.alreadyRegistered');
     }
     if (msg.includes("password") && (msg.includes("weak") || msg.includes("at least"))) {
-      return "Parol kamida 8 ta belgidan iborat bo'lsin.";
+      return t('auth.error.weakPassword');
     }
     if (msg.includes("rate limit") || msg.includes("too many")) {
-      return "Juda ko'p urinish. Birozdan keyin qayta urinib ko'ring.";
+      return t('auth.error.tooManyAttempts');
     }
     if (msg.includes("email not confirmed")) {
-      return "Emailingizni tasdiqlang.";
+      return t('auth.error.emailNotConfirmed');
     }
     if (!email.includes("@")) {
-      return "Email noto'g'ri kiritildi.";
+      return t('auth.error.invalidEmail');
     }
     
-    return "Xatolik yuz berdi. Qayta urinib ko'ring.";
+    return t('auth.error.generic');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -59,23 +61,23 @@ export default function AuthEmail() {
     setError(null);
     
     if (!email || !email.includes("@")) {
-      setError("Email noto'g'ri kiritildi.");
+      setError(t('auth.error.invalidEmail'));
       return;
     }
     
     if (password.length < 8) {
-      setError("Parol kamida 8 ta belgidan iborat bo'lishi kerak.");
+      setError(t('auth.error.weakPassword'));
       return;
     }
 
     // Signup-specific validation
     if (isSignUp) {
       if (!confirmPassword) {
-        setError("Parolni qayta kiriting.");
+        setError(t('auth.error.confirmRequired'));
         return;
       }
       if (password !== confirmPassword) {
-        setError("Parollar mos kelmadi. Qayta tekshiring.");
+        setError(t('auth.error.passwordMismatch'));
         return;
       }
     }
@@ -113,7 +115,7 @@ export default function AuthEmail() {
         }
       }
     } catch (err) {
-      setError("Xatolik yuz berdi. Qayta urinib ko'ring.");
+      setError(t('auth.error.generic'));
     }
     
     setLoading(false);
@@ -121,7 +123,7 @@ export default function AuthEmail() {
 
   const handlePasswordReset = async () => {
     if (!email || !email.includes("@")) {
-      setError("Iltimos, emailingizni kiriting.");
+      setError(t('auth.error.enterEmail'));
       return;
     }
 
@@ -134,12 +136,12 @@ export default function AuthEmail() {
       });
       
       if (resetError) {
-        setError("Xatolik yuz berdi. Qayta urinib ko'ring.");
+        setError(t('auth.error.generic'));
       } else {
         setResetSuccess(true);
       }
     } catch (err) {
-      setError("Xatolik yuz berdi. Qayta urinib ko'ring.");
+      setError(t('auth.error.generic'));
     }
     
     setResetLoading(false);
@@ -171,7 +173,7 @@ export default function AuthEmail() {
                 </button>
               </Link>
               <h2 className="text-lg font-semibold text-foreground">
-                {isSignUp ? "Ro'yxatdan o'tish" : "Email orqali kirish"}
+                {isSignUp ? t('auth.signupTitle') : t('auth.emailTitle')}
               </h2>
             </div>
 
@@ -192,10 +194,10 @@ export default function AuthEmail() {
                       <CheckCircle className="w-7 h-7 text-primary" />
                     </div>
                     <h3 className="font-semibold text-foreground mb-2">
-                      Havolasi yuborildi!
+                      {t('auth.resetSent')}
                     </h3>
                     <p className="text-sm text-muted-foreground mb-4">
-                      Emailga tiklash havolasi yuborildi.
+                      {t('auth.resetSentDesc')}
                     </p>
                     <Button 
                       onClick={() => {
@@ -205,17 +207,17 @@ export default function AuthEmail() {
                       variant="outline"
                       className="w-full h-12 rounded-xl"
                     >
-                      Orqaga
+                      {t('auth.back')}
                     </Button>
                   </div>
                 ) : (
                   <>
                     <p className="text-sm text-muted-foreground mb-4">
-                      Email manzilingizni kiriting, parolni tiklash havolasini yuboramiz.
+                      {t('auth.resetDesc')}
                     </p>
                     <div className="space-y-2">
                       <Label htmlFor="reset-email" className="text-[13px] font-medium">
-                        Email
+                        {t('auth.email')}
                       </Label>
                       <div className="relative">
                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -238,17 +240,17 @@ export default function AuthEmail() {
                       {resetLoading ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                          Yuborilmoqda...
+                          {t('auth.sending')}
                         </>
                       ) : (
-                        "Tiklash havolasini yuborish"
+                        t('auth.sendResetLink')
                       )}
                     </Button>
                     <button
                       onClick={() => setShowResetPanel(false)}
                       className="w-full text-[13px] text-muted-foreground hover:text-foreground transition-colors py-2"
                     >
-                      Orqaga
+                      {t('auth.back')}
                     </button>
                   </>
                 )}
@@ -258,7 +260,7 @@ export default function AuthEmail() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-[13px] font-medium">
-                    Email
+                    {t('auth.email')}
                   </Label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -280,7 +282,7 @@ export default function AuthEmail() {
 
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-[13px] font-medium">
-                    Parol
+                    {t('auth.password')}
                   </Label>
                   <div className="relative">
                     <Input
@@ -291,7 +293,7 @@ export default function AuthEmail() {
                         setPassword(e.target.value);
                         setError(null);
                       }}
-                      placeholder="Kamida 8 ta belgi"
+                      placeholder={t('auth.passwordHint')}
                       className="h-12 rounded-[14px] border-border/50 focus:border-primary focus:ring-2 focus:ring-primary/20 text-[15px] pr-12"
                       required
                       minLength={8}
@@ -316,7 +318,7 @@ export default function AuthEmail() {
                 {isSignUp && (
                   <div className="space-y-2">
                     <Label htmlFor="confirmPassword" className="text-[13px] font-medium">
-                      Parolni qayta kiriting
+                      {t('auth.confirmPassword')}
                     </Label>
                     <div className="relative">
                       <Input
@@ -327,7 +329,7 @@ export default function AuthEmail() {
                           setConfirmPassword(e.target.value);
                           setError(null);
                         }}
-                        placeholder="Parolni qayta kiriting"
+                        placeholder={t('auth.confirmPassword')}
                         className="h-12 rounded-[14px] border-border/50 focus:border-primary focus:ring-2 focus:ring-primary/20 text-[15px] pr-12"
                         required
                         minLength={8}
@@ -355,7 +357,7 @@ export default function AuthEmail() {
                     onClick={() => setShowResetPanel(true)}
                     className="text-[13px] text-primary hover:text-primary/80 transition-colors min-h-[44px] flex items-center"
                   >
-                    Parolni unutdingizmi?
+                    {t('auth.forgotPassword')}
                   </button>
                 )}
 
@@ -367,10 +369,10 @@ export default function AuthEmail() {
                   {loading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      Kutilmoqda...
+                      {t('auth.waiting')}
                     </>
                   ) : (
-                    isSignUp ? "Ro'yxatdan o'tish" : "Kirish"
+                    isSignUp ? t('auth.signup') : t('auth.login')
                   )}
                 </Button>
               </form>
@@ -389,10 +391,10 @@ export default function AuthEmail() {
                   className="text-[14px] text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
                 >
                   {isSignUp 
-                    ? "Hisobingiz bormi? " 
-                    : "Hisobingiz yo'qmi? "}
+                    ? t('auth.haveAccount') + " " 
+                    : t('auth.noAccount') + " "}
                   <span className="text-primary font-medium">
-                    {isSignUp ? "Kirish" : "Ro'yxatdan o'tish"}
+                    {isSignUp ? t('auth.login') : t('auth.signup')}
                   </span>
                 </button>
               </div>
