@@ -1,5 +1,8 @@
 // Client-side text extraction for supported file types
 // Max 20,000 characters to keep payload size reasonable
+// Includes OCR fallback for scanned PDFs using Tesseract.js
+
+import { extractTextFromPDF as ocrExtractFromPDF } from '@/services/ocrService';
 
 const MAX_TEXT_LENGTH = 20000;
 
@@ -87,7 +90,7 @@ export function isWordFile(file: File): boolean {
 async function extractTextFromPdf(file: File): Promise<TextExtractionResult> {
   // Add timeout to prevent hanging
   const timeoutPromise = new Promise<TextExtractionResult>((_, reject) => {
-    setTimeout(() => reject(new Error('PDF extraction timeout')), 15000);
+    setTimeout(() => reject(new Error('PDF extraction timeout')), 30000); // 30s for OCR
   });
   
   const extractionPromise = (async (): Promise<TextExtractionResult> => {
@@ -119,8 +122,32 @@ async function extractTextFromPdf(file: File): Promise<TextExtractionResult> {
         }
       }
       
-      if (extractedTexts.length === 0) {
-        // PDF might be image-based (scanned), not supported for text extraction in beta
+      // Check if we got meaningful text (more than 100 chars total)
+      const totalTextLength = extractedTexts.join('').replace(/--- Page \d+ ---/g, '').trim().length;
+      
+      if (totalTextLength < 100) {
+        // PDF is likely scanned/image-based - try OCR
+        console.log('[PDF] Low text content detected, attempting OCR fallback...');
+        try {
+          const ocrResult = await ocrExtractFromPDF(file);
+          if (ocrResult.success && ocrResult.text && ocrResult.text.length > 50) {
+            console.log('[PDF] OCR successful, extracted', ocrResult.text.length, 'chars');
+            let fullText = ocrResult.text;
+            const truncated = fullText.length > MAX_TEXT_LENGTH;
+            if (truncated) {
+              fullText = fullText.slice(0, MAX_TEXT_LENGTH) + '\n\n[... truncated ...]';
+            }
+            return {
+              text: fullText,
+              status: 'ready',
+              truncated,
+            };
+          }
+        } catch (ocrError) {
+          console.warn('[PDF] OCR fallback failed:', ocrError);
+        }
+        
+        // OCR also failed
         return { 
           text: null, 
           status: 'unsupported', 
