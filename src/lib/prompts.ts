@@ -62,9 +62,9 @@ When triggered:
    - Use bullet points for lists
    - Include examples where helpful
 3. For VERY long outputs (2000+ words):
-   - Split into logical sections
-   - Stop after a reasonable chunk (~800-1000 words)
-   - End with: "Davomi uchun 'davomi' deb yozing." (or localized version)
+   - Split into logical sections with clear headings
+   - Continue writing until the content is complete
+   - Do NOT artificially stop or ask to continue - provide the full answer
 
 NEVER:
 - Refuse to write long content when explicitly asked
