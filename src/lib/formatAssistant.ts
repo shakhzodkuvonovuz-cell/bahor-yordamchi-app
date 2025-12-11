@@ -60,20 +60,18 @@ export function formatAssistantText(text: string, uiLang: string = 'uz'): string
   result = result.replace(/\n{3,}/g, '\n\n');
   result = result.replace(/[ \t]{2,}/g, ' ');
   
-  // 3. Truncate extremely long responses for free tier
-  const MAX_FREE_CHARS = 1800;
-  if (result.length > MAX_FREE_CHARS) {
-    const truncationMessage: Record<string, string> = {
-      uz: "\n\n(Davomi uchun: 'batafsil' deb yozing.)",
-      en: "\n\n(For more details: type 'more details'.)",
-      ru: "\n\n(Для продолжения: напишите 'подробнее'.)",
-      tr: "\n\n(Devam için: 'detaylı' yazın.)",
-    };
-    
-    // Find a good break point
-    const breakPoint = result.lastIndexOf('\n', MAX_FREE_CHARS);
-    const cutPoint = breakPoint > MAX_FREE_CHARS * 0.7 ? breakPoint : MAX_FREE_CHARS;
-    result = result.slice(0, cutPoint) + (truncationMessage[uiLang] || truncationMessage.uz);
+  // 3. Strip truncation phrases that model may emit
+  const TRUNCATION_PATTERNS = [
+    /\(Davomi uchun[^)]*\)/gi,
+    /Davomi uchun:?\s*['"]?batafsil['"]?\s*deb yozing\.?/gi,
+    /'batafsil'\s*deb yozing\.?/gi,
+    /Davom et(ay)?mi\??/gi,
+    /Would you like me to continue\??/gi,
+    /Shall I continue\??/gi,
+    /Let me know if you('d like| want) me to continue/gi,
+  ];
+  for (const pattern of TRUNCATION_PATTERNS) {
+    result = result.replace(pattern, '');
   }
   
   // 4. Collapse excessive bullet lists (>10 items -> max 6 + note)
