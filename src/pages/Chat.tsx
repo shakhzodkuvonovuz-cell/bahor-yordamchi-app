@@ -1561,11 +1561,10 @@ export default function Chat() {
           
           setMessages((prev) => addMessageSafe(prev, imageMessage));
           setTyping(false);
-          setIsLoading(false);
           setIsGeneratingImage(false);
           setProcessingStatus(null);
           
-          // Save to DB with attachment
+          // Save to DB with attachment - KEEP isLoading true until after save to prevent realtime duplicates
           if (user) {
             try {
               const savedAssistant = await chatStore.addMessage(user.id, {
@@ -1599,7 +1598,13 @@ export default function Chat() {
               setLastAssistantMessageId(savedAssistant.id);
             } catch (e) {
               console.error('Error saving image message:', e);
+            } finally {
+              // NOW set isLoading to false - after message is saved and marked as seen
+              setIsLoading(false);
             }
+          } else {
+            // No user, just set loading to false
+            setIsLoading(false);
           }
           
           toast({
