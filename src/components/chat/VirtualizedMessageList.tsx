@@ -1,11 +1,10 @@
-import { useRef, useCallback, forwardRef, useImperativeHandle, useMemo, memo } from "react";
-import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
+import { useRef, forwardRef, useImperativeHandle, memo } from "react";
 import ChatMessage from "@/components/ChatMessage";
 import { ThinkBar } from "@/components/chat/ThinkBar";
 import { ReasonedChip } from "@/components/chat/ReasonedChip";
 import { FollowUpSuggestions } from "@/components/chat/FollowUpSuggestions";
 import { Message } from "@/types/chat";
-import type { MessageTrace, TraceStepData } from "@/types/trace";
+import type { MessageTrace } from "@/types/trace";
 import type { ModelPreference } from "@/components/ModelToggle";
 import bahorLogo from "@/assets/bahor-logo.png";
 
@@ -128,7 +127,6 @@ const MessageItem = memo(function MessageItem({
     </div>
   );
 }, (prev, next) => {
-  // Custom comparison for memoization
   return (
     prev.message.id === next.message.id &&
     prev.message.content === next.message.content &&
@@ -156,14 +154,12 @@ interface VirtualizedMessageListProps {
   onSendMessage: (message: string) => void;
   isMobile: boolean;
   onAtBottomStateChange?: (atBottom: boolean) => void;
-  // Trace props
   activeTrace: MessageTrace | null;
   liveElapsedMs: number;
   modelPreference: ModelPreference;
   language: string;
   mode?: string;
   onTraceClick: (messageId: string) => void;
-  // Image generation
   isGeneratingImage: boolean;
 }
 
@@ -200,45 +196,71 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListHandle, Virtuali
     },
     ref
   ) => {
-    const virtuosoRef = useRef<VirtuosoHandle>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const bottomRef = useRef<HTMLDivElement>(null);
 
     useImperativeHandle(ref, () => ({
       scrollToBottom: () => {
-        virtuosoRef.current?.scrollToIndex({
-          index: "LAST",
-          behavior: "smooth",
-        });
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
       },
       scrollToIndex: (index: number) => {
-        virtuosoRef.current?.scrollToIndex({
-          index,
-          behavior: "smooth",
-          align: "center",
-        });
+        const container = scrollContainerRef.current;
+        if (!container) return;
+        const items = container.querySelectorAll('[data-message-index]');
+        const target = items[index] as HTMLElement;
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
       },
     }));
 
-    const handleAtBottomChange = useCallback(
-      (atBottom: boolean) => {
-        onAtBottomStateChange?.(atBottom);
-      },
-      [onAtBottomStateChange]
-    );
+    const handleScroll = () => {
+      const container = scrollContainerRef.current;
+      if (!container) return;
+      
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const atBottom = scrollHeight - scrollTop - clientHeight < 100;
+      onAtBottomStateChange?.(atBottom);
+    };
 
-    // Add image generation placeholder as virtual item if generating
-    const data = useMemo(() => {
-      if (isGeneratingImage) {
-        return [...messages, { id: "__generating_image__", role: "assistant", content: "", timestamp: new Date() } as Message];
-      }
-      return messages;
-    }, [messages, isGeneratingImage]);
+    const isCurrentlyGenerating = isLoading || typing;
 
-    // Render function for each message
-    const itemContent = useCallback(
-      (index: number, message: Message) => {
-        // Image generation placeholder
-        if (message.id === "__generating_image__") {
-          return (
+    return (
+      <div 
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto overflow-x-hidden"
+        style={{ WebkitOverflowScrolling: "touch" }}
+        onScroll={handleScroll}
+      >
+        <div className="flex flex-col py-4">
+          {messages.map((message, index) => (
+            <div key={message.id} data-message-index={index}>
+              <MessageItem
+                message={message}
+                isLastAssistant={message.id === lastAssistantMessageId}
+                isCurrentlyGenerating={isCurrentlyGenerating}
+                activeTrace={activeTrace}
+                liveElapsedMs={liveElapsedMs}
+                modelPreference={modelPreference}
+                language={language}
+                mode={mode}
+                onTraceClick={onTraceClick}
+                onCopy={onCopy}
+                onEdit={onEdit}
+                onRegenerate={onRegenerate}
+                onReaction={onReaction}
+                onShare={onShare}
+                onContinue={onContinue}
+                onVariant={onVariant}
+                onExportPdf={onExportPdf}
+                onSendMessage={onSendMessage}
+                isMobile={isMobile}
+              />
+            </div>
+          ))}
+          
+          {/* Image generation placeholder */}
+          {isGeneratingImage && (
             <div className="px-2 sm:px-4 py-1">
               <div className="flex gap-3 justify-start chat-message-ai group animate-fade-in">
                 <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-card border border-border/40 flex items-center justify-center mt-0.5 shadow-[0_0_12px_rgba(45,212,191,0.3)]">
@@ -267,78 +289,11 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListHandle, Virtuali
                 </div>
               </div>
             </div>
-          );
-        }
-
-        const isLastAssistant = message.id === lastAssistantMessageId;
-        const isCurrentlyGenerating = isLoading || typing;
-
-        return (
-          <MessageItem
-            key={message.id}
-            message={message}
-            isLastAssistant={isLastAssistant}
-            isCurrentlyGenerating={isCurrentlyGenerating}
-            activeTrace={activeTrace}
-            liveElapsedMs={liveElapsedMs}
-            modelPreference={modelPreference}
-            language={language}
-            mode={mode}
-            onTraceClick={onTraceClick}
-            onCopy={onCopy}
-            onEdit={onEdit}
-            onRegenerate={onRegenerate}
-            onReaction={onReaction}
-            onShare={onShare}
-            onContinue={onContinue}
-            onVariant={onVariant}
-            onExportPdf={onExportPdf}
-            onSendMessage={onSendMessage}
-            isMobile={isMobile}
-          />
-        );
-      },
-      [
-        lastAssistantMessageId,
-        typing,
-        isLoading,
-        onCopy,
-        onEdit,
-        onRegenerate,
-        onReaction,
-        onShare,
-        onContinue,
-        onVariant,
-        onExportPdf,
-        onSendMessage,
-        isMobile,
-        activeTrace,
-        liveElapsedMs,
-        modelPreference,
-        language,
-        mode,
-        onTraceClick,
-      ]
-    );
-
-    return (
-      <Virtuoso
-        ref={virtuosoRef}
-        data={data}
-        computeItemKey={(index, msg) => msg.id}
-        itemContent={itemContent}
-        atBottomStateChange={handleAtBottomChange}
-        atBottomThreshold={100}
-        followOutput={false}
-        overscan={200}
-        className="flex-1"
-        style={{ 
-          height: "100%",
-          WebkitOverflowScrolling: "touch",
-        }}
-        increaseViewportBy={{ top: 400, bottom: 600 }}
-        defaultItemHeight={120}
-      />
+          )}
+          
+          <div ref={bottomRef} />
+        </div>
+      </div>
     );
   }
 );
