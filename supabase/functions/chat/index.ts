@@ -74,6 +74,18 @@ const IDENTITY_LEAK_PATTERNS = [
   /на\s+основе\s+.{0,15}модел/gi,
 ];
 
+// Truncation phrases that should be stripped from responses
+const TRUNCATION_PATTERNS = [
+  /\(Davomi uchun[^)]*\)/gi,
+  /Davomi uchun:?\s*['"]?batafsil['"]?\s*deb yozing\.?/gi,
+  /['"]?batafsil['"]?\s*deb yozing\.?/gi,
+  /Davom etaymi\??/gi,
+  /Would you like me to continue\??/gi,
+  /Shall I continue\??/gi,
+  /Let me know if you('d like| want) me to continue/gi,
+  /\.\.\.\s*deb yozing\.?/gi,
+];
+
 function sanitizeOutput(text: string): string {
   let result = text;
   for (const pattern of IDENTITY_LEAK_PATTERNS) {
@@ -82,6 +94,10 @@ function sanitizeOutput(text: string): string {
   for (const term of FORBIDDEN_TERMS) {
     const regex = new RegExp(`\\b${term}\\b`, "gi");
     result = result.replace(regex, "Bahor AI");
+  }
+  // Remove truncation phrases that reasoner might still emit
+  for (const pattern of TRUNCATION_PATTERNS) {
+    result = result.replace(pattern, "");
   }
   return result;
 }
@@ -1069,7 +1085,18 @@ ${userToneContext}
 `;
     }
 
-    const systemPrompt = `${BRAND_SYSTEM_PROMPT}
+    // For reasoner mode, add anti-truncation directive at the very top
+    const reasonerTopDirective = modelPreference === 'reasoner' ? `
+═══════════════════════════════════════════════════════════════════
+CRITICAL OUTPUT RULES - MUST FOLLOW
+═══════════════════════════════════════════════════════════════════
+You MUST complete your ENTIRE response in ONE message. 
+FORBIDDEN phrases (NEVER use these): "Davomi uchun", "batafsil deb yozing", "would you like me to continue", "davom etaymi", "(Davomi", "...deb yozing"
+DO NOT truncate, split, or ask to continue. Write your FULL answer regardless of length.
+
+` : '';
+
+    const systemPrompt = `${reasonerTopDirective}${BRAND_SYSTEM_PROMPT}
 ${languageDirective}
 ${toneDirective}
 ${styleClamp}
