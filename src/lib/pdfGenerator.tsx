@@ -260,7 +260,21 @@ interface PDFDocumentProps {
 }
 
 const PDFDocument: React.FC<PDFDocumentProps> = ({ title, content, date, messageCount }) => {
-  const parsedLines = parseMarkdown(content);
+  // Remove first heading if it matches the title to avoid duplication
+  const sanitizedTitle = sanitizeEmojis(title).trim().toLowerCase();
+  let contentToRender = content;
+  
+  // Check if content starts with the same heading as title
+  const firstLineMatch = content.trim().match(/^#\s+(.+)/);
+  if (firstLineMatch) {
+    const firstHeading = sanitizeEmojis(firstLineMatch[1]).trim().toLowerCase();
+    if (firstHeading === sanitizedTitle || sanitizedTitle.includes(firstHeading) || firstHeading.includes(sanitizedTitle)) {
+      // Remove the first heading line from content
+      contentToRender = content.trim().replace(/^#\s+.+\n*/, '');
+    }
+  }
+  
+  const parsedLines = parseMarkdown(contentToRender);
 
   return (
     <Document>
