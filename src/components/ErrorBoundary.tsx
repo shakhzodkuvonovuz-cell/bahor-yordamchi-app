@@ -1,6 +1,7 @@
 import { Component, ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { translate, Lang } from "@/i18n/locales";
 
 interface Props {
   children: ReactNode;
@@ -10,6 +11,17 @@ interface Props {
 interface State {
   hasError: boolean;
   error?: Error;
+}
+
+// Get language from localStorage (same key as LanguageProvider)
+function getStoredLanguage(): Lang {
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem('bahorai_language');
+    if (stored === 'uz' || stored === 'en' || stored === 'ru' || stored === 'tr') {
+      return stored;
+    }
+  }
+  return 'uz';
 }
 
 class ErrorBoundary extends Component<Props, State> {
@@ -23,7 +35,6 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log error only in development
     if (process.env.NODE_ENV === 'development') {
       console.error("ErrorBoundary caught:", error, errorInfo);
     }
@@ -43,6 +54,8 @@ class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
+      const lang = getStoredLanguage();
+
       return (
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
           <div className="max-w-sm w-full text-center space-y-6">
@@ -52,10 +65,10 @@ class ErrorBoundary extends Component<Props, State> {
             
             <div className="space-y-2">
               <h2 className="text-xl font-semibold text-foreground">
-                Xatolik yuz berdi
+                {translate(lang, 'error.title')}
               </h2>
               <p className="text-sm text-muted-foreground">
-                Iltimos sahifani yangilang yoki qaytadan urinib ko'ring.
+                {translate(lang, 'error.description')}
               </p>
             </div>
 
@@ -65,7 +78,7 @@ class ErrorBoundary extends Component<Props, State> {
                 className="w-full gap-2"
               >
                 <RefreshCw className="w-4 h-4" />
-                Qayta yuklash
+                {translate(lang, 'error.reload')}
               </Button>
               
               <Button 
@@ -73,7 +86,7 @@ class ErrorBoundary extends Component<Props, State> {
                 onClick={this.handleRetry}
                 className="w-full"
               >
-                Qaytadan urinish
+                {translate(lang, 'error.retry')}
               </Button>
             </div>
           </div>

@@ -6,10 +6,12 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft, Mail, Lock, Loader2, CheckCircle, AlertCircle, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import bahorLogo from "@/assets/bahor-logo.png";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 export default function AuthReset() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { t } = useTranslation();
   
   // Check if user arrived via reset link (has access_token or error in URL hash/params)
   const [mode, setMode] = useState<"request" | "set-password" | "success" | "error">("request");
@@ -33,11 +35,11 @@ export default function AuthReset() {
       if (errorCode || errorDescription) {
         const errorMsg = errorDescription || errorCode;
         if (errorMsg?.toLowerCase().includes("expired") || errorCode === "otp_expired") {
-          setError("Parol tiklash havolasi muddati tugagan. Iltimos, yangi havola so'rang.");
+          setError(t('reset.linkExpired'));
         } else if (errorMsg?.toLowerCase().includes("invalid") || errorCode === "access_denied") {
-          setError("Parol tiklash havolasi noto'g'ri yoki allaqachon ishlatilgan.");
+          setError(t('reset.linkInvalid'));
         } else {
-          setError(errorMsg || "Noma'lum xatolik yuz berdi.");
+          setError(t('reset.unknownError'));
         }
         setMode("error");
         setCheckingSession(false);
@@ -50,7 +52,7 @@ export default function AuthReset() {
           const { data: { session }, error: sessionError } = await supabase.auth.getSession();
           
           if (sessionError) {
-            setError("Sessiya yaratishda xatolik. Iltimos, yangi havola so'rang.");
+            setError(t('reset.sessionError'));
             setMode("error");
           } else if (session) {
             // User is authenticated via reset link - show password form
@@ -59,14 +61,14 @@ export default function AuthReset() {
             // Try to refresh/verify the session from the token
             const { error: refreshError } = await supabase.auth.refreshSession();
             if (refreshError) {
-              setError("Parol tiklash havolasi muddati tugagan. Iltimos, yangi havola so'rang.");
+              setError(t('reset.sessionExpired'));
               setMode("error");
             } else {
               setMode("set-password");
             }
           }
         } catch (err) {
-          setError("Sessiya tekshirishda xatolik.");
+          setError(t('reset.sessionCheckError'));
           setMode("error");
         }
       }
@@ -75,12 +77,12 @@ export default function AuthReset() {
     };
     
     checkResetToken();
-  }, [searchParams]);
+  }, [searchParams, t]);
 
   const handleRequestReset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) {
-      setError("Email manzilini kiriting");
+      setError(t('reset.enterEmail'));
       return;
     }
     
@@ -94,16 +96,16 @@ export default function AuthReset() {
       
       if (error) {
         if (error.message.includes("rate limit")) {
-          setError("Juda ko'p so'rov. Biroz kuting va qayta urinib ko'ring.");
+          setError(t('reset.rateLimited'));
         } else {
-          setError("Xatolik yuz berdi. Iltimos, qayta urinib ko'ring.");
+          setError(t('reset.error'));
         }
       } else {
         setMode("success");
-        toast.success("Parol tiklash havolasi yuborildi!");
+        toast.success(t('reset.success'));
       }
     } catch (err) {
-      setError("Tarmoq xatoligi. Internet aloqangizni tekshiring.");
+      setError(t('reset.networkError'));
     } finally {
       setLoading(false);
     }
@@ -113,12 +115,12 @@ export default function AuthReset() {
     e.preventDefault();
     
     if (password.length < 8) {
-      setError("Parol kamida 8 ta belgidan iborat bo'lishi kerak");
+      setError(t('reset.minChars'));
       return;
     }
     
     if (password !== confirmPassword) {
-      setError("Parollar mos kelmaydi");
+      setError(t('reset.mismatch'));
       return;
     }
     
@@ -130,16 +132,16 @@ export default function AuthReset() {
       
       if (error) {
         if (error.message.includes("same")) {
-          setError("Yangi parol eski paroldan farq qilishi kerak");
+          setError(t('reset.samePassword'));
         } else {
-          setError("Parolni yangilashda xatolik. Iltimos, qayta urinib ko'ring.");
+          setError(t('reset.updateError'));
         }
       } else {
-        toast.success("Parol muvaffaqiyatli yangilandi!");
+        toast.success(t('reset.updateSuccess'));
         navigate("/modes", { replace: true });
       }
     } catch (err) {
-      setError("Tarmoq xatoligi. Internet aloqangizni tekshiring.");
+      setError(t('reset.networkError'));
     } finally {
       setLoading(false);
     }
@@ -166,7 +168,7 @@ export default function AuthReset() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <span className="text-lg font-medium">
-          {mode === "set-password" ? "Yangi parol" : "Parolni tiklash"}
+          {mode === "set-password" ? t('reset.newPassword') : t('reset.title')}
         </span>
       </header>
 
@@ -184,7 +186,7 @@ export default function AuthReset() {
               <AlertCircle className="h-8 w-8 text-destructive" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold mb-2">Havola yaroqsiz</h2>
+              <h2 className="text-xl font-semibold mb-2">{t('reset.invalidLink')}</h2>
               <p className="text-muted-foreground text-sm">{error}</p>
             </div>
             <Button 
@@ -197,14 +199,14 @@ export default function AuthReset() {
               }}
             >
               <Mail className="h-4 w-4 mr-2" />
-              Yangi havola so'rash
+              {t('reset.requestNew')}
             </Button>
             <Button 
               variant="ghost" 
               className="w-full"
               onClick={() => navigate("/auth")}
             >
-              Kirishga qaytish
+              {t('reset.backToLogin')}
             </Button>
           </div>
         )}
@@ -216,18 +218,17 @@ export default function AuthReset() {
               <CheckCircle className="h-8 w-8 text-primary" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold mb-2">Xabar yuborildi!</h2>
+              <h2 className="text-xl font-semibold mb-2">{t('reset.emailSent')}</h2>
               <p className="text-muted-foreground text-sm">
-                <strong>{email}</strong> manziliga parol tiklash havolasi yuborildi. 
-                Emailingizni tekshiring va havolani bosing.
+                <strong>{email}</strong> {t('reset.emailSentDesc')}
               </p>
             </div>
             <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground">
-              <p className="font-medium mb-1">Muhim:</p>
+              <p className="font-medium mb-1">{t('reset.important')}</p>
               <ul className="list-disc list-inside space-y-1 text-left">
-                <li>Havola 1 soat ichida amal qiladi</li>
-                <li>Spam papkasini ham tekshiring</li>
-                <li>Havolani faqat bir marta ishlatish mumkin</li>
+                <li>{t('reset.expiresIn')}</li>
+                <li>{t('reset.checkSpam')}</li>
+                <li>{t('reset.oneTimeUse')}</li>
               </ul>
             </div>
             <Button 
@@ -238,7 +239,7 @@ export default function AuthReset() {
                 setEmail("");
               }}
             >
-              Boshqa email yuborish
+              {t('reset.sendAnother')}
             </Button>
           </div>
         )}
@@ -250,9 +251,9 @@ export default function AuthReset() {
               <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                 <KeyRound className="h-8 w-8 text-primary" />
               </div>
-              <h2 className="text-xl font-semibold">Parolni tiklash</h2>
+              <h2 className="text-xl font-semibold">{t('reset.title')}</h2>
               <p className="text-muted-foreground text-sm mt-1">
-                Email manzilingizni kiriting va biz sizga parol tiklash havolasini yuboramiz.
+                {t('reset.description')}
               </p>
             </div>
 
@@ -261,7 +262,7 @@ export default function AuthReset() {
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                   type="email"
-                  placeholder="Email manzilingiz"
+                  placeholder={t('reset.emailPlaceholder')}
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
@@ -284,19 +285,19 @@ export default function AuthReset() {
                 {loading ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
-                  "Havola yuborish"
+                  t('reset.sendLink')
                 )}
               </Button>
             </div>
 
             <p className="text-center text-sm text-muted-foreground">
-              Parolingizni eslaysizmi?{" "}
+              {t('reset.rememberPassword')}{" "}
               <button
                 type="button"
                 onClick={() => navigate("/auth/email")}
                 className="text-primary hover:underline"
               >
-                Kirish
+                {t('auth.login')}
               </button>
             </p>
           </form>
@@ -309,9 +310,9 @@ export default function AuthReset() {
               <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                 <Lock className="h-8 w-8 text-primary" />
               </div>
-              <h2 className="text-xl font-semibold">Yangi parol yarating</h2>
+              <h2 className="text-xl font-semibold">{t('reset.createNew')}</h2>
               <p className="text-muted-foreground text-sm mt-1">
-                Kuchli parol kiriting (kamida 8 ta belgi).
+                {t('reset.createNewDesc')}
               </p>
             </div>
 
@@ -320,7 +321,7 @@ export default function AuthReset() {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                   type="password"
-                  placeholder="Yangi parol"
+                  placeholder={t('reset.newPasswordPlaceholder')}
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
@@ -336,7 +337,7 @@ export default function AuthReset() {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                   type="password"
-                  placeholder="Parolni tasdiqlash"
+                  placeholder={t('reset.confirmPlaceholder')}
                   value={confirmPassword}
                   onChange={(e) => {
                     setConfirmPassword(e.target.value);
@@ -358,7 +359,7 @@ export default function AuthReset() {
                 {loading ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
-                  "Parolni yangilash"
+                  t('reset.updatePassword')
                 )}
               </Button>
             </div>
