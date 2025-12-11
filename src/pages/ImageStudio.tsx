@@ -79,7 +79,7 @@ interface UsageInfo {
 export default function ImageStudio() {
   const { t } = useTranslation();
   const { toast } = useToast();
-  const { user, profile } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   // Form state
@@ -109,7 +109,8 @@ export default function ImageStudio() {
 
   // Fetch usage info using the proper entitlements endpoint that handles dev bypass
   const fetchUsage = useCallback(async () => {
-    if (!user) return;
+    // Wait for both user and session to be available
+    if (!user || !session) return;
     
     try {
       const today = new Date().toISOString().split("T")[0];
@@ -141,7 +142,7 @@ export default function ImageStudio() {
     } catch (error) {
       console.error("Failed to fetch usage:", error);
     }
-  }, [user]);
+  }, [user, session]);
 
   // Fetch history
   const fetchHistory = useCallback(async () => {
@@ -186,9 +187,12 @@ export default function ImageStudio() {
   }, [user]);
 
   useEffect(() => {
-    fetchUsage();
-    fetchHistory();
-  }, [fetchUsage, fetchHistory]);
+    // Only fetch when auth is ready and user is authenticated
+    if (!authLoading && user && session) {
+      fetchUsage();
+      fetchHistory();
+    }
+  }, [authLoading, user, session, fetchUsage, fetchHistory]);
 
   // Check if limit reached
   const isLimitReached = !usage.isUnlimited && usage.used >= usage.limit;
