@@ -362,7 +362,10 @@ export default function Chat() {
     );
   }, []);
 
-  // Setup realtime chat sync
+  // Track if messages have been loaded and initialized for realtime
+  const [realtimeReady, setRealtimeReady] = useState(false);
+
+  // Setup realtime chat sync - ONLY enabled AFTER messages loaded and seen IDs initialized
   const {
     markMessageSeen,
     markAttachmentSeen,
@@ -370,7 +373,7 @@ export default function Chat() {
   } = useRealtimeChat({
     userId: user?.id,
     threadId: currentThreadId,
-    enabled: !!user && !!currentThreadId && !isLoading,
+    enabled: !!user && !!currentThreadId && !isLoading && realtimeReady,
     onNewMessage: handleRealtimeNewMessage,
     onMessageUpdate: handleRealtimeMessageUpdate,
     onNewAttachment: handleRealtimeNewAttachment,
@@ -388,12 +391,10 @@ export default function Chat() {
     onThreadUpdate: handleRealtimeThreadUpdate,
   });
 
-  // Initialize seen IDs when messages load
+  // Reset realtimeReady when thread changes
   useEffect(() => {
-    if (messages.length > 0) {
-      initializeSeenIds(messages);
-    }
-  }, [currentThreadId]); // Only on thread change, not every message update
+    setRealtimeReady(false);
+  }, [currentThreadId]);
 
   // Initialize seen threads when threads load
   useEffect(() => {
@@ -472,6 +473,11 @@ export default function Chat() {
       } else {
         setMessages(uiMessages);
         setMessageOffset(0);
+      }
+      
+      // CRITICAL: Enable realtime ONLY AFTER messages loaded and seen IDs initialized
+      if (!append) {
+        setRealtimeReady(true);
       }
       
       // Check if there are more messages
@@ -576,6 +582,7 @@ export default function Chat() {
           setThreads(prev => [newThread, ...prev]);
           setCurrentThreadId(newThread.id);
           setMessages([]);
+          setRealtimeReady(true); // Empty thread, ready immediately
           markThreadSeen(newThread.id);
           // Mark session as initialized since we're starting fresh
           markSessionInitialized();
@@ -1163,6 +1170,7 @@ export default function Chat() {
         setThreads(prev => [newThread, ...prev]);
         setCurrentThreadId(newThread.id);
         setMessages([]);
+        setRealtimeReady(true); // Empty thread, ready immediately
         markSessionInitialized();
         markThreadSeen(newThread.id);
         // Use the new thread directly to avoid stale state
@@ -1879,6 +1887,7 @@ export default function Chat() {
       setThreads(prev => prev.filter(t => t.id !== currentThreadId).concat([newThread]));
       setCurrentThreadId(newThread.id);
       setMessages([]);
+      setRealtimeReady(true); // Empty thread, ready immediately
       markThreadSeen(newThread.id);
     } catch (error) {
       console.error("Error clearing chat:", error);
@@ -1902,6 +1911,7 @@ export default function Chat() {
       setThreads(prev => [newThread, ...prev]);
       setCurrentThreadId(newThread.id);
       setMessages([]);
+      setRealtimeReady(true); // Empty thread, ready immediately
       setIsHistoryOpen(false);
       markThreadSeen(newThread.id);
     } catch (error) {
@@ -1936,6 +1946,7 @@ export default function Chat() {
         setThreads([newThread]);
         setCurrentThreadId(newThread.id);
         setMessages([]);
+        setRealtimeReady(true); // Empty thread, ready immediately
         markThreadSeen(newThread.id);
       } else {
         setThreads(updatedThreads);
