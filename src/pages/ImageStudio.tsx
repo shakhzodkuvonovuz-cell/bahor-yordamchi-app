@@ -120,8 +120,8 @@ export default function ImageStudio() {
         .gte("created_at", today);
 
       // Fetch from admin-entitlements which properly checks DEV_UNLIMITED_EMAILS
-      const { data, error } = await supabase.functions.invoke("admin-entitlements", {
-        body: { action: "my-entitlement" },
+      const { data, error } = await supabase.functions.invoke("admin-entitlements?action=my-entitlement", {
+        method: "GET",
       });
 
       const isDevBypass = data?.isDevBypass === true;
