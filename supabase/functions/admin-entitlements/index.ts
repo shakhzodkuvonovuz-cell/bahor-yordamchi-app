@@ -20,9 +20,12 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    
+    // Admin client for database operations
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify auth
+    // Verify auth - use anon key client with the user's token for proper validation
     const authHeader = req.headers.get('Authorization');
     console.log('[admin-entitlements] Auth header present:', !!authHeader);
     
@@ -35,7 +38,13 @@ serve(async (req) => {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+    
+    // Create a client with the user's token for proper auth validation
+    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } }
+    });
+    
+    const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
     
     console.log('[admin-entitlements] getUser result:', user?.email, 'error:', userError?.message);
     
