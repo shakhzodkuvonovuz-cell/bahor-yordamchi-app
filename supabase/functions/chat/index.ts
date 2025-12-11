@@ -581,7 +581,12 @@ const MODE_PROMPTS: Record<string, string> = {
 const STYLE_CLAMP = {
   free: "STYLE: Keep answers concise and practical. Be clear and direct.",
   premium: "STYLE: Can be more detailed when needed. Prioritize clarity and completeness.",
-  reasoner: "STYLE: Provide comprehensive, thorough analysis. Complete your full answer without artificial breaks or asking to continue.",
+  reasoner: `STYLE: DEEP ANALYSIS MODE - CRITICAL RULES:
+1. Provide comprehensive, thorough, COMPLETE responses
+2. FORBIDDEN phrases (NEVER USE): "Davomi uchun", "batafsil deb yozing", "to continue", "would you like me to continue", "davom etaymi"
+3. NEVER artificially stop or truncate your response
+4. Complete your FULL answer in ONE response, regardless of length
+5. If writing long content (essays, research), write it ALL - do not break into parts`,
 };
 
 serve(async (req) => {
