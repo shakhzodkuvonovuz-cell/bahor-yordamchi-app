@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode, useCallback 
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { signInWithGoogleUnified } from '@/lib/auth/googleAuth';
+import { toast } from 'sonner';
 
 export interface UserProfile {
   id: string;
@@ -173,6 +174,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(null);
           setProfile(null);
           setLoading(false);
+          toast.error("Sessiya muddati tugadi. Iltimos, qayta kiring.", {
+            description: "Session expired. Please log in again."
+          });
           return;
         }
         
@@ -188,6 +192,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(null);
             setProfile(null);
             setLoading(false);
+            toast.error("Sessiya muddati tugadi. Iltimos, qayta kiring.", {
+              description: "Session expired. Please log in again."
+            });
             return;
           }
           
