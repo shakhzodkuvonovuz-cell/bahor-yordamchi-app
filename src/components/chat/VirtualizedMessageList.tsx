@@ -329,15 +329,15 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListHandle, Virtuali
         itemContent={itemContent}
         atBottomStateChange={handleAtBottomChange}
         atBottomThreshold={100}
-        followOutput={(isAtBottom) => isAtBottom ? "smooth" : false}
-        initialTopMostItemIndex={Math.max(data.length - 1, 0)}
-        overscan={400}
+        followOutput="auto"
+        alignToBottom
+        overscan={200}
         className="flex-1"
         style={{ 
           height: "100%",
           WebkitOverflowScrolling: "touch",
         }}
-        increaseViewportBy={{ top: 800, bottom: 1200 }}
+        increaseViewportBy={{ top: 400, bottom: 600 }}
         defaultItemHeight={120}
       />
     );
