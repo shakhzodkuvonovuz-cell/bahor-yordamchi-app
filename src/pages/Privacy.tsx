@@ -7,9 +7,6 @@ export default function Privacy() {
   const navigate = useNavigate();
   const { t, language } = useTranslation();
 
-  // Privacy policy content is only provided in Uzbek - other languages show a notice
-  const isUzbek = language === 'uz';
-
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -30,11 +27,9 @@ export default function Privacy() {
       <ScrollArea className="h-[calc(100vh-56px)]">
         <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
           {/* Translation notice for non-Uzbek users */}
-          {!isUzbek && (
+          {language !== 'uz' && (
             <div className="bg-muted/50 border border-border/40 rounded-xl p-4 text-sm text-muted-foreground">
-              {language === 'en' && "This policy is provided in Uzbek. Translation is for convenience only."}
-              {language === 'ru' && "Эта политика предоставлена на узбекском языке. Перевод предоставлен для удобства."}
-              {language === 'tr' && "Bu politika Özbekçe olarak sunulmaktadır. Çeviri yalnızca kolaylık sağlamak içindir."}
+              {t('privacy.languageNotice')}
             </div>
           )}
 
@@ -43,58 +38,58 @@ export default function Privacy() {
               {t('privacy.lastUpdated')}
             </p>
 
-            <h2 className="text-lg font-semibold text-foreground mt-6">1. Qanday ma'lumotlar yig'iladi</h2>
+            <h2 className="text-lg font-semibold text-foreground mt-6">{t('privacy.section1.title')}</h2>
             <p className="text-foreground/80">
-              Bahor AI quyidagi ma'lumotlarni yig'adi:
+              {t('privacy.section1.intro')}
             </p>
             <ul className="list-disc pl-5 text-foreground/80 space-y-1">
-              <li>Hisob ma'lumotlari (email, telefon raqami)</li>
-              <li>Suhbat tarixi (savollar va javoblar)</li>
-              <li>Yuklangan fayllar va rasmlar</li>
-              <li>Qurilma ma'lumotlari (brauzer turi, til)</li>
+              <li>{t('privacy.section1.item1')}</li>
+              <li>{t('privacy.section1.item2')}</li>
+              <li>{t('privacy.section1.item3')}</li>
+              <li>{t('privacy.section1.item4')}</li>
             </ul>
 
-            <h2 className="text-lg font-semibold text-foreground mt-6">2. Ma'lumotlardan foydalanish</h2>
+            <h2 className="text-lg font-semibold text-foreground mt-6">{t('privacy.section2.title')}</h2>
             <p className="text-foreground/80">
-              Yig'ilgan ma'lumotlardan quyidagi maqsadlarda foydalanamiz:
+              {t('privacy.section2.intro')}
             </p>
             <ul className="list-disc pl-5 text-foreground/80 space-y-1">
-              <li>AI yordamchisi xizmatini taqdim etish</li>
-              <li>Suhbat tarixini saqlash va sinxronlash</li>
-              <li>Xizmat sifatini yaxshilash</li>
-              <li>Texnik muammolarni hal qilish</li>
+              <li>{t('privacy.section2.item1')}</li>
+              <li>{t('privacy.section2.item2')}</li>
+              <li>{t('privacy.section2.item3')}</li>
+              <li>{t('privacy.section2.item4')}</li>
             </ul>
 
-            <h2 className="text-lg font-semibold text-foreground mt-6">3. Ma'lumotlar xavfsizligi</h2>
+            <h2 className="text-lg font-semibold text-foreground mt-6">{t('privacy.section3.title')}</h2>
             <p className="text-foreground/80">
-              Ma'lumotlaringiz Supabase serverlarida xavfsiz saqlanadi. Biz SSL shifrlash va zamonaviy xavfsizlik protokollaridan foydalanamiz. Suhbatlaringiz faqat sizga ko'rinadi.
+              {t('privacy.section3.content')}
             </p>
 
-            <h2 className="text-lg font-semibold text-foreground mt-6">4. Uchinchi tomonlar</h2>
+            <h2 className="text-lg font-semibold text-foreground mt-6">{t('privacy.section4.title')}</h2>
             <p className="text-foreground/80">
-              Bahor AI quyidagi xizmatlardan foydalanadi:
+              {t('privacy.section4.intro')}
             </p>
             <ul className="list-disc pl-5 text-foreground/80 space-y-1">
-              <li>Supabase — ma'lumotlar bazasi va autentifikatsiya</li>
-              <li>AI modellar — javoblar generatsiya qilish uchun</li>
+              <li>{t('privacy.section4.item1')}</li>
+              <li>{t('privacy.section4.item2')}</li>
             </ul>
             <p className="text-foreground/80 mt-2">
-              Biz ma'lumotlaringizni reklama maqsadida sotmaymiz yoki baham ko'rmaymiz.
+              {t('privacy.section4.note')}
             </p>
 
-            <h2 className="text-lg font-semibold text-foreground mt-6">5. Sizning huquqlaringiz</h2>
+            <h2 className="text-lg font-semibold text-foreground mt-6">{t('privacy.section5.title')}</h2>
             <p className="text-foreground/80">
-              Siz istalgan vaqtda:
+              {t('privacy.section5.intro')}
             </p>
             <ul className="list-disc pl-5 text-foreground/80 space-y-1">
-              <li>Suhbat tarixini o'chirishingiz mumkin</li>
-              <li>Hisobingizni o'chirishni so'rashingiz mumkin</li>
-              <li>Ma'lumotlaringiz haqida so'rov yuborishingiz mumkin</li>
+              <li>{t('privacy.section5.item1')}</li>
+              <li>{t('privacy.section5.item2')}</li>
+              <li>{t('privacy.section5.item3')}</li>
             </ul>
 
-            <h2 className="text-lg font-semibold text-foreground mt-6">6. Bog'lanish</h2>
+            <h2 className="text-lg font-semibold text-foreground mt-6">{t('privacy.section6.title')}</h2>
             <p className="text-foreground/80">
-              Maxfiylik haqida savollar uchun: <a href="mailto:support@bahorai.com" className="text-primary hover:underline">support@bahorai.com</a>
+              {t('privacy.section6.content')} <a href="mailto:support@bahorai.com" className="text-primary hover:underline">support@bahorai.com</a>
             </p>
           </div>
         </div>
