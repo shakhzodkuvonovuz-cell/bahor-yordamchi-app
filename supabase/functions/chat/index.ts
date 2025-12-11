@@ -1136,7 +1136,7 @@ Answer their question as best you can using your existing knowledge, but be clea
           model: selectedModel,
           messages: finalMessages,
           temperature: modelPreference === "reasoner" ? 0 : 0.6,
-          max_tokens: modelPreference === "reasoner" ? 8000 : 2000,
+          ...(modelPreference !== "reasoner" && { max_tokens: 2000 }),
           stream: true,
         }),
         signal: deepseekController.signal,
