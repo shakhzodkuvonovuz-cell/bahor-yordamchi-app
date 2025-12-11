@@ -579,8 +579,9 @@ const MODE_PROMPTS: Record<string, string> = {
 };
 
 const STYLE_CLAMP = {
-  free: "STYLE: Keep answers SHORT (max 6-8 sentences). If complex: summarize + offer to expand with 'batafsil'.",
-  premium: "STYLE: Can be more detailed. Still prioritize clarity over length.",
+  free: "STYLE: Keep answers concise and practical. Be clear and direct.",
+  premium: "STYLE: Can be more detailed when needed. Prioritize clarity and completeness.",
+  reasoner: "STYLE: Provide comprehensive, thorough analysis. Complete your full answer without artificial breaks or asking to continue.",
 };
 
 serve(async (req) => {
@@ -886,7 +887,10 @@ serve(async (req) => {
     // Build prompt
     const modeKey = mode || "general";
     const modePrompt = MODE_PROMPTS[modeKey] || MODE_PROMPTS.general;
-    const styleClamp = effectivePlan === 'free' ? STYLE_CLAMP.free : STYLE_CLAMP.premium;
+    // Use reasoner style for reasoner mode, otherwise plan-based style
+    const styleClamp = modelPreference === 'reasoner' 
+      ? STYLE_CLAMP.reasoner 
+      : (effectivePlan === 'free' ? STYLE_CLAMP.free : STYLE_CLAMP.premium);
     const recentMessages = messages.slice(-12);
 
     // Collect sources from web search
