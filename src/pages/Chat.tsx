@@ -985,9 +985,30 @@ export default function Chat() {
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}-${i}.${fileExt}`;
         const filePath = `${user?.id}/${fileName}`;
 
+        console.log('[FileUpload] Starting storage upload:', { fileName, filePath, userId: user?.id, hasUser: !!user });
+
+        // Skip storage upload if no user - just add to pending with local preview
+        if (!user) {
+          console.warn('[FileUpload] No user logged in, skipping storage upload');
+          const attachment: ChatAttachment = {
+            id: crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}-${i}`,
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            url: previewUrl,
+            previewUrl,
+            extractedText,
+            readStatus,
+          };
+          newAttachments.push(attachment);
+          continue;
+        }
+
         const { data, error } = await supabase.storage
           .from("chat-attachments")
           .upload(filePath, file);
+
+        console.log('[FileUpload] Storage upload result:', { data, error: error?.message });
 
         if (error) {
           console.error("Upload error:", error);
