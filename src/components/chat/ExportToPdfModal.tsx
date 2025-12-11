@@ -19,6 +19,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
+import { downloadPDF, openHTMLPrintFallback } from "@/lib/pdfGenerator";
 
 interface ExportToPdfModalProps {
   open: boolean;
@@ -114,103 +115,59 @@ export function ExportToPdfModal({
     setLoading(true);
 
     try {
-      // Dynamic imports for jsPDF and markdown renderer
-      const { jsPDF } = await import("jspdf");
-      const { MdTextRender } = await import("jspdf-md-renderer");
-
-      // Prepare markdown content with title
-      let mdContent = `# ${title}\n\n${messageContent}`;
+      // Prepare content with title and citations
+      let content = messageContent;
       
       // Add citations if included
       if (includeCitations && citations.length > 0) {
-        mdContent += `\n\n---\n\n## ${language === 'uz' ? 'Manbalar' : language === 'ru' ? 'Источники' : language === 'tr' ? 'Kaynaklar' : 'Sources'}\n\n`;
+        const sourcesLabel = language === 'uz' ? 'Manbalar' : language === 'ru' ? 'Источники' : language === 'tr' ? 'Kaynaklar' : 'Sources';
+        content += `\n\n---\n\n## ${sourcesLabel}\n\n`;
         citations.forEach((c, i) => {
-          mdContent += `${i + 1}. [${c.title}](${c.url})\n`;
+          content += `${i + 1}. ${c.title} (${c.url})\n`;
         });
       }
 
-      // Create PDF document
-      const doc = new jsPDF({
-        unit: 'mm',
-        format: 'a4',
-        orientation: 'portrait',
+      const today = new Date().toLocaleDateString(
+        language === 'uz' ? 'uz-UZ' : language === 'ru' ? 'ru-RU' : language === 'tr' ? 'tr-TR' : 'en-US',
+        { year: 'numeric', month: 'long', day: 'numeric' }
+      );
+
+      // Use the proper PDF generator with Unicode font support
+      await downloadPDF({
+        title,
+        content,
+        date: today,
+        filename: `${title.replace(/[^a-zA-Z0-9\u0400-\u04FF\-_\s]/g, "").trim() || "document"}.pdf`,
       });
-
-      // Configure render options based on template
-      const getOptions = () => {
-        const baseOptions = {
-          cursor: { x: 15, y: 20 },
-          page: {
-            format: 'a4' as const,
-            unit: 'mm' as const,
-            orientation: 'portrait' as const,
-            maxContentWidth: 180,
-            maxContentHeight: 260,
-            lineSpace: 1.5,
-            defaultLineHeightFactor: 1.25,
-            defaultFontSize: 11,
-            defaultTitleFontSize: 14,
-            topmargin: 20,
-            xpading: 15,
-            xmargin: 15,
-            indent: 8,
-          },
-          font: {
-            bold: { name: 'helvetica', style: 'bold' as const },
-            regular: { name: 'helvetica', style: 'normal' as const },
-            light: { name: 'helvetica', style: 'normal' as const },
-          },
-          endCursorYHandler: () => {}, // Required callback
-        };
-
-        // Template-specific adjustments
-        if (template === 'assignment') {
-          baseOptions.page.topmargin = 25;
-          baseOptions.page.defaultTitleFontSize = 16;
-        } else if (template === 'report') {
-          baseOptions.page.defaultFontSize = 10;
-          baseOptions.page.lineSpace = 1.4;
-        }
-
-        return baseOptions;
-      };
-
-      // Render markdown to PDF
-      await MdTextRender(doc, mdContent, getOptions());
-
-      // Add template-specific styling
-      if (template === 'assignment') {
-        // Add a header line on first page
-        doc.setPage(1);
-        doc.setDrawColor(16, 185, 129); // Emerald color
-        doc.setLineWidth(0.5);
-        doc.line(15, 28, 195, 28);
-      } else if (template === 'report') {
-        // Add page numbers for report
-        const pageCount = doc.getNumberOfPages();
-        for (let i = 1; i <= pageCount; i++) {
-          doc.setPage(i);
-          doc.setFontSize(9);
-          doc.setTextColor(128);
-          doc.text(`${i} / ${pageCount}`, 105, 290, { align: 'center' });
-        }
-      }
-
-      // Generate filename
-      const filename = `${title.replace(/[^a-zA-Z0-9\u0400-\u04FF\-_\s]/g, "").trim() || "document"}.pdf`;
-      
-      // Save the PDF
-      doc.save(filename);
 
       toast({ title: t("success") });
       onOpenChange(false);
     } catch (error) {
-      console.error("[PDF Export] Error:", error);
-      toast({
-        title: t("error"),
-        description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive",
-      });
+      console.error("[PDF Export] Error with @react-pdf/renderer:", error);
+      
+      // Fallback to HTML print dialog
+      try {
+        const today = new Date().toLocaleDateString(
+          language === 'uz' ? 'uz-UZ' : language === 'ru' ? 'ru-RU' : language === 'tr' ? 'tr-TR' : 'en-US',
+          { year: 'numeric', month: 'long', day: 'numeric' }
+        );
+        
+        openHTMLPrintFallback({
+          title,
+          content: messageContent,
+          date: today,
+        });
+        
+        toast({ title: t("success"), description: "Use Ctrl+P / Cmd+P to save as PDF" });
+        onOpenChange(false);
+      } catch (fallbackError) {
+        console.error("[PDF Export] HTML fallback also failed:", fallbackError);
+        toast({
+          title: t("error"),
+          description: error instanceof Error ? error.message : "Unknown error",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
