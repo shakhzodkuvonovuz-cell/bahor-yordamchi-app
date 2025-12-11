@@ -90,7 +90,7 @@ const handler = async (req: Request): Promise<Response> => {
     `;
 
     const emailResponse = await resend.emails.send({
-      from: "Bahor AI <support@bahorai.com>",
+      from: "Bahor AI Feedback <onboarding@resend.dev>",
       to: [ADMIN_EMAIL],
       subject: `${emoji} ${categoryLabel}: ${feedback.message.substring(0, 50)}${feedback.message.length > 50 ? "..." : ""}`,
       html: emailHtml,
