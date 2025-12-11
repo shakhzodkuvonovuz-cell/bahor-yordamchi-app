@@ -207,10 +207,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    // Always clear local state first, even if server signout fails
+    // This handles the case where session is already invalid server-side
+    setUser(null);
+    setSession(null);
+    setProfile(null);
+    
+    // Attempt server signout (may fail if session already invalid, that's ok)
     const { error } = await supabase.auth.signOut();
-    if (!error) {
-      setProfile(null);
-    }
+    
+    // Clear any localStorage remnants
+    localStorage.removeItem('sb-akqtmyvwylfejbgwcyll-auth-token');
+    
     return { error: error as Error | null };
   };
 
