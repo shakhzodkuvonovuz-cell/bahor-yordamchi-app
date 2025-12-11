@@ -258,11 +258,17 @@ export async function getMessagesWithAttachments(
   const orphanAttachments: ChatMessageWithAttachments["attachments"] = [];
   
   if (attachments && attachments.length > 0) {
+    console.log('[chatStore] Processing', attachments.length, 'attachments');
     for (const att of attachments) {
       // Generate signed URL
-      const { data: signedData } = await supabase.storage
-        .from(att.bucket || "chat-attachments")
+      const bucket = att.bucket || "chat-attachments";
+      const { data: signedData, error: signError } = await supabase.storage
+        .from(bucket)
         .createSignedUrl(att.path, 3600); // 1 hour
+      
+      if (signError) {
+        console.error('[chatStore] Signed URL error for', att.path, signError);
+      }
       
       const attachmentItem = {
         id: att.id,
@@ -271,8 +277,10 @@ export async function getMessagesWithAttachments(
         type: att.mime_type || "application/octet-stream",
         url: signedData?.signedUrl,
         path: att.path,
-        bucket: att.bucket || "chat-attachments",
+        bucket,
       };
+      
+      console.log('[chatStore] Attachment:', att.id, 'bucket:', bucket, 'url:', signedData?.signedUrl?.slice(0, 80));
       
       if (att.message_id && messageIds.includes(att.message_id)) {
         // Attachment is linked to a message in current view
