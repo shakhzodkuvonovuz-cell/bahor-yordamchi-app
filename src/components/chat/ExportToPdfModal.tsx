@@ -127,10 +127,21 @@ export function ExportToPdfModal({
         });
       }
 
-      const today = new Date().toLocaleDateString(
-        language === 'uz' ? 'uz-UZ' : language === 'ru' ? 'ru-RU' : language === 'tr' ? 'tr-TR' : 'en-US',
-        { year: 'numeric', month: 'long', day: 'numeric' }
-      );
+      // Format date properly (uz-UZ locale not well supported, use manual formatting)
+      const dateObj = new Date();
+      const formatDate = () => {
+        const day = dateObj.getDate();
+        const year = dateObj.getFullYear();
+        const monthNames: Record<string, string[]> = {
+          uz: ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'],
+          en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+          ru: ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'],
+          tr: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'],
+        };
+        const months = monthNames[language] || monthNames.en;
+        return `${day} ${months[dateObj.getMonth()]} ${year}`;
+      };
+      const today = formatDate();
 
       // Use the proper PDF generator with Unicode font support
       await downloadPDF({
