@@ -50,9 +50,25 @@ serve(async (req) => {
     const url = new URL(req.url);
     const action = url.searchParams.get('action');
 
-    // GET: my-entitlement - any authenticated user can check their own status
+    // GET or POST: my-entitlement - any authenticated user can check their own status
     // Default action for GET requests without explicit action parameter
-    if (req.method === 'GET' && (!action || action === 'my-entitlement')) {
+    // Also supports POST with { action: "my-entitlement" } in body
+    let bodyAction: string | null = null;
+    if (req.method === 'POST') {
+      try {
+        const clonedReq = req.clone();
+        const body = await clonedReq.json();
+        bodyAction = body?.action || null;
+      } catch {
+        // Body might not be JSON, that's ok
+      }
+    }
+    
+    const isMyEntitlement = 
+      (req.method === 'GET' && (!action || action === 'my-entitlement')) ||
+      (req.method === 'POST' && bodyAction === 'my-entitlement');
+    
+    if (isMyEntitlement) {
       // Ensure trial is initialized for the user (same as chat function)
       const TRIAL_DAYS = 7;
       if (!isDevBypass) {

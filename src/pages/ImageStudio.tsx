@@ -120,12 +120,14 @@ export default function ImageStudio() {
         .gte("created_at", today);
 
       // Fetch from admin-entitlements which properly checks DEV_UNLIMITED_EMAILS
+      // Use POST with action in body since functions.invoke handles auth headers properly
       const { data, error } = await supabase.functions.invoke("admin-entitlements", {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
+        body: { action: "my-entitlement" },
       });
-      // Note: my-entitlement is the default action when no action param is passed for GET
-      // The edge function returns entitlement data including isDevBypass for authenticated users
+      
+      if (error) {
+        console.error("Failed to fetch entitlement:", error);
+      }
 
       const isDevBypass = data?.isDevBypass === true;
       const isPremium = data?.plan === "beta_premium" || data?.plan === "premium";
