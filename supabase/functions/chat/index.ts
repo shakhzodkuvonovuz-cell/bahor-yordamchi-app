@@ -46,28 +46,25 @@ const DEEPSEEK_REASONER_MODEL = Deno.env.get("DEEPSEEK_REASONER_MODEL") || "deep
 // BRAND PROTECTION - OUTPUT SANITIZATION
 // ============================================
 
-const FORBIDDEN_TERMS = [
-  "deepseek", "openai", "chatgpt", "gpt-4", "gpt-5", "gpt4", "gpt5",
-  "gemini", "claude", "anthropic", "mistral", "llama", "meta ai",
-  "azure openai", "bard", "palm", "vicuna", "falcon",
-  "ai model", "ai modeli", "til modeli", "language model"
-];
-
+// IDENTITY LEAK PATTERNS ONLY - We no longer block mentioning real AI products in news context
+// We ONLY block the AI from claiming to BE these models
 const IDENTITY_LEAK_PATTERNS = [
-  /aslida\s+(deepseek|openai|chatgpt|gemini|claude|anthropic)/gi,
-  /men\s+(deepseek|openai|chatgpt|gemini|claude)/gi,
-  /i('m| am)\s+(actually\s+)?(deepseek|openai|chatgpt|gemini|claude)/gi,
-  /based on\s+(deepseek|openai|chatgpt|gemini|claude)/gi,
-  /powered by\s+(deepseek|openai|chatgpt|gemini|claude)/gi,
-  /я\s+(deepseek|chatgpt|gemini|claude)/gi,
-  /tomonidan\s+yaratilgan/gi,
+  // "I am X" patterns - blocks AI from claiming to be another model
+  /aslida\s+(deepseek|openai|chatgpt)/gi,
+  /men\s+(deepseek|openai|chatgpt)\s*(man|masan)?/gi,
+  /i('m| am)\s+(actually\s+)?(deepseek|openai|chatgpt)/gi,
+  /я\s+(deepseek|chatgpt)/gi,
+  // "based on/powered by X" - blocks revealing underlying model
+  /based on\s+(deepseek|openai|chatgpt)/gi,
+  /powered by\s+(deepseek|openai|chatgpt)/gi,
+  /asosida\s+ishlayman/gi,
+  /texnik\s*asos:?/gi,
+  /\*\*texnik\s*asos:?\*\*/gi,
+  // "as an AI model" boilerplate
   /as an ai (model|assistant)/gi,
   /as a language model/gi,
   /ai model(i|eli)?\s*asosida/gi,
   /til model(i|eli)?\s*asosida/gi,
-  /men\s+.{0,30}asosida\s+ishlayman/gi,
-  /texnik\s*asos:?/gi,
-  /\*\*texnik\s*asos:?\*\*/gi,
   /sun'iy\s+intellekt\s+model/gi,
   /языков(ая|ой)\s+модел/gi,
   /модель\s+ии/gi,
@@ -99,12 +96,9 @@ const TRUNCATION_PATTERNS = [
 
 function sanitizeOutput(text: string): string {
   let result = text;
+  // Only apply identity leak patterns - allow mentioning real AI products in news context
   for (const pattern of IDENTITY_LEAK_PATTERNS) {
     result = result.replace(pattern, "Bahor AI");
-  }
-  for (const term of FORBIDDEN_TERMS) {
-    const regex = new RegExp(`\\b${term}\\b`, "gi");
-    result = result.replace(regex, "Bahor AI");
   }
   // Remove truncation phrases - exact string matches first
   for (const phrase of TRUNCATION_PHRASES) {
