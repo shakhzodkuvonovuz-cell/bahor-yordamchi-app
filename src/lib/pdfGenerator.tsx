@@ -78,13 +78,13 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   content: {
-    marginTop: 10,
+    marginTop: 0, // No header, start directly
   },
   heading1: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: 0,
+    marginBottom: 12,
     color: '#111',
   },
   heading2: {
@@ -259,18 +259,22 @@ interface PDFDocumentProps {
   messageCount?: number;
 }
 
-const PDFDocument: React.FC<PDFDocumentProps> = ({ title, content, date, messageCount }) => {
-  // Remove first heading if it matches the title to avoid duplication
-  const sanitizedTitle = sanitizeEmojis(title).trim().toLowerCase();
+const PDFDocument: React.FC<PDFDocumentProps> = ({ title, content }) => {
+  // Remove first line if it matches the title (to avoid duplication)
+  // Matches both markdown headings (# Title) and plain text titles
+  const sanitizedTitle = sanitizeEmojis(title).trim().toLowerCase().replace(/[""'']/g, '"');
+  const lines = content.trim().split('\n');
   let contentToRender = content;
   
-  // Check if content starts with the same heading as title
-  const firstLineMatch = content.trim().match(/^#\s+(.+)/);
-  if (firstLineMatch) {
-    const firstHeading = sanitizeEmojis(firstLineMatch[1]).trim().toLowerCase();
-    if (firstHeading === sanitizedTitle || sanitizedTitle.includes(firstHeading) || firstHeading.includes(sanitizedTitle)) {
-      // Remove the first heading line from content
-      contentToRender = content.trim().replace(/^#\s+.+\n*/, '');
+  if (lines.length > 0) {
+    const firstLine = sanitizeEmojis(lines[0]).trim().toLowerCase().replace(/[""'']/g, '"').replace(/^#+\s*/, '');
+    // Check if first line is similar to title
+    if (firstLine === sanitizedTitle || 
+        sanitizedTitle.includes(firstLine) || 
+        firstLine.includes(sanitizedTitle) ||
+        firstLine.replace(/[^a-z0-9]/g, '') === sanitizedTitle.replace(/[^a-z0-9]/g, '')) {
+      // Remove the first line from content
+      contentToRender = lines.slice(1).join('\n').trim();
     }
   }
   
@@ -279,12 +283,7 @@ const PDFDocument: React.FC<PDFDocumentProps> = ({ title, content, date, message
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        <View style={styles.header}>
-          <Text style={styles.title}>{sanitizeEmojis(title)}</Text>
-          <Text style={styles.meta}>
-            {date}{messageCount ? ` • ${messageCount} xabar` : ''}
-          </Text>
-        </View>
+        {/* Clean document - no header, just content */}
         
         <View style={styles.content}>
           {parsedLines.map((line, index) => {
