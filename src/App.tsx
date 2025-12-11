@@ -43,6 +43,7 @@ const Tarjimon = lazy(() => import("./pages/Tarjimon"));
 const ChatsHistory = lazy(() => import("./pages/ChatsHistory"));
 const Agent = lazy(() => import("./pages/Agent"));
 const AgentWorkspace = lazy(() => import("./pages/AgentWorkspace"));
+const ImageStudio = lazy(() => import("./pages/ImageStudio"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -302,6 +303,17 @@ const App = () => (
                       <ProtectedRoute>
                         <AppShellV2>
                           <LazyRoute><AgentWorkspace /></LazyRoute>
+                        </AppShellV2>
+                      </ProtectedRoute>
+                    } 
+                  />
+                  {/* Image Studio */}
+                  <Route 
+                    path="/image-studio" 
+                    element={
+                      <ProtectedRoute>
+                        <AppShellV2>
+                          <LazyRoute><ImageStudio /></LazyRoute>
                         </AppShellV2>
                       </ProtectedRoute>
                     } 

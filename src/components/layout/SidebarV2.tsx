@@ -44,7 +44,7 @@ const PRIMARY_NAV: NavItem[] = [
   { id: "chat", labelKey: "sidebar.chat", icon: MessageSquare, path: "/modes" },
   { id: "agent", labelKey: "agent.title", icon: Bot, path: "/agent" },
   { id: "modes", labelKey: "sidebar.modes", icon: Sparkles, path: "/modes-list" },
-  { id: "image-gen", labelKey: "sidebar.imageGen", icon: ImageIcon, path: "/tools/documents" },
+  { id: "image-studio", labelKey: "imageStudio.navTitle", icon: ImageIcon, path: "/image-studio" },
   { id: "circles", labelKey: "nav.circles", icon: Users, path: "/circles" },
   { id: "translator", labelKey: "sidebar.translator", icon: Languages, path: "/tarjimon" },
   { id: "tools", labelKey: "nav.tools", icon: FileText, path: "/tools/documents" },
