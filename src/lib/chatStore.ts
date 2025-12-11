@@ -543,8 +543,14 @@ const summaryDebounceMap = new Map<string, number>();
 
 export async function maybeGenerateSummary(
   threadId: string,
-  accessToken: string
+  accessToken: string | null | undefined
 ): Promise<{ triggered: boolean; summary?: string }> {
+  // Skip if no access token
+  if (!accessToken) {
+    console.log("[Summary] Skipped - no access token");
+    return { triggered: false };
+  }
+
   // Check debounce (30 seconds client-side minimum)
   const lastAttempt = summaryDebounceMap.get(threadId);
   const now = Date.now();
@@ -589,7 +595,8 @@ export async function maybeGenerateSummary(
     );
 
     if (!response.ok) {
-      console.warn("Summary generation failed:", response.status);
+      const errorData = await response.json().catch(() => ({}));
+      console.warn("[Summary] Generation failed:", response.status, errorData);
       return { triggered: true };
     }
 
@@ -599,7 +606,7 @@ export async function maybeGenerateSummary(
       summary: result.summary 
     };
   } catch (error) {
-    console.warn("Summary generation error:", error);
+    console.warn("[Summary] Generation error:", error);
     return { triggered: false };
   }
 }
