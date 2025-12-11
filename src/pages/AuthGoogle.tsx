@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, AlertCircle } from "lucide-react";
 import { signInWithGoogleUnified, isNativePlatform } from "@/lib/auth/googleAuth";
 import { trackSignupStarted } from "@/lib/analytics";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 export default function AuthGoogle() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('next') || '/modes';
+  const { t } = useTranslation();
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,9 +26,9 @@ export default function AuthGoogle() {
       
       if (oauthError) {
         if (oauthError.message?.includes("provider") || oauthError.message?.includes("not enabled")) {
-          setError("Google kirish hozircha sozlanmagan. Email yoki telefon orqali kiring.");
+          setError(t('auth.googleNotEnabled'));
         } else {
-          setError("Xatolik yuz berdi. Qayta urinib ko'ring.");
+          setError(t('auth.error'));
         }
         setLoading(false);
       } else if (isNativePlatform()) {
@@ -40,7 +42,7 @@ export default function AuthGoogle() {
       }
       // If no error on web, user will be redirected to Google
     } catch (err) {
-      setError("Xatolik yuz berdi. Qayta urinib ko'ring.");
+      setError(t('auth.error'));
       setLoading(false);
     }
   };
@@ -65,13 +67,13 @@ export default function AuthGoogle() {
           <div className="bg-card rounded-[24px] shadow-xl border border-border/30 p-6 sm:p-8 animate-scale-in">
             {/* Back Button & Title */}
             <div className="flex items-center gap-3 mb-6">
-              <Link to="/auth">
+              <Link to={`/auth${searchParams.toString() ? `?${searchParams.toString()}` : ''}`}>
                 <button className="w-10 h-10 rounded-xl bg-muted/50 hover:bg-muted flex items-center justify-center transition-colors">
                   <ArrowLeft className="w-5 h-5 text-muted-foreground" />
                 </button>
               </Link>
               <h2 className="text-lg font-semibold text-foreground">
-                Google orqali kirish
+                {t('auth.googleTitle')}
               </h2>
             </div>
 
@@ -84,12 +86,12 @@ export default function AuthGoogle() {
                   <div className="flex flex-wrap gap-2 mt-3">
                     <Link to="/auth/email">
                       <Button variant="outline" size="sm" className="h-9 rounded-xl text-[13px]">
-                        Email orqali
+                        {t('auth.email')}
                       </Button>
                     </Link>
                     <Link to="/auth/phone">
                       <Button variant="outline" size="sm" className="h-9 rounded-xl text-[13px]">
-                        Telefon orqali
+                        {t('auth.phone')}
                       </Button>
                     </Link>
                   </div>
@@ -107,7 +109,7 @@ export default function AuthGoogle() {
               {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin mr-3" />
-                  Kutilmoqda...
+                  {t('auth.waiting')}
                 </>
               ) : (
                 <>
@@ -117,29 +119,29 @@ export default function AuthGoogle() {
                     <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
                     <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                   </svg>
-                  Google orqali davom etish
+                  {t('auth.googleButton')}
                 </>
               )}
             </Button>
 
             <p className="text-[13px] text-muted-foreground text-center mt-4">
-              Google hisobingiz bilan bir zumda kiring
+              {t('auth.googleHint')}
             </p>
 
             {/* Back to other methods */}
             <div className="mt-6 pt-6 border-t border-border/30">
               <p className="text-[13px] text-muted-foreground text-center mb-3">
-                Boshqa usul bilan kirish
+                {t('auth.otherMethods')}
               </p>
               <div className="flex gap-3">
                 <Link to="/auth/email" className="flex-1">
                   <Button variant="ghost" className="w-full h-11 rounded-xl text-[13px]">
-                    Email
+                    {t('auth.email')}
                   </Button>
                 </Link>
                 <Link to="/auth/phone" className="flex-1">
                   <Button variant="ghost" className="w-full h-11 rounded-xl text-[13px]">
-                    Telefon
+                    {t('auth.phone')}
                   </Button>
                 </Link>
               </div>
