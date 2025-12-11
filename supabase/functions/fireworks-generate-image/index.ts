@@ -73,13 +73,19 @@ Text: ${prompt}`;
   }
 }
 
-// Add soft quality boosters (not restrictions)
-function addQualityBoosters(prompt: string, renderMode: "photo" | "illustration"): string {
-  const boosters = renderMode === "photo"
-    ? "high detail, natural lighting, realistic materials, coherent composition, sharp focus"
-    : "highly detailed illustration, clean lines, coherent anatomy, dramatic lighting";
-  
-  return `${prompt}. ${boosters}`;
+// Style preset to prompt suffix mapping
+const STYLE_PRESETS: Record<string, string> = {
+  realistic: "ultra realistic photograph, natural lighting, high detail, sharp focus, realistic materials",
+  digital_art: "digital art, vibrant colors, detailed, professional digital painting, artstation quality",
+  illustration: "highly detailed illustration, clean lines, vector art style, professional illustration",
+  anime: "anime style, detailed anime art, studio ghibli inspired, vibrant anime illustration",
+  minimal: "minimalist design, clean composition, simple shapes, limited color palette, modern minimal art",
+};
+
+// Add soft quality boosters based on style preset
+function addQualityBoosters(prompt: string, stylePreset: string): string {
+  const styleSuffix = STYLE_PRESETS[stylePreset] || STYLE_PRESETS.realistic;
+  return `${prompt}. ${styleSuffix}`;
 }
 
 // Log image generation event
@@ -164,6 +170,7 @@ serve(async (req) => {
       qualityBoost = false,
       chatId,
       attachToChat = false,
+      stylePreset = "realistic", // New: realistic, digital_art, illustration, anime, minimal
       // A/B test flags
       skipTranslation = false,
       skipBoosters = false,
@@ -171,7 +178,7 @@ serve(async (req) => {
     } = body;
 
     console.log(`[${requestId}] Input prompt: "${prompt}"`);
-    console.log(`[${requestId}] Options: aspectRatio=${aspectRatio}, renderMode=${renderMode}, qualityBoost=${qualityBoost}, rawMode=${rawMode}`);
+    console.log(`[${requestId}] Options: aspectRatio=${aspectRatio}, renderMode=${renderMode}, stylePreset=${stylePreset}, qualityBoost=${qualityBoost}, rawMode=${rawMode}`);
 
     if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
       return new Response(
@@ -217,9 +224,9 @@ serve(async (req) => {
         translatedPrompt = await translateToEnglish(promptOriginal, requestId);
       }
       
-      // Step 2: Add quality boosters if not skipped
+      // Step 2: Add quality boosters based on stylePreset if not skipped
       if (!skipBoosters) {
-        finalPrompt = addQualityBoosters(translatedPrompt, renderMode === "illustration" ? "illustration" : "photo");
+        finalPrompt = addQualityBoosters(translatedPrompt, stylePreset);
       } else {
         finalPrompt = translatedPrompt;
       }
