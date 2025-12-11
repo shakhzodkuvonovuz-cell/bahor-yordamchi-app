@@ -107,7 +107,7 @@ export default function ImageStudio() {
 
   const MAX_PROMPT_LENGTH = 500;
 
-  // Fetch usage info
+  // Fetch usage info using the proper entitlements hook that handles dev bypass
   const fetchUsage = useCallback(async () => {
     if (!user) return;
     
@@ -119,20 +119,24 @@ export default function ImageStudio() {
         .eq("user_id", user.id)
         .gte("created_at", today);
 
-      const planStr = profile?.plan || "free";
-      const isPremium = ["premium", "beta_premium", "monthly", "yearly", "ultra"].includes(planStr);
-      const isUnlimited = planStr === "ultra" || planStr === "yearly"; // dev_unlimited users have ultra in entitlements
-      const dailyLimit = isUnlimited ? -1 : (isPremium ? 20 : 5);
+      // Fetch from edge function which properly checks DEV_UNLIMITED_EMAILS
+      const { data, error } = await supabase.functions.invoke("chat", {
+        body: { action: "check_usage" },
+      });
+
+      const isDevBypass = data?.is_bypass === true || data?.plan === "dev_unlimited";
+      const isPremium = data?.plan === "beta_premium" || data?.plan === "premium";
+      const dailyLimit = isDevBypass ? -1 : (isPremium ? 20 : 5);
 
       setUsage({
         used: count ?? 0,
         limit: dailyLimit,
-        isUnlimited,
+        isUnlimited: isDevBypass,
       });
     } catch (error) {
       console.error("Failed to fetch usage:", error);
     }
-  }, [user, profile]);
+  }, [user]);
 
   // Fetch history
   const fetchHistory = useCallback(async () => {
