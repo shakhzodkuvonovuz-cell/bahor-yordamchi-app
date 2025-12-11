@@ -1213,6 +1213,9 @@ Answer their question as best you can using your existing knowledge, but be clea
           search_used: didSearch,
           search_urls: searchUrls,
           usage: { ...usageResult, plan: effectivePlan, isDevBypass, isPremium },
+          // Image generation blocked info
+          image_blocked: routerDecision.blockersHit.length > 0 && routerDecision.imageIntent === false && detectImageKeywords(lastUserMessage, lastUserMessage.toLowerCase()).isImageGen,
+          image_blockers: routerDecision.blockersHit,
         };
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(metadata)}\n\n`));
         

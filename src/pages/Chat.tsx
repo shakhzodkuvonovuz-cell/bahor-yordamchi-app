@@ -79,7 +79,7 @@ type StreamOptions = {
   onChunk: (chunk: string) => void;
   onDone: () => void;
   onError: (error: Error) => void;
-  onMetadata?: (metadata: { search_used: boolean; search_urls: string[] }) => void;
+  onMetadata?: (metadata: { search_used: boolean; search_urls: string[]; image_blocked?: boolean; image_blockers?: string[] }) => void;
   onTrace?: (event: TraceEvent) => void;
   onTraceComplete?: (event: TraceComplete) => void;
 };
@@ -1705,6 +1705,32 @@ export default function Chat() {
           if (metadata.search_used) {
             setSearchUsed(true);
             setSearchUrls(metadata.search_urls || []);
+          }
+          
+          // Show feedback when image generation was blocked
+          if (metadata.image_blocked && metadata.image_blockers?.length > 0) {
+            const blockerHint = metadata.image_blockers[0];
+            const hintMessages: Record<string, Record<string, string>> = {
+              "how": { uz: "savol so'zlari", en: "question words", ru: "вопросительные слова", tr: "soru kelimeleri" },
+              "what": { uz: "savol so'zlari", en: "question words", ru: "вопросительные слова", tr: "soru kelimeleri" },
+              "where": { uz: "savol so'zlari", en: "question words", ru: "вопросительные слова", tr: "soru kelimeleri" },
+              "when": { uz: "savol so'zlari", en: "question words", ru: "вопросительные слова", tr: "soru kelimeleri" },
+              "help": { uz: "'yordam' so'zi", en: "'help' word", ru: "слово 'помощь'", tr: "'yardım' kelimesi" },
+              "explain": { uz: "'tushuntir' so'zi", en: "'explain' word", ru: "слово 'объясни'", tr: "'açıkla' kelimesi" },
+              "?": { uz: "savol belgisi", en: "question mark", ru: "знак вопроса", tr: "soru işareti" },
+            };
+            const hint = hintMessages[blockerHint]?.[language] || blockerHint;
+            
+            toast({
+              title: language === "uz" ? "💡 Rasm yaratilmadi" 
+                   : language === "ru" ? "💡 Изображение не создано"
+                   : language === "tr" ? "💡 Görsel oluşturulmadı"
+                   : "💡 Image not generated",
+              description: language === "uz" ? `So'rovingizda ${hint} borligi uchun matn javob berildi. Rasm uchun "/rasm [tavsif]" yozing.`
+                         : language === "ru" ? `Из-за ${hint} в запросе дан текстовый ответ. Для изображения напишите "/rasm [описание]".`
+                         : language === "tr" ? `İstekte ${hint} olduğu için metin yanıtı verildi. Görsel için "/rasm [açıklama]" yazın.`
+                         : `Text response given due to ${hint} in request. For images, use "/rasm [description]".`,
+            });
           }
         },
         onChunk: (chunk) => {
