@@ -771,10 +771,33 @@ export default function Chat() {
 
   // Handle export to PDF
   const handleExportPdf = (messageId: string, content: string) => {
-    const thread = threads.find(t => t.id === currentThreadId);
-    const defaultTitle = thread?.title || modeTranslation?.title || modeInfo.title;
+    // Extract title from AI response content (first heading or first meaningful line)
+    const extractTitleFromContent = (text: string): string => {
+      const lines = text.trim().split('\n');
+      for (const line of lines) {
+        const trimmed = line.trim();
+        // Check for markdown headings
+        const headingMatch = trimmed.match(/^#+\s+(.+)/);
+        if (headingMatch) {
+          return headingMatch[1].slice(0, 80); // Limit length
+        }
+        // Check for bold text at start (common in AI responses)
+        const boldMatch = trimmed.match(/^\*\*(.+?)\*\*/);
+        if (boldMatch) {
+          return boldMatch[1].slice(0, 80);
+        }
+        // Use first non-empty line if no heading found
+        if (trimmed.length > 10 && !trimmed.startsWith('-') && !trimmed.startsWith('*')) {
+          return trimmed.slice(0, 80) + (trimmed.length > 80 ? '...' : '');
+        }
+      }
+      // Fallback to mode title
+      return modeTranslation?.title || modeInfo.title;
+    };
+
+    const extractedTitle = extractTitleFromContent(content);
     setExportPdfContent(content);
-    setExportPdfTitle(defaultTitle);
+    setExportPdfTitle(extractedTitle);
     setExportPdfModalOpen(true);
   };
 
