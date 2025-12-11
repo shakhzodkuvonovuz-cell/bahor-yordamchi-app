@@ -1,4 +1,4 @@
-import { useRef, useCallback, forwardRef, useImperativeHandle, useMemo } from "react";
+import { useRef, useCallback, forwardRef, useImperativeHandle, useMemo, memo } from "react";
 import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
 import ChatMessage from "@/components/ChatMessage";
 import { ThinkBar } from "@/components/chat/ThinkBar";
@@ -8,6 +8,137 @@ import { Message } from "@/types/chat";
 import type { MessageTrace, TraceStepData } from "@/types/trace";
 import type { ModelPreference } from "@/components/ModelToggle";
 import bahorLogo from "@/assets/bahor-logo.png";
+
+// Memoized message item to prevent re-renders
+const MessageItem = memo(function MessageItem({
+  message,
+  isLastAssistant,
+  isCurrentlyGenerating,
+  activeTrace,
+  liveElapsedMs,
+  modelPreference,
+  language,
+  mode,
+  onTraceClick,
+  onCopy,
+  onEdit,
+  onRegenerate,
+  onReaction,
+  onShare,
+  onContinue,
+  onVariant,
+  onExportPdf,
+  onSendMessage,
+  isMobile,
+}: {
+  message: Message;
+  isLastAssistant: boolean;
+  isCurrentlyGenerating: boolean;
+  activeTrace: MessageTrace | null;
+  liveElapsedMs: number;
+  modelPreference: ModelPreference;
+  language: string;
+  mode?: string;
+  onTraceClick: (messageId: string) => void;
+  onCopy: (content: string) => void;
+  onEdit: (id: string, content: string) => void;
+  onRegenerate: (id: string) => void;
+  onReaction: (id: string, reaction: "like" | "dislike" | null) => void;
+  onShare: (content: string) => void;
+  onContinue: (id: string) => void;
+  onVariant: (id: string, type: string) => void;
+  onExportPdf: (id: string, content: string) => void;
+  onSendMessage: (message: string) => void;
+  isMobile: boolean;
+}) {
+  const showThinkBar = message.role === 'assistant' && 
+                      isLastAssistant && 
+                      isCurrentlyGenerating && 
+                      !message.trace && 
+                      !activeTrace?.isComplete;
+  
+  const showReasonedChip = message.role === 'assistant' && (
+    message.trace || 
+    (isLastAssistant && activeTrace?.isComplete)
+  );
+  
+  const showFollowUp = message.role === 'assistant' && 
+                      isLastAssistant && 
+                      !isCurrentlyGenerating;
+
+  return (
+    <div className="px-2 sm:px-4 py-1">
+      <ChatMessage
+        message={message}
+        onCopy={onCopy}
+        onEdit={onEdit}
+        onRegenerate={onRegenerate}
+        onReaction={onReaction}
+        onShare={onShare}
+        onContinue={onContinue}
+        onVariant={onVariant}
+        onExportPdf={onExportPdf}
+        showActions={!isCurrentlyGenerating}
+        showActionBar={!isCurrentlyGenerating}
+        isStreaming={isCurrentlyGenerating}
+        isMobile={isMobile}
+      />
+      
+      {showThinkBar && (
+        <div className="mb-3">
+          <ThinkBar
+            trace={activeTrace}
+            isGenerating={isCurrentlyGenerating}
+            language={language}
+            elapsedLive={liveElapsedMs}
+            modelPreference={modelPreference}
+            onExpandClick={() => {
+              if (activeTrace?.isComplete) {
+                onTraceClick(message.id);
+              }
+            }}
+          />
+        </div>
+      )}
+      
+      {showReasonedChip && (
+        <div className="flex justify-start mt-2 ml-12">
+          <ReasonedChip
+            trace={message.trace || (isLastAssistant ? activeTrace : null)}
+            isGenerating={false}
+            language={language}
+            elapsedLive={undefined}
+            onClick={() => {
+              const traceData = message.trace || (isLastAssistant ? activeTrace : null);
+              if (traceData?.isComplete) {
+                onTraceClick(message.id);
+              }
+            }}
+          />
+        </div>
+      )}
+      
+      {showFollowUp && (
+        <FollowUpSuggestions
+          onSelect={onSendMessage}
+          disabled={isCurrentlyGenerating}
+          mode={mode}
+        />
+      )}
+    </div>
+  );
+}, (prev, next) => {
+  // Custom comparison for memoization
+  return (
+    prev.message.id === next.message.id &&
+    prev.message.content === next.message.content &&
+    prev.message.reaction === next.message.reaction &&
+    prev.isLastAssistant === next.isLastAssistant &&
+    prev.isCurrentlyGenerating === next.isCurrentlyGenerating &&
+    prev.activeTrace?.isComplete === next.activeTrace?.isComplete &&
+    prev.language === next.language
+  );
+});
 
 interface VirtualizedMessageListProps {
   messages: Message[];
@@ -141,85 +272,30 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListHandle, Virtuali
 
         const isLastAssistant = message.id === lastAssistantMessageId;
         const isCurrentlyGenerating = isLoading || typing;
-        const showThinkBar = message.role === 'assistant' && 
-                            isLastAssistant && 
-                            isCurrentlyGenerating && 
-                            !message.trace && 
-                            !activeTrace?.isComplete;
-        
-        const showReasonedChip = message.role === 'assistant' && (
-          message.trace || 
-          (isLastAssistant && activeTrace?.isComplete)
-        );
-        
-        const showFollowUp = message.role === 'assistant' && 
-                            isLastAssistant && 
-                            !isLoading && 
-                            !typing;
 
         return (
-          <div className="px-2 sm:px-4 py-1">
-            <ChatMessage
-              message={message}
-              onCopy={onCopy}
-              onEdit={onEdit}
-              onRegenerate={onRegenerate}
-              onReaction={onReaction}
-              onShare={onShare}
-              onContinue={onContinue}
-              onVariant={onVariant}
-              onExportPdf={onExportPdf}
-              showActions={!isCurrentlyGenerating}
-              showActionBar={!isCurrentlyGenerating}
-              isStreaming={isCurrentlyGenerating}
-              isMobile={isMobile}
-            />
-            
-            {/* ThinkBar - shows above assistant message while generating */}
-            {showThinkBar && (
-              <div className="mb-3">
-                <ThinkBar
-                  trace={activeTrace}
-                  isGenerating={isCurrentlyGenerating}
-                  language={language}
-                  elapsedLive={liveElapsedMs}
-                  modelPreference={modelPreference}
-                  onExpandClick={() => {
-                    if (activeTrace?.isComplete) {
-                      onTraceClick(message.id);
-                    }
-                  }}
-                />
-              </div>
-            )}
-            
-            {/* ReasonedChip - shows after completion */}
-            {showReasonedChip && (
-              <div className="flex justify-start mt-2 ml-12">
-                <ReasonedChip
-                  trace={message.trace || (isLastAssistant ? activeTrace : null)}
-                  isGenerating={false}
-                  language={language}
-                  elapsedLive={undefined}
-                  onClick={() => {
-                    const traceData = message.trace || (isLastAssistant ? activeTrace : null);
-                    if (traceData?.isComplete) {
-                      onTraceClick(message.id);
-                    }
-                  }}
-                />
-              </div>
-            )}
-            
-            {/* Follow-up suggestions */}
-            {showFollowUp && (
-              <FollowUpSuggestions
-                onSelect={onSendMessage}
-                disabled={isLoading || typing}
-                mode={mode}
-              />
-            )}
-          </div>
+          <MessageItem
+            key={message.id}
+            message={message}
+            isLastAssistant={isLastAssistant}
+            isCurrentlyGenerating={isCurrentlyGenerating}
+            activeTrace={activeTrace}
+            liveElapsedMs={liveElapsedMs}
+            modelPreference={modelPreference}
+            language={language}
+            mode={mode}
+            onTraceClick={onTraceClick}
+            onCopy={onCopy}
+            onEdit={onEdit}
+            onRegenerate={onRegenerate}
+            onReaction={onReaction}
+            onShare={onShare}
+            onContinue={onContinue}
+            onVariant={onVariant}
+            onExportPdf={onExportPdf}
+            onSendMessage={onSendMessage}
+            isMobile={isMobile}
+          />
         );
       },
       [
@@ -255,14 +331,14 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListHandle, Virtuali
         atBottomThreshold={100}
         followOutput={(isAtBottom) => isAtBottom ? "smooth" : false}
         initialTopMostItemIndex={Math.max(data.length - 1, 0)}
-        overscan={200}
+        overscan={400}
         className="flex-1"
         style={{ 
           height: "100%",
-          // iOS smooth scrolling
           WebkitOverflowScrolling: "touch",
         }}
-        increaseViewportBy={{ top: 600, bottom: 900 }}
+        increaseViewportBy={{ top: 800, bottom: 1200 }}
+        defaultItemHeight={120}
       />
     );
   }
