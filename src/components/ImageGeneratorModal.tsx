@@ -53,20 +53,29 @@ export default function ImageGeneratorModal({
     meta?: ImageMeta;
   } | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [requestInFlight, setRequestInFlight] = useState(false); // Debounce guard
 
   const handleGenerate = async () => {
+    // Prevent duplicate submissions
+    if (requestInFlight || loading) {
+      console.log('[ImageGen] Request already in flight, ignoring');
+      return;
+    }
+    
     if (!prompt.trim()) {
       toast({ title: t('common.error'), description: t('imageGen.enterPrompt'), variant: "destructive" });
       return;
     }
 
     setLoading(true);
+    setRequestInFlight(true);
     setGeneratedImage(null);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         toast({ title: t('common.error'), description: t('imageGen.pleaseLogin'), variant: "destructive" });
+        setRequestInFlight(false);
         return;
       }
 
@@ -127,6 +136,7 @@ export default function ImageGeneratorModal({
       });
     } finally {
       setLoading(false);
+      setRequestInFlight(false);
     }
   };
 
