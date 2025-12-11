@@ -29,6 +29,7 @@ const Settings = lazy(() => import("./pages/Settings"));
 const AuthEmail = lazy(() => import("./pages/AuthEmail"));
 const AuthGoogle = lazy(() => import("./pages/AuthGoogle"));
 const AuthPhone = lazy(() => import("./pages/AuthPhone"));
+const AuthReset = lazy(() => import("./pages/AuthReset"));
 const AdminEntitlements = lazy(() => import("./pages/AdminEntitlements"));
 const Feedback = lazy(() => import("./pages/Feedback"));
 const Terms = lazy(() => import("./pages/Terms"));
@@ -160,6 +161,7 @@ const App = () => (
                   <Route path="/auth/email" element={<PublicRoute><LazyRoute><AuthEmail /></LazyRoute></PublicRoute>} />
                   <Route path="/auth/google" element={<PublicRoute><LazyRoute><AuthGoogle /></LazyRoute></PublicRoute>} />
                   <Route path="/auth/phone" element={<PublicRoute><LazyRoute><AuthPhone /></LazyRoute></PublicRoute>} />
+                  <Route path="/auth/reset" element={<LazyRoute><AuthReset /></LazyRoute>} />
                   <Route path="/auth/callback" element={<AuthCallback />} />
                   
                   {/* Protected routes - wrapped in AppShell with lazy loading */}
