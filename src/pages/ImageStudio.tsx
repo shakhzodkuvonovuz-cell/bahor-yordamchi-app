@@ -109,10 +109,19 @@ export default function ImageStudio() {
 
   // Fetch usage info using the proper entitlements endpoint that handles dev bypass
   const fetchUsage = useCallback(async () => {
-    // Wait for both user and session to be available
-    if (!user || !session?.access_token) return;
+    // Wait for user to be available
+    if (!user) return;
     
     try {
+      // Refresh session to ensure we have a valid token
+      const { data: { session: freshSession }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !freshSession?.access_token) {
+        console.error("Session invalid or expired, user needs to re-login");
+        // Session is invalid - the auth hook should handle redirect
+        return;
+      }
+      
       const today = new Date().toISOString().split("T")[0];
       const { count } = await supabase
         .from("image_generations")
@@ -121,13 +130,12 @@ export default function ImageStudio() {
         .gte("created_at", today);
 
       // Fetch from admin-entitlements which properly checks DEV_UNLIMITED_EMAILS
-      // Use GET method with query params - simpler and works reliably
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-entitlements?action=my-entitlement`,
         {
           method: "GET",
           headers: {
-            "Authorization": `Bearer ${session.access_token}`,
+            "Authorization": `Bearer ${freshSession.access_token}`,
             "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
             "Content-Type": "application/json",
           },
@@ -153,7 +161,7 @@ export default function ImageStudio() {
     } catch (error) {
       console.error("Failed to fetch usage:", error);
     }
-  }, [user, session]);
+  }, [user]);
 
   // Fetch history
   const fetchHistory = useCallback(async () => {
@@ -199,11 +207,11 @@ export default function ImageStudio() {
 
   useEffect(() => {
     // Only fetch when auth is ready and user is authenticated
-    if (!authLoading && user && session) {
+    if (!authLoading && user) {
       fetchUsage();
       fetchHistory();
     }
-  }, [authLoading, user, session, fetchUsage, fetchHistory]);
+  }, [authLoading, user, fetchUsage, fetchHistory]);
 
   // Check if limit reached
   const isLimitReached = !usage.isUnlimited && usage.used >= usage.limit;
