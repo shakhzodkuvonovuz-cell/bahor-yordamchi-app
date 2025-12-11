@@ -1,13 +1,20 @@
 import { useNavigate } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageProvider";
+import { SEO } from "@/components/SEO";
 
 export default function Welcome() {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-b from-background to-primary-glow/20">
+    <>
+      <SEO 
+        title="Xush kelibsiz"
+        description="Bahor AI – birinchi o'zbek tiliga moslangan sun'iy intellekt yordamchi. Boshlash uchun tayyor!"
+        url="/welcome"
+      />
+      <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-b from-background to-primary-glow/20">
       <div className="w-full max-w-md mx-auto text-center space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
         {/* Logo/Icon */}
         <div className="flex justify-center">
@@ -48,5 +55,6 @@ export default function Welcome() {
         </p>
       </div>
     </div>
+    </>
   );
 }

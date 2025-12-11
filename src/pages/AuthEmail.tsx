@@ -8,6 +8,7 @@ import { Loader2, ArrowLeft, Mail, AlertCircle, CheckCircle, Eye, EyeOff } from 
 import { supabase } from "@/integrations/supabase/client";
 import { trackSignupStarted, trackSignupCompleted, trackLoginCompleted } from "@/lib/analytics";
 import { useTranslation } from "@/i18n/LanguageProvider";
+import { SEO } from "@/components/SEO";
 
 export default function AuthEmail() {
   const navigate = useNavigate();
@@ -148,7 +149,14 @@ export default function AuthEmail() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-background to-primary/5">
+    <>
+      <SEO 
+        title="Email orqali kirish"
+        description="Bahor AI hisobingizga email va parol orqali kiring yoki ro'yxatdan o'ting."
+        url="/auth/email"
+        noIndex
+      />
+      <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-background to-primary/5">
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-[420px] mx-auto animate-fade-in">
           {/* Logo & Header */}
@@ -403,5 +411,6 @@ export default function AuthEmail() {
         </div>
       </div>
     </div>
+    </>
   );
 }

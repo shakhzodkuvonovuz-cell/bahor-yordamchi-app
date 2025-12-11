@@ -7,6 +7,7 @@ import { Loader2, AlertCircle } from "lucide-react";
 import { trackLoginCompleted } from "@/lib/analytics";
 import { Capacitor } from "@capacitor/core";
 import { Browser } from "@capacitor/browser";
+import { SEO } from "@/components/SEO";
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -86,7 +87,14 @@ export default function AuthCallback() {
   }, [navigate, redirectTo, isNativeCallback]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-b from-background via-background to-primary/5">
+    <>
+      <SEO 
+        title="Kirish"
+        description="Bahor AI hisobingizga kirilmoqda..."
+        url="/auth/callback"
+        noIndex
+      />
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-b from-background via-background to-primary/5">
       <div className="w-full max-w-[420px] mx-auto animate-fade-in">
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-8">
@@ -131,5 +139,6 @@ export default function AuthCallback() {
         </div>
       </div>
     </div>
+    </>
   );
 }

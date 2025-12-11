@@ -7,6 +7,7 @@ import { ArrowLeft, Mail, Lock, Loader2, CheckCircle, AlertCircle, KeyRound } fr
 import { toast } from "sonner";
 import bahorLogo from "@/assets/bahor-logo.png";
 import { useTranslation } from "@/i18n/LanguageProvider";
+import { SEO } from "@/components/SEO";
 
 export default function AuthReset() {
   const navigate = useNavigate();
@@ -156,7 +157,14 @@ export default function AuthReset() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <>
+      <SEO 
+        title="Parolni tiklash"
+        description="Bahor AI hisobingiz parolini tiklang. Email orqali yangi parol o'rnating."
+        url="/auth/reset"
+        noIndex
+      />
+      <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="flex items-center gap-3 p-4">
         <Button
@@ -367,5 +375,6 @@ export default function AuthReset() {
         )}
       </div>
     </div>
+    </>
   );
 }
