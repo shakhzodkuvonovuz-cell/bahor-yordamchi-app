@@ -2,11 +2,13 @@ import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import bahorLogo from "@/assets/bahor-logo.png";
 import { Mail, Phone, Shield, Info } from "lucide-react";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
   const queryString = searchParams.toString();
   const [showDevHint, setShowDevHint] = useState(false);
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-background to-primary/5">
@@ -23,7 +25,7 @@ export default function Auth() {
               <h1 className="text-2xl font-bold text-foreground">Bahor AI</h1>
             </div>
             <p className="text-muted-foreground text-[15px]">
-              Kirish yoki ro'yxatdan o'tish
+              {t('auth.title')}
             </p>
           </div>
 
@@ -38,10 +40,10 @@ export default function Auth() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-foreground text-[15px] mb-0.5">
-                      Email orqali davom etish
+                      {t('auth.emailContinue')}
                     </p>
                     <p className="text-[13px] text-muted-foreground">
-                      Parol bilan kirish yoki ro'yxatdan o'tish
+                      {t('auth.emailDesc')}
                     </p>
                   </div>
                 </div>
@@ -62,10 +64,10 @@ export default function Auth() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-foreground text-[15px] mb-0.5">
-                      Google orqali davom etish
+                      {t('auth.googleContinue')}
                     </p>
                     <p className="text-[13px] text-muted-foreground">
-                      Bir marta bosish bilan tez kirish
+                      {t('auth.googleDesc')}
                     </p>
                   </div>
                 </div>
@@ -81,10 +83,10 @@ export default function Auth() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-foreground text-[15px] mb-0.5">
-                      Telefon raqam orqali davom etish
+                      {t('auth.phoneContinue')}
                     </p>
                     <p className="text-[13px] text-muted-foreground">
-                      SMS kod bilan kirish
+                      {t('auth.phoneDesc')}
                     </p>
                   </div>
                 </div>
@@ -95,7 +97,7 @@ export default function Auth() {
           {/* Trust Line */}
           <div className="flex items-center justify-center gap-2 mt-8 text-muted-foreground">
             <Shield className="w-4 h-4" />
-            <p className="text-[13px]">Ma'lumotlaringiz xavfsiz saqlanadi.</p>
+            <p className="text-[13px]">{t('auth.dataSafe')}</p>
           </div>
         </div>
       </div>
@@ -105,22 +107,22 @@ export default function Auth() {
         <div className="max-w-[420px] mx-auto">
           {/* Consent Text */}
           <p className="text-[11px] text-center text-muted-foreground leading-relaxed mb-4">
-            Davom etish orqali siz{" "}
-            <a href="#" className="text-primary hover:underline">
-              Foydalanish shartlari
-            </a>{" "}
-            va{" "}
-            <a href="#" className="text-primary hover:underline">
-              Maxfiylik siyosati
-            </a>
-            ga rozilik bildirasiz.
+            {t('auth.consent')}{" "}
+            <Link to="/terms" className="text-primary hover:underline">
+              {t('auth.termsLink')}
+            </Link>{" "}
+            {t('auth.and')}{" "}
+            <Link to="/privacy" className="text-primary hover:underline">
+              {t('auth.privacyLink')}
+            </Link>
+            {t('auth.consentEnd')}
           </p>
 
           {/* Help Link */}
           <div className="text-center">
-            <a href="#" className="text-[12px] text-muted-foreground hover:text-foreground transition-colors">
-              Yordam kerakmi?
-            </a>
+            <Link to="/support" className="text-[12px] text-muted-foreground hover:text-foreground transition-colors">
+              {t('auth.needHelp')}
+            </Link>
           </div>
 
           {/* Developer Hint (hidden by default) */}
