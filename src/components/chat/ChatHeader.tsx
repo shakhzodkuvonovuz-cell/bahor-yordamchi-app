@@ -40,7 +40,7 @@ export default function ChatHeader({
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/modes")}
             className="shrink-0 h-10 w-10 rounded-xl hover:bg-secondary/80"
             aria-label={t('common.back')}
           >
