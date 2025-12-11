@@ -74,7 +74,19 @@ const IDENTITY_LEAK_PATTERNS = [
   /на\s+основе\s+.{0,15}модел/gi,
 ];
 
-// Truncation phrases that should be stripped from responses
+// Truncation phrases that should be stripped from responses (exact match for SSE chunks)
+const TRUNCATION_PHRASES = [
+  "(Davomi uchun: 'batafsil' deb yozing.)",
+  "(Davomi uchun: \"batafsil\" deb yozing.)",
+  "(Davomi uchun 'batafsil' deb yozing.)",
+  "Davomi uchun: 'batafsil' deb yozing.",
+  "Davomi uchun 'batafsil' deb yozing.",
+  "'batafsil' deb yozing.",
+  "\"batafsil\" deb yozing.",
+  "Davom etaymi?",
+  "Would you like me to continue?",
+  "Shall I continue?",
+];
 const TRUNCATION_PATTERNS = [
   /\(Davomi uchun[^)]*\)/gi,
   /Davomi uchun:?\s*['"]?batafsil['"]?\s*deb yozing\.?/gi,
@@ -83,7 +95,6 @@ const TRUNCATION_PATTERNS = [
   /Would you like me to continue\??/gi,
   /Shall I continue\??/gi,
   /Let me know if you('d like| want) me to continue/gi,
-  /\.\.\.\s*deb yozing\.?/gi,
 ];
 
 function sanitizeOutput(text: string): string {
@@ -95,7 +106,11 @@ function sanitizeOutput(text: string): string {
     const regex = new RegExp(`\\b${term}\\b`, "gi");
     result = result.replace(regex, "Bahor AI");
   }
-  // Remove truncation phrases that reasoner might still emit
+  // Remove truncation phrases - exact string matches first
+  for (const phrase of TRUNCATION_PHRASES) {
+    result = result.split(phrase).join("");
+  }
+  // Then regex patterns for variations
   for (const pattern of TRUNCATION_PATTERNS) {
     result = result.replace(pattern, "");
   }
