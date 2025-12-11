@@ -1532,6 +1532,9 @@ export default function Chat() {
                 content: imageMessage.content,
               });
               
+              // CRITICAL: Mark as seen IMMEDIATELY after save to prevent realtime duplicate
+              markMessageSeen(savedAssistant.id);
+              
               // Also save the attachment reference with correct storage path
               if (jsonData.fileUrl && jsonData.filePath) {
                 const imgAttachment = await chatStore.attachFile(user.id, {
