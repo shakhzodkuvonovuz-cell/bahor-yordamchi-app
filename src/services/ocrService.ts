@@ -1,8 +1,8 @@
 import Tesseract from 'tesseract.js';
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Configure PDF.js worker - use unpkg for reliability
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 // OCR engine upgrade path: Google Vision / Enterprise OCR planned for Premium phase.
 
@@ -14,18 +14,19 @@ export interface OCRResult {
 
 /**
  * Extract text from an image using Tesseract OCR
- * Supports Uzbek, Russian, and English text
+ * Supports Russian and English text (most reliable languages)
  */
 export async function extractTextFromImage(imageSource: string | File | Blob): Promise<OCRResult> {
   try {
-    // Use multiple languages for better accuracy
+    console.log('[OCR] Starting image recognition...');
+    // Use eng+rus which are reliably available (uzb may not be)
     const result = await Tesseract.recognize(
       imageSource,
-      'eng+rus+uzb_cyrl', // English, Russian, and Uzbek Cyrillic
+      'eng+rus', // English and Russian - most reliable
       {
         logger: (m) => {
           if (m.status === 'recognizing text') {
-            console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
+            console.log(`[OCR] Progress: ${Math.round(m.progress * 100)}%`);
           }
         },
       }
@@ -80,11 +81,14 @@ async function pdfPageToCanvas(page: any, scale: number = 2): Promise<HTMLCanvas
  */
 export async function extractTextFromPDF(pdfFile: File): Promise<OCRResult> {
   try {
+    console.log('[OCR-PDF] Starting PDF OCR for:', pdfFile.name);
     const arrayBuffer = await pdfFile.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     
     const maxPages = Math.min(pdf.numPages, 5); // Limit to first 5 pages for MVP
     const extractedTexts: string[] = [];
+    
+    console.log('[OCR-PDF] Processing', maxPages, 'pages');
     
     for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
       const page = await pdf.getPage(pageNum);
@@ -98,19 +102,29 @@ export async function extractTextFromPDF(pdfFile: File): Promise<OCRResult> {
       
       if (pageText.length > 50) {
         // PDF has embedded text, use it directly
+        console.log('[OCR-PDF] Page', pageNum, 'has embedded text:', pageText.length, 'chars');
         extractedTexts.push(`--- Sahifa ${pageNum} ---\n${pageText}`);
       } else {
         // PDF is likely scanned, use OCR
-        const canvas = await pdfPageToCanvas(page);
-        const ocrResult = await extractTextFromImage(canvas.toDataURL('image/png'));
-        
-        if (ocrResult.success && ocrResult.text) {
-          extractedTexts.push(`--- Sahifa ${pageNum} ---\n${ocrResult.text}`);
+        console.log('[OCR-PDF] Page', pageNum, 'needs OCR...');
+        try {
+          const canvas = await pdfPageToCanvas(page);
+          const ocrResult = await extractTextFromImage(canvas.toDataURL('image/png'));
+          
+          if (ocrResult.success && ocrResult.text) {
+            console.log('[OCR-PDF] Page', pageNum, 'OCR success:', ocrResult.text.length, 'chars');
+            extractedTexts.push(`--- Sahifa ${pageNum} ---\n${ocrResult.text}`);
+          } else {
+            console.warn('[OCR-PDF] Page', pageNum, 'OCR failed:', ocrResult.error);
+          }
+        } catch (pageOcrError) {
+          console.warn('[OCR-PDF] Page', pageNum, 'OCR error:', pageOcrError);
         }
       }
     }
     
     if (extractedTexts.length === 0) {
+      console.warn('[OCR-PDF] No text extracted from any page');
       return {
         success: false,
         text: '',
@@ -119,13 +133,14 @@ export async function extractTextFromPDF(pdfFile: File): Promise<OCRResult> {
     }
     
     const combinedText = extractedTexts.join('\n\n');
+    console.log('[OCR-PDF] Total extracted:', combinedText.length, 'chars');
     
     return {
       success: true,
       text: combinedText,
     };
   } catch (error) {
-    console.error('PDF OCR error:', error);
+    console.error('[OCR-PDF] PDF OCR error:', error);
     return {
       success: false,
       text: '',
