@@ -260,8 +260,8 @@ function ChatMessageComponent({
         />
       );
       
-      // Wrap long assistant messages in CollapsibleMessage
-      if (displayContent.length > 900) {
+      // Wrap long assistant messages in CollapsibleMessage, but NOT while streaming
+      if (!isStreaming && displayContent.length > 900) {
         return (
           <CollapsibleMessage content={displayContent} maxLines={12} maxChars={900}>
             {contentElement}
