@@ -329,8 +329,7 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListHandle, Virtuali
         itemContent={itemContent}
         atBottomStateChange={handleAtBottomChange}
         atBottomThreshold={100}
-        followOutput="auto"
-        alignToBottom
+        followOutput={false}
         overscan={200}
         className="flex-1"
         style={{ 
