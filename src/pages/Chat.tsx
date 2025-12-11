@@ -557,6 +557,19 @@ export default function Chat() {
   // Note: Initial messages from /modes are now handled via sessionStorage in the ?new effect above
   // This legacy location.state handler is kept for backwards compatibility with deep links
 
+  // Handle ?thread=<id> query param to open specific thread from history
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const threadParam = params.get("thread");
+    
+    if (threadParam && user) {
+      // Set the thread ID directly - loadMessages will be triggered by the currentThreadId effect
+      setCurrentThreadId(threadParam);
+      // Clear the query param to avoid re-triggering
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location.search, user, navigate]);
+
   // Handle ?new=<id> query param to create new chat
   // Uses unique id per click to ensure each "Yangi chat" click creates a truly new chat
   useEffect(() => {
