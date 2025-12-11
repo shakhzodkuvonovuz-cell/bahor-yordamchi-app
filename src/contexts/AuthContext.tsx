@@ -163,15 +163,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // THEN check for existing session and VALIDATE it server-side
     const validateSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session) {
-        // Validate the session is still valid server-side using getUser()
-        const { data: { user: validatedUser }, error: validationError } = await supabase.auth.getUser();
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        if (validationError || !validatedUser) {
-          // Session is invalid server-side - clear it locally
-          console.warn('[AuthContext] Session invalid server-side, clearing local state');
+        if (sessionError) {
+          console.warn('[AuthContext] getSession error, clearing state:', sessionError.message);
           localStorage.removeItem('sb-akqtmyvwylfejbgwcyll-auth-token');
           setSession(null);
           setUser(null);
@@ -180,12 +176,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
         
-        // Session is valid
-        setSession(session);
-        setUser(validatedUser);
-        setLoading(false);
-        fetchOrCreateProfile(validatedUser);
-      } else {
+        if (session) {
+          // Validate the session is still valid server-side using getUser()
+          const { data: { user: validatedUser }, error: validationError } = await supabase.auth.getUser();
+          
+          if (validationError || !validatedUser) {
+            // Session is invalid server-side - clear it locally
+            console.warn('[AuthContext] Session invalid server-side, clearing local state:', validationError?.message);
+            localStorage.removeItem('sb-akqtmyvwylfejbgwcyll-auth-token');
+            setSession(null);
+            setUser(null);
+            setProfile(null);
+            setLoading(false);
+            return;
+          }
+          
+          // Session is valid
+          setSession(session);
+          setUser(validatedUser);
+          setLoading(false);
+          fetchOrCreateProfile(validatedUser);
+        } else {
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('[AuthContext] Unexpected error validating session:', err);
+        localStorage.removeItem('sb-akqtmyvwylfejbgwcyll-auth-token');
+        setSession(null);
+        setUser(null);
+        setProfile(null);
         setLoading(false);
       }
     };
