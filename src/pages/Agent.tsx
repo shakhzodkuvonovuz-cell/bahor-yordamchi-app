@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { SEO } from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
 import { 
   Bot, Play, Square, RotateCcw, Check, Loader2, AlertCircle, Sparkles, 
@@ -852,7 +853,13 @@ export default function Agent() {
 
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <>
+      <SEO 
+        title="Agent" 
+        description="Bahor AI Agent - murakkab vazifalarni AI yordamida bajaring. Ko'p bosqichli rejalashtirish."
+        url="/agent"
+      />
+      <div className="flex flex-col h-full bg-background">
       {/* Modern Header */}
       <div className="flex items-center justify-between p-4 sm:p-5 border-b border-border/50">
         <div className="flex items-center gap-3">
@@ -1636,5 +1643,6 @@ export default function Agent() {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 }

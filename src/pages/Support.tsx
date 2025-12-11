@@ -1,4 +1,5 @@
 import { ArrowLeft, Mail, MessageSquare, Bug, ExternalLink } from "lucide-react";
+import { SEO } from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/i18n/LanguageProvider";
@@ -8,7 +9,13 @@ export default function Support() {
   const { t } = useTranslation();
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      <SEO 
+        title="Yordam" 
+        description="Bahor AI yordam markazi. Savollaringizga javob oling va bizga murojaat qiling."
+        url="/support"
+      />
+      <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 bg-card/95 backdrop-blur-lg border-b border-border/40 shadow-premium-sm z-10">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
@@ -121,5 +128,6 @@ export default function Support() {
         </section>
       </div>
     </div>
+    </>
   );
 }

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { SEO } from "@/components/SEO";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Send, Trash2, Menu, Paperclip, X, FileText, RefreshCw, CheckCircle, AlertCircle, Search, Square, StickyNote, FileStack, Camera } from "lucide-react";
 import { FocusCanvas, MessageArea } from "@/components/chat/FocusCanvas";
@@ -2065,7 +2066,14 @@ export default function Chat() {
   if (!modeInfo) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-background/95 relative">
+    <>
+      <SEO 
+        title={`${modeTranslation?.title || modeInfo.title} - Suhbat`} 
+        description={modeTranslation?.subtitle || modeInfo.subtitle}
+        url={`/chat/${mode}`}
+        noIndex
+      />
+      <div className="min-h-screen bg-gradient-to-b from-background via-background to-background/95 relative">
       {/* Migration Modal */}
       {user && (
         <ChatMigrationModal
@@ -2566,5 +2574,6 @@ export default function Chat() {
         onUpgrade={() => navigate("/settings")}
       />
     </div>
+    </>
   );
 }

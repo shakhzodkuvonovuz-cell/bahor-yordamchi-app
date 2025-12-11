@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { SEO } from "@/components/SEO";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Send, ChevronDown, Check, Paperclip, Camera, X, FileText, Image as ImageIcon, MessageSquare } from "lucide-react";
 import { CHAT_MODES } from "@/data/modes";
@@ -260,7 +261,13 @@ export default function Home() {
   };
 
   return (
-    <div className="bg-background flex flex-col min-h-[100dvh]">
+    <>
+      <SEO 
+        title="Suhbat" 
+        description="Bahor AI bilan suhbatlashing. O'zbek tiliga moslashtirilgan sun'iy intellekt yordamchisi."
+        url="/modes"
+      />
+      <div className="bg-background flex flex-col min-h-[100dvh]">
       {/* Main content wrapper - ensures footer is below the fold */}
       <div className="min-h-screen flex flex-col">
         {/* Top Bar with page label + Language - subtle, not sticky */}
@@ -457,5 +464,6 @@ export default function Home() {
       {/* Footer - only visible after scrolling past min-h-screen content */}
       <AppFooter />
     </div>
+    </>
   );
 }
