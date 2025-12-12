@@ -601,34 +601,34 @@ export default function Landing() {
       </header>
 
       {/* HERO — 2-column, premium dense layout */}
-      <section className="relative pt-4 pb-8 sm:pt-6 sm:pb-12 lg:pt-8 lg:pb-14">
+      <section className="relative pt-8 pb-12 sm:pt-12 sm:pb-16 lg:pt-16 lg:pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
             ref={heroRef.ref}
-            className={`grid lg:grid-cols-[1fr_1.1fr] gap-8 lg:gap-12 items-center transition-all duration-700 ${
+            className={`grid lg:grid-cols-2 gap-8 lg:gap-16 items-center transition-all duration-700 ${
               heroRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
             }`}
           >
-            {/* Left - Content (wider column, max-w ~620px) */}
+            {/* Left - Content */}
             <div className="text-center lg:text-left max-w-[620px] lg:max-w-none">
               {/* Beta badge - tighter margin */}
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-4">
                 <Sparkles className="w-4 h-4" />
                 {t('badge.beta')}
               </div>
               
-              {/* Headline - slightly larger, tighter line-height */}
-              <h1 className="text-[1.75rem] sm:text-4xl lg:text-[2.75rem] xl:text-5xl font-bold mb-3 sm:mb-4 text-foreground leading-[1.15] tracking-tight">
+              {/* Headline */}
+              <h1 className="text-[1.75rem] sm:text-4xl lg:text-[2.75rem] xl:text-5xl font-bold mb-4 sm:mb-5 text-foreground leading-[1.15] tracking-tight">
                 {t('landing.hero.headline')}
               </h1>
               
-              {/* Subheadline - slightly larger max-width */}
-              <p className="text-base sm:text-lg text-muted-foreground mb-5 max-w-xl mx-auto lg:mx-0">
+              {/* Subheadline */}
+              <p className="text-base sm:text-lg text-muted-foreground mb-6 max-w-xl mx-auto lg:mx-0">
                 {t('landing.hero.subheadline')}
               </p>
               
-              {/* 3 bullet value props - improved spacing and line-height */}
-              <ul className="space-y-3 mb-5 text-left max-w-xl mx-auto lg:mx-0">
+              {/* 3 bullet value props */}
+              <ul className="space-y-3 mb-6 text-left max-w-xl mx-auto lg:mx-0">
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                   <span className="text-sm text-foreground leading-relaxed">{t('landing.hero.bullet1')}</span>
@@ -643,13 +643,13 @@ export default function Landing() {
                 </li>
               </ul>
               
-              {/* CTA row - taller buttons, consistent radius */}
-              <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start mb-4">
-                <Button onClick={handleOpenApp} size="lg" className="h-12 md:h-13 px-6 font-semibold rounded-xl shadow-lg shadow-primary/25 hover-lift">
+              {/* CTA row */}
+              <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start mb-5">
+                <Button onClick={handleOpenApp} size="lg" className="h-12 px-6 font-semibold rounded-xl shadow-lg shadow-primary/25 hover-lift">
                   <MessageSquare className="w-5 h-5 mr-2" />
                   {t('button.openApp')}
                 </Button>
-                <Button variant="outline" size="lg" className="h-12 md:h-13 px-6 font-medium rounded-xl" onClick={() => scrollToSection('features')}>
+                <Button variant="outline" size="lg" className="h-12 px-6 font-medium rounded-xl" onClick={() => scrollToSection('features')}>
                   {t('landing.hero.seeFeatures')}
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
@@ -666,8 +666,8 @@ export default function Landing() {
               </div>
             </div>
             
-            {/* Right - Mockup (10-15% larger on desktop) */}
-            <div className="mt-2 lg:mt-0 lg:scale-[1.1] lg:origin-center">
+            {/* Right - Mockup (original sizing) */}
+            <div className="mt-4 lg:mt-0">
               <HeroMockup />
             </div>
           </div>
