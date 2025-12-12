@@ -601,7 +601,7 @@ export default function Landing() {
       </header>
 
       {/* HERO — 2-column, premium dense layout */}
-      <section className="relative pt-8 pb-12 sm:pt-12 sm:pb-16 lg:pt-16 lg:pb-20">
+      <section className="relative pt-4 pb-12 sm:pt-6 sm:pb-16 lg:pt-8 lg:pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
             ref={heroRef.ref}
@@ -666,8 +666,8 @@ export default function Landing() {
               </div>
             </div>
             
-            {/* Right - Mockup (original sizing) */}
-            <div className="mt-4 lg:mt-0">
+            {/* Right - Mockup */}
+            <div className="mt-2 lg:-mt-4">
               <HeroMockup />
             </div>
           </div>
