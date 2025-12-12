@@ -1226,6 +1226,16 @@ export const translations: Record<Lang, Record<string, string>> = {
     'error.description': 'Iltimos sahifani yangilang yoki qaytadan urinib ko\'ring.',
     'error.reload': 'Qayta yuklash',
     'error.retry': 'Qaytadan urinish',
+    // Premium Interest Modal
+    'premium.interest.title': 'Premiumga qiziqasizmi?',
+    'premium.interest.contactLabel': 'Email yoki Telegram username',
+    'premium.interest.nameLabel': 'Ism',
+    'premium.interest.success': 'Rahmat! Tez orada bog\'lanamiz.',
+    'premium.interest.monthlyBtn': 'Premiumga qiziqaman',
+    'premium.interest.yearlyBtn': 'Yillik reja (42% tejash)',
+    'button.close': 'Yopish',
+    'button.submit': 'Yuborish',
+    'optional': 'ixtiyoriy',
   },
 
   en: {
@@ -2443,6 +2453,16 @@ export const translations: Record<Lang, Record<string, string>> = {
     'error.description': 'Please refresh the page or try again.',
     'error.reload': 'Reload',
     'error.retry': 'Try again',
+    // Premium Interest Modal
+    'premium.interest.title': 'Interested in Premium?',
+    'premium.interest.contactLabel': 'Email or Telegram username',
+    'premium.interest.nameLabel': 'Name',
+    'premium.interest.success': 'Thank you! We\'ll contact you soon.',
+    'premium.interest.monthlyBtn': 'I\'m interested in Premium',
+    'premium.interest.yearlyBtn': 'Yearly plan (save 42%)',
+    'button.close': 'Close',
+    'button.submit': 'Submit',
+    'optional': 'optional',
   },
 
   ru: {
@@ -3555,6 +3575,16 @@ export const translations: Record<Lang, Record<string, string>> = {
     'error.description': 'Пожалуйста, обновите страницу или попробуйте снова.',
     'error.reload': 'Перезагрузить',
     'error.retry': 'Попробовать снова',
+    // Premium Interest Modal
+    'premium.interest.title': 'Интересует Premium?',
+    'premium.interest.contactLabel': 'Email или Telegram username',
+    'premium.interest.nameLabel': 'Имя',
+    'premium.interest.success': 'Спасибо! Мы скоро свяжемся с вами.',
+    'premium.interest.monthlyBtn': 'Интересует Premium',
+    'premium.interest.yearlyBtn': 'Годовой план (скидка 42%)',
+    'button.close': 'Закрыть',
+    'button.submit': 'Отправить',
+    'optional': 'необязательно',
   },
 
   tr: {
@@ -4668,6 +4698,16 @@ export const translations: Record<Lang, Record<string, string>> = {
     'error.description': 'Lütfen sayfayı yenileyin veya tekrar deneyin.',
     'error.reload': 'Yeniden yükle',
     'error.retry': 'Tekrar dene',
+    // Premium Interest Modal
+    'premium.interest.title': 'Premium ile ilgileniyor musunuz?',
+    'premium.interest.contactLabel': 'Email veya Telegram kullanıcı adı',
+    'premium.interest.nameLabel': 'İsim',
+    'premium.interest.success': 'Teşekkürler! Yakında sizinle iletişime geçeceğiz.',
+    'premium.interest.monthlyBtn': 'Premium ile ilgileniyorum',
+    'premium.interest.yearlyBtn': 'Yıllık plan (%42 tasarruf)',
+    'button.close': 'Kapat',
+    'button.submit': 'Gönder',
+    'optional': 'isteğe bağlı',
   },
 };
 
