@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { SEO } from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -36,7 +36,9 @@ import {
   Paperclip,
   Camera,
   Mic,
+  ChevronRight,
 } from "lucide-react";
+import { PremiumInterestModal } from "@/components/PremiumInterestModal";
 import bahorLogo from "@/assets/bahor-logo.png";
 import samarkandImage from "@/assets/landing/samarkand-registan.jpg";
 import tashkentImage from "@/assets/landing/tashkent-night.jpg";
@@ -437,6 +439,10 @@ export default function Landing() {
   const { t } = useTranslation();
   const { user } = useAuth();
   
+  // Premium interest modal state
+  const [premiumModalOpen, setPremiumModalOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">("monthly");
+  
   // Prefetch critical routes after landing loads for instant navigation
   useEffect(() => {
     const timer = setTimeout(prefetchCriticalRoutes, 1500);
@@ -507,21 +513,21 @@ export default function Landing() {
     { q: t('faq.circles.question'), a: t('faq.circles.answer') },
   ];
 
-  // Pricing plans
+  // Pricing plans - updated CTAs
   const pricingPlans = [
     {
       name: t('pricing.free.name'),
       price: "0",
       features: [t('landing.pricing.free.f1'), t('landing.pricing.free.f2'), t('landing.pricing.free.f3')],
       cta: t('button.start'),
-      action: "start",
+      action: "start" as const,
     },
     {
       name: t('pricing.monthly.name'),
       price: "49,000",
       features: [t('landing.pricing.monthly.f1'), t('landing.pricing.monthly.f2'), t('landing.pricing.monthly.f3'), t('landing.pricing.monthly.f4'), t('landing.pricing.monthly.f5')],
-      cta: t('button.comingSoon'),
-      action: "soon",
+      cta: t('premium.interest.monthlyBtn') || "Premiumga qiziqaman",
+      action: "interest_monthly" as const,
       highlighted: true,
       badge: t('pricing.monthly.badge'),
     },
@@ -529,8 +535,8 @@ export default function Landing() {
       name: t('pricing.yearly.name'),
       price: "340,000",
       features: [t('landing.pricing.yearly.f1'), t('landing.pricing.yearly.f2'), t('landing.pricing.yearly.f3')],
-      cta: t('button.comingSoon'),
-      action: "soon",
+      cta: t('premium.interest.yearlyBtn') || "Yillik reja (42% tejash)",
+      action: "interest_yearly" as const,
       badge: t('pricing.yearly.badge'),
     },
   ];
@@ -549,10 +555,10 @@ export default function Landing() {
     <>
       <SEO url="/" />
       <div className="min-h-screen bg-background relative overflow-x-hidden">
-      {/* Background */}
+      {/* Background - reduced fog/blur for crisper look */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px]" />
-        <div className="absolute top-1/3 right-0 w-[500px] h-[500px] bg-primary/4 rounded-full blur-[100px]" />
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-primary/4 rounded-full blur-[80px]" />
+        <div className="absolute top-1/3 right-0 w-[500px] h-[500px] bg-primary/3 rounded-full blur-[70px]" />
       </div>
       
       {/* Sticky Header with Nav */}
@@ -594,12 +600,12 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* HERO — 2-column, tighter layout */}
-      <section className="relative pt-4 pb-8 sm:pt-6 sm:pb-12 lg:pt-8 lg:pb-16">
+      {/* HERO — 2-column, premium dense layout */}
+      <section className="relative pt-4 pb-8 sm:pt-6 sm:pb-12 lg:pt-8 lg:pb-14">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
             ref={heroRef.ref}
-            className={`grid lg:grid-cols-[1.1fr_0.9fr] gap-8 lg:gap-10 items-center transition-all duration-700 ${
+            className={`grid lg:grid-cols-[1fr_1.1fr] gap-8 lg:gap-12 items-center transition-all duration-700 ${
               heroRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
             }`}
           >
@@ -621,29 +627,29 @@ export default function Landing() {
                 {t('landing.hero.subheadline')}
               </p>
               
-              {/* 3 bullet value props - tighter spacing */}
-              <ul className="space-y-1.5 mb-5 text-left max-w-xl mx-auto lg:mx-0">
+              {/* 3 bullet value props - improved spacing and line-height */}
+              <ul className="space-y-3 mb-5 text-left max-w-xl mx-auto lg:mx-0">
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span className="text-sm text-foreground">{t('landing.hero.bullet1')}</span>
+                  <span className="text-sm text-foreground leading-relaxed">{t('landing.hero.bullet1')}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span className="text-sm text-foreground">{t('landing.hero.bullet2')}</span>
+                  <span className="text-sm text-foreground leading-relaxed">{t('landing.hero.bullet2')}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span className="text-sm text-foreground">{t('landing.hero.bullet3')}</span>
+                  <span className="text-sm text-foreground leading-relaxed">{t('landing.hero.bullet3')}</span>
                 </li>
               </ul>
               
-              {/* CTA row - tighter spacing */}
+              {/* CTA row - taller buttons, consistent radius */}
               <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start mb-4">
-                <Button onClick={handleOpenApp} size="lg" className="h-11 px-6 font-semibold rounded-xl shadow-lg shadow-primary/25 hover-lift">
+                <Button onClick={handleOpenApp} size="lg" className="h-12 md:h-13 px-6 font-semibold rounded-xl shadow-lg shadow-primary/25 hover-lift">
                   <MessageSquare className="w-5 h-5 mr-2" />
                   {t('button.openApp')}
                 </Button>
-                <Button variant="outline" size="lg" className="h-11 px-6 font-medium rounded-xl" onClick={() => scrollToSection('features')}>
+                <Button variant="outline" size="lg" className="h-12 md:h-13 px-6 font-medium rounded-xl" onClick={() => scrollToSection('features')}>
                   {t('landing.hero.seeFeatures')}
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
@@ -660,49 +666,60 @@ export default function Landing() {
               </div>
             </div>
             
-            {/* Right - Mockup (shifted up ~20px) */}
-            <div className="mt-2 lg:mt-0 lg:-mt-5">
+            {/* Right - Mockup (10-15% larger on desktop) */}
+            <div className="mt-2 lg:mt-0 lg:scale-[1.1] lg:origin-center">
               <HeroMockup />
             </div>
           </div>
         </div>
       </section>
 
-      {/* SECTION 1 — Asosiy imkoniyatlar (6 cards) */}
-      <section id="features" className="py-16 sm:py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* SECTION 1 — Asosiy imkoniyatlar (2-column feature list with dividers) */}
+      <section id="features" className="py-16 md:py-20">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div ref={featuresRef.ref} className={`text-center mb-10 transition-all duration-600 ${featuresRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
-            <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-foreground">{t('landing.features.title')}</h2>
-            <p className="text-muted-foreground max-w-xl mx-auto">{t('landing.features.subtitle')}</p>
+            <h2 className="text-3xl md:text-5xl font-semibold tracking-tight mb-3 text-foreground">{t('landing.features.title')}</h2>
+            <p className="text-white/70 max-w-xl mx-auto">{t('landing.features.subtitle')}</p>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* 2-column feature list with dividers */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
             {features.map((f, i) => (
               <div
                 key={i}
-                className={`relative p-5 rounded-2xl glass-premium border border-border/30 hover:shadow-glow transition-all duration-500 ${
+                className={`group flex items-center gap-4 py-5 px-4 border-b border-white/10 transition-all duration-500 hover:bg-white/[0.02] ${
                   featuresRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-                }`}
+                } ${i % 2 === 0 ? 'md:border-r md:border-white/10' : ''}`}
                 style={{ transitionDelay: `${i * 60}ms` }}
               >
-                {f.badge && (
-                  <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold">
-                    {f.badge}
-                  </span>
-                )}
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-3">
+                {/* Icon in soft square */}
+                <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0 group-hover:bg-primary/20 group-hover:shadow-lg group-hover:shadow-primary/10 transition-all duration-300">
                   {f.icon}
                 </div>
-                <h3 className="font-bold text-foreground mb-1">{f.title}</h3>
-                <p className="text-sm text-muted-foreground">{f.desc}</p>
+                
+                {/* Title + description */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">{f.title}</h3>
+                    {f.badge && (
+                      <span className="px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold">
+                        {f.badge}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-white/60 leading-relaxed">{f.desc}</p>
+                </div>
+                
+                {/* Arrow */}
+                <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-300 shrink-0" />
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* SECTION 2 — Rasm yaratish (AI) */}
-      <section id="image-gen" className="py-16 sm:py-20 relative">
+      {/* SECTION 2 — Rasm yaratish (AI) - premium gallery look */}
+      <section id="image-gen" className="py-16 md:py-20 relative">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div ref={imageGenRef.ref} className={`grid lg:grid-cols-2 gap-10 items-center transition-all duration-700 ${imageGenRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
             {/* Content */}
@@ -711,46 +728,46 @@ export default function Landing() {
                 <ImagePlus className="w-3.5 h-3.5" />
                 {t('landing.badge.new')}
               </div>
-              <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-foreground">{t('landing.imageGen.title')}</h2>
-              <ul className="space-y-3 mb-6">
+              <h2 className="text-3xl md:text-5xl font-semibold tracking-tight mb-4 text-foreground">{t('landing.imageGen.title')}</h2>
+              <ul className="space-y-4 mb-6">
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-primary mt-0.5" />
-                  <span className="text-foreground">{t('landing.imageGen.bullet1')}</span>
+                  <span className="text-white/70">{t('landing.imageGen.bullet1')}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-primary mt-0.5" />
-                  <span className="text-foreground">{t('landing.imageGen.bullet2')}</span>
+                  <span className="text-white/70">{t('landing.imageGen.bullet2')}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-primary mt-0.5" />
-                  <span className="text-foreground">{t('landing.imageGen.bullet3')}</span>
+                  <span className="text-white/70">{t('landing.imageGen.bullet3')}</span>
                 </li>
               </ul>
-              <Button onClick={handleOpenApp} className="h-10 px-5 rounded-xl font-medium shadow-lg shadow-primary/20">
+              <Button onClick={handleOpenApp} className="h-12 px-6 rounded-xl font-medium shadow-lg shadow-primary/20">
                 {t('landing.imageGen.cta')}
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </div>
             
-            {/* Mini gallery with real AI-generated images */}
-            <div className="flex gap-3 justify-center lg:justify-end">
+            {/* Premium gallery with staggered overlap effect - 20-30% larger */}
+            <div className="flex items-end gap-3 justify-center lg:justify-end">
               {imageGallery.map((img, i) => (
                 <div
                   key={i}
-                  className={`w-24 h-28 sm:w-28 sm:h-32 rounded-xl overflow-hidden border border-border/40 relative group transition-all duration-500 hover:scale-105 hover:shadow-lg ${
+                  className={`rounded-xl overflow-hidden border border-white/10 relative group transition-all duration-500 hover:translate-y-[-4px] hover:shadow-xl hover:shadow-primary/10 ${
                     imageGenRef.isVisible ? "opacity-100 scale-100" : "opacity-0 scale-90"
-                  }`}
+                  } ${i === 1 ? 'w-36 h-44 sm:w-40 sm:h-48 -mb-4' : 'w-28 h-36 sm:w-32 sm:h-40'}`}
                   style={{ transitionDelay: `${200 + i * 100}ms` }}
                 >
                   <img 
                     src={img.image} 
                     alt={img.label}
-                    width={112}
-                    height={128}
+                    width={160}
+                    height={192}
                     loading="lazy" 
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3">
                     <span className="text-xs text-white font-medium">{img.label}</span>
                   </div>
                 </div>
@@ -760,13 +777,13 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* SECTION 3 — Doiralar (Circles) */}
-      <section id="circles" className="py-16 sm:py-20">
+      {/* SECTION 3 — Doiralar (Circles) - improved clarity */}
+      <section id="circles" className="py-16 md:py-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div ref={circlesRef.ref} className={`grid lg:grid-cols-2 gap-8 lg:gap-12 items-start transition-all duration-700 ${circlesRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
-            {/* Realistic Circles Mockup - Larger, more appealing */}
+            {/* Realistic Circles Mockup - sharper edges/contrast */}
             <div className={`order-2 lg:order-1 transition-all duration-700 ${circlesRef.isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}>
-              <div className="glass-premium rounded-2xl p-4 sm:p-5 border border-border/40 max-w-lg mx-auto shadow-2xl">
+              <div className="rounded-2xl p-4 sm:p-5 border border-white/15 bg-card/80 backdrop-blur-sm max-w-lg mx-auto shadow-2xl">
                 {/* Header with back button, emoji, title, members, and avatars */}
                 <div className="flex items-center gap-3 pb-3 border-b border-border/30 mb-3">
                   {/* Back button */}
@@ -929,18 +946,18 @@ export default function Landing() {
                 <Users className="w-3.5 h-3.5" />
                 {t('landing.circles.badge')}
               </div>
-              <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-foreground">{t('landing.circles.title')}</h2>
-              <p className="text-muted-foreground mb-6">{t('landing.circles.desc')}</p>
+              <h2 className="text-3xl md:text-5xl font-semibold tracking-tight mb-4 text-foreground">{t('landing.circles.title')}</h2>
+              <p className="text-white/70 mb-6">{t('landing.circles.desc')}</p>
               
-              {/* Key Features List */}
-              <div className="space-y-4 mb-6">
+              {/* Key Features List - improved spacing */}
+              <div className="space-y-5 mb-6">
                 <div className="flex items-start gap-3 group">
                   <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
                     <MessageSquare className="w-4 h-4 text-primary" />
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold text-foreground mb-0.5">{t('landing.circles.feature.chat')}</h4>
-                    <p className="text-xs text-muted-foreground">{t('landing.circles.feature.chatDesc')}</p>
+                    <p className="text-xs text-white/60">{t('landing.circles.feature.chatDesc')}</p>
                   </div>
                 </div>
                 
@@ -950,7 +967,7 @@ export default function Landing() {
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold text-foreground mb-0.5">{t('landing.circles.feature.ai')}</h4>
-                    <p className="text-xs text-muted-foreground">{t('landing.circles.feature.aiDesc')}</p>
+                    <p className="text-xs text-white/60">{t('landing.circles.feature.aiDesc')}</p>
                   </div>
                 </div>
                 
@@ -960,7 +977,7 @@ export default function Landing() {
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold text-foreground mb-0.5">{t('landing.circles.feature.files')}</h4>
-                    <p className="text-xs text-muted-foreground">{t('landing.circles.feature.filesDesc')}</p>
+                    <p className="text-xs text-white/60">{t('landing.circles.feature.filesDesc')}</p>
                   </div>
                 </div>
                 
@@ -970,7 +987,7 @@ export default function Landing() {
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold text-foreground mb-0.5">{t('landing.circles.feature.outcomes')}</h4>
-                    <p className="text-xs text-muted-foreground">{t('landing.circles.feature.outcomesDesc')}</p>
+                    <p className="text-xs text-white/60">{t('landing.circles.feature.outcomesDesc')}</p>
                   </div>
                 </div>
               </div>
@@ -988,12 +1005,12 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* SECTION 4 — Qanday ishlaydi (4 steps) */}
-      <section className="py-16 sm:py-20">
+      {/* SECTION 4 — Qanday ishlaydi (4 steps) - reduced padding, lighter trust box */}
+      <section className="py-14 md:py-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div ref={stepsRef.ref} className={`text-center mb-12 transition-all duration-600 ${stepsRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
-            <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-foreground">{t('section.howItWorks')}</h2>
-            <p className="text-muted-foreground">{t('section.howItWorks.subtitle.4steps')}</p>
+          <div ref={stepsRef.ref} className={`text-center mb-10 transition-all duration-600 ${stepsRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+            <h2 className="text-3xl md:text-5xl font-semibold tracking-tight mb-3 text-foreground">{t('section.howItWorks')}</h2>
+            <p className="text-white/70">{t('section.howItWorks.subtitle.4steps')}</p>
           </div>
           
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
@@ -1010,18 +1027,18 @@ export default function Landing() {
                   </div>
                 </div>
                 <h3 className="font-bold text-foreground mb-1 text-sm">{step.title}</h3>
-                <p className="text-xs text-muted-foreground">{step.desc}</p>
+                <p className="text-xs text-white/60">{step.desc}</p>
               </div>
             ))}
           </div>
           
-          {/* Trust sources box */}
-          <div className={`mt-12 glass-premium rounded-2xl p-6 border border-border/30 text-center max-w-lg mx-auto transition-all duration-700 ${stepsRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`} style={{ transitionDelay: '400ms' }}>
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary mx-auto mb-3">
-              <ExternalLink className="w-5 h-5" />
+          {/* Trust sources box - smaller, lighter */}
+          <div className={`mt-10 rounded-xl p-5 border border-white/10 bg-card/50 text-center max-w-md mx-auto transition-all duration-700 ${stepsRef.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`} style={{ transitionDelay: '400ms' }}>
+            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary mx-auto mb-2">
+              <ExternalLink className="w-4 h-4" />
             </div>
-            <h3 className="font-bold text-foreground mb-2">{t('trust.title')}</h3>
-            <p className="text-sm text-muted-foreground mb-4">{t('trust.description')}</p>
+            <h3 className="font-semibold text-foreground mb-1.5 text-sm">{t('trust.title')}</h3>
+            <p className="text-xs text-white/60 mb-3">{t('trust.description')}</p>
             <div className="flex flex-wrap gap-2 justify-center">
               {sourceChips.map((source) => (
                 <span key={source} className="px-3 py-1 rounded-full bg-secondary/80 text-xs text-foreground">
@@ -1073,9 +1090,18 @@ export default function Landing() {
                   ))}
                 </ul>
                 <Button
-                  className={`w-full h-10 rounded-xl font-medium ${plan.highlighted ? "shadow-lg shadow-primary/25" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
-                  disabled={plan.action === "soon"}
-                  onClick={() => plan.action === "start" && handleOpenApp()}
+                  className={`w-full h-11 rounded-xl font-medium ${plan.highlighted ? "shadow-lg shadow-primary/25" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
+                  onClick={() => {
+                    if (plan.action === "start") {
+                      handleOpenApp();
+                    } else if (plan.action === "interest_monthly") {
+                      setSelectedPlan("monthly");
+                      setPremiumModalOpen(true);
+                    } else if (plan.action === "interest_yearly") {
+                      setSelectedPlan("yearly");
+                      setPremiumModalOpen(true);
+                    }
+                  }}
                 >
                   {plan.cta}
                 </Button>
@@ -1115,6 +1141,13 @@ export default function Landing() {
 
       {/* FOOTER */}
       <AppFooter />
+      
+      {/* Premium Interest Modal */}
+      <PremiumInterestModal 
+        open={premiumModalOpen} 
+        onOpenChange={setPremiumModalOpen} 
+        plan={selectedPlan} 
+      />
     </div>
     </>
   );
