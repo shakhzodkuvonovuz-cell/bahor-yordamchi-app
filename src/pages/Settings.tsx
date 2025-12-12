@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { SEO } from "@/components/SEO";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
-import { ArrowLeft, User, Globe, Moon, Sun, Shield, HelpCircle, FileText, Mail, LogOut, ChevronRight, CreditCard, Bell, Zap, Edit, Crown, Lock, RotateCcw, Loader2, Infinity, Download, Trash2 } from "lucide-react";
+import { ArrowLeft, User, Globe, Moon, Sun, Shield, HelpCircle, FileText, Mail, LogOut, ChevronRight, CreditCard, Bell, Zap, Edit, Crown, Lock, RotateCcw, Loader2, Infinity, Download, Trash2, Info, ExternalLink } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,6 +21,7 @@ import SettingsProfileSkeleton from "@/components/SettingsProfileSkeleton";
 import ProfileCompletionCard from "@/components/ProfileCompletionCard";
 import DataManagementModal from "@/components/DataManagementModal";
 import UserPreferencesSection from "@/components/UserPreferencesSection";
+import { APP_INFO } from "@/data/appIdentity";
 
 import { useDailyUsageServer } from "@/hooks/useEntitlements";
 
@@ -576,6 +577,70 @@ export default function Settings() {
                 </div>
                 <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
               </button>
+
+              {/* Bahor AI haqida */}
+              <Collapsible open={openSection === "about"} onOpenChange={() => toggleSection("about")}>
+                <CollapsibleTrigger className="w-full px-4 min-h-[56px] flex items-center justify-between hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <Info className="w-5 h-5 text-muted-foreground shrink-0" />
+                    <span className="font-medium text-foreground text-[15px]">{t('settings.aboutBahor')}</span>
+                  </div>
+                  <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${openSection === "about" ? "rotate-90" : ""}`} />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="px-4 py-4 bg-muted/30 space-y-3">
+                  {/* Tagline */}
+                  <p className="text-sm text-muted-foreground italic">
+                    "{APP_INFO.tagline[language as keyof typeof APP_INFO.tagline] || APP_INFO.tagline.en}"
+                  </p>
+                  
+                  {/* Founder */}
+                  <div className="flex items-start gap-2">
+                    <span className="text-sm text-muted-foreground shrink-0">{t('settings.about.founder')}:</span>
+                    <span className="text-sm font-medium text-foreground">
+                      {language === 'uz' ? APP_INFO.founder.uz : APP_INFO.founder.en}
+                    </span>
+                  </div>
+                  
+                  {/* Team */}
+                  <div className="flex items-start gap-2">
+                    <span className="text-sm text-muted-foreground shrink-0">{t('settings.about.team')}:</span>
+                    <span className="text-sm font-medium text-foreground">{t('settings.about.teamValue')}</span>
+                  </div>
+                  
+                  {/* Website */}
+                  <div className="flex items-start gap-2">
+                    <span className="text-sm text-muted-foreground shrink-0">{t('settings.about.website')}:</span>
+                    <a 
+                      href={APP_INFO.website} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
+                    >
+                      bahorai.com
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                  
+                  {/* Support */}
+                  <div className="flex items-start gap-2">
+                    <span className="text-sm text-muted-foreground shrink-0">{t('settings.about.support')}:</span>
+                    <a 
+                      href={`mailto:${APP_INFO.support}`}
+                      className="text-sm font-medium text-primary hover:underline"
+                    >
+                      {APP_INFO.support}
+                    </a>
+                  </div>
+                  
+                  {/* Status */}
+                  <div className="flex items-start gap-2">
+                    <span className="text-sm text-muted-foreground shrink-0">{t('settings.about.status')}:</span>
+                    <span className="text-sm font-medium text-foreground bg-primary/10 text-primary px-2 py-0.5 rounded">
+                      {APP_INFO.status}
+                    </span>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             </div>
           </section>
 
