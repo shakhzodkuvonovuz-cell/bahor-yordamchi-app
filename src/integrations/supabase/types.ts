@@ -651,6 +651,30 @@ export type Database = {
         }
         Relationships: []
       }
+      premium_waitlist: {
+        Row: {
+          contact: string
+          created_at: string
+          id: string
+          name: string | null
+          plan: string
+        }
+        Insert: {
+          contact: string
+          created_at?: string
+          id?: string
+          name?: string | null
+          plan: string
+        }
+        Update: {
+          contact?: string
+          created_at?: string
+          id?: string
+          name?: string | null
+          plan?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
