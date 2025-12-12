@@ -160,14 +160,14 @@ export default function AuthEmail() {
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-[420px] mx-auto animate-fade-in">
           {/* Logo & Header */}
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-3 mb-4">
+          <div className="text-center mb-6">
+            <div className="flex items-center justify-center gap-3 mb-3">
               <img 
                 src={bahorLogo} 
                 alt="Bahor AI" 
-                className="w-12 h-12 object-contain"
+                className="w-14 h-14 sm:w-16 sm:h-16 object-contain"
               />
-              <h1 className="text-xl font-bold text-foreground">Bahor AI</h1>
+              <h1 className="text-2xl sm:text-2xl font-bold text-foreground">Bahor AI</h1>
             </div>
           </div>
 

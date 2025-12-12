@@ -108,13 +108,13 @@ export function AppShellV2({ children }: AppShellV2Props) {
             <Menu className="w-5 h-5 text-foreground" />
           </button>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <img 
               src={bahorLogo} 
               alt="Bahor AI" 
-              className="h-7 w-7 object-contain" 
+              className="h-8 w-8 object-contain" 
             />
-            <span className="font-semibold text-foreground">{getPageTitle()}</span>
+            <span className="font-semibold text-foreground text-[15px]">{getPageTitle()}</span>
           </div>
           
           <div className="w-11" /> {/* Spacer matching button size */}

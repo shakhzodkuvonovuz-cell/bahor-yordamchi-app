@@ -291,13 +291,13 @@ export default function Home() {
               <img 
                 src={bahorLogo} 
                 alt="Bahor AI" 
-                className="h-14 w-14 sm:h-16 sm:w-16 object-contain" 
+                className="h-12 w-12 sm:h-14 sm:w-14 object-contain" 
               />
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">
                 {t('home.title')}
               </h1>
             </div>
-            <p className="text-muted-foreground text-sm sm:text-base max-w-md mx-auto">
+            <p className="text-muted-foreground text-sm max-w-md mx-auto">
               {t('home.subtitle')}
             </p>
           </div>
