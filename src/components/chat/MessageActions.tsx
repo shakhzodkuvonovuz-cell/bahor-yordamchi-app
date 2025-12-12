@@ -50,7 +50,7 @@ export function MessageActionsPopover({
     <div ref={menuRef} className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-1.5 rounded-lg bg-secondary/80 hover:bg-secondary text-muted-foreground hover:text-foreground transition-all opacity-0 group-hover:opacity-100"
+        className="p-2.5 min-w-[40px] min-h-[40px] rounded-lg bg-secondary/80 hover:bg-secondary text-muted-foreground hover:text-foreground transition-all opacity-0 group-hover:opacity-100 touch-manipulation"
         aria-label="Message actions"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -65,7 +65,7 @@ export function MessageActionsPopover({
           {/* Copy */}
           <button
             onClick={handleCopy}
-            className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-secondary/60 transition-colors text-left"
+            className="w-full flex items-center gap-3 px-4 py-3 min-h-[44px] hover:bg-secondary/60 transition-colors text-left touch-manipulation"
           >
             {copied ? (
               <Check className="w-4 h-4 text-primary" />
@@ -84,7 +84,7 @@ export function MessageActionsPopover({
                 onEdit();
                 setIsOpen(false);
               }}
-              className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-secondary/60 transition-colors text-left"
+              className="w-full flex items-center gap-3 px-4 py-3 min-h-[44px] hover:bg-secondary/60 transition-colors text-left touch-manipulation"
             >
               <Edit3 className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm text-foreground">{labels.edit}</span>

@@ -85,7 +85,7 @@ export function MessageActionsBar({
           variant="ghost"
           size="sm"
           className={cn(
-            "h-8 w-8 p-0 rounded-lg transition-all",
+            "h-10 w-10 min-h-[40px] min-w-[40px] p-0 rounded-lg transition-all touch-manipulation",
             reaction === "like" 
               ? "text-primary bg-primary/10 hover:bg-primary/15" 
               : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
@@ -100,7 +100,7 @@ export function MessageActionsBar({
           variant="ghost"
           size="sm"
           className={cn(
-            "h-8 w-8 p-0 rounded-lg transition-all",
+            "h-10 w-10 min-h-[40px] min-w-[40px] p-0 rounded-lg transition-all touch-manipulation",
             reaction === "dislike" 
               ? "text-destructive bg-destructive/10 hover:bg-destructive/15" 
               : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
@@ -119,7 +119,7 @@ export function MessageActionsBar({
       <Button
         variant="ghost"
         size="sm"
-        className="h-8 px-2 gap-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+        className="h-10 min-h-[40px] px-2 gap-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 touch-manipulation"
         onClick={handleCopy}
         disabled={isDisabled}
         title={t('actions.copy')}
@@ -136,7 +136,7 @@ export function MessageActionsBar({
       <Button
         variant="ghost"
         size="sm"
-        className="h-8 px-2 gap-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+        className="h-10 min-h-[40px] px-2 gap-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 touch-manipulation"
         onClick={onShare}
         disabled={isDisabled}
         title={t('actions.share')}
@@ -151,7 +151,7 @@ export function MessageActionsBar({
       <Button
         variant="ghost"
         size="sm"
-        className="h-8 px-2 gap-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+        className="h-10 min-h-[40px] px-2 gap-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 touch-manipulation"
         onClick={onContinue}
         disabled={isDisabled}
         title={t('actions.continue')}
@@ -164,7 +164,7 @@ export function MessageActionsBar({
       <Button
         variant="ghost"
         size="sm"
-        className="h-8 px-2 gap-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+        className="h-10 min-h-[40px] px-2 gap-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 touch-manipulation"
         onClick={onRegenerate}
         disabled={isDisabled}
         title={t('actions.regenerate')}
@@ -179,18 +179,18 @@ export function MessageActionsBar({
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+            className="h-10 w-10 min-h-[40px] min-w-[40px] p-0 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 touch-manipulation"
             disabled={isDisabled}
             title={t('actions.more')}
           >
             <MoreHorizontal className="w-4 h-4" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="end" className="w-44 p-1.5" sideOffset={8}>
+        <PopoverContent align="end" className="w-48 p-1.5" sideOffset={8}>
           <div className="space-y-0.5">
             <button
               onClick={() => { onVariant("shorter"); setMoreOpen(false); }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-secondary/60 transition-colors text-left"
+              className="w-full flex items-center gap-2.5 px-3 py-3 min-h-[44px] rounded-lg hover:bg-secondary/60 transition-colors text-left touch-manipulation"
               disabled={isDisabled}
             >
               <Minimize2 className="w-4 h-4 text-muted-foreground" />
@@ -198,7 +198,7 @@ export function MessageActionsBar({
             </button>
             <button
               onClick={() => { onVariant("longer"); setMoreOpen(false); }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-secondary/60 transition-colors text-left"
+              className="w-full flex items-center gap-2.5 px-3 py-3 min-h-[44px] rounded-lg hover:bg-secondary/60 transition-colors text-left touch-manipulation"
               disabled={isDisabled}
             >
               <Maximize2 className="w-4 h-4 text-muted-foreground" />
@@ -206,7 +206,7 @@ export function MessageActionsBar({
             </button>
             <button
               onClick={() => { onVariant("simplify"); setMoreOpen(false); }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-secondary/60 transition-colors text-left"
+              className="w-full flex items-center gap-2.5 px-3 py-3 min-h-[44px] rounded-lg hover:bg-secondary/60 transition-colors text-left touch-manipulation"
               disabled={isDisabled}
             >
               <Sparkles className="w-4 h-4 text-muted-foreground" />
@@ -214,7 +214,7 @@ export function MessageActionsBar({
             </button>
             <button
               onClick={() => { onVariant("detailed"); setMoreOpen(false); }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-secondary/60 transition-colors text-left"
+              className="w-full flex items-center gap-2.5 px-3 py-3 min-h-[44px] rounded-lg hover:bg-secondary/60 transition-colors text-left touch-manipulation"
               disabled={isDisabled}
             >
               <FileText className="w-4 h-4 text-muted-foreground" />
@@ -225,7 +225,7 @@ export function MessageActionsBar({
                 <div className="h-px bg-border/40 my-1.5" />
                 <button
                   onClick={() => { onExportPdf(); setMoreOpen(false); }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-secondary/60 transition-colors text-left"
+                  className="w-full flex items-center gap-2.5 px-3 py-3 min-h-[44px] rounded-lg hover:bg-secondary/60 transition-colors text-left touch-manipulation"
                   disabled={isDisabled}
                 >
                   <FileDown className="w-4 h-4 text-muted-foreground" />
@@ -441,7 +441,7 @@ export function MessageActionsSheet({
               onClick={() => handleReaction("like")}
               disabled={isDisabled}
               className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all",
+                "flex-1 flex items-center justify-center gap-2 py-3 min-h-[48px] rounded-xl transition-all touch-manipulation",
                 reaction === "like"
                   ? "bg-primary/10 text-primary"
                   : "bg-secondary hover:bg-secondary/80 text-foreground"
@@ -454,7 +454,7 @@ export function MessageActionsSheet({
               onClick={() => handleReaction("dislike")}
               disabled={isDisabled}
               className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all",
+                "flex-1 flex items-center justify-center gap-2 py-3 min-h-[48px] rounded-xl transition-all touch-manipulation",
                 reaction === "dislike"
                   ? "bg-destructive/10 text-destructive"
                   : "bg-secondary hover:bg-secondary/80 text-foreground"
@@ -470,7 +470,7 @@ export function MessageActionsSheet({
             <button
               onClick={handleCopy}
               disabled={isDisabled}
-              className="flex flex-col items-center gap-1.5 py-3 rounded-xl bg-secondary hover:bg-secondary/80 transition-all"
+              className="flex flex-col items-center gap-1.5 py-3 min-h-[60px] rounded-xl bg-secondary hover:bg-secondary/80 transition-all touch-manipulation"
             >
               {copied ? <Check className="w-5 h-5 text-primary" /> : <Copy className="w-5 h-5 text-muted-foreground" />}
               <span className="text-xs">{t('actions.copy')}</span>
@@ -478,7 +478,7 @@ export function MessageActionsSheet({
             <button
               onClick={handleShare}
               disabled={isDisabled}
-              className="flex flex-col items-center gap-1.5 py-3 rounded-xl bg-secondary hover:bg-secondary/80 transition-all"
+              className="flex flex-col items-center gap-1.5 py-3 min-h-[60px] rounded-xl bg-secondary hover:bg-secondary/80 transition-all touch-manipulation"
             >
               <Share2 className="w-5 h-5 text-muted-foreground" />
               <span className="text-xs">{t('actions.share')}</span>
@@ -486,7 +486,7 @@ export function MessageActionsSheet({
             <button
               onClick={handleContinue}
               disabled={isDisabled}
-              className="flex flex-col items-center gap-1.5 py-3 rounded-xl bg-secondary hover:bg-secondary/80 transition-all"
+              className="flex flex-col items-center gap-1.5 py-3 min-h-[60px] rounded-xl bg-secondary hover:bg-secondary/80 transition-all touch-manipulation"
             >
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
               <span className="text-xs">{t('actions.continue')}</span>
@@ -494,7 +494,7 @@ export function MessageActionsSheet({
             <button
               onClick={handleRegenerate}
               disabled={isDisabled}
-              className="flex flex-col items-center gap-1.5 py-3 rounded-xl bg-secondary hover:bg-secondary/80 transition-all"
+              className="flex flex-col items-center gap-1.5 py-3 min-h-[60px] rounded-xl bg-secondary hover:bg-secondary/80 transition-all touch-manipulation"
             >
               <RefreshCw className="w-5 h-5 text-muted-foreground" />
               <span className="text-xs">{t('actions.regenerate')}</span>

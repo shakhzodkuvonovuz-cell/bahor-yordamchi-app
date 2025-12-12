@@ -19,9 +19,9 @@ export default function ChatStopButton({ onStop, isVisible }: ChatStopButtonProp
       variant="outline"
       size="sm"
       onClick={onStop}
-      className="absolute bottom-20 left-1/2 -translate-x-1/2 z-10 bg-card/95 backdrop-blur-sm border-border/60 shadow-lg animate-fade-in"
+      className="absolute bottom-20 left-1/2 -translate-x-1/2 z-10 h-11 min-h-[44px] px-4 bg-card/95 backdrop-blur-sm border-border/60 shadow-lg animate-fade-in touch-manipulation"
     >
-      <Square className="w-3 h-3 mr-2 fill-current" />
+      <Square className="w-3.5 h-3.5 mr-2 fill-current" />
       {label}
     </Button>
   );

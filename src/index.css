@@ -629,6 +629,44 @@ select {
 
 /* Premium glassmorphism utilities */
 @layer utilities {
+  /* ============================================
+     TOUCH TARGET ACCESSIBILITY
+     Minimum 44x44px hit areas for mobile (WCAG 2.5.5)
+     ============================================ */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .touch-target-sm {
+    min-height: 40px;
+    min-width: 40px;
+  }
+
+  .touch-target-lg {
+    min-height: 48px;
+    min-width: 48px;
+  }
+
+  /* Icon buttons need explicit hit area */
+  .icon-touch-target {
+    @apply relative;
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .icon-touch-target::before {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border-radius: inherit;
+  }
+
+  /* Ensure interactive list items have proper touch targets */
+  .list-touch-target {
+    min-height: 48px;
+    padding-block: 12px;
+  }
   .glass {
     @apply bg-background/80 backdrop-blur-xl border border-border/50;
   }

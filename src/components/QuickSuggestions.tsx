@@ -18,7 +18,7 @@ export default function QuickSuggestions({
           key={index}
           onClick={() => onSelect(suggestion)}
           disabled={disabled}
-          className="flex-shrink-0 px-4 py-2.5 bg-card text-foreground rounded-xl text-[13px] font-medium hover:bg-primary hover:text-primary-foreground transition-all duration-200 active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed border border-border/50 hover:border-primary shadow-premium-sm hover:shadow-premium-md"
+          className="flex-shrink-0 px-4 py-3 min-h-[44px] bg-card text-foreground rounded-xl text-[13px] font-medium hover:bg-primary hover:text-primary-foreground transition-all duration-200 active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed border border-border/50 hover:border-primary shadow-premium-sm hover:shadow-premium-md touch-manipulation"
           style={{
             animationDelay: `${index * 50}ms`,
           }}
