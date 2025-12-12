@@ -112,9 +112,9 @@ export function AppShellV2({ children }: AppShellV2Props) {
             <img 
               src={bahorLogo} 
               alt="Bahor AI" 
-              className="h-8 w-8 object-contain" 
+              className="h-9 w-9 object-contain" 
             />
-            <span className="font-semibold text-foreground text-[15px]">{getPageTitle()}</span>
+            <span className="font-semibold text-foreground text-base">{getPageTitle()}</span>
           </div>
           
           <div className="w-11" /> {/* Spacer matching button size */}
