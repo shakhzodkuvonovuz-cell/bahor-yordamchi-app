@@ -20,19 +20,19 @@ export default function Auth() {
         noIndex
       />
       <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-background to-primary/5">
-      <div className="flex-1 flex flex-col items-center justify-center p-6">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-6 sm:p-6">
         <div className="w-full max-w-[420px] mx-auto animate-fade-in">
           {/* Logo & Header */}
-          <div className="text-center mb-10">
-            <div className="flex items-center justify-center gap-3 mb-4">
+          <div className="text-center mb-8 sm:mb-10">
+            <div className="flex items-center justify-center gap-3 mb-3 sm:mb-4">
               <img 
                 src={bahorLogo} 
                 alt="Bahor AI" 
-                className="w-14 h-14 object-contain"
+                className="w-12 h-12 sm:w-14 sm:h-14 object-contain"
               />
-              <h1 className="text-2xl font-bold text-foreground">Bahor AI</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Bahor AI</h1>
             </div>
-            <p className="text-muted-foreground text-[15px]">
+            <p className="text-muted-foreground text-sm sm:text-[15px]">
               {t('auth.title')}
             </p>
           </div>
@@ -41,16 +41,16 @@ export default function Auth() {
           <div className="space-y-4">
             {/* Email */}
             <Link to={`/auth/email${queryString ? `?${queryString}` : ''}`} className="block">
-              <button className="w-full bg-card hover:bg-card/80 border border-border/50 rounded-[20px] p-5 text-left transition-all duration-200 hover:shadow-lg hover:border-primary/30 active:scale-[0.98] group min-h-[80px]">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+              <button className="w-full bg-card hover:bg-card/80 border border-border/50 rounded-2xl sm:rounded-[20px] p-4 sm:p-5 text-left transition-all duration-200 hover:shadow-lg hover:border-primary/30 active:scale-[0.98] group min-h-[72px] sm:min-h-[80px] touch-manipulation">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
                     <Mail className="w-5 h-5 text-primary" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-foreground text-[15px] mb-0.5">
+                    <p className="font-semibold text-foreground text-sm sm:text-[15px] mb-0.5">
                       {t('auth.emailContinue')}
                     </p>
-                    <p className="text-[13px] text-muted-foreground">
+                    <p className="text-xs sm:text-[13px] text-muted-foreground">
                       {t('auth.emailDesc')}
                     </p>
                   </div>
@@ -60,9 +60,9 @@ export default function Auth() {
 
             {/* Google */}
             <Link to={`/auth/google${queryString ? `?${queryString}` : ''}`} className="block">
-              <button className="w-full bg-card hover:bg-card/80 border border-border/50 rounded-[20px] p-5 text-left transition-all duration-200 hover:shadow-lg hover:border-primary/30 active:scale-[0.98] group min-h-[80px]">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-card border border-border/50 flex items-center justify-center shrink-0 group-hover:border-primary/30 transition-colors">
+              <button className="w-full bg-card hover:bg-card/80 border border-border/50 rounded-2xl sm:rounded-[20px] p-4 sm:p-5 text-left transition-all duration-200 hover:shadow-lg hover:border-primary/30 active:scale-[0.98] group min-h-[72px] sm:min-h-[80px] touch-manipulation">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-card border border-border/50 flex items-center justify-center shrink-0 group-hover:border-primary/30 transition-colors">
                     <svg className="w-5 h-5" viewBox="0 0 24 24">
                       <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                       <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -71,10 +71,10 @@ export default function Auth() {
                     </svg>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-foreground text-[15px] mb-0.5">
+                    <p className="font-semibold text-foreground text-sm sm:text-[15px] mb-0.5">
                       {t('auth.googleContinue')}
                     </p>
-                    <p className="text-[13px] text-muted-foreground">
+                    <p className="text-xs sm:text-[13px] text-muted-foreground">
                       {t('auth.googleDesc')}
                     </p>
                   </div>
@@ -84,16 +84,16 @@ export default function Auth() {
 
             {/* Phone */}
             <Link to={`/auth/phone${queryString ? `?${queryString}` : ''}`} className="block">
-              <button className="w-full bg-card hover:bg-card/80 border border-border/50 rounded-[20px] p-5 text-left transition-all duration-200 hover:shadow-lg hover:border-primary/30 active:scale-[0.98] group min-h-[80px]">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+              <button className="w-full bg-card hover:bg-card/80 border border-border/50 rounded-2xl sm:rounded-[20px] p-4 sm:p-5 text-left transition-all duration-200 hover:shadow-lg hover:border-primary/30 active:scale-[0.98] group min-h-[72px] sm:min-h-[80px] touch-manipulation">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
                     <Phone className="w-5 h-5 text-primary" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-foreground text-[15px] mb-0.5">
+                    <p className="font-semibold text-foreground text-sm sm:text-[15px] mb-0.5">
                       {t('auth.phoneContinue')}
                     </p>
-                    <p className="text-[13px] text-muted-foreground">
+                    <p className="text-xs sm:text-[13px] text-muted-foreground">
                       {t('auth.phoneDesc')}
                     </p>
                   </div>

@@ -41,7 +41,7 @@ export default function ChatHeader({
             variant="ghost"
             size="icon"
             onClick={() => navigate("/modes")}
-            className="shrink-0 h-10 w-10 rounded-xl hover:bg-secondary/80"
+            className="shrink-0 h-11 w-11 min-h-[44px] min-w-[44px] rounded-xl hover:bg-secondary/80"
             aria-label={t('common.back')}
           >
             <ArrowLeft className="w-5 h-5" />
@@ -70,7 +70,7 @@ export default function ChatHeader({
                 variant="ghost"
                 size="icon"
                 onClick={onMenuClick}
-                className="h-10 w-10 rounded-xl hover:bg-secondary/80"
+                className="h-11 w-11 min-h-[44px] min-w-[44px] rounded-xl hover:bg-secondary/80"
                 aria-label={t('chat.history')}
               >
                 <Menu className="w-5 h-5" />
@@ -83,7 +83,7 @@ export default function ChatHeader({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-10 w-10 rounded-xl hover:bg-secondary/80"
+                  className="h-11 w-11 min-h-[44px] min-w-[44px] rounded-xl hover:bg-secondary/80"
                   aria-label={t('chat.moreOptions')}
                 >
                   <MoreVertical className="w-5 h-5" />

@@ -198,7 +198,7 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
               onClick={() => handleNavClick(item)}
               title={collapsed ? t(item.labelKey) : undefined}
               className={cn(
-                "w-full flex items-center gap-3 rounded-lg transition-all duration-200",
+                "w-full flex items-center gap-3 rounded-lg transition-all duration-200 min-h-[44px] touch-manipulation",
                 collapsed ? "justify-center px-2 py-2.5" : "px-3 py-[10px]",
                 isNewChatBtn 
                   ? "bg-secondary/60 text-foreground hover:bg-secondary font-medium border border-border/50 mb-0.5" 
@@ -232,7 +232,7 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
               onClick={() => handleNavClick(item)}
               title={collapsed ? t(item.labelKey) : undefined}
               className={cn(
-                "w-full flex items-center gap-2.5 rounded-lg transition-all duration-200",
+                "w-full flex items-center gap-2.5 rounded-lg transition-all duration-200 min-h-[40px] touch-manipulation",
                 collapsed ? "justify-center px-2 py-2" : "px-3 py-2",
                 isPremium 
                   ? "text-amber-500 hover:bg-amber-500/10"
@@ -261,14 +261,14 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
           }}
           title={collapsed ? t("sidebar.account") : undefined}
           className={cn(
-            "w-full flex items-center gap-2.5 rounded-lg transition-all duration-200 hover:bg-accent/50",
+            "w-full flex items-center gap-2.5 rounded-lg transition-all duration-200 hover:bg-accent/50 min-h-[44px] touch-manipulation",
             collapsed ? "justify-center px-2 py-2" : "px-3 py-2",
             location.pathname === "/settings" && "bg-accent"
           )}
         >
-          <Avatar className="h-7 w-7 flex-shrink-0">
+          <Avatar className="h-8 w-8 flex-shrink-0">
             <AvatarImage src={profile?.avatar_url || undefined} alt="Avatar" />
-            <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-medium">
+            <AvatarFallback className="bg-primary/10 text-primary text-[11px] font-medium">
               {getUserInitials()}
             </AvatarFallback>
           </Avatar>
