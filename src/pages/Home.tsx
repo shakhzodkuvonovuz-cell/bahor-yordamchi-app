@@ -386,13 +386,13 @@ export default function Home() {
                 />
                 
                 {/* Flex row with consistent vertical alignment */}
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1 sm:gap-1.5">
                   {/* Paperclip button */}
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploading}
-                    className="flex items-center justify-center w-9 h-9 text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-lg transition-all duration-200 disabled:opacity-40 active:scale-95 flex-shrink-0"
+                    className="flex items-center justify-center w-10 h-10 sm:w-9 sm:h-9 min-w-[40px] min-h-[40px] text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-lg transition-all duration-200 disabled:opacity-40 active:scale-95 flex-shrink-0 touch-manipulation"
                     aria-label="Attach file"
                   >
                     <Paperclip className="w-5 h-5" />
@@ -403,7 +403,7 @@ export default function Home() {
                     type="button"
                     onClick={() => cameraInputRef.current?.click()}
                     disabled={isUploading}
-                    className="flex items-center justify-center w-9 h-9 text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-lg transition-all duration-200 disabled:opacity-40 active:scale-95 flex-shrink-0"
+                    className="flex items-center justify-center w-10 h-10 sm:w-9 sm:h-9 min-w-[40px] min-h-[40px] text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-lg transition-all duration-200 disabled:opacity-40 active:scale-95 flex-shrink-0 touch-manipulation"
                     aria-label="Take photo"
                   >
                     <Camera className="w-5 h-5" />
@@ -431,7 +431,7 @@ export default function Home() {
                   <button
                     onClick={handleSend}
                     disabled={isUploading || (!input.trim() && pendingAttachments.length === 0)}
-                    className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 flex-shrink-0"
+                    className="flex items-center justify-center w-10 h-10 sm:w-9 sm:h-9 min-w-[40px] min-h-[40px] rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 flex-shrink-0 touch-manipulation"
                     aria-label="Send"
                   >
                     {isUploading ? (

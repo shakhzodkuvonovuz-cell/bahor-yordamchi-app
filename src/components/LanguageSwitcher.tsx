@@ -63,7 +63,7 @@ export default function LanguageSwitcher({ variant = 'default', className = '' }
           <Button 
             variant="ghost" 
             size="icon"
-            className={`h-9 w-9 rounded-xl hover:bg-secondary/80 ${className}`}
+            className={`h-10 w-10 min-h-[40px] min-w-[40px] rounded-xl hover:bg-secondary/80 ${className}`}
           >
             <Globe className="h-4 w-4" />
           </Button>
