@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
+import bahorLogo from "@/assets/bahor-logo.png";
 
 interface SpaceInviteModalProps {
   open: boolean;
@@ -122,25 +123,33 @@ export default function SpaceInviteModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>
-            {language === "uz" ? "Doiraga taklif qilish" : "Invite to Circle"}
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-md mx-4 rounded-2xl p-0 overflow-hidden">
+        {/* Header with logo */}
+        <div className="bg-gradient-to-b from-primary/10 to-background px-6 pt-6 pb-4">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <img src={bahorLogo} alt="Bahor AI" className="w-8 h-8 sm:w-10 sm:h-10" />
+            <span className="font-semibold text-lg text-foreground">Bahor AI</span>
+          </div>
+          <DialogHeader className="text-center">
+            <DialogTitle className="text-xl font-bold">
+              {language === "uz" ? "Doiraga taklif qilish" : "Invite to Circle"}
+            </DialogTitle>
+          </DialogHeader>
+        </div>
 
-        <div className="space-y-4 py-4">
-          <p className="text-sm text-muted-foreground">
+        <div className="px-6 pb-6 space-y-5">
+          <p className="text-sm text-muted-foreground text-center">
             {language === "uz"
               ? `"${spaceName}" doirasiga qo'shilish uchun ushbu linkni ulashing. Har bir kishi avval tasdiqlanishi kerak.`
               : `Share this link to invite people to "${spaceName}". Each person must be approved before joining.`}
           </p>
 
+          {/* Invite link input with copy button */}
           <div className="flex gap-2">
             <Input
               value={inviteLink}
               readOnly
-              className="font-mono text-sm"
+              className="font-mono text-sm min-h-[48px] bg-secondary/50"
               placeholder={loading ? "Loading..." : ""}
             />
             <Button
@@ -148,35 +157,46 @@ export default function SpaceInviteModal({
               size="icon"
               onClick={copyLink}
               disabled={!inviteCode}
+              className="h-12 w-12 min-h-[48px] min-w-[48px] touch-manipulation flex-shrink-0"
             >
               {copied ? (
-                <Check className="w-4 h-4 text-green-500" />
+                <Check className="w-5 h-5 text-green-500" />
               ) : (
-                <Copy className="w-4 h-4" />
+                <Copy className="w-5 h-5" />
               )}
             </Button>
           </div>
 
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">
-              {language === "uz" ? "Kod:" : "Code:"}{" "}
-              <span className="font-mono font-bold">{inviteCode || "..."}</span>
-            </p>
+          {/* Code display and regenerate */}
+          <div className="flex items-center justify-between bg-secondary/30 rounded-xl px-4 py-3 min-h-[56px]">
+            <div>
+              <p className="text-xs text-muted-foreground mb-0.5">
+                {language === "uz" ? "Taklif kodi" : "Invite code"}
+              </p>
+              <p className="font-mono font-bold text-base text-foreground tracking-wider">
+                {inviteCode || "..."}
+              </p>
+            </div>
             <Button
               variant="ghost"
               size="sm"
               onClick={generateNewCode}
               disabled={loading}
-              className="gap-1.5"
+              className="gap-2 h-11 min-h-[44px] px-4 touch-manipulation"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-              {language === "uz" ? "Yangi kod" : "New code"}
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              <span className="hidden sm:inline">
+                {language === "uz" ? "Yangi kod" : "New code"}
+              </span>
             </Button>
           </div>
-        </div>
 
-        <div className="flex justify-end">
-          <Button variant="outline" onClick={onClose}>
+          {/* Footer button */}
+          <Button 
+            variant="outline" 
+            onClick={onClose} 
+            className="w-full h-12 min-h-[48px] touch-manipulation text-base font-medium"
+          >
             {language === "uz" ? "Yopish" : "Close"}
           </Button>
         </div>
