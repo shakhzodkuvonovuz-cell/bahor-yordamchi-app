@@ -605,19 +605,19 @@ export default function SpaceDetail() {
                 return (
                   <div
                     key={member.id}
-                    className="flex items-center justify-between p-3 rounded-xl bg-card border border-border shadow-elevation-1 hover:shadow-elevation-2 transition-shadow duration-150"
+                    className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-card border border-border shadow-elevation-1 hover:shadow-elevation-2 transition-shadow duration-150 min-h-[72px]"
                   >
                     <div className="flex items-center gap-3">
                       {/* Member avatar */}
-                      <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      <div className="w-11 h-11 sm:w-10 sm:h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
                         {member.avatar_url ? (
-                          <img src={member.avatar_url} alt={member.name} className="w-10 h-10 rounded-full object-cover" />
+                          <img src={member.avatar_url} alt={member.name} className="w-11 h-11 sm:w-10 sm:h-10 rounded-full object-cover" />
                         ) : (
                           <span className="text-sm font-medium text-primary">{initials}</span>
                         )}
                       </div>
                       <div>
-                        <p className="font-medium text-foreground">{member.name}</p>
+                        <p className="font-medium text-foreground text-base">{member.name}</p>
                         <p className="text-xs text-muted-foreground">
                           {member.role === "owner" 
                             ? (language === "uz" ? "Egasi" : "Owner")
@@ -631,11 +631,11 @@ export default function SpaceDetail() {
                     {isAdmin && member.user_id !== user?.id && member.role !== "owner" && (
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size="icon"
                         onClick={() => handleBlockMember(member.id)}
-                        className="text-destructive hover:text-destructive"
+                        className="text-destructive hover:text-destructive h-11 w-11 min-h-[44px] min-w-[44px] touch-manipulation"
                       >
-                        <Ban className="w-4 h-4" />
+                        <Ban className="w-5 h-5" />
                       </Button>
                     )}
                   </div>
@@ -676,7 +676,7 @@ export default function SpaceDetail() {
                   return (
                     <div
                       key={req.id}
-                      className="p-4 rounded-xl bg-card border border-border shadow-elevation-1 hover:shadow-elevation-2 transition-shadow duration-150"
+                      className="p-4 rounded-xl bg-card border border-border shadow-elevation-1 hover:shadow-elevation-2 transition-shadow duration-150 min-h-[80px]"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-3 flex-1">
@@ -684,17 +684,17 @@ export default function SpaceDetail() {
                             <img
                               src={req.requester_avatar_url}
                               alt={displayName}
-                              className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                              className="w-11 h-11 sm:w-10 sm:h-10 rounded-full object-cover flex-shrink-0"
                             />
                           ) : (
-                            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                            <div className="w-11 h-11 sm:w-10 sm:h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
                               <span className="text-sm font-medium text-primary">
                                 {initials}
                               </span>
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-foreground">{displayName}</p>
+                            <p className="font-medium text-foreground text-base">{displayName}</p>
                             {req.note && (
                               <p className="text-sm text-muted-foreground mt-1 italic">
                                 "{req.note}"
@@ -706,39 +706,40 @@ export default function SpaceDetail() {
                           </div>
                         </div>
                         {req.status === "pending" ? (
-                          <div className="flex gap-1 flex-shrink-0">
+                          <div className="flex gap-1.5 flex-shrink-0">
                             <Button
-                              size="sm"
+                              size="icon"
                               onClick={() =>
                                 handleRequestAction(req.id, req.requester_id, "approved")
                               }
-                              className="gap-1"
+                              className="h-11 w-11 min-h-[44px] min-w-[44px] touch-manipulation"
                             >
-                              <Check className="w-3.5 h-3.5" />
+                              <Check className="w-5 h-5" />
                             </Button>
                             <Button
-                              size="sm"
+                              size="icon"
                               variant="outline"
                               onClick={() =>
                                 handleRequestAction(req.id, req.requester_id, "rejected")
                               }
+                              className="h-11 w-11 min-h-[44px] min-w-[44px] touch-manipulation"
                             >
-                              <X className="w-3.5 h-3.5" />
+                              <X className="w-5 h-5" />
                             </Button>
                             <Button
-                              size="sm"
+                              size="icon"
                               variant="ghost"
                               onClick={() =>
                                 handleRequestAction(req.id, req.requester_id, "blocked")
                               }
-                              className="text-destructive"
+                              className="text-destructive h-11 w-11 min-h-[44px] min-w-[44px] touch-manipulation"
                             >
-                              <Ban className="w-3.5 h-3.5" />
+                              <Ban className="w-5 h-5" />
                             </Button>
                           </div>
                         ) : (
                           <span
-                            className={`text-xs px-2 py-1 rounded-full flex-shrink-0 ${
+                            className={`text-xs px-3 py-1.5 rounded-full flex-shrink-0 min-h-[28px] flex items-center ${
                               req.status === "approved"
                                 ? "bg-green-500/20 text-green-600"
                                 : req.status === "rejected"
