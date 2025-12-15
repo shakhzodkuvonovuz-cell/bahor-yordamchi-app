@@ -97,11 +97,6 @@ export default function AuthGoogle() {
                         {t('auth.email')}
                       </Button>
                     </Link>
-                    <Link to="/auth/phone">
-                      <Button variant="outline" size="sm" className="h-9 rounded-xl text-[13px]">
-                        {t('auth.phone')}
-                      </Button>
-                    </Link>
                   </div>
                 </div>
               </div>
@@ -141,18 +136,11 @@ export default function AuthGoogle() {
               <p className="text-[13px] text-muted-foreground text-center mb-3">
                 {t('auth.otherMethods')}
               </p>
-              <div className="flex gap-3">
-                <Link to="/auth/email" className="flex-1">
-                  <Button variant="ghost" className="w-full h-11 rounded-xl text-[13px]">
-                    {t('auth.email')}
-                  </Button>
-                </Link>
-                <Link to="/auth/phone" className="flex-1">
-                  <Button variant="ghost" className="w-full h-11 rounded-xl text-[13px]">
-                    {t('auth.phone')}
-                  </Button>
-                </Link>
-              </div>
+              <Link to="/auth/email" className="block">
+                <Button variant="ghost" className="w-full h-11 rounded-xl text-[13px]">
+                  {t('auth.email')}
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

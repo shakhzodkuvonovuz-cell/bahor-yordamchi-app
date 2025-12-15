@@ -28,7 +28,7 @@ const Chat = lazy(() => import("./pages/Chat"));
 const Settings = lazy(() => import("./pages/Settings"));
 const AuthEmail = lazy(() => import("./pages/AuthEmail"));
 const AuthGoogle = lazy(() => import("./pages/AuthGoogle"));
-const AuthPhone = lazy(() => import("./pages/AuthPhone"));
+
 const AuthReset = lazy(() => import("./pages/AuthReset"));
 const AdminEntitlements = lazy(() => import("./pages/AdminEntitlements"));
 const Feedback = lazy(() => import("./pages/Feedback"));
@@ -160,7 +160,7 @@ const App = () => (
                   <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
                   <Route path="/auth/email" element={<PublicRoute><LazyRoute><AuthEmail /></LazyRoute></PublicRoute>} />
                   <Route path="/auth/google" element={<PublicRoute><LazyRoute><AuthGoogle /></LazyRoute></PublicRoute>} />
-                  <Route path="/auth/phone" element={<PublicRoute><LazyRoute><AuthPhone /></LazyRoute></PublicRoute>} />
+                  
                   <Route path="/auth/reset" element={<LazyRoute><AuthReset /></LazyRoute>} />
                   <Route path="/auth/callback" element={<AuthCallback />} />
                   

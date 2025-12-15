@@ -32,8 +32,6 @@ interface AuthContextType {
   signUpWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: (redirectPath?: string) => Promise<{ error: Error | null }>;
-  sendPhoneOtp: (phone: string) => Promise<{ error: Error | null }>;
-  verifyPhoneOtp: (phone: string, token: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<{ error: Error | null }>;
   refreshProfile: () => Promise<void>;
 }
@@ -241,15 +239,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return signInWithGoogleUnified(redirectPath);
   };
 
-  const sendPhoneOtp = async (phone: string) => {
-    const { error } = await supabase.auth.signInWithOtp({ phone });
-    return { error: error as Error | null };
-  };
-
-  const verifyPhoneOtp = async (phone: string, token: string) => {
-    const { error } = await supabase.auth.verifyOtp({ phone, token, type: 'sms' });
-    return { error: error as Error | null };
-  };
 
   const signOut = async () => {
     // Always clear local state first, even if server signout fails
@@ -277,8 +266,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signUpWithEmail,
       signInWithEmail,
       signInWithGoogle,
-      sendPhoneOtp,
-      verifyPhoneOtp,
       signOut,
       refreshProfile,
     }}>
