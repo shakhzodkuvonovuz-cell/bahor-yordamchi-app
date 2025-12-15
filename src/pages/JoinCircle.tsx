@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
+import bahorLogo from "@/assets/bahor-logo.png";
 
 interface CircleInfo {
   id: string;
@@ -176,6 +177,14 @@ export default function JoinCircle() {
     }
   };
 
+  // Logo component for reuse
+  const LogoHeader = () => (
+    <div className="flex items-center justify-center gap-2 mb-6">
+      <img src={bahorLogo} alt="Bahor AI" className="w-8 h-8" />
+      <span className="text-lg font-semibold text-foreground">Bahor AI</span>
+    </div>
+  );
+
   // Wait for auth to be determined
   if (authLoading) {
     return (
@@ -187,18 +196,26 @@ export default function JoinCircle() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="max-w-sm w-full text-center space-y-4">
-          <Users className="w-16 h-16 mx-auto text-primary" />
-          <h1 className="text-xl font-bold text-foreground">
-            {language === "uz" ? "Doiraga qo'shilish" : "Join Circle"}
-          </h1>
-          <p className="text-muted-foreground">
-            {language === "uz"
-              ? "Davom etish uchun avval tizimga kiring"
-              : "Please sign in to continue"}
-          </p>
-          <Button onClick={() => navigate(`/auth?next=/circles/invite/${code}`)}>
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="max-w-sm w-full text-center space-y-6">
+          <LogoHeader />
+          <div className="w-20 h-20 mx-auto rounded-2xl bg-primary/20 flex items-center justify-center">
+            <Users className="w-10 h-10 text-primary" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-xl font-bold text-foreground">
+              {language === "uz" ? "Doiraga qo'shilish" : "Join Circle"}
+            </h1>
+            <p className="text-muted-foreground">
+              {language === "uz"
+                ? "Davom etish uchun avval tizimga kiring"
+                : "Please sign in to continue"}
+            </p>
+          </div>
+          <Button 
+            onClick={() => navigate(`/auth?next=/circles/invite/${code}`)}
+            className="w-full h-12 min-h-[48px] rounded-xl touch-manipulation"
+          >
             {language === "uz" ? "Kirish" : "Sign In"}
           </Button>
         </div>
@@ -216,13 +233,18 @@ export default function JoinCircle() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="max-w-sm w-full text-center space-y-4">
-          <div className="w-16 h-16 mx-auto rounded-full bg-destructive/20 flex items-center justify-center">
-            <Users className="w-8 h-8 text-destructive" />
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="max-w-sm w-full text-center space-y-6">
+          <LogoHeader />
+          <div className="w-20 h-20 mx-auto rounded-2xl bg-destructive/20 flex items-center justify-center">
+            <Users className="w-10 h-10 text-destructive" />
           </div>
           <h1 className="text-xl font-bold text-foreground">{error}</h1>
-          <Button variant="outline" onClick={() => navigate("/circles")}>
+          <Button 
+            variant="outline" 
+            onClick={() => navigate("/circles")}
+            className="w-full h-12 min-h-[48px] rounded-xl touch-manipulation"
+          >
             {language === "uz" ? "Doiralarga qaytish" : "Back to Circles"}
           </Button>
         </div>
@@ -232,16 +254,22 @@ export default function JoinCircle() {
 
   if (alreadyMember && circle) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="max-w-sm w-full text-center space-y-4">
-          <div className="w-16 h-16 mx-auto rounded-full bg-green-500/20 flex items-center justify-center">
-            <Check className="w-8 h-8 text-green-500" />
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="max-w-sm w-full text-center space-y-6">
+          <LogoHeader />
+          <div className="w-20 h-20 mx-auto rounded-2xl bg-green-500/20 flex items-center justify-center">
+            <Check className="w-10 h-10 text-green-500" />
           </div>
-          <h1 className="text-xl font-bold text-foreground">
-            {language === "uz" ? "Siz allaqachon a'zosiz!" : "You're already a member!"}
-          </h1>
-          <p className="text-muted-foreground">{circle.name}</p>
-          <Button onClick={() => navigate(`/circles/${circle.id}`)}>
+          <div className="space-y-2">
+            <h1 className="text-xl font-bold text-foreground">
+              {language === "uz" ? "Siz allaqachon a'zosiz!" : "You're already a member!"}
+            </h1>
+            <p className="text-muted-foreground text-lg">{circle.name}</p>
+          </div>
+          <Button 
+            onClick={() => navigate(`/circles/${circle.id}`)}
+            className="w-full h-12 min-h-[48px] rounded-xl touch-manipulation"
+          >
             {language === "uz" ? "Doiraga kirish" : "Go to Circle"}
           </Button>
         </div>
@@ -251,20 +279,27 @@ export default function JoinCircle() {
 
   if (submitted || existingRequest === "pending") {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="max-w-sm w-full text-center space-y-4">
-          <div className="w-16 h-16 mx-auto rounded-full bg-primary/20 flex items-center justify-center">
-            <Users className="w-8 h-8 text-primary" />
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="max-w-sm w-full text-center space-y-6">
+          <LogoHeader />
+          <div className="w-20 h-20 mx-auto rounded-2xl bg-primary/20 flex items-center justify-center">
+            <Users className="w-10 h-10 text-primary" />
           </div>
-          <h1 className="text-xl font-bold text-foreground">
-            {language === "uz" ? "So'rov yuborildi!" : "Request Submitted!"}
-          </h1>
-          <p className="text-muted-foreground">
-            {language === "uz"
-              ? `"${circle?.name}" doirasi admini so'rovingizni ko'rib chiqadi.`
-              : `The admin of "${circle?.name}" will review your request.`}
-          </p>
-          <Button variant="outline" onClick={() => navigate("/circles")}>
+          <div className="space-y-2">
+            <h1 className="text-xl font-bold text-foreground">
+              {language === "uz" ? "So'rov yuborildi!" : "Request Submitted!"}
+            </h1>
+            <p className="text-muted-foreground">
+              {language === "uz"
+                ? `"${circle?.name}" doirasi admini so'rovingizni ko'rib chiqadi.`
+                : `The admin of "${circle?.name}" will review your request.`}
+            </p>
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={() => navigate("/circles")}
+            className="w-full h-12 min-h-[48px] rounded-xl touch-manipulation"
+          >
             {language === "uz" ? "Doiralarga qaytish" : "Back to Circles"}
           </Button>
         </div>
@@ -274,20 +309,27 @@ export default function JoinCircle() {
 
   if (existingRequest === "rejected") {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="max-w-sm w-full text-center space-y-4">
-          <div className="w-16 h-16 mx-auto rounded-full bg-orange-500/20 flex items-center justify-center">
-            <Users className="w-8 h-8 text-orange-500" />
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="max-w-sm w-full text-center space-y-6">
+          <LogoHeader />
+          <div className="w-20 h-20 mx-auto rounded-2xl bg-orange-500/20 flex items-center justify-center">
+            <Users className="w-10 h-10 text-orange-500" />
           </div>
-          <h1 className="text-xl font-bold text-foreground">
-            {language === "uz" ? "So'rov rad etildi" : "Request Rejected"}
-          </h1>
-          <p className="text-muted-foreground">
-            {language === "uz"
-              ? "Admin so'rovingizni rad etgan."
-              : "The admin has rejected your request."}
-          </p>
-          <Button variant="outline" onClick={() => navigate("/circles")}>
+          <div className="space-y-2">
+            <h1 className="text-xl font-bold text-foreground">
+              {language === "uz" ? "So'rov rad etildi" : "Request Rejected"}
+            </h1>
+            <p className="text-muted-foreground">
+              {language === "uz"
+                ? "Admin so'rovingizni rad etgan."
+                : "The admin has rejected your request."}
+            </p>
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={() => navigate("/circles")}
+            className="w-full h-12 min-h-[48px] rounded-xl touch-manipulation"
+          >
             {language === "uz" ? "Doiralarga qaytish" : "Back to Circles"}
           </Button>
         </div>
@@ -297,20 +339,27 @@ export default function JoinCircle() {
 
   if (existingRequest === "blocked") {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="max-w-sm w-full text-center space-y-4">
-          <div className="w-16 h-16 mx-auto rounded-full bg-destructive/20 flex items-center justify-center">
-            <Users className="w-8 h-8 text-destructive" />
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="max-w-sm w-full text-center space-y-6">
+          <LogoHeader />
+          <div className="w-20 h-20 mx-auto rounded-2xl bg-destructive/20 flex items-center justify-center">
+            <Users className="w-10 h-10 text-destructive" />
           </div>
-          <h1 className="text-xl font-bold text-foreground">
-            {language === "uz" ? "Kirish taqiqlangan" : "Access Blocked"}
-          </h1>
-          <p className="text-muted-foreground">
-            {language === "uz"
-              ? "Siz bu doiraga qo'shila olmaysiz."
-              : "You cannot join this Circle."}
-          </p>
-          <Button variant="outline" onClick={() => navigate("/circles")}>
+          <div className="space-y-2">
+            <h1 className="text-xl font-bold text-foreground">
+              {language === "uz" ? "Kirish taqiqlangan" : "Access Blocked"}
+            </h1>
+            <p className="text-muted-foreground">
+              {language === "uz"
+                ? "Siz bu doiraga qo'shila olmaysiz."
+                : "You cannot join this Circle."}
+            </p>
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={() => navigate("/circles")}
+            className="w-full h-12 min-h-[48px] rounded-xl touch-manipulation"
+          >
             {language === "uz" ? "Doiralarga qaytish" : "Back to Circles"}
           </Button>
         </div>
@@ -319,11 +368,13 @@ export default function JoinCircle() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="max-w-sm w-full space-y-6">
-        <div className="text-center space-y-2">
-          <div className="w-16 h-16 mx-auto rounded-full bg-primary/20 flex items-center justify-center">
-            <Users className="w-8 h-8 text-primary" />
+        <LogoHeader />
+        
+        <div className="text-center space-y-3">
+          <div className="w-20 h-20 mx-auto rounded-2xl bg-primary/20 flex items-center justify-center">
+            <Users className="w-10 h-10 text-primary" />
           </div>
           <h1 className="text-xl font-bold text-foreground">
             {language === "uz" ? "Doiraga qo'shilish" : "Join Circle"}
@@ -336,7 +387,7 @@ export default function JoinCircle() {
           )}
         </div>
 
-        <div className="space-y-4 p-4 rounded-xl bg-card border border-border">
+        <div className="space-y-4 p-5 rounded-2xl bg-card border border-border">
           <p className="text-sm text-muted-foreground text-center">
             {language === "uz"
               ? "Admin so'rovingizni tasdiqlashi kerak"
@@ -344,7 +395,7 @@ export default function JoinCircle() {
           </p>
 
           <div className="space-y-2">
-            <Label htmlFor="note">
+            <Label htmlFor="note" className="text-sm font-medium">
               {language === "uz" ? "Izoh (ixtiyoriy)" : "Note (optional)"}
             </Label>
             <Input
@@ -353,13 +404,14 @@ export default function JoinCircle() {
               onChange={(e) => setNote(e.target.value)}
               placeholder={language === "uz" ? "Masalan: Salom, men Ali" : "e.g. Hi, I'm Ali"}
               maxLength={200}
+              className="h-12 min-h-[48px] rounded-xl text-base"
             />
           </div>
 
           <Button
             onClick={handleSubmitRequest}
             disabled={submitting}
-            className="w-full"
+            className="w-full h-12 min-h-[48px] rounded-xl touch-manipulation"
           >
             {submitting
               ? language === "uz" ? "Yuborilmoqda..." : "Submitting..."
@@ -370,7 +422,7 @@ export default function JoinCircle() {
         <Button
           variant="ghost"
           onClick={() => navigate("/circles")}
-          className="w-full"
+          className="w-full h-11 min-h-[44px] rounded-xl touch-manipulation"
         >
           {language === "uz" ? "Bekor qilish" : "Cancel"}
         </Button>
