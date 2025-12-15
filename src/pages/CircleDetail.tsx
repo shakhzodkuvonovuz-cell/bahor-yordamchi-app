@@ -392,10 +392,10 @@ export default function SpaceDetail() {
   // Show error page only if circle itself failed to load
   if (spaceError || !space) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <div className="max-w-sm w-full text-center space-y-6">
-          <div className="w-16 h-16 mx-auto rounded-full bg-destructive/10 flex items-center justify-center">
-            <MessageSquare className="w-8 h-8 text-destructive" />
+          <div className="w-20 h-20 mx-auto rounded-2xl bg-destructive/10 flex items-center justify-center">
+            <MessageSquare className="w-10 h-10 text-destructive" />
           </div>
           <div className="space-y-2">
             <h2 className="text-xl font-semibold text-foreground">
@@ -406,10 +406,17 @@ export default function SpaceDetail() {
             </p>
           </div>
           <div className="flex flex-col gap-3">
-            <Button onClick={() => window.location.reload()} className="w-full gap-2">
+            <Button 
+              onClick={() => window.location.reload()} 
+              className="w-full h-12 min-h-[48px] rounded-xl gap-2 touch-manipulation"
+            >
               Qayta yuklash
             </Button>
-            <Button variant="outline" onClick={() => navigate("/circles")} className="w-full">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate("/circles")} 
+              className="w-full h-11 min-h-[44px] rounded-xl touch-manipulation"
+            >
               Doiralarga qaytish
             </Button>
           </div>
@@ -422,28 +429,28 @@ export default function SpaceDetail() {
     <div className="h-dvh w-full bg-background flex flex-col overflow-hidden">
       {/* Header - fixed */}
       <header className="flex-shrink-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border w-full">
-        <div className="w-full max-w-4xl mx-auto px-3 sm:px-4 py-3 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+        <div className="w-full max-w-4xl mx-auto px-3 sm:px-4 py-2 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             <button
               onClick={() => navigate("/circles")}
-              className="p-2 -ml-1 hover:bg-secondary rounded-lg transition-colors flex-shrink-0"
+              className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center -ml-1 hover:bg-secondary active:bg-secondary/80 rounded-xl transition-colors flex-shrink-0 touch-manipulation"
             >
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
             {/* Circle emoji icon */}
-            <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-base sm:text-lg flex-shrink-0 ${getColorClass(space.icon_color)}`}>
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0 ${getColorClass(space.icon_color)}`}>
               {space.icon_emoji || "💬"}
             </div>
             <div className="min-w-0 flex-1">
               <h1 className="text-base sm:text-lg font-bold text-foreground truncate">{space.name}</h1>
               {space.goal && (
-                <p className="text-xs text-muted-foreground truncate max-w-[180px] sm:max-w-[300px]">
+                <p className="text-xs text-muted-foreground truncate max-w-[160px] sm:max-w-[300px]">
                   {space.goal}
                 </p>
               )}
             </div>
           </div>
-          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+          <div className="flex items-center gap-1.5 flex-shrink-0">
             <CircleAIActionsPanel 
               circleId={id || ""} 
               onSendToChat={(content, title) => {
@@ -455,12 +462,11 @@ export default function SpaceDetail() {
             {isAdmin && (
               <Button
                 variant="outline"
-                size="sm"
+                size="icon"
                 onClick={() => setShowInviteModal(true)}
-                className="gap-1 sm:gap-1.5 px-2 sm:px-3"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl touch-manipulation"
               >
-                <UserPlus className="w-4 h-4" />
-                <span className="hidden sm:inline">{language === "uz" ? "Taklif" : "Invite"}</span>
+                <UserPlus className="w-5 h-5" />
               </Button>
             )}
           </div>
@@ -472,31 +478,31 @@ export default function SpaceDetail() {
         {/* Tabs bar - horizontally scrollable */}
         <div className="flex-shrink-0 z-50 border-b border-border bg-background/95 backdrop-blur-md w-full" style={{ position: 'sticky', top: 0 }}>
           <div className="w-full overflow-x-auto scrollbar-none">
-            <TabsList className="w-max min-w-full justify-start px-3 bg-transparent h-11">
+            <TabsList className="w-max min-w-full justify-start px-3 bg-transparent h-12">
               <TabsTrigger 
                 value="chat" 
-                className="gap-1 data-[state=active]:bg-secondary data-[state=active]:shadow-sm transition-all duration-150 text-sm px-2.5"
+                className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-sm transition-all duration-150 text-sm px-3 h-10 min-h-[40px] rounded-lg touch-manipulation"
               >
                 <MessageSquare className="w-4 h-4" />
                 Chat
               </TabsTrigger>
               <TabsTrigger 
                 value="files" 
-                className="gap-1 data-[state=active]:bg-secondary data-[state=active]:shadow-sm transition-all duration-150 text-sm px-2.5"
+                className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-sm transition-all duration-150 text-sm px-3 h-10 min-h-[40px] rounded-lg touch-manipulation"
               >
                 <FileText className="w-4 h-4" />
                 {language === "uz" ? "Fayllar" : "Files"}
               </TabsTrigger>
               <TabsTrigger 
                 value="members" 
-                className="gap-1 data-[state=active]:bg-secondary data-[state=active]:shadow-sm transition-all duration-150 text-sm px-2.5"
+                className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-sm transition-all duration-150 text-sm px-3 h-10 min-h-[40px] rounded-lg touch-manipulation"
               >
                 <Users className="w-4 h-4" />
                 {language === "uz" ? "A'zolar" : "Members"}
               </TabsTrigger>
               <TabsTrigger 
                 value="natijalar" 
-                className="gap-1 data-[state=active]:bg-secondary data-[state=active]:shadow-sm transition-all duration-150 text-sm px-2.5"
+                className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-sm transition-all duration-150 text-sm px-3 h-10 min-h-[40px] rounded-lg touch-manipulation"
               >
                 <Sparkles className="w-4 h-4" />
                 Natijalar
@@ -504,7 +510,7 @@ export default function SpaceDetail() {
               {isAdmin && (
                 <TabsTrigger 
                   value="requests" 
-                  className="gap-1 data-[state=active]:bg-secondary data-[state=active]:shadow-sm transition-all duration-150 text-sm px-2.5"
+                  className="gap-1.5 data-[state=active]:bg-secondary data-[state=active]:shadow-sm transition-all duration-150 text-sm px-3 h-10 min-h-[40px] rounded-lg touch-manipulation"
                 >
                   <UserPlus className="w-4 h-4" />
                   {language === "uz" ? "So'rovlar" : "Requests"}
