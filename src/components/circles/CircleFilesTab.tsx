@@ -19,6 +19,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/i18n/LanguageProvider";
+import { useHaptics } from "@/hooks/useHaptics";
 import { toast } from "sonner";
 
 interface CircleFile {
@@ -82,6 +83,7 @@ function isPreviewable(mimeType: string | null): boolean {
 export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps) {
   const { user } = useAuth();
   const { language } = useTranslation();
+  const { lightTap, mediumTap } = useHaptics();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [files, setFiles] = useState<CircleFile[]>([]);
@@ -156,6 +158,7 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
       return;
     }
 
+    lightTap();
     setUploading(true);
     try {
       const uuid = crypto.randomUUID();
@@ -180,6 +183,7 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
 
       if (dbError) throw dbError;
 
+      mediumTap();
       toast.success(language === "uz" ? "Fayl yuklandi" : "File uploaded");
       fetchFiles();
     } catch (err) {
@@ -192,6 +196,7 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
   };
 
   const handleDownload = async (file: CircleFile) => {
+    lightTap();
     try {
       const { data, error } = await supabase.storage
         .from("space-files")
@@ -221,6 +226,7 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       }
+      mediumTap();
     } catch (err) {
       console.error("Error downloading file:", err);
       toast.error(language === "uz" ? "Yuklab olishda xatolik" : "Download failed");
@@ -246,6 +252,7 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
   const handleDelete = async () => {
     if (!deleteFile) return;
 
+    mediumTap();
     setDeleting(true);
     try {
       // Delete from storage
@@ -263,6 +270,7 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
 
       if (dbError) throw dbError;
 
+      mediumTap();
       toast.success(language === "uz" ? "Fayl o'chirildi" : "File deleted");
       setDeleteFile(null);
       fetchFiles();
@@ -275,6 +283,7 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
   };
 
   const handleTogglePin = async (file: CircleFile) => {
+    lightTap();
     try {
       const { error } = await supabase
         .from("space_files")
