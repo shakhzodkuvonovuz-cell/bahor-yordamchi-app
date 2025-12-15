@@ -134,7 +134,7 @@ export default function CircleChatInput({
                 {replyTo.content?.slice(0, 60) || t('circleChat.imageFile')}
               </p>
             </div>
-            <button onClick={onCancelReply} className="p-1 hover:bg-secondary rounded transition-colors">
+            <button onClick={onCancelReply} className="p-2 min-w-[36px] min-h-[36px] flex items-center justify-center hover:bg-secondary rounded-lg transition-colors touch-manipulation">
               <X className="w-4 h-4 text-muted-foreground" />
             </button>
           </div>
@@ -180,7 +180,7 @@ export default function CircleChatInput({
               onClick={() => fileInputRef.current?.click()}
               disabled={disabled || uploading}
               className={cn(
-                "p-2.5 rounded-xl bg-secondary hover:bg-secondary/80 transition-all duration-200 hover:scale-105",
+                "w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-secondary hover:bg-secondary/80 transition-all duration-200 hover:scale-105 touch-manipulation",
                 (disabled || uploading) && "opacity-50 cursor-not-allowed"
               )}
             >
@@ -190,7 +190,7 @@ export default function CircleChatInput({
               onClick={() => cameraInputRef.current?.click()}
               disabled={disabled || uploading}
               className={cn(
-                "p-2.5 rounded-xl bg-secondary hover:bg-secondary/80 transition-all duration-200 hover:scale-105",
+                "w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-secondary hover:bg-secondary/80 transition-all duration-200 hover:scale-105 touch-manipulation",
                 (disabled || uploading) && "opacity-50 cursor-not-allowed"
               )}
             >
@@ -234,7 +234,7 @@ export default function CircleChatInput({
             onPointerLeave={handleMicPointerCancel}
             disabled={disabled || uploading}
             className={cn(
-              "p-2.5 rounded-xl transition-all duration-200 touch-none select-none",
+              "w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl transition-all duration-200 touch-none select-none touch-manipulation",
               isRecording 
                 ? "bg-red-500 text-white scale-110" 
                 : "bg-secondary hover:bg-secondary/80 hover:scale-105",
