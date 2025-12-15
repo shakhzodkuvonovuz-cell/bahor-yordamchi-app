@@ -6,6 +6,7 @@ import PendingAttachments, { type PendingAttachment } from "./PendingAttachments
 import type { CircleMessage } from "./CircleChatMessage";
 import { toast } from "sonner";
 import { useTranslation } from "@/i18n/LanguageProvider";
+import { useHaptics } from "@/hooks/useHaptics";
 
 interface CircleChatInputProps {
   value: string;
@@ -29,6 +30,7 @@ export default function CircleChatInput({
   language,
 }: CircleChatInputProps) {
   const { t } = useTranslation();
+  const { lightTap, mediumTap } = useHaptics();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
@@ -76,6 +78,8 @@ export default function CircleChatInput({
     
     if (!trimmed && !hasAttachments) return;
     
+    mediumTap();
+    
     // Pass pending files to parent for upload
     onSend(hasAttachments ? [...pendingAttachments] : undefined);
     
@@ -90,10 +94,10 @@ export default function CircleChatInput({
   const handleMicPointerDown = () => {
     if (disabled || uploading) return;
     
+    lightTap();
     recordingTimerRef.current = setTimeout(() => {
       setIsRecording(true);
-      // Haptic feedback
-      if (navigator.vibrate) navigator.vibrate(10);
+      mediumTap();
     }, 180);
   };
 
@@ -105,10 +109,8 @@ export default function CircleChatInput({
     
     if (isRecording) {
       setIsRecording(false);
-      // Show coming soon toast
+      lightTap();
       toast.info(t('common.comingSoon'));
-      // Haptic feedback
-      if (navigator.vibrate) navigator.vibrate(10);
     }
   };
 
@@ -127,15 +129,21 @@ export default function CircleChatInput({
       {/* Reply preview */}
       {replyTo && (
         <div className="px-4 pt-2 max-w-2xl mx-auto">
-          <div className="flex items-center gap-2 p-2 rounded-lg bg-secondary/50 border-l-2 border-primary">
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-secondary/50 border-l-2 border-primary">
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-primary">{replyTo.senderName}</p>
               <p className="text-xs text-muted-foreground truncate">
                 {replyTo.content?.slice(0, 60) || t('circleChat.imageFile')}
               </p>
             </div>
-            <button onClick={onCancelReply} className="p-2 min-w-[36px] min-h-[36px] flex items-center justify-center hover:bg-secondary rounded-lg transition-colors touch-manipulation">
-              <X className="w-4 h-4 text-muted-foreground" />
+            <button 
+              onClick={() => {
+                lightTap();
+                onCancelReply();
+              }} 
+              className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-secondary active:bg-secondary/80 rounded-xl transition-colors touch-manipulation"
+            >
+              <X className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>
         </div>
@@ -175,22 +183,28 @@ export default function CircleChatInput({
       <div className="max-w-2xl mx-auto px-4 py-3">
         <div className="flex gap-2 items-end">
           {/* Attachment buttons */}
-          <div className="flex gap-1">
+          <div className="flex gap-1.5">
             <button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => {
+                lightTap();
+                fileInputRef.current?.click();
+              }}
               disabled={disabled || uploading}
               className={cn(
-                "w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-secondary hover:bg-secondary/80 transition-all duration-200 hover:scale-105 touch-manipulation",
+                "w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-secondary hover:bg-secondary/80 active:scale-95 transition-all duration-200 touch-manipulation",
                 (disabled || uploading) && "opacity-50 cursor-not-allowed"
               )}
             >
               <Paperclip className="w-5 h-5 text-muted-foreground" />
             </button>
             <button
-              onClick={() => cameraInputRef.current?.click()}
+              onClick={() => {
+                lightTap();
+                cameraInputRef.current?.click();
+              }}
               disabled={disabled || uploading}
               className={cn(
-                "w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-secondary hover:bg-secondary/80 transition-all duration-200 hover:scale-105 touch-manipulation",
+                "w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-secondary hover:bg-secondary/80 active:scale-95 transition-all duration-200 touch-manipulation",
                 (disabled || uploading) && "opacity-50 cursor-not-allowed"
               )}
             >
@@ -236,8 +250,8 @@ export default function CircleChatInput({
             className={cn(
               "w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl transition-all duration-200 touch-none select-none touch-manipulation",
               isRecording 
-                ? "bg-red-500 text-white scale-110" 
-                : "bg-secondary hover:bg-secondary/80 hover:scale-105",
+                ? "bg-red-500 text-white scale-110 shadow-lg shadow-red-500/30" 
+                : "bg-secondary hover:bg-secondary/80 active:scale-95",
               (disabled || uploading) && "opacity-50 cursor-not-allowed"
             )}
           >
@@ -249,7 +263,7 @@ export default function CircleChatInput({
             onClick={handleSend}
             disabled={!canSend || disabled || uploading}
             size="icon"
-            className="rounded-xl h-11 w-11 transition-all duration-200 hover:scale-105"
+            className="rounded-xl h-11 w-11 min-w-[44px] min-h-[44px] transition-all duration-200 active:scale-95"
           >
             <Send className="w-5 h-5" />
           </Button>

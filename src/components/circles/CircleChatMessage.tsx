@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useHaptics } from "@/hooks/useHaptics";
 import { AiResponseRenderer } from "@/components/ai/AiResponseRenderer";
 import {
   DropdownMenu,
@@ -93,6 +94,7 @@ export default function CircleChatMessage({
   language,
 }: CircleChatMessageProps) {
   const { user } = useAuth();
+  const { lightTap, mediumTap } = useHaptics();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showActionSheet, setShowActionSheet] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
@@ -114,6 +116,7 @@ export default function CircleChatMessage({
 
   const handleCopy = () => {
     if (message.content) {
+      lightTap();
       navigator.clipboard.writeText(message.content);
       toast.success(language === "uz" ? "Nusxa olindi" : "Copied");
     }
@@ -121,16 +124,19 @@ export default function CircleChatMessage({
   };
 
   const handleDelete = () => {
+    lightTap();
     setShowActionSheet(false);
     setShowDeleteConfirm(true);
   };
 
   const confirmDelete = () => {
+    mediumTap();
     onDelete(message.id);
     setShowDeleteConfirm(false);
   };
 
   const handleReply = () => {
+    lightTap();
     setShowActionSheet(false);
     onReply(message);
   };
@@ -145,8 +151,7 @@ export default function CircleChatMessage({
     longPressTimerRef.current = setTimeout(() => {
       isLongPressRef.current = true;
       setShowActionSheet(true);
-      // Haptic feedback
-      if (navigator.vibrate) navigator.vibrate(10);
+      mediumTap();
     }, 400);
   }, [isSending, isFailed, isDeleted]);
 
@@ -379,11 +384,11 @@ export default function CircleChatMessage({
       >
         {/* Avatar for others */}
         {!isOwn && !isAi && (
-          <div className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center mr-2 flex-shrink-0 mt-1">
+          <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center mr-2 flex-shrink-0 mt-1">
             {message.senderAvatar ? (
-              <img src={message.senderAvatar} alt="" className="w-7 h-7 rounded-full object-cover" />
+              <img src={message.senderAvatar} alt="" className="w-8 h-8 rounded-full object-cover" />
             ) : (
-              <span className="text-[10px] font-medium text-muted-foreground">
+              <span className="text-xs font-medium text-muted-foreground">
                 {message.senderName?.charAt(0).toUpperCase() || "U"}
               </span>
             )}
@@ -457,27 +462,30 @@ export default function CircleChatMessage({
 
         {/* Actions dropdown - visible on hover (desktop), always visible on mobile */}
         {!isSending && !isFailed && (
-          <div className="opacity-80 sm:opacity-60 group-hover:opacity-100 transition-opacity ml-1 self-center flex-shrink-0">
+          <div className="opacity-80 sm:opacity-50 group-hover:opacity-100 transition-opacity ml-1.5 self-center flex-shrink-0">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="p-2 min-w-[44px] min-h-[44px] rounded-lg bg-secondary/50 hover:bg-secondary focus:bg-secondary flex items-center justify-center touch-manipulation">
+                <button 
+                  onClick={() => lightTap()}
+                  className="p-2.5 min-w-[44px] min-h-[44px] rounded-xl bg-secondary/50 hover:bg-secondary active:bg-secondary/80 focus:bg-secondary flex items-center justify-center touch-manipulation transition-colors"
+                >
                   <MoreVertical className="w-5 h-5 text-foreground/80" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align={isOwn ? "end" : "start"}>
+              <DropdownMenuContent align={isOwn ? "end" : "start"} className="min-w-[160px]">
                 {message.content && (
-                  <DropdownMenuItem onClick={handleCopy}>
-                    <Copy className="w-4 h-4 mr-2" />
+                  <DropdownMenuItem onClick={handleCopy} className="min-h-[44px] gap-3 text-sm">
+                    <Copy className="w-4 h-4" />
                     {language === "uz" ? "Nusxa olish" : "Copy"}
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={() => onReply(message)}>
-                  <Reply className="w-4 h-4 mr-2" />
+                <DropdownMenuItem onClick={() => { lightTap(); onReply(message); }} className="min-h-[44px] gap-3 text-sm">
+                  <Reply className="w-4 h-4" />
                   {language === "uz" ? "Javob berish" : "Reply"}
                 </DropdownMenuItem>
                 {isOwn && (
-                  <DropdownMenuItem onClick={handleDelete} className="text-destructive">
-                    <Trash2 className="w-4 h-4 mr-2" />
+                  <DropdownMenuItem onClick={handleDelete} className="text-destructive min-h-[44px] gap-3 text-sm">
+                    <Trash2 className="w-4 h-4" />
                     {language === "uz" ? "O'chirish" : "Delete"}
                   </DropdownMenuItem>
                 )}
@@ -490,33 +498,39 @@ export default function CircleChatMessage({
       {/* Mobile action sheet (long-press) */}
       <Drawer open={showActionSheet} onOpenChange={setShowActionSheet}>
         <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>{language === "uz" ? "Amallar" : "Actions"}</DrawerTitle>
+          <DrawerHeader className="pb-2">
+            <DrawerTitle className="text-base">{language === "uz" ? "Amallar" : "Actions"}</DrawerTitle>
           </DrawerHeader>
-          <div className="p-4 space-y-2 pb-8">
+          <div className="p-4 pt-0 space-y-2 pb-8">
             <button
               onClick={handleReply}
-              className="w-full flex items-center gap-3 px-4 py-3 min-h-[48px] rounded-xl bg-secondary hover:bg-secondary/80 transition-colors touch-manipulation"
+              className="w-full flex items-center gap-3 px-4 py-3.5 min-h-[52px] rounded-2xl bg-secondary hover:bg-secondary/80 active:scale-[0.98] transition-all touch-manipulation"
             >
-              <Reply className="w-5 h-5 text-muted-foreground" />
-              <span>{language === "uz" ? "Javob berish" : "Reply"}</span>
+              <div className="w-10 h-10 rounded-xl bg-background/50 flex items-center justify-center">
+                <Reply className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <span className="font-medium">{language === "uz" ? "Javob berish" : "Reply"}</span>
             </button>
             {message.content && (
               <button
                 onClick={handleCopy}
-                className="w-full flex items-center gap-3 px-4 py-3 min-h-[48px] rounded-xl bg-secondary hover:bg-secondary/80 transition-colors touch-manipulation"
+                className="w-full flex items-center gap-3 px-4 py-3.5 min-h-[52px] rounded-2xl bg-secondary hover:bg-secondary/80 active:scale-[0.98] transition-all touch-manipulation"
               >
-                <Copy className="w-5 h-5 text-muted-foreground" />
-                <span>{language === "uz" ? "Nusxa olish" : "Copy"}</span>
+                <div className="w-10 h-10 rounded-xl bg-background/50 flex items-center justify-center">
+                  <Copy className="w-5 h-5 text-muted-foreground" />
+                </div>
+                <span className="font-medium">{language === "uz" ? "Nusxa olish" : "Copy"}</span>
               </button>
             )}
             {isOwn && (
               <button
                 onClick={handleDelete}
-                className="w-full flex items-center gap-3 px-4 py-3 min-h-[48px] rounded-xl bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors touch-manipulation"
+                className="w-full flex items-center gap-3 px-4 py-3.5 min-h-[52px] rounded-2xl bg-destructive/10 hover:bg-destructive/20 active:scale-[0.98] text-destructive transition-all touch-manipulation"
               >
-                <Trash2 className="w-5 h-5" />
-                <span>{language === "uz" ? "O'chirish" : "Delete"}</span>
+                <div className="w-10 h-10 rounded-xl bg-destructive/10 flex items-center justify-center">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <span className="font-medium">{language === "uz" ? "O'chirish" : "Delete"}</span>
               </button>
             )}
           </div>
