@@ -3,6 +3,7 @@ import { ChevronDown, Users, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { useCircleChat } from "@/hooks/useCircleChat";
+import { useHaptics } from "@/hooks/useHaptics";
 import CircleChatMessage, { type CircleMessage, type SpaceMessage } from "./CircleChatMessage";
 import CircleChatInput from "./CircleChatInput";
 import BahorContextPicker from "./BahorContextPicker";
@@ -31,6 +32,7 @@ function markBahorHintSeen(circleId: string, userId: string): void {
 export default function CircleChatTab({ spaceId, onSendAICardRef }: CircleChatTabProps) {
   const { user } = useAuth();
   const { language, t } = useTranslation();
+  const { lightTap, mediumTap } = useHaptics();
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const prevMessagesLengthRef = useRef(0);
@@ -290,11 +292,14 @@ export default function CircleChatTab({ spaceId, onSendAICardRef }: CircleChatTa
       {showScrollButton && (
         <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-10">
           <button 
-            onClick={() => scrollToBottom()} 
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground shadow-lg"
+            onClick={() => {
+              lightTap();
+              scrollToBottom();
+            }} 
+            className="flex items-center gap-1.5 px-4 py-2 min-h-[44px] rounded-full bg-primary text-primary-foreground shadow-lg hover:scale-105 active:scale-95 transition-transform touch-manipulation"
           >
             <ChevronDown className="w-4 h-4" />
-            {hasNewMessages ? t('circleChat.newMessages') : "↓"}
+            <span className="text-sm font-medium">{hasNewMessages ? t('circleChat.newMessages') : "↓"}</span>
           </button>
         </div>
       )}
@@ -337,10 +342,22 @@ export default function CircleChatTab({ spaceId, onSendAICardRef }: CircleChatTa
             </ul>
           </div>
           <div className="flex gap-2 pt-2">
-            <button onClick={() => setShowBahorHint(false)} className="flex-1 px-4 py-2 rounded-xl bg-secondary">
+            <button 
+              onClick={() => {
+                lightTap();
+                setShowBahorHint(false);
+              }} 
+              className="flex-1 px-4 py-3 min-h-[48px] rounded-xl bg-secondary hover:bg-secondary/80 active:scale-[0.98] transition-all touch-manipulation font-medium"
+            >
               {t('actions.cancel')}
             </button>
-            <button onClick={handleBahorHintConfirm} className="flex-1 px-4 py-2 rounded-xl bg-primary text-primary-foreground">
+            <button 
+              onClick={() => {
+                mediumTap();
+                handleBahorHintConfirm();
+              }} 
+              className="flex-1 px-4 py-3 min-h-[48px] rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-all touch-manipulation font-medium"
+            >
               {t('circleChat.gotIt')}
             </button>
           </div>
@@ -372,16 +389,16 @@ export default function CircleChatTab({ spaceId, onSendAICardRef }: CircleChatTa
               <div className="py-4 text-center text-muted-foreground">{t('circleChat.noReaders')}</div>
             ) : (
               readers.map((r, i) => (
-                <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-secondary/50">
-                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
+                <div key={i} className="flex items-center gap-3 p-3 min-h-[56px] rounded-xl bg-secondary/50">
+                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
                     {r.user_avatar ? (
-                      <img src={r.user_avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
+                      <img src={r.user_avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
                     ) : (
-                      <span className="text-xs font-medium">{r.user_name?.charAt(0) || "U"}</span>
+                      <span className="text-sm font-medium">{r.user_name?.charAt(0) || "U"}</span>
                     )}
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">{r.user_name}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{r.user_name}</p>
                     <p className="text-xs text-muted-foreground">{new Date(r.read_at).toLocaleString()}</p>
                   </div>
                 </div>
