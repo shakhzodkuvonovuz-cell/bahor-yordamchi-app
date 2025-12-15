@@ -263,7 +263,7 @@ export default function CircleChatMessage({
                       href={attachment.signedUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-2 rounded-lg hover:bg-secondary transition-colors"
+                      className="p-2.5 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg hover:bg-secondary transition-colors touch-manipulation"
                       onClick={(e) => e.stopPropagation()}
                       title={language === "uz" ? "Ochish" : "Open"}
                     >
@@ -274,7 +274,7 @@ export default function CircleChatMessage({
                         e.stopPropagation();
                         downloadFile(attachment.signedUrl!, attachment.name);
                       }}
-                      className="p-2 rounded-lg hover:bg-secondary transition-colors"
+                      className="p-2.5 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg hover:bg-secondary transition-colors touch-manipulation"
                       title={language === "uz" ? "Yuklab olish" : "Download"}
                     >
                       <Download className="w-4 h-4 text-muted-foreground" />
@@ -496,7 +496,7 @@ export default function CircleChatMessage({
           <div className="p-4 space-y-2 pb-8">
             <button
               onClick={handleReply}
-              className="w-full flex items-center gap-3 p-3 rounded-xl bg-secondary hover:bg-secondary/80 transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-3 min-h-[48px] rounded-xl bg-secondary hover:bg-secondary/80 transition-colors touch-manipulation"
             >
               <Reply className="w-5 h-5 text-muted-foreground" />
               <span>{language === "uz" ? "Javob berish" : "Reply"}</span>
@@ -504,7 +504,7 @@ export default function CircleChatMessage({
             {message.content && (
               <button
                 onClick={handleCopy}
-                className="w-full flex items-center gap-3 p-3 rounded-xl bg-secondary hover:bg-secondary/80 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-3 min-h-[48px] rounded-xl bg-secondary hover:bg-secondary/80 transition-colors touch-manipulation"
               >
                 <Copy className="w-5 h-5 text-muted-foreground" />
                 <span>{language === "uz" ? "Nusxa olish" : "Copy"}</span>
@@ -513,7 +513,7 @@ export default function CircleChatMessage({
             {isOwn && (
               <button
                 onClick={handleDelete}
-                className="w-full flex items-center gap-3 p-3 rounded-xl bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-3 min-h-[48px] rounded-xl bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors touch-manipulation"
               >
                 <Trash2 className="w-5 h-5" />
                 <span>{language === "uz" ? "O'chirish" : "Delete"}</span>
@@ -562,13 +562,13 @@ export default function CircleChatMessage({
                   href={lightboxImage}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors"
+                  className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-white/20 hover:bg-white/30 transition-colors touch-manipulation"
                 >
                   <ExternalLink className="w-5 h-5 text-white" />
                 </a>
                 <button
                   onClick={() => downloadFile(lightboxImage, "image")}
-                  className="p-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors"
+                  className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-white/20 hover:bg-white/30 transition-colors touch-manipulation"
                 >
                   <Download className="w-5 h-5 text-white" />
                 </button>
