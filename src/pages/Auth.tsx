@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import bahorLogo from "@/assets/bahor-logo.png";
-import { Mail, Phone, Shield, Info } from "lucide-react";
+import { Mail, Shield, Info } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { SEO } from "@/components/SEO";
 
@@ -14,8 +14,7 @@ export default function Auth() {
   return (
     <>
       <SEO 
-        title="Kirish"
-        description="Bahor AI hisobingizga kiring. Email, Google yoki telefon raqami orqali kirish imkoniyati."
+        description="Bahor AI hisobingizga kiring. Email yoki Google orqali kirish imkoniyati."
         url="/auth"
         noIndex
       />
@@ -82,24 +81,6 @@ export default function Auth() {
               </button>
             </Link>
 
-            {/* Phone */}
-            <Link to={`/auth/phone${queryString ? `?${queryString}` : ''}`} className="block">
-              <button className="w-full bg-card hover:bg-card/80 border border-border/50 rounded-2xl sm:rounded-[20px] p-4 sm:p-5 text-left transition-all duration-200 hover:shadow-lg hover:border-primary/30 active:scale-[0.98] group min-h-[72px] sm:min-h-[80px] touch-manipulation">
-                <div className="flex items-center gap-3 sm:gap-4">
-                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                    <Phone className="w-5 h-5 text-primary" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-foreground text-sm sm:text-[15px] mb-0.5">
-                      {t('auth.phoneContinue')}
-                    </p>
-                    <p className="text-xs sm:text-[13px] text-muted-foreground">
-                      {t('auth.phoneDesc')}
-                    </p>
-                  </div>
-                </div>
-              </button>
-            </Link>
           </div>
 
           {/* Trust Line */}
