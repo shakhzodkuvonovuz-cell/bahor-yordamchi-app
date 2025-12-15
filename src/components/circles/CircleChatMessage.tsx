@@ -99,6 +99,12 @@ export default function CircleChatMessage({
   const [showActionSheet, setShowActionSheet] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   
+  // Swipe-to-reply state
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const swipeThresholdReachedRef = useRef(false);
+  const isSwipingRef = useRef(false);
+  
   // Long-press detection
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLongPressRef = useRef(false);
@@ -141,6 +147,76 @@ export default function CircleChatMessage({
     onReply(message);
   };
 
+  // Swipe-to-reply constants
+  const SWIPE_THRESHOLD = 60; // px needed to trigger reply
+  const MAX_SWIPE = 80; // max visual offset
+  
+  // Touch handlers for swipe-to-reply
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (isSending || isFailed || isDeleted) return;
+    
+    const touch = e.touches[0];
+    swipeStartRef.current = { x: touch.clientX, y: touch.clientY };
+    swipeThresholdReachedRef.current = false;
+    isSwipingRef.current = false;
+  }, [isSending, isFailed, isDeleted]);
+  
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!swipeStartRef.current || isSending || isFailed || isDeleted) return;
+    
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - swipeStartRef.current.x;
+    const deltaY = touch.clientY - swipeStartRef.current.y;
+    
+    // Only allow right swipe, and check if horizontal movement is dominant
+    if (!isSwipingRef.current) {
+      if (Math.abs(deltaX) > 10 && Math.abs(deltaX) > Math.abs(deltaY)) {
+        isSwipingRef.current = true;
+        // Cancel long-press if swiping
+        if (longPressTimerRef.current) {
+          clearTimeout(longPressTimerRef.current);
+          longPressTimerRef.current = null;
+        }
+      } else if (Math.abs(deltaY) > 10) {
+        // Vertical scroll, cancel swipe detection
+        swipeStartRef.current = null;
+        return;
+      }
+    }
+    
+    if (isSwipingRef.current && deltaX > 0) {
+      const offset = Math.min(deltaX, MAX_SWIPE);
+      setSwipeOffset(offset);
+      
+      // Haptic feedback when crossing threshold
+      if (offset >= SWIPE_THRESHOLD && !swipeThresholdReachedRef.current) {
+        swipeThresholdReachedRef.current = true;
+        mediumTap();
+      } else if (offset < SWIPE_THRESHOLD && swipeThresholdReachedRef.current) {
+        swipeThresholdReachedRef.current = false;
+        lightTap();
+      }
+    }
+  }, [isSending, isFailed, isDeleted, lightTap, mediumTap]);
+  
+  const handleTouchEnd = useCallback(() => {
+    if (swipeOffset >= SWIPE_THRESHOLD) {
+      onReply(message);
+    }
+    
+    setSwipeOffset(0);
+    swipeStartRef.current = null;
+    isSwipingRef.current = false;
+    swipeThresholdReachedRef.current = false;
+  }, [swipeOffset, message, onReply]);
+  
+  const handleTouchCancel = useCallback(() => {
+    setSwipeOffset(0);
+    swipeStartRef.current = null;
+    isSwipingRef.current = false;
+    swipeThresholdReachedRef.current = false;
+  }, []);
+
   // Long-press handlers
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     if (isSending || isFailed || isDeleted) return;
@@ -153,7 +229,7 @@ export default function CircleChatMessage({
       setShowActionSheet(true);
       mediumTap();
     }, 400);
-  }, [isSending, isFailed, isDeleted]);
+  }, [isSending, isFailed, isDeleted, mediumTap]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     if (!longPressTimerRef.current) return;
@@ -376,15 +452,40 @@ export default function CircleChatMessage({
       <div 
         id={`msg-${message.id}`}
         className={cn(
-          "flex group transition-all duration-200 rounded-lg max-w-full",
+          "flex group transition-all duration-200 rounded-lg max-w-full relative",
           isAi ? "justify-start" : isOwn ? "justify-end" : "justify-start",
           isSending && "opacity-70"
         )}
         style={{ maxWidth: '100%' }}
       >
+        {/* Swipe-to-reply indicator */}
+        {swipeOffset > 0 && (
+          <div 
+            className={cn(
+              "absolute left-0 top-1/2 -translate-y-1/2 flex items-center justify-center transition-all duration-100",
+              swipeOffset >= SWIPE_THRESHOLD ? "text-primary" : "text-muted-foreground"
+            )}
+            style={{ 
+              width: 40,
+              opacity: Math.min(swipeOffset / 30, 1),
+              transform: `translateY(-50%) scale(${Math.min(0.6 + (swipeOffset / SWIPE_THRESHOLD) * 0.4, 1)})`
+            }}
+          >
+            <div className={cn(
+              "w-9 h-9 rounded-full flex items-center justify-center transition-colors",
+              swipeOffset >= SWIPE_THRESHOLD ? "bg-primary/20" : "bg-secondary"
+            )}>
+              <Reply className="w-4 h-4" />
+            </div>
+          </div>
+        )}
+        
         {/* Avatar for others */}
         {!isOwn && !isAi && (
-          <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center mr-2 flex-shrink-0 mt-1">
+          <div 
+            className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center mr-2 flex-shrink-0 mt-1"
+            style={{ transform: swipeOffset > 0 ? `translateX(${swipeOffset}px)` : undefined }}
+          >
             {message.senderAvatar ? (
               <img src={message.senderAvatar} alt="" className="w-8 h-8 rounded-full object-cover" />
             ) : (
@@ -395,7 +496,18 @@ export default function CircleChatMessage({
           </div>
         )}
 
-        <div className="flex flex-col min-w-0" style={{ maxWidth: 'calc(100% - 56px)' }}>
+        <div 
+          className="flex flex-col min-w-0" 
+          style={{ 
+            maxWidth: 'calc(100% - 56px)',
+            transform: swipeOffset > 0 ? `translateX(${swipeOffset}px)` : undefined,
+            transition: swipeOffset === 0 ? 'transform 0.2s ease-out' : 'none'
+          }}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchCancel}
+        >
           <div
             className={cn(
               "rounded-2xl px-4 py-2.5 relative select-none overflow-hidden",
