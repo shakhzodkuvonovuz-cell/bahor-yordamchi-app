@@ -314,7 +314,7 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
         <Button
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="gap-2"
+          className="gap-2 min-h-[44px] touch-manipulation"
         >
           <Upload className="w-4 h-4" />
           {uploading 
@@ -326,19 +326,19 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
 
       {/* Files List */}
       {files.length === 0 ? (
-        <div className="text-center pt-4 text-muted-foreground">
-          <FileText className="w-10 h-10 mx-auto mb-3 opacity-40" />
+        <div className="text-center pt-8 text-muted-foreground">
+          <FileText className="w-12 h-12 mx-auto mb-3 opacity-40" />
           <p className="text-sm">{language === "uz" ? "Hali fayllar yo'q" : "No files yet"}</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {files.map((file) => (
             <div
               key={file.id}
-              className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border"
+              className="flex items-center gap-3 p-4 min-h-[72px] rounded-xl bg-card border border-border touch-manipulation"
             >
               {/* Icon */}
-              <div className="flex-shrink-0">
+              <div className="w-10 h-10 min-w-[40px] flex items-center justify-center rounded-lg bg-secondary flex-shrink-0">
                 {getFileIcon(file.mime_type)}
               </div>
 
@@ -352,39 +352,55 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
                     {file.original_name}
                   </p>
                 </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {formatFileSize(file.size_bytes)} · {file.uploaderName}
+                </p>
                 <p className="text-xs text-muted-foreground">
-                  {formatFileSize(file.size_bytes)} · {file.uploaderName} · {new Date(file.created_at).toLocaleDateString()}
+                  {new Date(file.created_at).toLocaleDateString()}
                 </p>
               </div>
 
               {/* Actions */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="flex-shrink-0">
-                    <MoreVertical className="w-4 h-4" />
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="flex-shrink-0 h-11 w-11 min-h-[44px] min-w-[44px] touch-manipulation"
+                  >
+                    <MoreVertical className="w-5 h-5" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="min-w-[180px]">
                   {isPreviewable(file.mime_type) && (
-                    <DropdownMenuItem onClick={() => handlePreview(file)}>
-                      <Eye className="w-4 h-4 mr-2" />
+                    <DropdownMenuItem 
+                      onClick={() => handlePreview(file)}
+                      className="min-h-[44px] py-3 touch-manipulation"
+                    >
+                      <Eye className="w-4 h-4 mr-3" />
                       {language === "uz" ? "Ko'rish" : "Preview"}
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem onClick={() => handleDownload(file)}>
-                    <Download className="w-4 h-4 mr-2" />
+                  <DropdownMenuItem 
+                    onClick={() => handleDownload(file)}
+                    className="min-h-[44px] py-3 touch-manipulation"
+                  >
+                    <Download className="w-4 h-4 mr-3" />
                     {language === "uz" ? "Yuklab olish" : "Download"}
                   </DropdownMenuItem>
                   {isAdmin && (
-                    <DropdownMenuItem onClick={() => handleTogglePin(file)}>
+                    <DropdownMenuItem 
+                      onClick={() => handleTogglePin(file)}
+                      className="min-h-[44px] py-3 touch-manipulation"
+                    >
                       {file.pinned ? (
                         <>
-                          <PinOff className="w-4 h-4 mr-2" />
+                          <PinOff className="w-4 h-4 mr-3" />
                           {language === "uz" ? "Olib tashlash" : "Unpin"}
                         </>
                       ) : (
                         <>
-                          <Pin className="w-4 h-4 mr-2" />
+                          <Pin className="w-4 h-4 mr-3" />
                           {language === "uz" ? "Mahkamlash" : "Pin"}
                         </>
                       )}
@@ -393,9 +409,9 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
                   {canDelete(file) && (
                     <DropdownMenuItem 
                       onClick={() => setDeleteFile(file)}
-                      className="text-destructive focus:text-destructive"
+                      className="text-destructive focus:text-destructive min-h-[44px] py-3 touch-manipulation"
                     >
-                      <Trash2 className="w-4 h-4 mr-2" />
+                      <Trash2 className="w-4 h-4 mr-3" />
                       {language === "uz" ? "O'chirish" : "Delete"}
                     </DropdownMenuItem>
                   )}
@@ -446,15 +462,15 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
               }
             </p>
           </div>
-          <DrawerFooter className="flex-row gap-2">
+          <DrawerFooter className="flex-row gap-3 pb-6">
             <DrawerClose asChild>
-              <Button variant="outline" className="flex-1">
+              <Button variant="outline" className="flex-1 min-h-[48px] touch-manipulation">
                 {language === "uz" ? "Bekor qilish" : "Cancel"}
               </Button>
             </DrawerClose>
             <Button 
               variant="destructive" 
-              className="flex-1"
+              className="flex-1 min-h-[48px] touch-manipulation"
               onClick={handleDelete}
               disabled={deleting}
             >
