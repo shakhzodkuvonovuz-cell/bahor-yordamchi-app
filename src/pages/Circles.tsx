@@ -190,144 +190,154 @@ export default function Circles() {
         url="/circles"
       />
       <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate("/modes")}
-              className="p-2 -ml-2 hover:bg-secondary rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5 text-foreground" />
-            </button>
-            <h1 className="text-xl font-bold text-foreground">
-              {t('circles.title')}
-            </h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={() => setShowPasteLinkModal(true)}
-              size="sm"
-              variant="outline"
-              className="gap-1.5"
-            >
-              <Link2 className="w-4 h-4" />
-              {t('circles.enterCode')}
-            </Button>
-            <Button
-              onClick={() => setShowCreateModal(true)}
-              size="sm"
-              className="gap-1.5"
-            >
-              <Plus className="w-4 h-4" />
-              {t('circles.new')}
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-2xl mx-auto px-4 py-4">
-        {loading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="h-20 bg-secondary/50 rounded-xl animate-pulse"
-              />
-            ))}
-          </div>
-        ) : circles.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-secondary flex items-center justify-center">
-              <Users className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <h3 className="font-semibold text-foreground mb-2">
-              {t('circles.noCircles')}
-            </h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              {t('circles.createFirst')}
-            </p>
-            <Button onClick={() => setShowCreateModal(true)} className="gap-2">
-              <Plus className="w-4 h-4" />
-              {t('circles.createCircle')}
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {circles.map((circle) => (
+        {/* Header */}
+        <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border">
+          <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
               <button
-                key={circle.id}
-                onClick={() => navigate(`/circles/${circle.id}`)}
-                className="w-full text-left p-4 rounded-xl bg-card border border-border hover:border-primary/30 hover:shadow-md transition-all group"
+                onClick={() => navigate("/modes")}
+                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center -ml-2 hover:bg-secondary active:bg-secondary/80 rounded-xl transition-colors touch-manipulation"
               >
-                <div className="flex items-center gap-3">
-                  {/* Circle emoji icon */}
-                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0 ${getColorClass(circle.icon_color)}`}>
-                    {circle.icon_emoji || "💬"}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-foreground truncate">
-                        {circle.name}
-                      </h3>
-                      <span className="px-2 py-0.5 text-xs rounded-full bg-secondary text-secondary-foreground">
-                        {getTemplateLabel(circle.template)}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Users className="w-3.5 h-3.5" />
-                        {circle.memberCount}
-                      </span>
-                      {circle.goal && (
-                        <span className="truncate">{circle.goal}</span>
-                      )}
-                    </div>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
-                </div>
+                <ArrowLeft className="w-5 h-5 text-foreground" />
               </button>
-            ))}
+              <h1 className="text-xl font-bold text-foreground">
+                {t('circles.title')}
+              </h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => setShowPasteLinkModal(true)}
+                size="icon"
+                variant="outline"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl touch-manipulation"
+              >
+                <Link2 className="w-5 h-5" />
+              </Button>
+              <Button
+                onClick={() => setShowCreateModal(true)}
+                size="icon"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl touch-manipulation"
+              >
+                <Plus className="w-5 h-5" />
+              </Button>
+            </div>
           </div>
-        )}
+        </header>
+
+        <div className="max-w-2xl mx-auto px-4 py-4">
+          {loading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="h-[76px] bg-secondary/50 rounded-2xl animate-pulse"
+                />
+              ))}
+            </div>
+          ) : circles.length === 0 ? (
+            <div className="text-center py-16 px-4">
+              <div className="w-20 h-20 mx-auto mb-5 rounded-2xl bg-secondary flex items-center justify-center">
+                <Users className="w-10 h-10 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                {t('circles.noCircles')}
+              </h3>
+              <p className="text-sm text-muted-foreground mb-6 max-w-xs mx-auto">
+                {t('circles.createFirst')}
+              </p>
+              <Button 
+                onClick={() => setShowCreateModal(true)} 
+                className="gap-2 h-12 min-h-[48px] px-6 rounded-xl touch-manipulation"
+              >
+                <Plus className="w-5 h-5" />
+                {t('circles.createCircle')}
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {circles.map((circle) => (
+                <button
+                  key={circle.id}
+                  onClick={() => navigate(`/circles/${circle.id}`)}
+                  className="w-full text-left p-4 min-h-[76px] rounded-2xl bg-card border border-border hover:border-primary/30 active:scale-[0.98] hover:shadow-md transition-all group touch-manipulation"
+                >
+                  <div className="flex items-center gap-3">
+                    {/* Circle emoji icon */}
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 ${getColorClass(circle.icon_color)}`}>
+                      {circle.icon_emoji || "💬"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-foreground truncate">
+                          {circle.name}
+                        </h3>
+                        <span className="px-2 py-0.5 text-xs rounded-full bg-secondary text-secondary-foreground flex-shrink-0">
+                          {getTemplateLabel(circle.template)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1.5">
+                          <Users className="w-4 h-4" />
+                          {circle.memberCount}
+                        </span>
+                        {circle.goal && (
+                          <span className="truncate">{circle.goal}</span>
+                        )}
+                      </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <CreateCircleModal
+          open={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onCreated={handleCircleCreated}
+        />
+
+        {/* Paste Link Modal */}
+        <Dialog open={showPasteLinkModal} onOpenChange={setShowPasteLinkModal}>
+          <DialogContent className="sm:max-w-md mx-4 rounded-2xl">
+            <DialogHeader className="text-center pb-2">
+              <DialogTitle className="text-lg">
+                {t('circles.enterInviteLink')}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <p className="text-sm text-muted-foreground text-center">
+                {t('circles.enterLinkOrCode')}
+              </p>
+              <Input
+                value={pasteLink}
+                onChange={(e) => setPasteLink(e.target.value)}
+                placeholder={t('circles.linkOrCode')}
+                onKeyDown={(e) => e.key === "Enter" && handlePasteLinkSubmit()}
+                className="h-12 min-h-[48px] rounded-xl text-base"
+              />
+            </div>
+            <div className="flex flex-col gap-2 pt-2">
+              <Button 
+                onClick={handlePasteLinkSubmit} 
+                disabled={!pasteLink.trim()}
+                className="w-full h-12 min-h-[48px] rounded-xl touch-manipulation"
+              >
+                {t('circles.continue')}
+              </Button>
+              <Button 
+                variant="ghost" 
+                onClick={() => setShowPasteLinkModal(false)}
+                className="w-full h-11 min-h-[44px] rounded-xl touch-manipulation"
+              >
+                {t('circles.cancel')}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
-
-      <CreateCircleModal
-        open={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onCreated={handleCircleCreated}
-      />
-
-      {/* Paste Link Modal */}
-      <Dialog open={showPasteLinkModal} onOpenChange={setShowPasteLinkModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {t('circles.enterInviteLink')}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <p className="text-sm text-muted-foreground">
-              {t('circles.enterLinkOrCode')}
-            </p>
-            <Input
-              value={pasteLink}
-              onChange={(e) => setPasteLink(e.target.value)}
-              placeholder={t('circles.linkOrCode')}
-              onKeyDown={(e) => e.key === "Enter" && handlePasteLinkSubmit()}
-            />
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setShowPasteLinkModal(false)}>
-              {t('circles.cancel')}
-            </Button>
-            <Button onClick={handlePasteLinkSubmit} disabled={!pasteLink.trim()}>
-              {t('circles.continue')}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
     </>
   );
 }
