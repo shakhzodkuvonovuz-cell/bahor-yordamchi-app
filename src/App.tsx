@@ -45,7 +45,6 @@ const ChatsHistory = lazy(() => import("./pages/ChatsHistory"));
 const Agent = lazy(() => import("./pages/Agent"));
 const AgentWorkspace = lazy(() => import("./pages/AgentWorkspace"));
 const ImageStudio = lazy(() => import("./pages/ImageStudio"));
-const LogoShowcase = lazy(() => import("./pages/LogoShowcase"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -321,8 +320,6 @@ const App = () => (
                       </ProtectedRoute>
                     } 
                   />
-                  {/* Logo Showcase - dev page */}
-                  <Route path="/logo-showcase" element={<LazyRoute><LogoShowcase /></LazyRoute>} />
                   {/* Invite routes - support both /circles/invite/:code and /invite/:code */}
                   <Route path="/circles/invite/:code" element={<LazyRoute><JoinCircle /></LazyRoute>} />
                   <Route path="/invite/:code" element={<LazyRoute><JoinCircle /></LazyRoute>} />
