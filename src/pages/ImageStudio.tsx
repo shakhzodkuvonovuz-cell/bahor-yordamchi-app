@@ -5,7 +5,6 @@ import {
   Sparkles, 
   Download, 
   MessageSquare, 
-  Loader2, 
   Info, 
   ChevronDown,
   History,
@@ -21,6 +20,7 @@ import {
   RefreshCw,
   Check
 } from "lucide-react";
+import { ThinkingOrb } from "@/components/chat/ThinkingOrb";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -609,9 +609,9 @@ export default function ImageStudio() {
                   className="w-full h-12 text-base"
                   size="lg"
                 >
-                  {loading ? (
+                {loading ? (
                     <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      <ThinkingOrb size="sm" variant="rainbow" className="mr-2" />
                       {t("imageStudio.generating")}
                     </>
                   ) : isLimitReached ? (
@@ -647,9 +647,9 @@ export default function ImageStudio() {
                   <div className={`grid gap-4 ${numImages > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
                     {Array.from({ length: numImages }).map((_, i) => (
                       <Card key={i} className="overflow-hidden">
-                        <div className="aspect-square bg-muted animate-pulse flex items-center justify-center">
+                        <div className="aspect-square bg-muted/50 flex items-center justify-center">
                           <div className="text-center">
-                            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto mb-2" />
+                            <ThinkingOrb size="lg" variant="rainbow" className="mx-auto mb-3" />
                             <p className="text-sm text-muted-foreground">
                               {t("imageStudio.generatingProgress", { current: i + 1, total: numImages })}
                             </p>
