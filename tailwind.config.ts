@@ -169,6 +169,59 @@ export default {
           "50%": { transform: "rotate(180deg) scale(1.1)", opacity: "1" },
           "100%": { transform: "rotate(360deg) scale(1)", opacity: "0.7" },
         },
+        // Logo animations
+        "logo-rotate": {
+          "0%": { transform: "rotate(0deg)" },
+          "100%": { transform: "rotate(360deg)" },
+        },
+        "logo-petal": {
+          "0%, 100%": { opacity: "0.7", transform: "scale(1)" },
+          "50%": { opacity: "1", transform: "scale(1.1)" },
+        },
+        "logo-core": {
+          "0%, 100%": { transform: "scale(1)", opacity: "1" },
+          "50%": { transform: "scale(1.2)", opacity: "0.8" },
+        },
+        "logo-breathe": {
+          "0%, 100%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.08)" },
+        },
+        "logo-morph": {
+          "0%, 100%": { d: "path('M50 15 C65 15 75 25 75 35 C85 40 90 55 85 70 C80 80 65 85 50 85 C35 85 20 80 15 70 C10 55 15 40 25 35 C25 25 35 15 50 15')" },
+          "50%": { d: "path('M50 12 C68 12 78 22 78 35 C88 42 92 58 88 72 C82 82 68 88 50 88 C32 88 18 82 12 72 C8 58 12 42 22 35 C22 22 32 12 50 12')" },
+        },
+        "logo-inner-pulse": {
+          "0%, 100%": { opacity: "1", transform: "scale(1)" },
+          "50%": { opacity: "0.7", transform: "scale(0.85)" },
+        },
+        "logo-line": {
+          "0%": { strokeDasharray: "0 100", opacity: "0" },
+          "50%": { opacity: "1" },
+          "100%": { strokeDasharray: "100 0", opacity: "1" },
+        },
+        "logo-node": {
+          "0%": { transform: "scale(0)", opacity: "0" },
+          "60%": { transform: "scale(1.2)", opacity: "1" },
+          "100%": { transform: "scale(1)", opacity: "1" },
+        },
+        "logo-ripple": {
+          "0%": { transform: "scale(0.8)", opacity: "1" },
+          "50%": { transform: "scale(1)", opacity: "0.8" },
+          "100%": { transform: "scale(1.1)", opacity: "0.6" },
+        },
+        "logo-center-spin": {
+          "0%": { transform: "rotate(0deg)" },
+          "100%": { transform: "rotate(360deg)" },
+        },
+        "logo-3d-rotate": {
+          "0%": { transform: "rotateY(0deg) rotateX(5deg)" },
+          "50%": { transform: "rotateY(180deg) rotateX(-5deg)" },
+          "100%": { transform: "rotateY(360deg) rotateX(5deg)" },
+        },
+        "logo-inner-glow": {
+          "0%, 100%": { opacity: "0.3", transform: "scale(1)" },
+          "50%": { opacity: "0.6", transform: "scale(1.15)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -186,6 +239,18 @@ export default {
         "thinking-orbit": "thinking-orbit 2s linear infinite",
         "thinking-orbit-reverse": "thinking-orbit-reverse 2.5s linear infinite",
         "thinking-rainbow": "thinking-rainbow 3s linear infinite",
+        // Logo animations
+        "logo-rotate": "logo-rotate 8s linear infinite",
+        "logo-petal": "logo-petal 2s ease-in-out infinite",
+        "logo-core": "logo-core 1.5s ease-in-out infinite",
+        "logo-breathe": "logo-breathe 3s ease-in-out infinite",
+        "logo-inner-pulse": "logo-inner-pulse 2s ease-in-out infinite",
+        "logo-line": "logo-line 1.5s ease-out forwards",
+        "logo-node": "logo-node 0.8s ease-out forwards",
+        "logo-ripple": "logo-ripple 2s ease-out infinite",
+        "logo-center-spin": "logo-center-spin 4s linear infinite",
+        "logo-3d-rotate": "logo-3d-rotate 6s ease-in-out infinite",
+        "logo-inner-glow": "logo-inner-glow 2s ease-in-out infinite",
       },
       spacing: {
         "18": "4.5rem",
