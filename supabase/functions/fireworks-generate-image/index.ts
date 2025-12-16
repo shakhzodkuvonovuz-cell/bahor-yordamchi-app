@@ -112,10 +112,35 @@ async function logImageGenEvent(
   }
 }
 
+// Trace event helper for timing steps
+interface TraceStep {
+  step: string;
+  startMs: number;
+  endMs?: number;
+  durMs?: number;
+  detail?: Record<string, any>;
+}
+
 serve(async (req) => {
   const requestId = crypto.randomUUID().slice(0, 8);
   const requestStart = Date.now();
+  const traceSteps: TraceStep[] = [];
+  
+  // Helper to record step timing
+  const startStep = (step: string): TraceStep => {
+    const s: TraceStep = { step, startMs: Date.now() - requestStart };
+    traceSteps.push(s);
+    return s;
+  };
+  
+  const endStep = (s: TraceStep, detail?: Record<string, any>) => {
+    s.endMs = Date.now() - requestStart;
+    s.durMs = s.endMs - s.startMs;
+    if (detail) s.detail = detail;
+  };
+  
   console.log(`[${requestId}] fireworks-generate-image start`);
+  const prepareStep = startStep('preparing');
 
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -160,6 +185,7 @@ serve(async (req) => {
     }
 
     console.log(`[${requestId}] User authenticated: ${user.id}`);
+    endStep(prepareStep);
 
     // Parse request body
     const body = await req.json();
@@ -212,6 +238,7 @@ serve(async (req) => {
 
     // Build final prompt based on mode
     let finalPrompt: string;
+    let translated = false;
     
     if (rawMode) {
       // A/B Test A: Baseline - send as-is
@@ -221,7 +248,10 @@ serve(async (req) => {
       // Step 1: Translate if needed
       let translatedPrompt = promptOriginal;
       if (!skipTranslation) {
+        const translateStep = startStep('uploading'); // 'uploading' = preparing/translating prompt
         translatedPrompt = await translateToEnglish(promptOriginal, requestId);
+        translated = translatedPrompt !== promptOriginal;
+        endStep(translateStep, { translated });
       }
       
       // Step 2: Add quality boosters based on stylePreset if not skipped
@@ -314,6 +344,9 @@ serve(async (req) => {
 
     console.log(`[${requestId}] Fireworks request:`, JSON.stringify(fireworksBody));
 
+    // Start image generation step
+    const generateStep = startStep('generating_image');
+
     // CRITICAL: Fireworks FLUX workflow requires Accept: image/png or image/jpeg
     // It returns raw binary image bytes, NOT JSON
     const fireworksResponse = await fetch(FIREWORKS_API_URL, {
@@ -358,6 +391,13 @@ serve(async (req) => {
     // Response is raw PNG bytes (not JSON) when Accept: image/png
     const imageBytes = new Uint8Array(await fireworksResponse.arrayBuffer());
     console.log(`[${requestId}] Image received, size: ${imageBytes.length} bytes`);
+    
+    endStep(generateStep, { 
+      imageEngine: 'fireworks',
+      imageModel: 'flux-1-schnell-fp8',
+      imageSteps: steps,
+      imageSize: aspectRatio,
+    });
 
     if (imageBytes.length === 0) {
       console.error(`[${requestId}] Empty image response`);
@@ -376,6 +416,9 @@ serve(async (req) => {
     const month = String(now.getMonth() + 1).padStart(2, "0");
     const imageId = crypto.randomUUID();
     const filePath = `${user.id}/images/${year}/${month}/${imageId}.${extension}`;
+
+    // Start saving step
+    const saveStep = startStep('saving');
 
     // Upload to Supabase Storage
     const { error: uploadError } = await supabase.storage
@@ -472,8 +515,14 @@ serve(async (req) => {
     const { data: signedUrlData } = await supabase.storage
       .from("user-files")
       .createSignedUrl(filePath, 3600);
+    
+    endStep(saveStep, { cloudSaved: true });
 
     console.log(`[${requestId}] Success, returning signed URL`);
+    
+    // Final delivering step
+    const deliverStep = startStep('delivering');
+    endStep(deliverStep);
 
     // Log successful image generation event
     await logImageGenEvent(supabase, user.id, {
@@ -496,6 +545,11 @@ serve(async (req) => {
         steps: steps,
         guidance: guidanceScale,
         render_mode: renderMode,
+        // Trace data for ThinkBar
+        trace: {
+          steps: traceSteps,
+          elapsedMs: Date.now() - requestStart,
+        },
         quality_boost: qualityBoost,
         file_path: filePath,
         file_name: fileName,
