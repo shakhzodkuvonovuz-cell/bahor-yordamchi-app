@@ -1401,6 +1401,17 @@ export type Database = {
         Args: { p_today: string; p_user_id: string }
         Returns: Json
       }
+      init_and_check_usage: {
+        Args: {
+          p_is_bypass?: boolean
+          p_trial_days?: number
+          p_user_id: string
+          p_wants_file?: boolean
+          p_wants_search?: boolean
+          p_wants_vision?: boolean
+        }
+        Returns: Json
+      }
       is_space_admin: { Args: { _space_id: string }; Returns: boolean }
       is_space_member: { Args: { _space_id: string }; Returns: boolean }
       normalize_preview: {

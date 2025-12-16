@@ -781,11 +781,10 @@ serve(async (req) => {
 
     console.log('[Quota Check]', { userEmail, isDevBypass, wantsSearch, wantsVision, wantsFile });
 
-    // PARALLEL: Device verification + Trial initialization
-    // These can run in parallel since they don't depend on each other
+    // PARALLEL: Device verification + Combined trial/usage check
     const TRIAL_DAYS = 7;
     
-    // Build parallel promises
+    // Build parallel promises - device check runs alongside combined init+usage
     const devicePromise = device_id 
       ? supabaseAdmin
           .from('user_devices')
@@ -795,12 +794,18 @@ serve(async (req) => {
           .single()
       : Promise.resolve({ data: null, error: null });
     
-    const trialPromise = !isDevBypass
-      ? supabaseAdmin.rpc('get_or_create_trial', { p_user_id: user.id, p_trial_days: TRIAL_DAYS })
-      : Promise.resolve({ data: null, error: null });
+    // COMBINED RPC: Trial initialization + usage check in ONE database call
+    const usagePromise = supabaseAdmin.rpc('init_and_check_usage', { 
+      p_user_id: user.id,
+      p_trial_days: TRIAL_DAYS,
+      p_is_bypass: isDevBypass,
+      p_wants_search: wantsSearch,
+      p_wants_vision: wantsVision,
+      p_wants_file: wantsFile,
+    });
     
     // Wait for parallel operations
-    const [deviceResult, _trialResult] = await Promise.all([devicePromise, trialPromise]);
+    const [deviceResult, usageResponse] = await Promise.all([devicePromise, usagePromise]);
     
     // Check device result
     if (device_id && deviceResult.data?.revoked_at) {
@@ -816,19 +821,8 @@ serve(async (req) => {
       );
     }
 
-    // ===========================================
-    // USAGE CHECK (after trial initialization)
-    // ===========================================
-    const { data: usageResult, error: usageError } = await supabaseAdmin.rpc(
-      'check_and_increment_usage',
-      { 
-        p_user_id: user.id, 
-        p_wants_search: wantsSearch,
-        p_wants_vision: wantsVision,
-        p_wants_file: wantsFile,
-        p_is_bypass: isDevBypass,
-      }
-    );
+    // Extract usage result
+    const { data: usageResult, error: usageError } = usageResponse;
 
     if (usageError) {
       console.error('Usage check error:', usageError);
