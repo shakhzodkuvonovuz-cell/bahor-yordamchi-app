@@ -57,26 +57,13 @@ export function useTrialStatus() {
     }
 
     try {
-
-      // Initialize trial for user (14 days by default)
-      await supabase.rpc('get_or_create_trial', { p_user_id: user.id, p_trial_days: 14 });
-      
-      // Get full status
-      const { data, error } = await supabase.rpc('get_trial_status', { p_user_id: user.id });
-      
-      if (error) {
-        console.error('Failed to fetch trial status:', error);
-        setStatus(defaultStatus);
-        return;
-      }
-
-      // Check if user is dev bypass via edge function - get fresh session
+      // PARALLEL: Fetch trial status + dev bypass check simultaneously
       const { data: { session: freshSession } } = await supabase.auth.getSession();
-      let isDevBypass = false;
       
-      if (freshSession) {
-        try {
-          const res = await fetch(
+      const statusPromise = supabase.rpc('get_trial_status', { p_user_id: user.id });
+      
+      const bypassPromise = freshSession 
+        ? fetch(
             `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-entitlements?action=status`,
             {
               headers: {
@@ -84,16 +71,18 @@ export function useTrialStatus() {
                 'Content-Type': 'application/json',
               },
             }
-          );
-          if (res.ok) {
-            const result = await res.json();
-            isDevBypass = result.isDevBypass || false;
-          }
-        } catch (e) {
-          // Ignore - not critical
-        }
+          ).then(res => res.ok ? res.json() : { isDevBypass: false }).catch(() => ({ isDevBypass: false }))
+        : Promise.resolve({ isDevBypass: false });
+      
+      const [{ data, error }, bypassResult] = await Promise.all([statusPromise, bypassPromise]);
+      
+      if (error) {
+        console.error('Failed to fetch trial status:', error);
+        setStatus(defaultStatus);
+        return;
       }
 
+      const isDevBypass = bypassResult?.isDevBypass || false;
       const trialData = data as any;
       const plan = (isDevBypass ? 'dev_unlimited' : trialData?.plan || 'free') as PlanType;
       const isBetaActive = trialData?.is_beta_active || false;
