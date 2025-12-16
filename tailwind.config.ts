@@ -143,6 +143,32 @@ export default {
           "50%": { transform: "translateY(-4px) translateX(-4px)" },
           "75%": { transform: "translateY(-12px) translateX(2px)" },
         },
+        // Thinking orb animations
+        "thinking-glow": {
+          "0%, 100%": { opacity: "0.6", transform: "scale(1)" },
+          "50%": { opacity: "1", transform: "scale(1.15)" },
+        },
+        "thinking-spin": {
+          "0%": { transform: "rotate(0deg)" },
+          "100%": { transform: "rotate(360deg)" },
+        },
+        "thinking-pulse": {
+          "0%, 100%": { transform: "scale(1)", opacity: "1" },
+          "50%": { transform: "scale(0.92)", opacity: "0.85" },
+        },
+        "thinking-orbit": {
+          "0%": { transform: "rotate(0deg)" },
+          "100%": { transform: "rotate(360deg)" },
+        },
+        "thinking-orbit-reverse": {
+          "0%": { transform: "rotate(360deg)" },
+          "100%": { transform: "rotate(0deg)" },
+        },
+        "thinking-rainbow": {
+          "0%": { transform: "rotate(0deg) scale(1)", opacity: "0.7" },
+          "50%": { transform: "rotate(180deg) scale(1.1)", opacity: "1" },
+          "100%": { transform: "rotate(360deg) scale(1)", opacity: "0.7" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -153,6 +179,13 @@ export default {
         "slide-in-right": "slide-in-right 0.3s ease-out",
         "shimmer": "shimmer 2s linear infinite",
         "float-slow": "float-slow 6s ease-in-out infinite",
+        // Thinking orb animations
+        "thinking-glow": "thinking-glow 2s ease-in-out infinite",
+        "thinking-spin": "thinking-spin 3s linear infinite",
+        "thinking-pulse": "thinking-pulse 1.5s ease-in-out infinite",
+        "thinking-orbit": "thinking-orbit 2s linear infinite",
+        "thinking-orbit-reverse": "thinking-orbit-reverse 2.5s linear infinite",
+        "thinking-rainbow": "thinking-rainbow 3s linear infinite",
       },
       spacing: {
         "18": "4.5rem",
