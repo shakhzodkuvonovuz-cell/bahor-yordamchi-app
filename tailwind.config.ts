@@ -169,22 +169,56 @@ export default {
           "50%": { transform: "rotate(180deg) scale(1.1)", opacity: "1" },
           "100%": { transform: "rotate(360deg) scale(1)", opacity: "0.7" },
         },
-        // Logo animations
-        "logo-rotate": {
+        // Logo animations - Bahor AI accurate versions
+        "logo-smooth-spin": {
           "0%": { transform: "rotate(0deg)" },
           "100%": { transform: "rotate(360deg)" },
         },
-        "logo-petal": {
-          "0%, 100%": { opacity: "0.7", transform: "scale(1)" },
-          "50%": { opacity: "1", transform: "scale(1.1)" },
+        "logo-draw": {
+          "0%": { strokeDashoffset: "400" },
+          "50%": { strokeDashoffset: "0" },
+          "100%": { strokeDashoffset: "-400" },
         },
-        "logo-core": {
-          "0%, 100%": { transform: "scale(1)", opacity: "1" },
-          "50%": { transform: "scale(1.2)", opacity: "0.8" },
+        "logo-wave": {
+          "0%, 100%": { opacity: "0.6", transform: "scale(0.95)" },
+          "50%": { opacity: "1", transform: "scale(1.05)" },
+        },
+        "logo-petal-pulse": {
+          "0%, 100%": { opacity: "0.7", strokeWidth: "3" },
+          "50%": { opacity: "1", strokeWidth: "5" },
+        },
+        "logo-morph": {
+          "0%, 100%": { transform: "scale(1) rotate(0deg)" },
+          "25%": { transform: "scale(1.02) rotate(2deg)" },
+          "50%": { transform: "scale(0.98) rotate(0deg)" },
+          "75%": { transform: "scale(1.02) rotate(-2deg)" },
+        },
+        "logo-trace": {
+          "0%": { strokeDasharray: "0 200", opacity: "0.5" },
+          "50%": { strokeDasharray: "200 0", opacity: "1" },
+          "100%": { strokeDasharray: "200 0", opacity: "0.7" },
+        },
+        "logo-orbit": {
+          "0%": { transform: "rotate(0deg)" },
+          "100%": { transform: "rotate(360deg)" },
+        },
+        "logo-3d-tilt": {
+          "0%, 100%": { transform: "rotateX(0deg) rotateY(0deg)" },
+          "25%": { transform: "rotateX(10deg) rotateY(10deg)" },
+          "50%": { transform: "rotateX(0deg) rotateY(20deg)" },
+          "75%": { transform: "rotateX(-10deg) rotateY(10deg)" },
         },
         "logo-breathe": {
-          "0%, 100%": { transform: "scale(1)" },
-          "50%": { transform: "scale(1.08)" },
+          "0%, 100%": { transform: "scale(1)", opacity: "0.9" },
+          "50%": { transform: "scale(1.15)", opacity: "1" },
+        },
+        "logo-core": {
+          "0%, 100%": { transform: "scale(1)", boxShadow: "0 0 10px hsl(var(--primary) / 0.5)" },
+          "50%": { transform: "scale(1.1)", boxShadow: "0 0 20px hsl(var(--primary) / 0.8)" },
+        },
+        "logo-inner-pulse": {
+          "0%, 100%": { opacity: "0.8", transform: "scale(1)" },
+          "50%": { opacity: "1", transform: "scale(1.2)" },
         },
         "logo-morph": {
           "0%, 100%": { d: "path('M50 15 C65 15 75 25 75 35 C85 40 90 55 85 70 C80 80 65 85 50 85 C35 85 20 80 15 70 C10 55 15 40 25 35 C25 25 35 15 50 15')" },
@@ -239,12 +273,21 @@ export default {
         "thinking-orbit": "thinking-orbit 2s linear infinite",
         "thinking-orbit-reverse": "thinking-orbit-reverse 2.5s linear infinite",
         "thinking-rainbow": "thinking-rainbow 3s linear infinite",
-        // Logo animations
+        // Logo animations - Bahor AI accurate versions
+        "logo-smooth-spin": "logo-smooth-spin 6s linear infinite",
+        "logo-draw": "logo-draw 4s ease-in-out infinite",
+        "logo-wave": "logo-wave 2s ease-in-out infinite",
+        "logo-petal-pulse": "logo-petal-pulse 1.8s ease-in-out infinite",
+        "logo-morph": "logo-morph 4s ease-in-out infinite",
+        "logo-trace": "logo-trace 2s ease-in-out infinite",
+        "logo-orbit": "logo-orbit 3s linear infinite",
+        "logo-3d-tilt": "logo-3d-tilt 5s ease-in-out infinite",
+        "logo-breathe": "logo-breathe 2.5s ease-in-out infinite",
+        "logo-core": "logo-core 2s ease-in-out infinite",
+        "logo-inner-pulse": "logo-inner-pulse 1.5s ease-in-out infinite",
+        // Legacy logo animations
         "logo-rotate": "logo-rotate 8s linear infinite",
         "logo-petal": "logo-petal 2s ease-in-out infinite",
-        "logo-core": "logo-core 1.5s ease-in-out infinite",
-        "logo-breathe": "logo-breathe 3s ease-in-out infinite",
-        "logo-inner-pulse": "logo-inner-pulse 2s ease-in-out infinite",
         "logo-line": "logo-line 1.5s ease-out forwards",
         "logo-node": "logo-node 0.8s ease-out forwards",
         "logo-ripple": "logo-ripple 2s ease-out infinite",
