@@ -103,52 +103,79 @@ function DetailsPanel({
   const hasFiles = aggregatedDetail.filesCount && aggregatedDetail.filesCount > 0;
   const hasSearch = trace?.sources && trace.sources.length > 0;
   const hasImage = aggregatedDetail.imageModel || aggregatedDetail.imageEngine;
-  const hasSave = aggregatedDetail.localSaved !== undefined || aggregatedDetail.cloudSaved !== undefined;
+  
+  // Get step timings for display
+  const stepTimings = useMemo(() => {
+    if (!trace?.steps) return [];
+    return trace.steps
+      .filter(s => s.durMs !== undefined && s.durMs > 50) // Only show steps that took >50ms
+      .map(s => ({
+        step: s.step,
+        label: getTraceStepLabel(s.step, language),
+        duration: s.durMs!,
+      }));
+  }, [trace?.steps, language]);
   
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground mt-2 pt-2 border-t border-border/20">
-      {/* Model */}
-      <div className="flex items-center gap-1.5">
-        <Zap className="w-3 h-3" />
-        <span className="text-foreground/70">
-          {modelPreference === 'reasoner' ? labels.modelReasoner : labels.modelFast}
-        </span>
-      </div>
-      
-      {/* Files */}
-      {hasFiles && (
-        <div className="flex items-center gap-1.5">
-          <FileText className="w-3 h-3" />
-          <span>{aggregatedDetail.filesCount} {labels.filesCount}</span>
+    <div className="flex flex-col gap-2 text-xs text-muted-foreground mt-2 pt-2 border-t border-border/20">
+      {/* Step timings row */}
+      {stepTimings.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          {stepTimings.map((s, i) => (
+            <div key={s.step} className="flex items-center gap-1">
+              <span className="text-foreground/60">{s.label}</span>
+              <span className="font-mono text-foreground/40">{formatDuration(s.duration)}</span>
+              {i < stepTimings.length - 1 && <span className="text-foreground/20">→</span>}
+            </div>
+          ))}
         </div>
       )}
       
-      {/* Web Search */}
-      {hasSearch && (
+      {/* Metadata row */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+        {/* Model */}
         <div className="flex items-center gap-1.5">
-          <Globe className="w-3 h-3 text-primary" />
-          <span className="text-primary">
-            {trace?.sources?.length || 0} {labels.sourcesCount}
+          <Zap className="w-3 h-3" />
+          <span className="text-foreground/70">
+            {modelPreference === 'reasoner' ? labels.modelReasoner : labels.modelFast}
           </span>
         </div>
-      )}
-      
-      {/* Image Generation */}
-      {hasImage && (
-        <div className="flex items-center gap-1.5">
-          <Image className="w-3 h-3 text-primary" />
-          <span className="text-primary">
-            {aggregatedDetail.imageModel || 'flux'}
+        
+        {/* Files */}
+        {hasFiles && (
+          <div className="flex items-center gap-1.5">
+            <FileText className="w-3 h-3" />
+            <span>{aggregatedDetail.filesCount} {labels.filesCount}</span>
+          </div>
+        )}
+        
+        {/* Web Search */}
+        {hasSearch && (
+          <div className="flex items-center gap-1.5">
+            <Globe className="w-3 h-3 text-primary" />
+            <span className="text-primary">
+              {trace?.sources?.length || 0} {labels.sourcesCount}
+            </span>
+          </div>
+        )}
+        
+        {/* Image Generation */}
+        {hasImage && (
+          <div className="flex items-center gap-1.5">
+            <Image className="w-3 h-3 text-primary" />
+            <span className="text-primary">
+              {aggregatedDetail.imageModel || 'flux'}
+            </span>
+          </div>
+        )}
+        
+        {/* Total Elapsed Time */}
+        <div className="flex items-center gap-1.5 ml-auto">
+          <Clock className="w-3 h-3" />
+          <span className="font-mono text-foreground/70">
+            {formatDuration(elapsedMs)}
           </span>
         </div>
-      )}
-      
-      {/* Elapsed Time */}
-      <div className="flex items-center gap-1.5 ml-auto">
-        <Clock className="w-3 h-3" />
-        <span className="font-mono text-foreground/70">
-          {formatDuration(elapsedMs)}
-        </span>
       </div>
     </div>
   );

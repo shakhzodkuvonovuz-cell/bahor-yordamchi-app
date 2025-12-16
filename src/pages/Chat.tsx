@@ -1254,6 +1254,25 @@ export default function Chat() {
     setIsLoading(true);
     setTyping(true);
     
+    // IMMEDIATELY start trace and timer when user sends message
+    traceStepsRef.current.clear();
+    const initialStep: TraceStepData = { step: 'preparing', startMs: 0 };
+    traceStepsRef.current.set('preparing', initialStep);
+    setActiveTrace({ steps: [initialStep], elapsedMs: 0, sources: [], isComplete: false });
+    activeTraceRef.current = { steps: [initialStep], elapsedMs: 0, sources: [], isComplete: false };
+    setLiveElapsedMs(0);
+    traceStartTimeRef.current = Date.now();
+    
+    // Clear any existing timer and start live elapsed timer
+    if (traceTimerRef.current) {
+      clearInterval(traceTimerRef.current);
+    }
+    traceTimerRef.current = window.setInterval(() => {
+      if (traceStartTimeRef.current) {
+        setLiveElapsedMs(Date.now() - traceStartTimeRef.current);
+      }
+    }, 100);
+    
     if (inputRef.current) {
       inputRef.current.style.height = "auto";
     }
@@ -1673,26 +1692,22 @@ export default function Chat() {
       if (isGeneratingImage) {
         console.log('[Chat] Backend routed to text instead of image, clearing image state');
         setIsGeneratingImage(false);
-        setProcessingStatus(null);
       }
       
-      // Reset trace state and start live timer
-      traceStepsRef.current.clear();
-      setActiveTrace({ steps: [], elapsedMs: 0, sources: [], isComplete: false });
-      setLiveElapsedMs(0);
-      traceStartTimeRef.current = Date.now();
-      
-      // Clear any existing timer
-      if (traceTimerRef.current) {
-        clearInterval(traceTimerRef.current);
+      // Mark 'preparing' step as done and start 'thinking' step
+      // (trace was already initialized when user clicked send)
+      const elapsedNow = traceStartTimeRef.current ? Date.now() - traceStartTimeRef.current : 0;
+      const preparingStep = traceStepsRef.current.get('preparing');
+      if (preparingStep) {
+        preparingStep.endMs = elapsedNow;
+        preparingStep.durMs = elapsedNow;
       }
-      
-      // Start live elapsed timer (update every 100ms for smooth display)
-      traceTimerRef.current = window.setInterval(() => {
-        if (traceStartTimeRef.current) {
-          setLiveElapsedMs(Date.now() - traceStartTimeRef.current);
-        }
-      }, 100);
+      const thinkingStep: TraceStepData = { step: 'thinking', startMs: elapsedNow };
+      traceStepsRef.current.set('thinking', thinkingStep);
+      setActiveTrace(prev => prev ? {
+        ...prev,
+        steps: Array.from(traceStepsRef.current.values()),
+      } : prev);
       
       await processStreamingResponse(response, {
         onTrace: (event) => {
