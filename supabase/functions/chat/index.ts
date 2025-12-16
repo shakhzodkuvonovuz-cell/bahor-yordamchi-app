@@ -752,36 +752,13 @@ serve(async (req) => {
     }
 
     // ===========================================
-    // DEVICE VERIFICATION
+    // PARALLEL INITIALIZATION - Device, Trial, Feature Detection
     // ===========================================
-    if (device_id) {
-      const { data: deviceData } = await supabaseAdmin
-        .from('user_devices')
-        .select('revoked_at')
-        .eq('user_id', user.id)
-        .eq('device_id', device_id)
-        .single();
-
-      if (deviceData?.revoked_at) {
-        return new Response(
-          JSON.stringify({ 
-            error: "DEVICE_REVOKED", 
-            message: "Bu qurilma boshqa joydan chiqarilgan. Qaytadan kiring.",
-            message_en: "This device was signed out from another location. Please sign in again.",
-            message_ru: "Это устройство было отключено с другого места. Войдите снова.",
-            message_tr: "Bu cihaz başka bir yerden çıkarıldı. Lütfen tekrar giriş yapın.",
-          }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-    }
     
     // Set user ID for search logging
     setSearchUserId(user.id);
-
-    // ===========================================
-    // BETA TRIAL + QUOTA ENFORCEMENT
-    // ===========================================
+    
+    // Check bypass status first (doesn't need DB)
     const userEmail = user.email?.toLowerCase() || '';
     const devUnlimitedRaw = Deno.env.get('DEV_UNLIMITED_EMAILS') || '';
     const adminEmailsRaw = Deno.env.get('ADMIN_EMAILS') || '';
@@ -789,13 +766,7 @@ serve(async (req) => {
     const adminEmails = adminEmailsRaw.split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
     const isDevBypass = devUnlimitedEmails.includes(userEmail) || adminEmails.includes(userEmail);
     
-    // Ensure trial is initialized for the user (configurable TRIAL_DAYS)
-    const TRIAL_DAYS = 7; // Easy to change to 14
-    if (!isDevBypass) {
-      await supabaseAdmin.rpc('get_or_create_trial', { p_user_id: user.id, p_trial_days: TRIAL_DAYS });
-    }
-
-    // Determine feature usage flags from request
+    // Determine feature usage flags from request (no DB needed)
     const hasAttachments = messages.some((m: any) => m.attachments && m.attachments.length > 0);
     const hasImageAttachment = messages.some((m: any) => 
       m.attachments?.some((a: any) => a.mime_type?.startsWith('image/'))
@@ -808,15 +779,46 @@ serve(async (req) => {
     const wantsVision = hasImageAttachment || hasAnalysis;
     const wantsFile = hasFileAttachment;
 
-    console.log('[Quota Check]', { 
-      userEmail, 
-      isDevBypass,
-      wantsSearch,
-      wantsVision,
-      wantsFile,
-    });
+    console.log('[Quota Check]', { userEmail, isDevBypass, wantsSearch, wantsVision, wantsFile });
 
-    // Check and increment usage with all feature quotas
+    // PARALLEL: Device verification + Trial initialization
+    // These can run in parallel since they don't depend on each other
+    const TRIAL_DAYS = 7;
+    
+    // Build parallel promises
+    const devicePromise = device_id 
+      ? supabaseAdmin
+          .from('user_devices')
+          .select('revoked_at')
+          .eq('user_id', user.id)
+          .eq('device_id', device_id)
+          .single()
+      : Promise.resolve({ data: null, error: null });
+    
+    const trialPromise = !isDevBypass
+      ? supabaseAdmin.rpc('get_or_create_trial', { p_user_id: user.id, p_trial_days: TRIAL_DAYS })
+      : Promise.resolve({ data: null, error: null });
+    
+    // Wait for parallel operations
+    const [deviceResult, _trialResult] = await Promise.all([devicePromise, trialPromise]);
+    
+    // Check device result
+    if (device_id && deviceResult.data?.revoked_at) {
+      return new Response(
+        JSON.stringify({ 
+          error: "DEVICE_REVOKED", 
+          message: "Bu qurilma boshqa joydan chiqarilgan. Qaytadan kiring.",
+          message_en: "This device was signed out from another location. Please sign in again.",
+          message_ru: "Это устройство было отключено с другого места. Войдите снова.",
+          message_tr: "Bu cihaz başka bir yerden çıkarıldı. Lütfen tekrar giriş yapın.",
+        }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // ===========================================
+    // USAGE CHECK (after trial initialization)
+    // ===========================================
     const { data: usageResult, error: usageError } = await supabaseAdmin.rpc(
       'check_and_increment_usage',
       { 
