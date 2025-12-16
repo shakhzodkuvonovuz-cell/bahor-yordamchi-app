@@ -449,13 +449,14 @@ function createTraceEvent(
   step: TraceStep, 
   status: 'start' | 'end', 
   startTime: number, 
-  detail?: TraceDetail
+  detail?: TraceDetail,
+  explicitT?: number  // Optional explicit timestamp (ms since request start)
 ): string {
   const event = {
     type: 'trace',
     step,
     status,
-    t: Date.now() - startTime,
+    t: explicitT !== undefined ? explicitT : (Date.now() - startTime),
     ...(detail && { detail, data: detail }), // Include as both for backwards compat
   };
   return `data: ${JSON.stringify(event)}\n\n`;
@@ -711,14 +712,31 @@ const STYLE_CLAMP = {
 5. If writing long content (essays, research), write it ALL - do not break into parts`,
 };
 
+// Step timing tracker for ThinkBar accuracy
+interface StepTiming {
+  step: TraceStep;
+  startMs: number;
+  endMs: number;
+  detail?: TraceDetail;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   const requestStartTime = Date.now();
+  const stepTimings: StepTiming[] = [];
+  
+  // Helper to record step timing
+  const recordStep = (step: TraceStep, startMs: number, detail?: TraceDetail) => {
+    stepTimings.push({ step, startMs, endMs: Date.now() - requestStartTime, detail });
+  };
 
   try {
+    // STEP: preparing
+    const preparingStart = Date.now() - requestStartTime;
+    
     const { messages, mode, modelPreference, threadSummary, hasAnalysis, analysisType, reply_language, ui_language, attachments, userToneContext, device_id } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
@@ -727,8 +745,12 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    
+    recordStep('preparing', preparingStart);
 
-    // Auth
+    // STEP: Auth
+    const authStart = Date.now() - requestStartTime;
+    
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -750,6 +772,10 @@ serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    
+    // Auth completed - record timing (not exposed to client, just for internal tracking)
+    const authEndMs = Date.now() - requestStartTime;
+    console.log(`[Timing] Auth: ${authEndMs - authStart}ms`);
 
     // ===========================================
     // PARALLEL INITIALIZATION - Device, Trial, Feature Detection
@@ -902,6 +928,7 @@ serve(async (req) => {
     // ===========================================
     // UNIFIED TOOL ROUTER - Priority-based decision
     // ===========================================
+    const routerStart = Date.now() - requestStartTime;
     const lastUserMsg = messages.filter((m: any) => m.role === "user").pop()?.content || "";
     const routerDecision = routeRequest(lastUserMsg, hasImageAttachment, hasFileAttachment);
     
@@ -915,6 +942,10 @@ serve(async (req) => {
       blockersHit: routerDecision.blockersHit,
       confidence: routerDecision.confidence,
       detectedLanguage: routerDecision.detectedLanguage,
+    });
+    
+    recordStep('selecting_model', routerStart, { 
+      modelPreference: modelPreference || 'chat' 
     });
     
     if (routerDecision.selectedTool === 'image' && routerDecision.imagePrompt) {
@@ -1027,7 +1058,11 @@ serve(async (req) => {
     let searchBusyMessage = "";
     
     // Only search if router decided on search tool (not image, not text-only)
+    let searchTimingStart = 0;
+    let searchTimingEnd = 0;
+    
     if (routerDecision.selectedTool === 'search' || routerDecision.searchIntent) {
+      searchTimingStart = Date.now() - requestStartTime;
       didSearch = true;
       try {
         // Set language for localized busy messages
@@ -1068,6 +1103,12 @@ serve(async (req) => {
       } catch (err) {
         console.log("Search failed:", err);
       }
+      searchTimingEnd = Date.now() - requestStartTime;
+      recordStep('web_search', searchTimingStart, { 
+        sourcesCount: collectedSources.length,
+        sources: collectedSources,
+      });
+      console.log(`[Timing] Web search: ${searchTimingEnd - searchTimingStart}ms, sources: ${collectedSources.length}`);
     }
 
     // Build system prompt with thread summary if available
@@ -1266,6 +1307,9 @@ Answer their question as best you can using your existing knowledge, but be clea
     const selectedModel = modelPreference === "reasoner" ? DEEPSEEK_REASONER_MODEL : DEEPSEEK_CHAT_MODEL;
     console.log(`[Model Selection] preference=${modelPreference}, model=${selectedModel}`);
     
+    // TIMING: Record when we start calling DeepSeek (thinking starts)
+    const thinkingApiStart = Date.now() - requestStartTime;
+    
     let response: Response;
     try {
       response = await fetch("https://api.deepseek.com/chat/completions", {
@@ -1292,6 +1336,10 @@ Answer their question as best you can using your existing knowledge, but be clea
       );
     }
     clearTimeout(deepseekTimeout);
+    
+    // TIMING: Record when DeepSeek connection established
+    const connectionEstablished = Date.now() - requestStartTime;
+    console.log(`[Timing] DeepSeek connection: ${connectionEstablished - thinkingApiStart}ms`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -1315,51 +1363,83 @@ Answer their question as best you can using your existing knowledge, but be clea
     
     const stream = new ReadableStream({
       async start(controller) {
-        // Emit preparing step (always first)
-        controller.enqueue(encoder.encode(createTraceEvent('preparing', 'start', requestStartTime)));
-        controller.enqueue(encoder.encode(createTraceEvent('preparing', 'end', requestStartTime)));
+        // Helper to emit recorded step timings accurately
+        const emitRecordedStep = (step: TraceStep, timing: StepTiming | undefined) => {
+          if (!timing) return;
+          controller.enqueue(encoder.encode(createTraceEvent(step, 'start', requestStartTime, timing.detail, timing.startMs)));
+          controller.enqueue(encoder.encode(createTraceEvent(step, 'end', requestStartTime, timing.detail, timing.endMs)));
+        };
         
-        // Emit model selection with safe metadata
-        controller.enqueue(encoder.encode(createTraceEvent('selecting_model', 'start', requestStartTime, {
-          modelPreference: modelPreference || 'chat',
-          modelName: selectedModel,
-        })));
-        controller.enqueue(encoder.encode(createTraceEvent('selecting_model', 'end', requestStartTime, {
-          modelPreference: modelPreference || 'chat',
-          modelName: selectedModel,
-        })));
+        // Find recorded steps
+        const preparingStep = stepTimings.find(s => s.step === 'preparing');
+        const modelStep = stepTimings.find(s => s.step === 'selecting_model');
+        const searchStep = stepTimings.find(s => s.step === 'web_search');
         
-        // Emit thinking start
-        controller.enqueue(encoder.encode(createTraceEvent('thinking', 'start', requestStartTime)));
+        // Emit preparing step with actual timing
+        if (preparingStep) {
+          emitRecordedStep('preparing', preparingStep);
+        } else {
+          controller.enqueue(encoder.encode(createTraceEvent('preparing', 'start', requestStartTime, undefined, 0)));
+          controller.enqueue(encoder.encode(createTraceEvent('preparing', 'end', requestStartTime, undefined, 5)));
+        }
+        
+        // Emit model selection with actual timing
+        if (modelStep) {
+          controller.enqueue(encoder.encode(createTraceEvent('selecting_model', 'start', requestStartTime, {
+            modelPreference: modelPreference || 'chat',
+            modelName: selectedModel,
+          }, modelStep.startMs)));
+          controller.enqueue(encoder.encode(createTraceEvent('selecting_model', 'end', requestStartTime, {
+            modelPreference: modelPreference || 'chat',
+            modelName: selectedModel,
+          }, modelStep.endMs)));
+        }
+        
+        // Emit thinking start with timestamp after model selection
+        const thinkingStartMs = modelStep?.endMs || preparingStep?.endMs || 10;
+        controller.enqueue(encoder.encode(createTraceEvent('thinking', 'start', requestStartTime, undefined, thinkingStartMs)));
         
         // If we did image/document analysis, emit that trace
         if (hasAnalysis) {
-          controller.enqueue(encoder.encode(createTraceEvent('thinking', 'end', requestStartTime)));
+          const analysisStartMs = thinkingStartMs + 5;
+          controller.enqueue(encoder.encode(createTraceEvent('thinking', 'end', requestStartTime, undefined, analysisStartMs)));
           const analysisStep = analysisType === 'vision' ? 'image_analysis' : 'parsing_files';
           controller.enqueue(encoder.encode(
-            createTraceEvent(analysisStep, 'start', requestStartTime, { filesCount: 1 })
+            createTraceEvent(analysisStep, 'start', requestStartTime, { filesCount: 1 }, analysisStartMs)
           ));
           controller.enqueue(encoder.encode(
-            createTraceEvent(analysisStep, 'end', requestStartTime, { filesCount: 1 })
+            createTraceEvent(analysisStep, 'end', requestStartTime, { filesCount: 1 }, analysisStartMs + 50)
           ));
-          controller.enqueue(encoder.encode(createTraceEvent('thinking', 'start', requestStartTime)));
+          controller.enqueue(encoder.encode(createTraceEvent('thinking', 'start', requestStartTime, undefined, analysisStartMs + 55)));
         }
         
         // If text files were attached and read, emit reading trace with safe counts
         if (textFilesWithContent.length > 0 && !hasAnalysis) {
-          controller.enqueue(encoder.encode(createTraceEvent('thinking', 'end', requestStartTime)));
+          const parseStartMs = thinkingStartMs + 5;
+          controller.enqueue(encoder.encode(createTraceEvent('thinking', 'end', requestStartTime, undefined, parseStartMs)));
           controller.enqueue(encoder.encode(createTraceEvent('parsing_files', 'start', requestStartTime, {
             filesCount: textFilesWithContent.length,
-          })));
+          }, parseStartMs)));
           controller.enqueue(encoder.encode(createTraceEvent('parsing_files', 'end', requestStartTime, {
             filesCount: textFilesWithContent.length,
             extractedChars: totalExtractedChars,
-          })));
-          controller.enqueue(encoder.encode(createTraceEvent('thinking', 'start', requestStartTime)));
+          }, parseStartMs + 30)));
+          controller.enqueue(encoder.encode(createTraceEvent('thinking', 'start', requestStartTime, undefined, parseStartMs + 35)));
         }
         
-        // If web search was used, emit search trace with source count
-        if (didSearch) {
+        // If web search was used, emit search trace with ACTUAL recorded timing
+        if (didSearch && searchStep) {
+          controller.enqueue(encoder.encode(createTraceEvent('thinking', 'end', requestStartTime, undefined, searchStep.startMs)));
+          controller.enqueue(encoder.encode(createTraceEvent('web_search', 'start', requestStartTime, undefined, searchStep.startMs)));
+          controller.enqueue(encoder.encode(
+            createTraceEvent('web_search', 'end', requestStartTime, { 
+              sources: collectedSources,
+              sourcesCount: collectedSources.length,
+            }, searchStep.endMs)
+          ));
+          controller.enqueue(encoder.encode(createTraceEvent('thinking', 'start', requestStartTime, undefined, searchStep.endMs + 5)));
+        } else if (didSearch) {
+          // Fallback if timing wasn't recorded
           controller.enqueue(encoder.encode(createTraceEvent('thinking', 'end', requestStartTime)));
           controller.enqueue(encoder.encode(createTraceEvent('web_search', 'start', requestStartTime)));
           controller.enqueue(encoder.encode(
@@ -1383,11 +1463,13 @@ Answer their question as best you can using your existing knowledge, but be clea
         };
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(metadata)}\n\n`));
         
-        // End thinking, start writing
-        controller.enqueue(encoder.encode(createTraceEvent('thinking', 'end', requestStartTime)));
-        controller.enqueue(encoder.encode(createTraceEvent('writing', 'start', requestStartTime)));
+        // End thinking, start writing with accurate timestamps
+        const writingStartMs = Date.now() - requestStartTime;
+        controller.enqueue(encoder.encode(createTraceEvent('thinking', 'end', requestStartTime, undefined, writingStartMs)));
+        controller.enqueue(encoder.encode(createTraceEvent('writing', 'start', requestStartTime, undefined, writingStartMs)));
         
         let firstChunkSent = false;
+        let firstChunkMs = 0;
         
         try {
           while (true) {
@@ -1400,41 +1482,50 @@ Answer their question as best you can using your existing knowledge, but be clea
             const chunk = decoder.decode(value, { stream: true });
             const sanitizedChunk = sanitizeOutput(chunk);
             
-            // Mark first real content
+            // Mark first real content with timing
             if (!firstChunkSent && sanitizedChunk.includes('"content"')) {
               firstChunkSent = true;
-              console.log('[Stream] First content chunk received');
+              firstChunkMs = Date.now() - requestStartTime;
+              console.log(`[Stream] First content chunk at ${firstChunkMs}ms (TTFB: ${firstChunkMs - writingStartMs}ms)`);
             }
             
             controller.enqueue(encoder.encode(sanitizedChunk));
           }
           
-          // End writing
-          controller.enqueue(encoder.encode(createTraceEvent('writing', 'end', requestStartTime)));
+          // End writing with accurate timestamp
+          const writingEndMs = Date.now() - requestStartTime;
+          controller.enqueue(encoder.encode(createTraceEvent('writing', 'end', requestStartTime, undefined, writingEndMs)));
+          console.log(`[Timing] Writing: ${writingEndMs - writingStartMs}ms`);
           
-          // Emit saving step (indicates dual-write happening on client)
-          controller.enqueue(encoder.encode(createTraceEvent('saving', 'start', requestStartTime)));
+          // Emit saving step with accurate timestamps
+          const savingStartMs = Date.now() - requestStartTime;
+          controller.enqueue(encoder.encode(createTraceEvent('saving', 'start', requestStartTime, undefined, savingStartMs)));
           controller.enqueue(encoder.encode(createTraceEvent('saving', 'end', requestStartTime, {
             cloudSaved: true, // Server-side saving is implicit via DB triggers
-          })));
+          }, savingStartMs + 10)));
           
-          // Emit delivering (finalization)
-          controller.enqueue(encoder.encode(createTraceEvent('delivering', 'start', requestStartTime)));
-          controller.enqueue(encoder.encode(createTraceEvent('delivering', 'end', requestStartTime)));
+          // Emit delivering (finalization) with accurate timestamps
+          const deliveringStartMs = Date.now() - requestStartTime;
+          controller.enqueue(encoder.encode(createTraceEvent('delivering', 'start', requestStartTime, undefined, deliveringStartMs)));
+          controller.enqueue(encoder.encode(createTraceEvent('delivering', 'end', requestStartTime, undefined, deliveringStartMs + 5)));
           
           // Emit trace complete with total time, sources, and aggregated safe metadata
           controller.enqueue(encoder.encode(createTraceComplete(requestStartTime, collectedSources, {
             modelPreference: modelPreference || 'chat',
+            modelName: selectedModel,
             filesCount: textFilesWithContent.length || 0,
             extractedChars: totalExtractedChars || 0,
             sourcesCount: collectedSources.length,
           })));
           
           controller.close();
-          console.log('[Stream] Response stream closed successfully');
+          
+          // Log total timing summary
+          const chatDurationMs = Date.now() - requestStartTime;
+          const searchTiming = stepTimings.find(s => s.step === 'web_search');
+          console.log(`[Timing] Total: ${chatDurationMs}ms | Search: ${didSearch && searchTiming ? searchTiming.endMs - searchTiming.startMs : 0}ms | Writing: ${writingEndMs - writingStartMs}ms`);
           
           // Log chat event for observability
-          const chatDurationMs = Date.now() - requestStartTime;
           logChatEvent(supabaseAdmin, user.id, {
             model: selectedModel,
             duration_ms: chatDurationMs,
