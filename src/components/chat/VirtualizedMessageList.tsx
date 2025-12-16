@@ -3,6 +3,7 @@ import ChatMessage from "@/components/ChatMessage";
 import { ThinkBar } from "@/components/chat/ThinkBar";
 import { ReasonedChip } from "@/components/chat/ReasonedChip";
 import { FollowUpSuggestions } from "@/components/chat/FollowUpSuggestions";
+import { ThinkingBubble } from "@/components/chat/ThinkingBubble";
 import { Message } from "@/types/chat";
 import type { MessageTrace } from "@/types/trace";
 import type { ModelPreference } from "@/components/ModelToggle";
@@ -258,6 +259,14 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListHandle, Virtuali
               />
             </div>
           ))}
+          
+          {/* Instant thinking bubble - shows immediately when user sends */}
+          {typing && !isGeneratingImage && (
+            <ThinkingBubble
+              modelPreference={modelPreference}
+              language={language}
+            />
+          )}
           
           {/* Image generation placeholder */}
           {isGeneratingImage && (
