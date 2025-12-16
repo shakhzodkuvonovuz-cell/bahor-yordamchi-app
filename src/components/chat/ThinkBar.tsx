@@ -1,9 +1,10 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { ChevronDown, ChevronUp, Check, Sparkles, FileText, Image, Clock, Globe, Zap, Brain } from "lucide-react";
+import { ChevronDown, ChevronUp, Check, FileText, Image, Clock, Globe, Zap, Brain } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getTraceStepLabel, getUILabels } from "@/lib/traceLabels";
 import type { MessageTrace, TraceStepDetail } from "@/types/trace";
 import { haptic } from "@/lib/haptics";
+import { ThinkingOrb } from "./ThinkingOrb";
 
 interface ThinkBarProps {
   trace: MessageTrace | null;
@@ -256,10 +257,11 @@ export function ThinkBar({
         {/* Status icon */}
         {isGenerating && !isComplete ? (
           <div className="flex items-center gap-2">
-            <Sparkles className={cn(
-              "w-3.5 h-3.5 animate-pulse",
-              modelPreference === 'reasoner' ? "text-purple-500 dark:text-purple-400" : "text-primary"
-            )} />
+            <ThinkingOrb 
+              size="sm" 
+              variant={modelPreference === 'reasoner' ? 'rainbow' : 'default'}
+              className="scale-75"
+            />
             <span className="text-foreground/70 font-medium min-w-[80px]">
               {activeStep && (
                 <TypewriterText 
