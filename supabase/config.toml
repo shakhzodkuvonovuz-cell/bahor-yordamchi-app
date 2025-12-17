@@ -63,3 +63,6 @@ verify_jwt = false
 [functions.notify-feedback]
 verify_jwt = false
 
+[functions.runpod-video]
+verify_jwt = false
+

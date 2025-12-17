@@ -13,7 +13,8 @@ import {
   ChevronRight,
   Languages,
   Image as ImageIcon,
-  Bot
+  Bot,
+  Video as VideoIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n/LanguageProvider";
@@ -45,6 +46,7 @@ const PRIMARY_NAV: NavItem[] = [
   { id: "agent", labelKey: "agent.title", icon: Bot, path: "/agent" },
   { id: "modes", labelKey: "sidebar.modes", icon: Sparkles, path: "/modes-list" },
   { id: "image-studio", labelKey: "imageStudio.navTitle", icon: ImageIcon, path: "/image-studio" },
+  { id: "video-studio", labelKey: "videoStudio.navTitle", icon: VideoIcon, path: "/video-studio" },
   { id: "circles", labelKey: "nav.circles", icon: Users, path: "/circles" },
   { id: "translator", labelKey: "sidebar.translator", icon: Languages, path: "/tarjimon" },
   { id: "tools", labelKey: "nav.tools", icon: FileText, path: "/tools/documents" },
