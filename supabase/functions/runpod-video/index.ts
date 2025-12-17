@@ -27,12 +27,12 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const runpodApiKey = Deno.env.get("RUNPOD_API_KEY");
-    const runpodEndpointId = Deno.env.get("RUNPOD_ENDPOINT_ID");
+    const runpodEndpointId = Deno.env.get("RUNPOD_LTXV_ENDPOINT_ID") || Deno.env.get("RUNPOD_ENDPOINT_ID");
 
     if (!supabaseUrl) throw new Error("Missing env: SUPABASE_URL");
     if (!supabaseServiceKey) throw new Error("Missing env: SUPABASE_SERVICE_ROLE_KEY");
     if (!runpodApiKey) throw new Error("Missing env: RUNPOD_API_KEY");
-    if (!runpodEndpointId) throw new Error("Missing env: RUNPOD_ENDPOINT_ID");
+    if (!runpodEndpointId) throw new Error("Missing env: RUNPOD_LTXV_ENDPOINT_ID");
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
