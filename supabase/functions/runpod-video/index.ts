@@ -57,7 +57,25 @@ serve(async (req) => {
 
     console.log(`[${requestId}] User authenticated: ${user.id}`);
 
-    const body = await req.json();
+    const rawBody = await req.text();
+    if (!rawBody) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "So'rov tanasi bo'sh" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    let body: any;
+    try {
+      body = JSON.parse(rawBody);
+    } catch (e) {
+      console.error(`[${requestId}] Invalid JSON body:`, rawBody);
+      return new Response(
+        JSON.stringify({ ok: false, error: "Noto'g'ri JSON", details: rawBody.slice(0, 500) }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { action } = body;
 
     if (!action || !["start", "status", "cancel"].includes(action)) {
