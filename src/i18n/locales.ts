@@ -703,6 +703,35 @@ export const translations: Record<Lang, Record<string, string>> = {
     'common.ok': 'OK',
     'common.cancel': 'Bekor qilish',
     'common.loading': 'Yuklanmoqda...',
+    'common.send': 'Yuborish',
+    'common.sending': 'Yuborilmoqda...',
+    'common.close': 'Yopish',
+    'common.noFiles': "Hali fayllar yo'q",
+    
+    // Bahor Context Picker
+    'bahorContext.title': 'Bahor konteksti',
+    'bahorContext.question': 'Savol:',
+    'bahorContext.includeMessages': 'Oxirgi 30 ta xabar',
+    'bahorContext.searchWeb': 'Webdan qidirish',
+    'bahorContext.selectFiles': 'Fayllarni tanlash',
+    
+    // Circle Invite
+    'circleInvite.title': 'Doiraga taklif qilish',
+    'circleInvite.description': '"{name}" doirasiga qo\'shilish uchun ushbu linkni ulashing. Har bir kishi avval tasdiqlanishi kerak.',
+    'circleInvite.inviteCode': 'Taklif kodi',
+    'circleInvite.newCode': 'Yangi kod',
+    'circleInvite.newCodeGenerated': 'Yangi kod yaratildi',
+    'circleInvite.linkCopied': 'Link nusxalandi',
+    
+    // ThinkBar
+    'thinking.deep': 'Chuqur',
+    
+    // Chat Empty State
+    'chat.greeting.uz': 'Assalomu alaykum 👋',
+    'chat.greeting.en': 'Hello 👋',
+    'chat.greeting.ru': 'Привет 👋',
+    'chat.greeting.tr': 'Merhaba 👋',
+    'chat.hint': 'Savolingizni yozing yoki quyidagi tezkor takliflardan foydalaning',
     
     // Citations
     'citations.title': 'Manbalar',
@@ -1940,6 +1969,35 @@ export const translations: Record<Lang, Record<string, string>> = {
     'common.ok': 'OK',
     'common.cancel': 'Cancel',
     'common.loading': 'Loading...',
+    'common.send': 'Send',
+    'common.sending': 'Sending...',
+    'common.close': 'Close',
+    'common.noFiles': 'No files',
+    
+    // Bahor Context Picker
+    'bahorContext.title': 'Bahor Context',
+    'bahorContext.question': 'Question:',
+    'bahorContext.includeMessages': 'Include last 30 messages',
+    'bahorContext.searchWeb': 'Search the web',
+    'bahorContext.selectFiles': 'Select files',
+    
+    // Circle Invite
+    'circleInvite.title': 'Invite to Circle',
+    'circleInvite.description': 'Share this link to invite people to "{name}". Each person must be approved before joining.',
+    'circleInvite.inviteCode': 'Invite code',
+    'circleInvite.newCode': 'New code',
+    'circleInvite.newCodeGenerated': 'New code generated',
+    'circleInvite.linkCopied': 'Link copied',
+    
+    // ThinkBar
+    'thinking.deep': 'Deep',
+    
+    // Chat Empty State
+    'chat.greeting.uz': 'Assalomu alaykum 👋',
+    'chat.greeting.en': 'Hello 👋',
+    'chat.greeting.ru': 'Привет 👋',
+    'chat.greeting.tr': 'Merhaba 👋',
+    'chat.hint': 'Type your question or use quick suggestions below',
     
     // Citations
     'citations.title': 'Sources',
@@ -3115,6 +3173,35 @@ export const translations: Record<Lang, Record<string, string>> = {
     'common.ok': 'OK',
     'common.cancel': 'Отмена',
     'common.loading': 'Загрузка...',
+    'common.send': 'Отправить',
+    'common.sending': 'Отправляется...',
+    'common.close': 'Закрыть',
+    'common.noFiles': 'Нет файлов',
+    
+    // Bahor Context Picker
+    'bahorContext.title': 'Контекст Bahor',
+    'bahorContext.question': 'Вопрос:',
+    'bahorContext.includeMessages': 'Включить последние 30 сообщений',
+    'bahorContext.searchWeb': 'Поиск в интернете',
+    'bahorContext.selectFiles': 'Выбрать файлы',
+    
+    // Circle Invite
+    'circleInvite.title': 'Пригласить в круг',
+    'circleInvite.description': 'Поделитесь этой ссылкой, чтобы пригласить людей в "{name}". Каждый участник должен быть одобрен.',
+    'circleInvite.inviteCode': 'Код приглашения',
+    'circleInvite.newCode': 'Новый код',
+    'circleInvite.newCodeGenerated': 'Новый код создан',
+    'circleInvite.linkCopied': 'Ссылка скопирована',
+    
+    // ThinkBar
+    'thinking.deep': 'Глубокий',
+    
+    // Chat Empty State
+    'chat.greeting.uz': 'Assalomu alaykum 👋',
+    'chat.greeting.en': 'Hello 👋',
+    'chat.greeting.ru': 'Привет 👋',
+    'chat.greeting.tr': 'Merhaba 👋',
+    'chat.hint': 'Введите свой вопрос или используйте быстрые предложения ниже',
     
     // Citations
     'citations.title': 'Источники',
@@ -4246,6 +4333,35 @@ export const translations: Record<Lang, Record<string, string>> = {
     'common.ok': 'OK',
     'common.cancel': 'İptal',
     'common.loading': 'Yükleniyor...',
+    'common.send': 'Gönder',
+    'common.sending': 'Gönderiliyor...',
+    'common.close': 'Kapat',
+    'common.noFiles': 'Dosya yok',
+    
+    // Bahor Context Picker
+    'bahorContext.title': 'Bahor Bağlamı',
+    'bahorContext.question': 'Soru:',
+    'bahorContext.includeMessages': 'Son 30 mesajı dahil et',
+    'bahorContext.searchWeb': 'Web\'de ara',
+    'bahorContext.selectFiles': 'Dosya seç',
+    
+    // Circle Invite
+    'circleInvite.title': 'Çembere Davet Et',
+    'circleInvite.description': '"{name}" çemberine davet etmek için bu bağlantıyı paylaşın. Her kişi onaylanmalıdır.',
+    'circleInvite.inviteCode': 'Davet kodu',
+    'circleInvite.newCode': 'Yeni kod',
+    'circleInvite.newCodeGenerated': 'Yeni kod oluşturuldu',
+    'circleInvite.linkCopied': 'Link kopyalandı',
+    
+    // ThinkBar
+    'thinking.deep': 'Derin',
+    
+    // Chat Empty State
+    'chat.greeting.uz': 'Assalomu alaykum 👋',
+    'chat.greeting.en': 'Hello 👋',
+    'chat.greeting.ru': 'Привет 👋',
+    'chat.greeting.tr': 'Merhaba 👋',
+    'chat.hint': 'Sorunuzu yazın veya aşağıdaki hızlı önerileri kullanın',
     
     // Citations
     'citations.title': 'Kaynaklar',

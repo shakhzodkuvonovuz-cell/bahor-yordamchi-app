@@ -9,23 +9,10 @@ interface ChatEmptyStateProps {
 }
 
 export function ChatEmptyState({ modeInfo, modeTranslation, onStarterSelect }: ChatEmptyStateProps) {
-  const { language } = useTranslation();
+  const { language, t } = useTranslation();
 
-  const greeting = language === "uz" 
-    ? "Assalomu alaykum 👋" 
-    : language === "en" 
-    ? "Hello 👋" 
-    : language === "ru" 
-    ? "Привет 👋" 
-    : "Merhaba 👋";
-
-  const hint = language === "uz" 
-    ? "Savolingizni yozing yoki quyidagi tezkor takliflardan foydalaning" 
-    : language === "en" 
-    ? "Type your question or use quick suggestions below" 
-    : language === "ru" 
-    ? "Введите свой вопрос или используйте быстрые предложения ниже" 
-    : "Sorunuzu yazın veya aşağıdaki hızlı önerileri kullanın";
+  const greeting = t(`chat.greeting.${language}`);
+  const hint = t('chat.hint');
 
   return (
     <div className="flex flex-col items-center justify-center h-full min-h-[50vh] gap-8">

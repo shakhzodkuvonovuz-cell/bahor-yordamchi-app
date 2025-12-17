@@ -5,6 +5,7 @@ import { getTraceStepLabel, getUILabels } from "@/lib/traceLabels";
 import type { MessageTrace, TraceStepDetail } from "@/types/trace";
 import { haptic } from "@/lib/haptics";
 import { ThinkingOrb } from "./ThinkingOrb";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 interface ThinkBarProps {
   trace: MessageTrace | null;
@@ -182,6 +183,19 @@ function DetailsPanel({
   );
 }
 
+// Reasoner badge component using translations
+function ReasonerBadge() {
+  const { t } = useTranslation();
+  return (
+    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-purple-500/20 dark:bg-purple-400/20 border border-purple-500/30">
+      <Brain className="w-3 h-3 text-purple-500 dark:text-purple-400" />
+      <span className="text-[10px] font-medium text-purple-600 dark:text-purple-400">
+        {t('thinking.deep')}
+      </span>
+    </div>
+  );
+}
+
 export function ThinkBar({ 
   trace, 
   isGenerating, 
@@ -246,12 +260,7 @@ export function ThinkBar({
       >
         {/* Reasoner mode badge */}
         {modelPreference === 'reasoner' && (
-          <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-purple-500/20 dark:bg-purple-400/20 border border-purple-500/30">
-            <Brain className="w-3 h-3 text-purple-500 dark:text-purple-400" />
-            <span className="text-[10px] font-medium text-purple-600 dark:text-purple-400">
-              {language === 'uz' ? 'Chuqur' : language === 'ru' ? 'Глубокий' : 'Deep'}
-            </span>
-          </div>
+          <ReasonerBadge />
         )}
         
         {/* Status icon */}
