@@ -403,8 +403,12 @@ serve(async (req) => {
         const output = statusData.output;
         let videoUrl: string | null = null;
 
+        // Log output structure for debugging
+        console.log(`[${requestId}] RunPod output keys: ${output ? Object.keys(output).join(", ") : "null"}`);
+        console.log(`[${requestId}] RunPod output: ${JSON.stringify(output)?.slice(0, 500)}`);
+
         if (output) {
-          // Handle different output formats
+          // Handle different output formats from various video models
           if (typeof output === "string") {
             videoUrl = output;
           } else if (output.video_url) {
@@ -413,7 +417,20 @@ serve(async (req) => {
             videoUrl = output.url;
           } else if (output.video) {
             videoUrl = output.video;
+          } else if (output.output?.video_url) {
+            videoUrl = output.output.video_url;
+          } else if (output.result?.video_url) {
+            videoUrl = output.result.video_url;
+          } else if (output.result) {
+            videoUrl = typeof output.result === "string" ? output.result : null;
           }
+        }
+
+        // If no video URL found, mark as failed with debug info
+        if (!videoUrl && !output?.video_base64) {
+          console.error(`[${requestId}] No video URL found in output. Keys: ${output ? Object.keys(output).join(", ") : "none"}`);
+          error = `Video URL topilmadi. RunPod output: ${JSON.stringify(output)?.slice(0, 200)}`;
+          newStatus = "failed";
         }
 
         if (videoUrl) {
