@@ -45,6 +45,7 @@ const ChatsHistory = lazy(() => import("./pages/ChatsHistory"));
 const Agent = lazy(() => import("./pages/Agent"));
 const AgentWorkspace = lazy(() => import("./pages/AgentWorkspace"));
 const ImageStudio = lazy(() => import("./pages/ImageStudio"));
+const VideoStudio = lazy(() => import("./pages/VideoStudio"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -317,6 +318,15 @@ const App = () => (
                         <AppShellV2>
                           <LazyRoute><ImageStudio /></LazyRoute>
                         </AppShellV2>
+                      </ProtectedRoute>
+                    } 
+                  />
+                  {/* Video Studio */}
+                  <Route 
+                    path="/video-studio" 
+                    element={
+                      <ProtectedRoute>
+                        <LazyRoute><VideoStudio /></LazyRoute>
                       </ProtectedRoute>
                     } 
                   />

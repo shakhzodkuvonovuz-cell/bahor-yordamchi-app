@@ -1,0 +1,495 @@
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+// Daily limits per plan
+const DAILY_LIMITS: Record<string, number> = {
+  free: 1,
+  beta_premium: 5,
+  premium: 10,
+  dev_unlimited: -1, // unlimited
+};
+
+serve(async (req) => {
+  const requestId = crypto.randomUUID().slice(0, 8);
+  console.log(`[${requestId}] runpod-video start`);
+
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    // Validate env vars
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const runpodApiKey = Deno.env.get("RUNPOD_API_KEY");
+    const runpodEndpointId = Deno.env.get("RUNPOD_ENDPOINT_ID");
+
+    if (!supabaseUrl) throw new Error("Missing env: SUPABASE_URL");
+    if (!supabaseServiceKey) throw new Error("Missing env: SUPABASE_SERVICE_ROLE_KEY");
+    if (!runpodApiKey) throw new Error("Missing env: RUNPOD_API_KEY");
+    if (!runpodEndpointId) throw new Error("Missing env: RUNPOD_ENDPOINT_ID");
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Auth check
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Avtorizatsiya talab qilinadi" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Avtorizatsiya xatosi" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`[${requestId}] User authenticated: ${user.id}`);
+
+    const body = await req.json();
+    const { action } = body;
+
+    if (!action || !["start", "status", "cancel"].includes(action)) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Invalid action" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get user plan for limits
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("plan")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const userEmail = user.email?.toLowerCase() || '';
+    const devUnlimitedRaw = Deno.env.get('DEV_UNLIMITED_EMAILS') || '';
+    const adminEmailsRaw = Deno.env.get('ADMIN_EMAILS') || '';
+    const devUnlimitedEmails = devUnlimitedRaw.split(',').map((e: string) => e.trim().toLowerCase()).filter(Boolean);
+    const adminEmails = adminEmailsRaw.split(',').map((e: string) => e.trim().toLowerCase()).filter(Boolean);
+    const isDevBypass = devUnlimitedEmails.includes(userEmail) || adminEmails.includes(userEmail);
+    
+    const plan = isDevBypass ? 'dev_unlimited' : (profile?.plan || 'free');
+    const dailyLimit = DAILY_LIMITS[plan] ?? DAILY_LIMITS.free;
+
+    // ==========================================
+    // ACTION: START
+    // ==========================================
+    if (action === "start") {
+      const { prompt, negativePrompt, params = {}, assets = [] } = body;
+
+      if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "Prompt kiritilmagan" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Check daily limit
+      if (!isDevBypass && dailyLimit !== -1) {
+        const today = new Date().toISOString().split("T")[0];
+        const { count } = await supabase
+          .from("video_generations")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .gte("created_at", today);
+
+        const usedCount = count ?? 0;
+        if (usedCount >= dailyLimit) {
+          console.log(`[${requestId}] Daily limit reached: ${usedCount}/${dailyLimit}`);
+          return new Response(
+            JSON.stringify({
+              ok: false,
+              error: `Bugungi video yaratish limiti tugadi (${usedCount}/${dailyLimit})`,
+              type: "LIMIT_REACHED",
+              used: usedCount,
+              limit: dailyLimit,
+            }),
+            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+
+      // Insert generation record
+      const { data: generation, error: insertError } = await supabase
+        .from("video_generations")
+        .insert({
+          user_id: user.id,
+          status: "queued",
+          prompt: prompt.trim(),
+          negative_prompt: negativePrompt?.trim() || null,
+          params: params,
+          width: params.width || 768,
+          height: params.height || 512,
+          fps: params.fps || 24,
+          duration_seconds: params.duration_seconds || 5,
+          seed: params.seed || Math.floor(Math.random() * 2147483647),
+        })
+        .select()
+        .single();
+
+      if (insertError || !generation) {
+        console.error(`[${requestId}] Insert error:`, insertError);
+        return new Response(
+          JSON.stringify({ ok: false, error: "Video yaratishni boshlashda xatolik" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      console.log(`[${requestId}] Generation created: ${generation.id}`);
+
+      // Build RunPod input payload
+      const runpodInput = {
+        prompt: prompt.trim(),
+        negative_prompt: negativePrompt?.trim() || "",
+        width: params.width || 768,
+        height: params.height || 512,
+        num_frames: Math.round((params.duration_seconds || 5) * (params.fps || 24)),
+        fps: params.fps || 24,
+        seed: generation.seed,
+        num_inference_steps: params.steps || 30,
+        guidance_scale: params.guidance_scale || 7.5,
+        ...params, // Pass through all other params for flexibility
+      };
+
+      // Add assets if provided
+      if (assets && assets.length > 0) {
+        runpodInput.assets = assets;
+      }
+
+      console.log(`[${requestId}] RunPod input:`, JSON.stringify(runpodInput));
+
+      // Call RunPod /run
+      const runpodUrl = `https://api.runpod.ai/v2/${runpodEndpointId}/run`;
+      const runpodResponse = await fetch(runpodUrl, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${runpodApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ input: runpodInput }),
+      });
+
+      const runpodData = await runpodResponse.json();
+      console.log(`[${requestId}] RunPod response:`, JSON.stringify(runpodData));
+
+      if (!runpodResponse.ok || runpodData.error) {
+        // Update generation status to failed
+        await supabase
+          .from("video_generations")
+          .update({
+            status: "failed",
+            error: runpodData.error || `RunPod error: ${runpodResponse.status}`,
+          })
+          .eq("id", generation.id);
+
+        return new Response(
+          JSON.stringify({ ok: false, error: "RunPod xatosi", details: runpodData }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Update generation with RunPod job ID
+      await supabase
+        .from("video_generations")
+        .update({
+          runpod_job_id: runpodData.id,
+          status: "running",
+        })
+        .eq("id", generation.id);
+
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          generationId: generation.id,
+          runpodJobId: runpodData.id,
+          status: "running",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ==========================================
+    // ACTION: STATUS
+    // ==========================================
+    if (action === "status") {
+      const { generationId } = body;
+
+      if (!generationId) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "generationId talab qilinadi" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Load generation (must belong to user)
+      const { data: generation, error: fetchError } = await supabase
+        .from("video_generations")
+        .select("*")
+        .eq("id", generationId)
+        .eq("user_id", user.id)
+        .single();
+
+      if (fetchError || !generation) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "Video topilmadi" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // If already completed or failed, return cached status
+      if (["completed", "failed", "canceled"].includes(generation.status)) {
+        let outputVideoUrl = null;
+        if (generation.output_video_path) {
+          const { data: signedData } = await supabase.storage
+            .from("video-generations")
+            .createSignedUrl(generation.output_video_path, 3600);
+          outputVideoUrl = signedData?.signedUrl;
+        }
+
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            status: generation.status,
+            progress: generation.progress || (generation.status === "completed" ? 100 : 0),
+            error: generation.error,
+            outputVideoPath: generation.output_video_path,
+            outputVideoUrl,
+            runpodStatus: generation.runpod_status,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Poll RunPod status
+      if (!generation.runpod_job_id) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "RunPod job ID topilmadi" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const statusUrl = `https://api.runpod.ai/v2/${runpodEndpointId}/status/${generation.runpod_job_id}`;
+      const statusResponse = await fetch(statusUrl, {
+        headers: { "Authorization": `Bearer ${runpodApiKey}` },
+      });
+
+      const statusData = await statusResponse.json();
+      console.log(`[${requestId}] RunPod status:`, JSON.stringify(statusData));
+
+      // Map RunPod status to our status
+      let newStatus = generation.status;
+      let progress = generation.progress || 0;
+      let error = generation.error;
+      let outputVideoPath = generation.output_video_path;
+
+      if (statusData.status === "COMPLETED") {
+        newStatus = "completed";
+        progress = 100;
+
+        // Get output video URL from RunPod
+        const output = statusData.output;
+        let videoUrl: string | null = null;
+
+        if (output) {
+          // Handle different output formats
+          if (typeof output === "string") {
+            videoUrl = output;
+          } else if (output.video_url) {
+            videoUrl = output.video_url;
+          } else if (output.url) {
+            videoUrl = output.url;
+          } else if (output.video) {
+            videoUrl = output.video;
+          }
+        }
+
+        if (videoUrl) {
+          console.log(`[${requestId}] Downloading video from: ${videoUrl}`);
+          
+          try {
+            // Fetch video from RunPod output URL
+            const videoResponse = await fetch(videoUrl);
+            if (videoResponse.ok) {
+              const videoBytes = new Uint8Array(await videoResponse.arrayBuffer());
+              console.log(`[${requestId}] Video downloaded: ${videoBytes.length} bytes`);
+
+              // Upload to Supabase Storage
+              const now = new Date();
+              const year = now.getFullYear();
+              const month = String(now.getMonth() + 1).padStart(2, "0");
+              outputVideoPath = `${user.id}/${year}/${month}/${generation.id}.mp4`;
+
+              const { error: uploadError } = await supabase.storage
+                .from("video-generations")
+                .upload(outputVideoPath, videoBytes, {
+                  contentType: "video/mp4",
+                  upsert: true,
+                });
+
+              if (uploadError) {
+                console.error(`[${requestId}] Upload error:`, uploadError);
+                error = "Video saqlashda xatolik";
+              } else {
+                console.log(`[${requestId}] Video uploaded to: ${outputVideoPath}`);
+              }
+            } else {
+              console.error(`[${requestId}] Video download failed:`, videoResponse.status);
+              error = "Video yuklab olishda xatolik";
+            }
+          } catch (downloadError) {
+            console.error(`[${requestId}] Video download error:`, downloadError);
+            error = "Video yuklab olishda xatolik";
+          }
+        } else if (output?.video_base64) {
+          // Handle base64 output
+          try {
+            const base64Data = output.video_base64.replace(/^data:video\/\w+;base64,/, '');
+            const videoBytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+            
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, "0");
+            outputVideoPath = `${user.id}/${year}/${month}/${generation.id}.mp4`;
+
+            const { error: uploadError } = await supabase.storage
+              .from("video-generations")
+              .upload(outputVideoPath, videoBytes, {
+                contentType: "video/mp4",
+                upsert: true,
+              });
+
+            if (uploadError) {
+              console.error(`[${requestId}] Base64 upload error:`, uploadError);
+              error = "Video saqlashda xatolik";
+            }
+          } catch (base64Error) {
+            console.error(`[${requestId}] Base64 decode error:`, base64Error);
+            error = "Video dekodlashda xatolik";
+          }
+        }
+      } else if (statusData.status === "FAILED") {
+        newStatus = "failed";
+        error = statusData.error || "RunPod xatosi";
+      } else if (["IN_PROGRESS", "RUNNING", "IN_QUEUE", "QUEUED"].includes(statusData.status)) {
+        newStatus = "running";
+        // Extract progress if available
+        if (statusData.progress) {
+          progress = statusData.progress;
+        }
+      }
+
+      // Update generation in DB
+      await supabase
+        .from("video_generations")
+        .update({
+          status: newStatus,
+          progress,
+          error,
+          output_video_path: outputVideoPath,
+          runpod_status: statusData,
+        })
+        .eq("id", generation.id);
+
+      // Generate signed URL if completed
+      let outputVideoUrl = null;
+      if (outputVideoPath && newStatus === "completed") {
+        const { data: signedData } = await supabase.storage
+          .from("video-generations")
+          .createSignedUrl(outputVideoPath, 3600);
+        outputVideoUrl = signedData?.signedUrl;
+      }
+
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          status: newStatus,
+          progress,
+          error,
+          outputVideoPath,
+          outputVideoUrl,
+          runpodStatus: statusData,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ==========================================
+    // ACTION: CANCEL
+    // ==========================================
+    if (action === "cancel") {
+      const { generationId } = body;
+
+      if (!generationId) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "generationId talab qilinadi" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Load generation
+      const { data: generation, error: fetchError } = await supabase
+        .from("video_generations")
+        .select("*")
+        .eq("id", generationId)
+        .eq("user_id", user.id)
+        .single();
+
+      if (fetchError || !generation) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "Video topilmadi" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Try to cancel RunPod job (best effort)
+      if (generation.runpod_job_id) {
+        try {
+          const cancelUrl = `https://api.runpod.ai/v2/${runpodEndpointId}/cancel/${generation.runpod_job_id}`;
+          await fetch(cancelUrl, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${runpodApiKey}` },
+          });
+        } catch (cancelError) {
+          console.log(`[${requestId}] Cancel request failed (non-critical):`, cancelError);
+        }
+      }
+
+      // Update status in DB
+      await supabase
+        .from("video_generations")
+        .update({ status: "canceled" })
+        .eq("id", generation.id);
+
+      return new Response(
+        JSON.stringify({ ok: true, status: "canceled" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({ ok: false, error: "Unknown action" }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Server xatosi";
+    console.error(`[${requestId}] Error:`, error);
+    return new Response(
+      JSON.stringify({ ok: false, error: errorMessage }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});

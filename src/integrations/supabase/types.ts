@@ -1345,6 +1345,113 @@ export type Database = {
         }
         Relationships: []
       }
+      video_generation_assets: {
+        Row: {
+          created_at: string
+          generation_id: string | null
+          id: string
+          kind: string
+          metadata: Json | null
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          generation_id?: string | null
+          id?: string
+          kind: string
+          metadata?: Json | null
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          generation_id?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json | null
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_generation_assets_generation_id_fkey"
+            columns: ["generation_id"]
+            isOneToOne: false
+            referencedRelation: "video_generations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_generations: {
+        Row: {
+          cost_estimate: Json | null
+          created_at: string
+          duration_seconds: number | null
+          error: string | null
+          fps: number | null
+          height: number | null
+          id: string
+          negative_prompt: string | null
+          output_video_path: string | null
+          output_video_url: string | null
+          params: Json | null
+          progress: number | null
+          prompt: string | null
+          runpod_job_id: string | null
+          runpod_status: Json | null
+          seed: number | null
+          status: string
+          updated_at: string
+          user_id: string
+          width: number | null
+        }
+        Insert: {
+          cost_estimate?: Json | null
+          created_at?: string
+          duration_seconds?: number | null
+          error?: string | null
+          fps?: number | null
+          height?: number | null
+          id?: string
+          negative_prompt?: string | null
+          output_video_path?: string | null
+          output_video_url?: string | null
+          params?: Json | null
+          progress?: number | null
+          prompt?: string | null
+          runpod_job_id?: string | null
+          runpod_status?: Json | null
+          seed?: number | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          width?: number | null
+        }
+        Update: {
+          cost_estimate?: Json | null
+          created_at?: string
+          duration_seconds?: number | null
+          error?: string | null
+          fps?: number | null
+          height?: number | null
+          id?: string
+          negative_prompt?: string | null
+          output_video_path?: string | null
+          output_video_url?: string | null
+          params?: Json | null
+          progress?: number | null
+          prompt?: string | null
+          runpod_job_id?: string | null
+          runpod_status?: Json | null
+          seed?: number | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          width?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       profile_display: {
