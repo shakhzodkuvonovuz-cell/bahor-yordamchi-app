@@ -280,8 +280,42 @@ export default function VideoStudio() {
         }
 
         const data = response.data;
+        
+        // Handle error responses (including ECHO_ENDPOINT)
         if (!data.ok) {
-          console.error("Poll failed:", data.error);
+          console.error("Poll failed:", data.error, data.errorCode);
+          
+          // Stop polling on error
+          if (pollIntervalRef.current) {
+            clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
+          }
+          setIsGenerating(false);
+          
+          // Update UI with error state
+          setCurrentGeneration(prev => prev ? {
+            ...prev,
+            status: "failed",
+            error: data.messageUz || data.error || "Noma'lum xatolik",
+          } : null);
+          
+          // Show specific toast for echo endpoint
+          if (data.errorCode === "ECHO_ENDPOINT") {
+            toast({ 
+              title: "RunPod konfiguratsiya xatosi", 
+              description: "RunPod endpoint test/echo rejimida. LTX Video worker o'rnatilishi kerak.",
+              variant: "destructive",
+              duration: 10000,
+            });
+          } else {
+            toast({ 
+              title: "Xatolik", 
+              description: data.error || "Video yaratishda xatolik", 
+              variant: "destructive" 
+            });
+          }
+          
+          loadHistory();
           return;
         }
 
@@ -303,8 +337,16 @@ export default function VideoStudio() {
           setIsGenerating(false);
           loadHistory();
           
-          if (data.status === "completed") {
+          if (data.status === "completed" && data.outputVideoUrl) {
             toast({ title: "Video tayyor!" });
+          } else if (data.status === "completed" && !data.outputVideoUrl) {
+            // Edge case: completed but no video URL
+            setCurrentGeneration(prev => prev ? {
+              ...prev,
+              status: "failed",
+              error: data.error || "Video URL topilmadi",
+            } : null);
+            toast({ title: "Xatolik", description: data.error || "Video URL topilmadi", variant: "destructive" });
           } else if (data.status === "failed") {
             toast({ title: "Xatolik", description: data.error, variant: "destructive" });
           }
