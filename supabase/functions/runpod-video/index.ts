@@ -223,18 +223,43 @@ serve(async (req) => {
       }
 
       if (!runpodResponse.ok || runpodData.error) {
-        // Update generation status to failed
+        const statusCode = runpodResponse.status;
+        const runpodErrText =
+          typeof runpodData?.error === "string"
+            ? runpodData.error
+            : responseText?.trim() || "";
+
+        let friendly = "RunPod xatosi";
+        if (statusCode === 401 || statusCode === 403) {
+          friendly = "RunPod avtorizatsiya xatosi (API key)";
+        } else if (statusCode === 404) {
+          friendly = "RunPod endpoint topilmadi (endpoint ID noto'g'ri bo'lishi mumkin)";
+        } else if (statusCode === 429) {
+          friendly = "RunPod limit: juda ko'p so'rov (keyinroq urinib ko'ring)";
+        } else if (statusCode >= 500) {
+          friendly = "RunPod server xatosi (keyinroq urinib ko'ring)";
+        }
+
         await supabase
           .from("video_generations")
           .update({
             status: "failed",
-            error: runpodData.error || `RunPod error: ${runpodResponse.status}`,
+            error: `${friendly} [${statusCode}] ${runpodErrText.slice(0, 200)}`.trim(),
           })
           .eq("id", generation.id);
 
         return new Response(
-          JSON.stringify({ ok: false, error: "RunPod xatosi", details: runpodData }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({
+            ok: false,
+            error: friendly,
+            runpodStatus: statusCode,
+            details: runpodData,
+            detailsText: responseText?.slice(0, 800) || null,
+          }),
+          {
+            status: statusCode >= 400 && statusCode < 600 ? statusCode : 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
         );
       }
 
@@ -325,6 +350,33 @@ serve(async (req) => {
 
       const statusText = await statusResponse.text();
       console.log(`[${requestId}] RunPod status response: ${statusResponse.status}, body: ${statusText}`);
+
+      if (!statusResponse.ok) {
+        const statusCode = statusResponse.status;
+        let friendly = "RunPod holatini olishda xatolik";
+        if (statusCode === 401 || statusCode === 403) {
+          friendly = "RunPod avtorizatsiya xatosi (API key)";
+        } else if (statusCode === 404) {
+          friendly = "RunPod endpoint/job topilmadi";
+        } else if (statusCode === 429) {
+          friendly = "RunPod limit: juda ko'p so'rov (keyinroq urinib ko'ring)";
+        } else if (statusCode >= 500) {
+          friendly = "RunPod server xatosi (keyinroq urinib ko'ring)";
+        }
+
+        return new Response(
+          JSON.stringify({
+            ok: false,
+            error: friendly,
+            runpodStatus: statusCode,
+            detailsText: statusText?.slice(0, 800) || null,
+          }),
+          {
+            status: statusCode,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
 
       let statusData;
       try {
