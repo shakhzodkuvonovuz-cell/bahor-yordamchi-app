@@ -275,7 +275,6 @@ export default function CircleChatTab({ spaceId, onSendAICardRef }: CircleChatTa
                 onReply={setReplyTo} 
                 onDelete={deleteMessage} 
                 onViewReaders={handleViewReaders} 
-                language={language} 
               />
             ))
           )}
