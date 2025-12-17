@@ -33,7 +33,7 @@ export default function SpaceInviteModal({
   spaceName,
 }: SpaceInviteModalProps) {
   const { user } = useAuth();
-  const { language } = useTranslation();
+  const { t } = useTranslation();
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -69,7 +69,7 @@ export default function SpaceInviteModal({
       }
     } catch (err) {
       console.error("Error with invite:", err);
-      toast.error("Xatolik yuz berdi");
+      toast.error(t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -102,10 +102,10 @@ export default function SpaceInviteModal({
 
       if (error) throw error;
       setInviteCode(code);
-      toast.success(language === "uz" ? "Yangi kod yaratildi" : "New code generated");
+      toast.success(t('circleInvite.newCodeGenerated'));
     } catch (err) {
       console.error("Error generating code:", err);
-      toast.error("Xatolik yuz berdi");
+      toast.error(t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -118,7 +118,7 @@ export default function SpaceInviteModal({
     navigator.clipboard.writeText(inviteLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    toast.success(language === "uz" ? "Link nusxalandi" : "Link copied");
+    toast.success(t('circleInvite.linkCopied'));
   };
 
   return (
@@ -132,16 +132,14 @@ export default function SpaceInviteModal({
           </div>
           <DialogHeader className="text-center">
             <DialogTitle className="text-xl font-bold">
-              {language === "uz" ? "Doiraga taklif qilish" : "Invite to Circle"}
+              {t('circleInvite.title')}
             </DialogTitle>
           </DialogHeader>
         </div>
 
         <div className="px-6 pb-6 space-y-5">
           <p className="text-sm text-muted-foreground text-center">
-            {language === "uz"
-              ? `"${spaceName}" doirasiga qo'shilish uchun ushbu linkni ulashing. Har bir kishi avval tasdiqlanishi kerak.`
-              : `Share this link to invite people to "${spaceName}". Each person must be approved before joining.`}
+            {t('circleInvite.description', { name: spaceName })}
           </p>
 
           {/* Invite link input with copy button */}
@@ -150,7 +148,7 @@ export default function SpaceInviteModal({
               value={inviteLink}
               readOnly
               className="font-mono text-sm min-h-[48px] bg-secondary/50"
-              placeholder={loading ? "Loading..." : ""}
+              placeholder={loading ? t('common.loading') : ""}
             />
             <Button
               variant="outline"
@@ -171,7 +169,7 @@ export default function SpaceInviteModal({
           <div className="flex items-center justify-between bg-secondary/30 rounded-xl px-4 py-3 min-h-[56px]">
             <div>
               <p className="text-xs text-muted-foreground mb-0.5">
-                {language === "uz" ? "Taklif kodi" : "Invite code"}
+                {t('circleInvite.inviteCode')}
               </p>
               <p className="font-mono font-bold text-base text-foreground tracking-wider">
                 {inviteCode || "..."}
@@ -186,7 +184,7 @@ export default function SpaceInviteModal({
             >
               <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
               <span className="hidden sm:inline">
-                {language === "uz" ? "Yangi kod" : "New code"}
+                {t('circleInvite.newCode')}
               </span>
             </Button>
           </div>
@@ -197,7 +195,7 @@ export default function SpaceInviteModal({
             onClick={onClose} 
             className="w-full h-12 min-h-[48px] touch-manipulation text-base font-medium"
           >
-            {language === "uz" ? "Yopish" : "Close"}
+            {t('common.close')}
           </Button>
         </div>
       </DialogContent>

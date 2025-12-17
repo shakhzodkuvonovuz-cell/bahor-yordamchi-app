@@ -39,7 +39,7 @@ export default function BahorContextPicker({
   onCancel,
   sending,
 }: BahorContextPickerProps) {
-  const { language } = useTranslation();
+  const { t } = useTranslation();
   const [files, setFiles] = useState<SpaceFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [includeMessages, setIncludeMessages] = useState(true);
@@ -94,7 +94,7 @@ export default function BahorContextPicker({
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
             <h3 className="font-semibold text-foreground">
-              {language === "uz" ? "Bahor konteksti" : "Bahor Context"}
+              {t('bahorContext.title')}
             </h3>
           </div>
           <button onClick={onCancel} className="p-1 hover:bg-secondary rounded-lg transition-colors">
@@ -103,7 +103,7 @@ export default function BahorContextPicker({
         </div>
 
         <div className="p-4 border-b border-border">
-          <p className="text-xs text-muted-foreground mb-1">{language === "uz" ? "Savol:" : "Question:"}</p>
+          <p className="text-xs text-muted-foreground mb-1">{t('bahorContext.question')}</p>
           <p className="text-sm text-foreground line-clamp-2">{question}</p>
         </div>
 
@@ -112,7 +112,7 @@ export default function BahorContextPicker({
             <div className="flex items-center gap-2">
               <MessageSquare className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm text-foreground">
-                {language === "uz" ? "Oxirgi 30 ta xabar" : "Include last 30 messages"}
+                {t('bahorContext.includeMessages')}
               </span>
             </div>
             <Switch checked={includeMessages} onCheckedChange={setIncludeMessages} />
@@ -122,7 +122,7 @@ export default function BahorContextPicker({
             <div className="flex items-center gap-2">
               <Globe className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm text-foreground">
-                {language === "uz" ? "Webdan qidirish" : "Search the web"}
+                {t('bahorContext.searchWeb')}
               </span>
             </div>
             <Switch checked={searchWeb} onCheckedChange={setSearchWeb} />
@@ -132,13 +132,13 @@ export default function BahorContextPicker({
             <div className="flex items-center gap-2 mb-2">
               <FileText className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm text-foreground">
-                {language === "uz" ? "Fayllarni tanlash" : "Select files"}
+                {t('bahorContext.selectFiles')}
               </span>
             </div>
             {loading ? (
-              <div className="text-sm text-muted-foreground py-2">{language === "uz" ? "Yuklanmoqda..." : "Loading..."}</div>
+              <div className="text-sm text-muted-foreground py-2">{t('common.loading')}</div>
             ) : files.length === 0 ? (
-              <div className="text-sm text-muted-foreground py-2">{language === "uz" ? "Hali fayllar yo'q" : "No files"}</div>
+              <div className="text-sm text-muted-foreground py-2">{t('common.noFiles')}</div>
             ) : (
               <div className="space-y-2">
                 {files.map((file) => (
@@ -155,18 +155,18 @@ export default function BahorContextPicker({
 
         <div className="p-4 border-t border-border flex gap-2">
           <Button variant="outline" onClick={onCancel} className="flex-1" disabled={sending}>
-            {language === "uz" ? "Bekor" : "Cancel"}
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleSend} className="flex-1 gap-2" disabled={sending}>
             {sending ? (
               <>
                 <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-                {language === "uz" ? "Yuborilmoqda..." : "Sending..."}
+                {t('common.sending')}
               </>
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                {language === "uz" ? "Yuborish" : "Send"}
+                {t('common.send')}
               </>
             )}
           </Button>
