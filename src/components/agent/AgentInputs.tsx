@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 export interface AgentFile {
   id: string;
@@ -41,6 +42,7 @@ export function AgentInputs({
   setNotes,
   disabled = false,
 }: AgentInputsProps) {
+  const { t } = useTranslation();
   const [newLink, setNewLink] = useState("");
   const [activeTab, setActiveTab] = useState("files");
 
@@ -61,12 +63,12 @@ export function AgentInputs({
 
     for (const file of Array.from(uploadedFiles)) {
       if (!validTypes.includes(file.type)) {
-        toast.error(`Fayl turi qo'llab-quvvatlanmaydi: ${file.name}`);
+        toast.error(`${t('agent.inputs.fileTypeError')}: ${file.name}`);
         continue;
       }
 
       if (file.size > 10 * 1024 * 1024) {
-        toast.error(`Fayl juda katta: ${file.name} (max 10MB)`);
+        toast.error(`${t('agent.inputs.fileTooLarge')}: ${file.name}`);
         continue;
       }
 
@@ -136,7 +138,7 @@ export function AgentInputs({
               f.id === fileRecord.id ? { ...f, extraction_status: "ready" } : f
             )
           );
-          toast.success(`${file.name} tayyor`);
+          toast.success(`${file.name} ${t('agent.inputs.fileReady')}`);
         } else {
           setFiles((prev) =>
             prev.map((f) =>
@@ -147,10 +149,10 @@ export function AgentInputs({
       } catch (error: any) {
         console.error("Upload error:", error);
         setFiles((prev) => prev.filter((f) => f.id !== tempId));
-        toast.error(`Yuklashda xato: ${file.name}`);
+        toast.error(`${t('agent.inputs.uploadError')}: ${file.name}`);
       }
     }
-  }, [userId, setFiles]);
+  }, [userId, setFiles, t]);
 
   const handleRemoveFile = async (fileId: string, storagePath: string) => {
     try {
@@ -172,13 +174,13 @@ export function AgentInputs({
   const getFileStatusBadge = (status: string) => {
     switch (status) {
       case "ready":
-        return <Badge variant="secondary" className="bg-green-500/10 text-green-600 text-[10px]">Tayyor</Badge>;
+        return <Badge variant="secondary" className="bg-green-500/10 text-green-600 text-[10px]">{t('agent.status.ready')}</Badge>;
       case "extracting":
       case "pending":
       case "uploading":
-        return <Badge variant="secondary" className="text-[10px]"><Loader2 className="h-3 w-3 animate-spin mr-1" />O'qilmoqda</Badge>;
+        return <Badge variant="secondary" className="text-[10px]"><Loader2 className="h-3 w-3 animate-spin mr-1" />{t('agent.status.processing')}</Badge>;
       case "failed":
-        return <Badge variant="destructive" className="text-[10px]">Xato</Badge>;
+        return <Badge variant="destructive" className="text-[10px]">{t('agent.status.error')}</Badge>;
       default:
         return null;
     }
@@ -191,17 +193,17 @@ export function AgentInputs({
       <TabsList className="grid grid-cols-3 w-full h-8">
         <TabsTrigger value="files" className="text-[11px] gap-1 h-7" disabled={disabled}>
           <File className="h-3 w-3" />
-          <span className="hidden sm:inline">Fayllar</span>
+          <span className="hidden sm:inline">{t('agent.inputs.files')}</span>
           {files.length > 0 && <Badge variant="secondary" className="h-3.5 w-3.5 p-0 text-[9px] justify-center">{files.length}</Badge>}
         </TabsTrigger>
         <TabsTrigger value="links" className="text-[11px] gap-1 h-7" disabled={disabled}>
           <Link2 className="h-3 w-3" />
-          <span className="hidden sm:inline">Havolalar</span>
+          <span className="hidden sm:inline">{t('agent.inputs.links')}</span>
           {links.length > 0 && <Badge variant="secondary" className="h-3.5 w-3.5 p-0 text-[9px] justify-center">{links.length}</Badge>}
         </TabsTrigger>
         <TabsTrigger value="notes" className="text-[11px] gap-1 h-7" disabled={disabled}>
           <StickyNote className="h-3 w-3" />
-          <span className="hidden sm:inline">Eslatmalar</span>
+          <span className="hidden sm:inline">{t('agent.inputs.notes')}</span>
         </TabsTrigger>
       </TabsList>
 
@@ -216,7 +218,7 @@ export function AgentInputs({
               onClick={() => document.getElementById("agent-file-input")?.click()}
             >
               <Upload className="h-3.5 w-3.5" />
-              Fayl yuklash
+              {t('agent.inputs.uploadFile')}
             </Button>
             <input
               id="agent-file-input"
@@ -228,7 +230,7 @@ export function AgentInputs({
               disabled={disabled}
             />
             <span className="text-[10px] text-muted-foreground">
-              PDF, DOCX, TXT, CSV, Rasmlar
+              {t('agent.inputs.fileTypes')}
             </span>
           </div>
 
@@ -299,7 +301,7 @@ export function AgentInputs({
 
         <TabsContent value="notes" className="mt-0">
           <Textarea
-            placeholder="Qo'shimcha ma'lumotlar, talablar, yoki kontekst..."
+            placeholder={t('agent.inputs.notesPlaceholder')}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             className="min-h-[80px] resize-none text-xs"
