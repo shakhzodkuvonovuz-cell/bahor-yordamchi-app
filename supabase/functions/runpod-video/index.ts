@@ -182,8 +182,27 @@ serve(async (req) => {
         body: JSON.stringify({ input: runpodInput }),
       });
 
-      const runpodData = await runpodResponse.json();
-      console.log(`[${requestId}] RunPod response:`, JSON.stringify(runpodData));
+      const responseText = await runpodResponse.text();
+      console.log(`[${requestId}] RunPod response status: ${runpodResponse.status}, body: ${responseText}`);
+
+      let runpodData;
+      try {
+        runpodData = responseText ? JSON.parse(responseText) : {};
+      } catch (parseError) {
+        console.error(`[${requestId}] Failed to parse RunPod response:`, parseError);
+        await supabase
+          .from("video_generations")
+          .update({
+            status: "failed",
+            error: `RunPod response parse error: ${responseText.slice(0, 200)}`,
+          })
+          .eq("id", generation.id);
+
+        return new Response(
+          JSON.stringify({ ok: false, error: "RunPod javobini o'qib bo'lmadi", details: responseText.slice(0, 500) }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
       if (!runpodResponse.ok || runpodData.error) {
         // Update generation status to failed
@@ -286,8 +305,19 @@ serve(async (req) => {
         headers: { "Authorization": `Bearer ${runpodApiKey}` },
       });
 
-      const statusData = await statusResponse.json();
-      console.log(`[${requestId}] RunPod status:`, JSON.stringify(statusData));
+      const statusText = await statusResponse.text();
+      console.log(`[${requestId}] RunPod status response: ${statusResponse.status}, body: ${statusText}`);
+
+      let statusData;
+      try {
+        statusData = statusText ? JSON.parse(statusText) : {};
+      } catch (parseError) {
+        console.error(`[${requestId}] Failed to parse RunPod status:`, parseError);
+        return new Response(
+          JSON.stringify({ ok: false, error: "RunPod holatini o'qib bo'lmadi", details: statusText.slice(0, 500) }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
       // Map RunPod status to our status
       let newStatus = generation.status;
