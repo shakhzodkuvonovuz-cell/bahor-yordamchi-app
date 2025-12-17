@@ -404,32 +404,79 @@ serve(async (req) => {
         let videoUrl: string | null = null;
 
         // Log output structure for debugging
-        console.log(`[${requestId}] RunPod output keys: ${output ? Object.keys(output).join(", ") : "null"}`);
+        const outputKeys = output ? Object.keys(output) : [];
+        console.log(`[${requestId}] RunPod output keys: ${outputKeys.join(", ") || "null"}`);
         console.log(`[${requestId}] RunPod output: ${JSON.stringify(output)?.slice(0, 500)}`);
+
+        // DETECT ECHO/TEST ENDPOINT
+        // If output contains "echo" key or only has "ok: true" without video fields,
+        // this is a test/echo endpoint that doesn't actually generate videos
+        const isEchoEndpoint = output && (
+          output.echo !== undefined ||
+          (output.ok === true && outputKeys.length <= 2 && !output.video_url && !output.url && !output.video && !output.video_base64)
+        );
+
+        if (isEchoEndpoint) {
+          console.error(`[${requestId}] ECHO ENDPOINT DETECTED - no real video generation`);
+          newStatus = "failed";
+          error = "ECHO_ENDPOINT: RunPod endpoint hozircha test/echo rejimida. Video yaratish uchun LTX Video worker o'rnatilishi kerak.";
+          
+          // Update DB with detailed error
+          await supabase
+            .from("video_generations")
+            .update({
+              status: "failed",
+              error: error,
+              runpod_status: statusData,
+            })
+            .eq("id", generation.id);
+
+          return new Response(
+            JSON.stringify({
+              ok: false,
+              status: "failed",
+              errorCode: "ECHO_ENDPOINT",
+              error: error,
+              messageUz: "RunPod endpoint hozircha test/echo rejimida. Video qaytarmayapti. LTX Video worker o'rnatilmagan.",
+              messageEn: "Your RunPod endpoint is a test/echo worker and does not generate video. Deploy an LTX video worker that returns a video file/URL.",
+              runpodOutput: output,
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
 
         if (output) {
           // Handle different output formats from various video models
-          if (typeof output === "string") {
+          // Priority order: video_url > url > video > nested paths > result string
+          if (typeof output === "string" && (output.startsWith("http") || output.startsWith("/"))) {
             videoUrl = output;
           } else if (output.video_url) {
             videoUrl = output.video_url;
-          } else if (output.url) {
+          } else if (output.url && typeof output.url === "string") {
             videoUrl = output.url;
-          } else if (output.video) {
+          } else if (output.video && typeof output.video === "string") {
             videoUrl = output.video;
           } else if (output.output?.video_url) {
             videoUrl = output.output.video_url;
+          } else if (output.output?.url) {
+            videoUrl = output.output.url;
           } else if (output.result?.video_url) {
             videoUrl = output.result.video_url;
-          } else if (output.result) {
-            videoUrl = typeof output.result === "string" ? output.result : null;
+          } else if (output.result?.url) {
+            videoUrl = output.result.url;
+          } else if (output.result && typeof output.result === "string" && output.result.startsWith("http")) {
+            videoUrl = output.result;
+          } else if (output.file_url) {
+            videoUrl = output.file_url;
+          } else if (output.download_url) {
+            videoUrl = output.download_url;
           }
         }
 
-        // If no video URL found, mark as failed with debug info
+        // If no video URL found and no base64, mark as failed with debug info
         if (!videoUrl && !output?.video_base64) {
-          console.error(`[${requestId}] No video URL found in output. Keys: ${output ? Object.keys(output).join(", ") : "none"}`);
-          error = `Video URL topilmadi. RunPod output: ${JSON.stringify(output)?.slice(0, 200)}`;
+          console.error(`[${requestId}] No video URL found in output. Keys: ${outputKeys.join(", ") || "none"}`);
+          error = `Video URL topilmadi. Kutilgan: video_url, url, video, yoki video_base64. Topildi: ${outputKeys.join(", ") || "bo'sh"}`;
           newStatus = "failed";
         }
 
