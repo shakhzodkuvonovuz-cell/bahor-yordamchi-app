@@ -3,6 +3,7 @@ import { Camera, Loader2, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "@/i18n/LanguageProvider";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +17,7 @@ interface ProfilePhotoUploadProps {
 }
 
 export default function ProfilePhotoUpload({ currentAvatarUrl, onPhotoUpdated }: ProfilePhotoUploadProps) {
+  const { t } = useTranslation();
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -32,8 +34,8 @@ export default function ProfilePhotoUpload({ currentAvatarUrl, onPhotoUpdated }:
     // Validate file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
       toast({
-        title: "Xatolik",
-        description: "Rasm hajmi 5MB dan kichik bo'lishi kerak",
+        title: t('common.error'),
+        description: t('profilePhoto.sizeError'),
         variant: "destructive",
       });
       return;
@@ -45,8 +47,8 @@ export default function ProfilePhotoUpload({ currentAvatarUrl, onPhotoUpdated }:
     
     if (!isValidType) {
       toast({
-        title: "Xatolik",
-        description: "Faqat rasm yuklash mumkin",
+        title: t('common.error'),
+        description: t('profilePhoto.typeError'),
         variant: "destructive",
       });
       return;
@@ -66,7 +68,7 @@ export default function ProfilePhotoUpload({ currentAvatarUrl, onPhotoUpdated }:
       
       if (authError || !user) {
         console.error('[Avatar] Auth error:', authError);
-        throw new Error("Foydalanuvchi topilmadi");
+        throw new Error(t('common.userNotFound'));
       }
 
       console.log('[Avatar] User ID:', user.id);
@@ -127,8 +129,8 @@ export default function ProfilePhotoUpload({ currentAvatarUrl, onPhotoUpdated }:
       console.log('[Avatar] Profile updated successfully');
 
       toast({
-        title: "✅ Muvaffaqiyatli!",
-        description: "Rasm yangilandi",
+        title: t('profilePhoto.uploadSuccess'),
+        description: t('profilePhoto.photoUpdated'),
       });
       
       onPhotoUpdated();
@@ -136,8 +138,8 @@ export default function ProfilePhotoUpload({ currentAvatarUrl, onPhotoUpdated }:
     } catch (error: any) {
       console.error("[Avatar] Error uploading avatar:", error);
       toast({
-        title: "Xatolik",
-        description: error.message || "Rasm yuklanmadi",
+        title: t('common.error'),
+        description: error.message || t('profilePhoto.uploadFailed'),
         variant: "destructive",
       });
     } finally {
@@ -151,8 +153,8 @@ export default function ProfilePhotoUpload({ currentAvatarUrl, onPhotoUpdated }:
   const deletePhoto = async () => {
     if (!currentAvatarUrl || !currentAvatarUrl.includes('/avatars/')) {
       toast({
-        title: "Ma'lumot",
-        description: "O'chirish uchun rasm yo'q",
+        title: t('common.info'),
+        description: t('profilePhoto.noPhotoToDelete'),
       });
       return;
     }
@@ -165,7 +167,7 @@ export default function ProfilePhotoUpload({ currentAvatarUrl, onPhotoUpdated }:
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !user) {
-        throw new Error("Foydalanuvchi topilmadi");
+        throw new Error(t('common.userNotFound'));
       }
 
       // Delete from storage
@@ -198,8 +200,8 @@ export default function ProfilePhotoUpload({ currentAvatarUrl, onPhotoUpdated }:
       console.log('[Avatar] Photo deleted successfully');
 
       toast({
-        title: "✅ Muvaffaqiyatli!",
-        description: "Rasm o'chirildi",
+        title: t('profilePhoto.deleteSuccess'),
+        description: t('profilePhoto.photoDeleted'),
       });
       
       onPhotoUpdated();
@@ -207,8 +209,8 @@ export default function ProfilePhotoUpload({ currentAvatarUrl, onPhotoUpdated }:
     } catch (error: any) {
       console.error("[Avatar] Error deleting avatar:", error);
       toast({
-        title: "Xatolik",
-        description: error.message || "Rasm o'chirilmadi",
+        title: t('common.error'),
+        description: error.message || t('profilePhoto.deleteFailed'),
         variant: "destructive",
       });
     } finally {
@@ -254,12 +256,12 @@ export default function ProfilePhotoUpload({ currentAvatarUrl, onPhotoUpdated }:
         <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuItem onClick={handleUploadClick}>
             <Camera className="w-4 h-4 mr-2" />
-            Rasm yuklash
+            {t('profilePhoto.uploadPhoto')}
           </DropdownMenuItem>
           {hasPhoto && (
             <DropdownMenuItem onClick={deletePhoto} className="text-destructive focus:text-destructive">
               <Trash2 className="w-4 h-4 mr-2" />
-              Rasmni o'chirish
+              {t('profilePhoto.deletePhoto')}
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>

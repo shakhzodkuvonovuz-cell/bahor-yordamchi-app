@@ -13,29 +13,12 @@ interface DataManagementModalProps {
 }
 
 export default function DataManagementModal({ open, onOpenChange }: DataManagementModalProps) {
-  const { language } = useTranslation();
+  const { t } = useTranslation();
   const { user, profile, signOut } = useAuth();
   const { toast } = useToast();
   const [exporting, setExporting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
-  const labels = {
-    title: language === "uz" ? "Ma'lumotlarni boshqarish" : "Data Management",
-    export: language === "uz" ? "Ma'lumotlarni eksport qilish" : "Export Data",
-    exportDesc: language === "uz" ? "Profil va suhbat tarixingizni JSON formatida yuklab oling" : "Download your profile and chat history as JSON",
-    delete: language === "uz" ? "Ma'lumotlarni o'chirish" : "Delete Data",
-    deleteDesc: language === "uz" ? "Barcha suhbatlar va ma'lumotlaringiz o'chiriladi" : "Delete all your chats and data",
-    deleteWarning: language === "uz" 
-      ? "Diqqat! Bu amalni qaytarib bo'lmaydi. Barcha suhbatlaringiz va ma'lumotlaringiz butunlay o'chiriladi."
-      : "Warning! This action cannot be undone. All your chats and data will be permanently deleted.",
-    confirmDelete: language === "uz" ? "Ha, o'chirish" : "Yes, delete",
-    cancel: language === "uz" ? "Bekor qilish" : "Cancel",
-    exporting: language === "uz" ? "Eksport qilinmoqda..." : "Exporting...",
-    exportSuccess: language === "uz" ? "Ma'lumotlar yuklab olindi" : "Data exported",
-    deleteSuccess: language === "uz" ? "Ma'lumotlar o'chirildi" : "Data deleted",
-    error: language === "uz" ? "Xatolik yuz berdi" : "An error occurred",
-  };
 
   const handleExport = async () => {
     if (!user) return;
@@ -79,10 +62,10 @@ export default function DataManagementModal({ open, onOpenChange }: DataManageme
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      toast({ description: labels.exportSuccess });
+      toast({ description: t('dataManagement.exportSuccess') });
     } catch (error) {
       console.error("Export error:", error);
-      toast({ description: labels.error, variant: "destructive" });
+      toast({ description: t('common.error'), variant: "destructive" });
     } finally {
       setExporting(false);
     }
@@ -121,7 +104,7 @@ export default function DataManagementModal({ open, onOpenChange }: DataManageme
       }
       keysToRemove.forEach(key => localStorage.removeItem(key));
 
-      toast({ description: labels.deleteSuccess });
+      toast({ description: t('dataManagement.deleteSuccess') });
       setShowDeleteConfirm(false);
       onOpenChange(false);
 
@@ -129,7 +112,7 @@ export default function DataManagementModal({ open, onOpenChange }: DataManageme
       // await signOut();
     } catch (error) {
       console.error("Delete error:", error);
-      toast({ description: labels.error, variant: "destructive" });
+      toast({ description: t('common.error'), variant: "destructive" });
     } finally {
       setDeleting(false);
     }
@@ -139,14 +122,14 @@ export default function DataManagementModal({ open, onOpenChange }: DataManageme
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{labels.title}</DialogTitle>
+          <DialogTitle>{t('dataManagement.title')}</DialogTitle>
         </DialogHeader>
 
         {showDeleteConfirm ? (
           <div className="space-y-4 py-4">
             <div className="flex items-start gap-3 p-4 bg-destructive/10 border border-destructive/20 rounded-xl">
               <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
-              <p className="text-sm text-destructive">{labels.deleteWarning}</p>
+              <p className="text-sm text-destructive">{t('dataManagement.deleteWarning')}</p>
             </div>
 
             <div className="flex gap-3">
@@ -156,7 +139,7 @@ export default function DataManagementModal({ open, onOpenChange }: DataManageme
                 className="flex-1"
                 disabled={deleting}
               >
-                {labels.cancel}
+                {t('common.cancel')}
               </Button>
               <Button
                 variant="destructive"
@@ -169,7 +152,7 @@ export default function DataManagementModal({ open, onOpenChange }: DataManageme
                 ) : (
                   <Trash2 className="w-4 h-4 mr-2" />
                 )}
-                {labels.confirmDelete}
+                {t('dataManagement.confirmDelete')}
               </Button>
             </div>
           </div>
@@ -179,8 +162,8 @@ export default function DataManagementModal({ open, onOpenChange }: DataManageme
             <div className="p-4 bg-card border border-border/40 rounded-xl">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h4 className="font-medium text-foreground">{labels.export}</h4>
-                  <p className="text-sm text-muted-foreground mt-1">{labels.exportDesc}</p>
+                  <h4 className="font-medium text-foreground">{t('dataManagement.export')}</h4>
+                  <p className="text-sm text-muted-foreground mt-1">{t('dataManagement.exportDesc')}</p>
                 </div>
                 <Button
                   variant="outline"
@@ -201,8 +184,8 @@ export default function DataManagementModal({ open, onOpenChange }: DataManageme
             <div className="p-4 bg-card border border-destructive/20 rounded-xl">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h4 className="font-medium text-foreground">{labels.delete}</h4>
-                  <p className="text-sm text-muted-foreground mt-1">{labels.deleteDesc}</p>
+                  <h4 className="font-medium text-foreground">{t('dataManagement.delete')}</h4>
+                  <p className="text-sm text-muted-foreground mt-1">{t('dataManagement.deleteDesc')}</p>
                 </div>
                 <Button
                   variant="outline"

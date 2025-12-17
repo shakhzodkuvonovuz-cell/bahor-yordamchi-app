@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 interface ProfileEditModalProps {
   open: boolean;
@@ -21,6 +22,7 @@ interface ProfileEditModalProps {
 }
 
 export default function ProfileEditModal({ open, onOpenChange, profile, onProfileUpdated }: ProfileEditModalProps) {
+  const { t } = useTranslation();
   const [firstName, setFirstName] = useState(profile.firstName || profile.first_name || "");
   const [lastName, setLastName] = useState(profile.lastName || profile.last_name || "");
   const [phone, setPhone] = useState(profile.phone || "");
@@ -39,7 +41,7 @@ export default function ProfileEditModal({ open, onOpenChange, profile, onProfil
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !user) {
-        throw new Error("Foydalanuvchi topilmadi");
+        throw new Error(t('common.userNotFound'));
       }
 
       // Update profile directly using Supabase client (bypasses service worker issues)
@@ -58,8 +60,8 @@ export default function ProfileEditModal({ open, onOpenChange, profile, onProfil
       }
 
       toast({
-        title: "✅ Muvaffaqiyatli!",
-        description: "Profil saqlandi",
+        title: t('profileEdit.saveSuccess'),
+        description: t('profileEdit.profileSaved'),
       });
 
       onProfileUpdated();
@@ -67,8 +69,8 @@ export default function ProfileEditModal({ open, onOpenChange, profile, onProfil
     } catch (error: any) {
       console.error("Error updating profile:", error);
       toast({
-        title: "Xatolik",
-        description: error.message || "Profil yangilanmadi",
+        title: t('common.error'),
+        description: error.message || t('profileEdit.updateFailed'),
         variant: "destructive",
       });
     } finally {
@@ -80,34 +82,34 @@ export default function ProfileEditModal({ open, onOpenChange, profile, onProfil
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">Profilni tahrirlash</DialogTitle>
+          <DialogTitle className="text-xl font-bold">{t('profileEdit.title')}</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="firstName">Ism</Label>
+            <Label htmlFor="firstName">{t('profileEdit.firstName')}</Label>
             <Input
               id="firstName"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              placeholder="Ismingizni kiriting"
+              placeholder={t('profileEdit.firstNamePlaceholder')}
               maxLength={50}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="lastName">Familiya</Label>
+            <Label htmlFor="lastName">{t('profileEdit.lastName')}</Label>
             <Input
               id="lastName"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              placeholder="Familiyangizni kiriting"
+              placeholder={t('profileEdit.lastNamePlaceholder')}
               maxLength={50}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone">Telefon raqam (ixtiyoriy)</Label>
+            <Label htmlFor="phone">{t('profileEdit.phone')}</Label>
             <Input
               id="phone"
               value={phone}
@@ -124,11 +126,11 @@ export default function ProfileEditModal({ open, onOpenChange, profile, onProfil
             onClick={() => onOpenChange(false)}
             disabled={loading}
           >
-            Bekor qilish
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleSave} disabled={loading}>
             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Saqlash
+            {t('common.save')}
           </Button>
         </DialogFooter>
       </DialogContent>
