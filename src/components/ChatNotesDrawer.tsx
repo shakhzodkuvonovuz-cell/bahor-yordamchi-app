@@ -14,19 +14,10 @@ interface ChatNotesDrawerProps {
 const NOTES_PREFIX = "bahorai_chat_notes_";
 
 export default function ChatNotesDrawer({ threadId, onNotesChange }: ChatNotesDrawerProps) {
-  const { language } = useTranslation();
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [notes, setNotes] = useState("");
   const [open, setOpen] = useState(false);
-
-  const labels = {
-    title: language === "uz" ? "Chat eslatmalari" : language === "ru" ? "Заметки чата" : "Chat Notes",
-    placeholder: language === "uz" 
-      ? "Bu yerga eslatmalar yozing. Ular AI javoblarida hisobga olinadi."
-      : "Write notes here. They will be considered in AI responses.",
-    save: language === "uz" ? "Saqlash" : language === "ru" ? "Сохранить" : "Save",
-    saved: language === "uz" ? "Saqlandi" : language === "ru" ? "Сохранено" : "Saved",
-  };
 
   // Load notes on mount
   useEffect(() => {
@@ -39,7 +30,7 @@ export default function ChatNotesDrawer({ threadId, onNotesChange }: ChatNotesDr
   const handleSave = () => {
     localStorage.setItem(`${NOTES_PREFIX}${threadId}`, notes);
     onNotesChange?.(notes);
-    toast({ description: labels.saved });
+    toast({ description: t('chatNotes.saved') });
     setOpen(false);
   };
 
@@ -54,7 +45,7 @@ export default function ChatNotesDrawer({ threadId, onNotesChange }: ChatNotesDr
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <StickyNote className="w-5 h-5 text-primary" />
-            {labels.title}
+            {t('chatNotes.title')}
           </SheetTitle>
         </SheetHeader>
 
@@ -62,18 +53,18 @@ export default function ChatNotesDrawer({ threadId, onNotesChange }: ChatNotesDr
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder={labels.placeholder}
+            placeholder={t('chatNotes.placeholder')}
             className="min-h-[150px] resize-none"
           />
 
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setOpen(false)}>
               <X className="w-4 h-4 mr-2" />
-              {language === "uz" ? "Yopish" : "Close"}
+              {t('common.close')}
             </Button>
             <Button onClick={handleSave}>
               <Save className="w-4 h-4 mr-2" />
-              {labels.save}
+              {t('common.save')}
             </Button>
           </div>
         </div>

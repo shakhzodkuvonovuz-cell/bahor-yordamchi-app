@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useHaptics } from "@/hooks/useHaptics";
+import { useTranslation } from "@/i18n/LanguageProvider";
 import { AiResponseRenderer } from "@/components/ai/AiResponseRenderer";
 import {
   DropdownMenu,
@@ -64,7 +65,6 @@ interface CircleChatMessageProps {
   onReply: (message: CircleMessage) => void;
   onDelete: (messageId: string) => void;
   onViewReaders?: (messageId: string) => void;
-  language: string;
 }
 
 // Helper to download file via blob
@@ -91,9 +91,9 @@ export default function CircleChatMessage({
   onReply,
   onDelete,
   onViewReaders,
-  language,
 }: CircleChatMessageProps) {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const { lightTap, mediumTap } = useHaptics();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showActionSheet, setShowActionSheet] = useState(false);
@@ -124,7 +124,7 @@ export default function CircleChatMessage({
     if (message.content) {
       lightTap();
       navigator.clipboard.writeText(message.content);
-      toast.success(language === "uz" ? "Nusxa olindi" : "Copied");
+      toast.success(t('circleMessage.copied'));
     }
     setShowActionSheet(false);
   };
@@ -346,7 +346,7 @@ export default function CircleChatMessage({
                       rel="noopener noreferrer"
                       className="p-2.5 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg hover:bg-secondary transition-colors touch-manipulation"
                       onClick={(e) => e.stopPropagation()}
-                      title={language === "uz" ? "Ochish" : "Open"}
+                      title={t('circleMessage.open')}
                     >
                       <ExternalLink className="w-4 h-4 text-muted-foreground" />
                     </a>
@@ -356,7 +356,7 @@ export default function CircleChatMessage({
                         downloadFile(attachment.signedUrl!, attachment.name);
                       }}
                       className="p-2.5 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg hover:bg-secondary transition-colors touch-manipulation"
-                      title={language === "uz" ? "Yuklab olish" : "Download"}
+                      title={t('circleMessage.download')}
                     >
                       <Download className="w-4 h-4 text-muted-foreground" />
                     </button>
@@ -374,7 +374,7 @@ export default function CircleChatMessage({
     if (!message.replyToMessage) return null;
 
     const replyContent = message.replyToMessage.deleted_at
-      ? language === "uz" ? "Xabar o'chirildi" : "Message deleted"
+      ? t('circleMessage.messageDeleted')
       : message.replyToMessage.content?.slice(0, 50) + (message.replyToMessage.content && message.replyToMessage.content.length > 50 ? "..." : "");
 
     const handleScrollToReply = () => {
@@ -441,7 +441,7 @@ export default function CircleChatMessage({
     return (
       <div className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
         <div className="px-4 py-2 rounded-2xl bg-secondary/50 text-muted-foreground italic text-sm">
-          {language === "uz" ? "Xabar o'chirildi" : "Message deleted"}
+          {t('circleMessage.messageDeleted')}
         </div>
       </div>
     );
@@ -499,7 +499,7 @@ export default function CircleChatMessage({
         <div 
           className="flex flex-col min-w-0" 
           style={{ 
-            maxWidth: 'calc(100% - 56px)',
+            maxWidth: isAi ? "95%" : "85%",
             transform: swipeOffset > 0 ? `translateX(${swipeOffset}px)` : undefined,
             transition: swipeOffset === 0 ? 'transform 0.2s ease-out' : 'none'
           }}
@@ -507,55 +507,57 @@ export default function CircleChatMessage({
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
           onTouchCancel={handleTouchCancel}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerCancel}
         >
+          {/* Sender name for others */}
+          {!isOwn && !isAi && message.senderName && (
+            <span className="text-xs font-medium text-muted-foreground mb-0.5 ml-1">
+              {message.senderName}
+            </span>
+          )}
+
+          {/* AI badge */}
+          {isAi && (
+            <div className="flex items-center gap-1.5 mb-1">
+              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+                <Sparkles className="w-3.5 h-3.5 text-primary" />
+              </div>
+              <span className="text-xs font-medium text-primary">Bahor AI</span>
+            </div>
+          )}
+
+          {/* Message bubble */}
           <div
             className={cn(
-              "rounded-2xl px-4 py-2.5 relative select-none overflow-hidden",
+              "relative rounded-2xl px-3.5 py-2.5 break-words overflow-hidden",
               isAi
-                ? "bg-primary/10 border border-primary/20 text-foreground"
+                ? "bg-primary/10 text-foreground"
                 : isOwn
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-secondary-foreground"
+                ? "bg-primary text-primary-foreground"
+                : "bg-secondary text-foreground"
             )}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerCancel}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              if (!isSending && !isFailed && !isDeleted) {
-                setShowActionSheet(true);
-              }
-            }}
           >
-            {/* AI badge */}
-            {isAi && (
-              <div className="flex items-center gap-1.5 text-xs font-medium text-primary mb-1">
-                <Sparkles className="w-3 h-3" />
-                Bahor AI
-              </div>
-            )}
-
-            {/* Sender name for others */}
-            {!isOwn && !isAi && (
-              <p className="text-xs font-medium opacity-70 mb-1">
-                {message.senderName}
-              </p>
-            )}
-
             {/* Reply preview */}
             {renderReplyPreview()}
 
-            {/* Content - Use AiResponseRenderer for AI messages */}
+            {/* Content */}
             {message.content && (
               isAi ? (
                 <AiResponseRenderer 
                   content={message.content} 
                   variant="circle"
-                  className="text-foreground"
+                  className={cn(
+                    "text-sm leading-relaxed",
+                    isOwn && "text-primary-foreground"
+                  )}
                 />
               ) : (
-                <p className="text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{message.content}</p>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                  {message.content}
+                </p>
               )
             )}
 
@@ -563,42 +565,45 @@ export default function CircleChatMessage({
             {renderAttachments()}
 
             {/* Time and status */}
-            <div className="flex items-center justify-end gap-1 mt-1">
-              <span className="text-[10px] opacity-50">
-                {new Date(message.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            <div className={cn(
+              "flex items-center gap-1.5 mt-1.5 text-[10px]",
+              isOwn ? "text-primary-foreground/70 justify-end" : "text-muted-foreground"
+            )}>
+              <span>
+                {new Date(message.created_at).toLocaleTimeString([], { 
+                  hour: '2-digit', 
+                  minute: '2-digit' 
+                })}
               </span>
               {renderStatus()}
             </div>
           </div>
         </div>
 
-        {/* Actions dropdown - visible on hover (desktop), always visible on mobile */}
-        {!isSending && !isFailed && (
-          <div className="opacity-80 sm:opacity-50 group-hover:opacity-100 transition-opacity ml-1.5 self-center flex-shrink-0">
+        {/* 3-dot menu for desktop */}
+        {!isSending && !isFailed && !isDeleted && (
+          <div className="hidden sm:flex items-center self-center ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button 
-                  onClick={() => lightTap()}
-                  className="p-2.5 min-w-[44px] min-h-[44px] rounded-xl bg-secondary/50 hover:bg-secondary active:bg-secondary/80 focus:bg-secondary flex items-center justify-center touch-manipulation transition-colors"
-                >
-                  <MoreVertical className="w-5 h-5 text-foreground/80" />
+                <button className="p-1.5 rounded-lg hover:bg-secondary transition-colors">
+                  <MoreVertical className="w-4 h-4 text-muted-foreground" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align={isOwn ? "end" : "start"} className="min-w-[160px]">
+              <DropdownMenuContent align={isOwn ? "end" : "start"} className="min-w-[140px]">
+                <DropdownMenuItem onClick={handleReply}>
+                  <Reply className="w-4 h-4 mr-2" />
+                  {t('circleMessage.reply')}
+                </DropdownMenuItem>
                 {message.content && (
-                  <DropdownMenuItem onClick={handleCopy} className="min-h-[44px] gap-3 text-sm">
-                    <Copy className="w-4 h-4" />
-                    {language === "uz" ? "Nusxa olish" : "Copy"}
+                  <DropdownMenuItem onClick={handleCopy}>
+                    <Copy className="w-4 h-4 mr-2" />
+                    {t('circleMessage.copy')}
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={() => { lightTap(); onReply(message); }} className="min-h-[44px] gap-3 text-sm">
-                  <Reply className="w-4 h-4" />
-                  {language === "uz" ? "Javob berish" : "Reply"}
-                </DropdownMenuItem>
                 {isOwn && (
-                  <DropdownMenuItem onClick={handleDelete} className="text-destructive min-h-[44px] gap-3 text-sm">
-                    <Trash2 className="w-4 h-4" />
-                    {language === "uz" ? "O'chirish" : "Delete"}
+                  <DropdownMenuItem onClick={handleDelete} className="text-destructive focus:text-destructive">
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    {t('common.delete')}
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
@@ -607,99 +612,75 @@ export default function CircleChatMessage({
         )}
       </div>
 
-      {/* Mobile action sheet (long-press) */}
+      {/* Mobile Action Sheet */}
       <Drawer open={showActionSheet} onOpenChange={setShowActionSheet}>
-        <DrawerContent>
-          <DrawerHeader className="pb-2">
-            <DrawerTitle className="text-base">{language === "uz" ? "Amallar" : "Actions"}</DrawerTitle>
+        <DrawerContent className="pb-safe">
+          <DrawerHeader className="sr-only">
+            <DrawerTitle>{t('circleMessage.actions')}</DrawerTitle>
           </DrawerHeader>
-          <div className="p-4 pt-0 space-y-2 pb-8">
+          <div className="px-4 pb-6 space-y-1">
             <button
               onClick={handleReply}
-              className="w-full flex items-center gap-3 px-4 py-3.5 min-h-[52px] rounded-2xl bg-secondary hover:bg-secondary/80 active:scale-[0.98] transition-all touch-manipulation"
+              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-secondary transition-colors touch-manipulation"
             >
-              <div className="w-10 h-10 rounded-xl bg-background/50 flex items-center justify-center">
-                <Reply className="w-5 h-5 text-muted-foreground" />
-              </div>
-              <span className="font-medium">{language === "uz" ? "Javob berish" : "Reply"}</span>
+              <Reply className="w-5 h-5 text-muted-foreground" />
+              <span className="text-base">{t('circleMessage.reply')}</span>
             </button>
             {message.content && (
               <button
                 onClick={handleCopy}
-                className="w-full flex items-center gap-3 px-4 py-3.5 min-h-[52px] rounded-2xl bg-secondary hover:bg-secondary/80 active:scale-[0.98] transition-all touch-manipulation"
+                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-secondary transition-colors touch-manipulation"
               >
-                <div className="w-10 h-10 rounded-xl bg-background/50 flex items-center justify-center">
-                  <Copy className="w-5 h-5 text-muted-foreground" />
-                </div>
-                <span className="font-medium">{language === "uz" ? "Nusxa olish" : "Copy"}</span>
+                <Copy className="w-5 h-5 text-muted-foreground" />
+                <span className="text-base">{t('circleMessage.copy')}</span>
               </button>
             )}
             {isOwn && (
               <button
                 onClick={handleDelete}
-                className="w-full flex items-center gap-3 px-4 py-3.5 min-h-[52px] rounded-2xl bg-destructive/10 hover:bg-destructive/20 active:scale-[0.98] text-destructive transition-all touch-manipulation"
+                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-destructive/10 text-destructive transition-colors touch-manipulation"
               >
-                <div className="w-10 h-10 rounded-xl bg-destructive/10 flex items-center justify-center">
-                  <Trash2 className="w-5 h-5" />
-                </div>
-                <span className="font-medium">{language === "uz" ? "O'chirish" : "Delete"}</span>
+                <Trash2 className="w-5 h-5" />
+                <span className="text-base">{t('common.delete')}</span>
               </button>
             )}
           </div>
         </DrawerContent>
       </Drawer>
 
-      {/* Delete confirmation */}
+      {/* Delete Confirmation */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {language === "uz" ? "Xabarni o'chirish" : "Delete message"}
-            </AlertDialogTitle>
+            <AlertDialogTitle>{t('circleMessage.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {language === "uz"
-                ? "Bu xabar barcha a'zolar uchun o'chiriladi."
-                : "This message will be deleted for all members."}
+              {t('circleMessage.deleteDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>
-              {language === "uz" ? "Bekor" : "Cancel"}
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
-              {language === "uz" ? "O'chirish" : "Delete"}
+            <AlertDialogCancel className="rounded-xl">{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90 rounded-xl">
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Image lightbox */}
+      {/* Image Lightbox */}
       <Dialog open={!!lightboxImage} onOpenChange={() => setLightboxImage(null)}>
-        <DialogContent className="max-w-4xl p-0 bg-black/90 border-none">
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-transparent border-none">
+          <button
+            onClick={() => setLightboxImage(null)}
+            className="absolute top-2 right-2 z-50 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+          >
+            ✕
+          </button>
           {lightboxImage && (
-            <div className="relative">
-              <img
-                src={lightboxImage}
-                alt=""
-                className="w-full h-auto max-h-[80vh] object-contain"
-              />
-              <div className="absolute bottom-4 right-4 flex gap-2">
-                <a
-                  href={lightboxImage}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-white/20 hover:bg-white/30 transition-colors touch-manipulation"
-                >
-                  <ExternalLink className="w-5 h-5 text-white" />
-                </a>
-                <button
-                  onClick={() => downloadFile(lightboxImage, "image")}
-                  className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-white/20 hover:bg-white/30 transition-colors touch-manipulation"
-                >
-                  <Download className="w-5 h-5 text-white" />
-                </button>
-              </div>
-            </div>
+            <img
+              src={lightboxImage}
+              alt="Preview"
+              className="max-w-full max-h-[90vh] object-contain rounded-lg mx-auto"
+            />
           )}
         </DialogContent>
       </Dialog>

@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { haptic } from "@/lib/haptics";
 import { downloadPDF, generatePDF, sanitizeFilename, openHTMLPrintFallback } from "@/lib/pdfGenerator";
 import { AiResponseRenderer } from "@/components/ai/AiResponseRenderer";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 interface AICard {
   id: string;
@@ -29,6 +30,7 @@ interface CircleAICardProps {
 }
 
 export function CircleAICard({ card, circleId, onDelete, onSendToChat, isLatest }: CircleAICardProps) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(isLatest);
   const [savingToFiles, setSavingToFiles] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
@@ -36,7 +38,7 @@ export function CircleAICard({ card, circleId, onDelete, onSendToChat, isLatest 
   const { toast } = useToast();
 
   // Use title with fallback to auto_title
-  const displayTitle = card.title || card.auto_title || "Natija";
+  const displayTitle = card.title || card.auto_title || t('circleAICard.result');
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -59,9 +61,9 @@ export function CircleAICard({ card, circleId, onDelete, onSendToChat, isLatest 
     try {
       await navigator.clipboard.writeText(card.content_md);
       haptic("light");
-      toast({ title: "Nusxalandi ✓" });
+      toast({ title: t('circleAICard.copied') });
     } catch {
-      toast({ title: "Nusxalashda xatolik", variant: "destructive" });
+      toast({ title: t('circleAICard.copyError'), variant: "destructive" });
     }
   };
 
@@ -69,7 +71,7 @@ export function CircleAICard({ card, circleId, onDelete, onSendToChat, isLatest 
     if (onSendToChat) {
       onSendToChat(card.content_md, displayTitle);
       haptic("light");
-      toast({ title: "Chatga yuborildi ✓" });
+      toast({ title: t('circleAICard.sentToChat') });
     }
   };
 
@@ -86,14 +88,14 @@ export function CircleAICard({ card, circleId, onDelete, onSendToChat, isLatest 
       await downloadPDF(getPdfOptions());
       
       haptic("success");
-      toast({ title: "PDF yuklandi ✓" });
+      toast({ title: t('circleAICard.pdfDownloaded') });
     } catch (err) {
       console.error("[AI_PDF_EXPORT] PDF error:", err);
       setPdfError(true);
       haptic("error");
       toast({ 
-        title: "PDF yaratilmadi", 
-        description: "Print orqali PDF saqlashingiz mumkin",
+        title: t('circleAICard.pdfError'), 
+        description: t('circleAICard.pdfErrorDesc'),
         variant: "destructive" 
       });
     } finally {
@@ -104,7 +106,7 @@ export function CircleAICard({ card, circleId, onDelete, onSendToChat, isLatest 
   const handlePrintFallback = () => {
     openHTMLPrintFallback(getPdfOptions());
     haptic("light");
-    toast({ title: "HTML ochildi — Print orqali PDF saqlang" });
+    toast({ title: t('circleAICard.htmlOpened') });
   };
 
   const handleSaveToFiles = async () => {
@@ -139,10 +141,10 @@ export function CircleAICard({ card, circleId, onDelete, onSendToChat, isLatest 
       if (dbError) throw dbError;
 
       haptic("success");
-      toast({ title: "Fayllarga saqlandi ✓" });
+      toast({ title: t('circleAICard.savedToFiles') });
     } catch (err) {
       console.error("Save to files error:", err);
-      toast({ title: "Saqlashda xatolik", variant: "destructive" });
+      toast({ title: t('circleAICard.saveError'), variant: "destructive" });
     } finally {
       setSavingToFiles(false);
     }
@@ -191,12 +193,12 @@ export function CircleAICard({ card, circleId, onDelete, onSendToChat, isLatest 
           <div className="flex flex-wrap items-center gap-2 p-3 border-t bg-muted/30">
             <Button size="sm" variant="ghost" onClick={handleCopy} className="gap-1.5">
               <Copy className="h-3.5 w-3.5" />
-              Nusxa
+              {t('circleAICard.copy')}
             </Button>
             {onSendToChat && (
               <Button size="sm" variant="ghost" onClick={handleSendToChat} className="gap-1.5">
                 <Send className="h-3.5 w-3.5" />
-                Chatga
+                {t('circleAICard.toChat')}
               </Button>
             )}
             <Button 
@@ -236,7 +238,7 @@ export function CircleAICard({ card, circleId, onDelete, onSendToChat, isLatest 
               ) : (
                 <FolderDown className="h-3.5 w-3.5" />
               )}
-              Fayllarga
+              {t('circleAICard.toFiles')}
             </Button>
             <div className="flex-1" />
             <Button size="sm" variant="ghost" onClick={onDelete} className="text-destructive hover:text-destructive">

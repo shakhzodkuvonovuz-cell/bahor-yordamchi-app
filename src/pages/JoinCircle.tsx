@@ -21,7 +21,7 @@ export default function JoinCircle() {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { language } = useTranslation();
+  const { t } = useTranslation();
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -55,7 +55,7 @@ export default function JoinCircle() {
 
         if (rpcError) {
           console.error("RPC error:", rpcError);
-          setError(language === "uz" ? "Xatolik yuz berdi" : "An error occurred");
+          setError(t('common.error'));
           setLoading(false);
           return;
         }
@@ -70,19 +70,19 @@ export default function JoinCircle() {
         };
 
         if (result.error === "invite_not_found") {
-          setError(language === "uz" ? "Taklif kodi topilmadi yoki bekor qilingan" : "Invite code not found or revoked");
+          setError(t('joinCircle.inviteNotFound'));
           setLoading(false);
           return;
         }
 
         if (result.error === "space_not_found") {
-          setError(language === "uz" ? "Doira topilmadi" : "Circle not found");
+          setError(t('joinCircle.circleNotFound'));
           setLoading(false);
           return;
         }
 
         if (!result.id) {
-          setError(language === "uz" ? "Xatolik yuz berdi" : "An error occurred");
+          setError(t('common.error'));
           setLoading(false);
           return;
         }
@@ -106,7 +106,7 @@ export default function JoinCircle() {
           if (membership.status === "active") {
             setAlreadyMember(true);
           } else if (membership.status === "blocked") {
-            setError(language === "uz" ? "Siz bu doiradan bloklangansiz" : "You are blocked from this circle");
+            setError(t('joinCircle.blocked'));
           }
         }
 
@@ -125,14 +125,14 @@ export default function JoinCircle() {
         }
       } catch (err) {
         console.error("Error checking invite:", err);
-        setError(language === "uz" ? "Xatolik yuz berdi" : "An error occurred");
+        setError(t('common.error'));
       } finally {
         setLoading(false);
       }
     };
 
     checkInvite();
-  }, [code, user, authLoading, language]);
+  }, [code, user, authLoading, t]);
 
   const handleSubmitRequest = async () => {
     if (!circle || !user || !code) return;
@@ -163,14 +163,14 @@ export default function JoinCircle() {
       if (error) throw error;
 
       setSubmitted(true);
-      toast.success(language === "uz" ? "So'rov yuborildi!" : "Request submitted!");
+      toast.success(t('joinCircle.requestSent'));
     } catch (err: any) {
       console.error("Error submitting request:", err);
       if (err.code === "23505") {
-        toast.error(language === "uz" ? "Siz allaqachon so'rov yuborgansiz" : "You already submitted a request");
+        toast.error(t('joinCircle.alreadyRequested'));
         setExistingRequest("pending");
       } else {
-        toast.error(language === "uz" ? "Xatolik yuz berdi" : "An error occurred");
+        toast.error(t('common.error'));
       }
     } finally {
       setSubmitting(false);
@@ -204,19 +204,17 @@ export default function JoinCircle() {
           </div>
           <div className="space-y-2">
             <h1 className="text-xl font-bold text-foreground">
-              {language === "uz" ? "Doiraga qo'shilish" : "Join Circle"}
+              {t('joinCircle.title')}
             </h1>
             <p className="text-muted-foreground">
-              {language === "uz"
-                ? "Davom etish uchun avval tizimga kiring"
-                : "Please sign in to continue"}
+              {t('joinCircle.signInPrompt')}
             </p>
           </div>
           <Button 
             onClick={() => navigate(`/auth?next=/circles/invite/${code}`)}
             className="w-full h-12 min-h-[48px] rounded-xl touch-manipulation"
           >
-            {language === "uz" ? "Kirish" : "Sign In"}
+            {t('joinCircle.signIn')}
           </Button>
         </div>
       </div>
@@ -245,7 +243,7 @@ export default function JoinCircle() {
             onClick={() => navigate("/circles")}
             className="w-full h-12 min-h-[48px] rounded-xl touch-manipulation"
           >
-            {language === "uz" ? "Doiralarga qaytish" : "Back to Circles"}
+            {t('joinCircle.backToCircles')}
           </Button>
         </div>
       </div>
@@ -262,7 +260,7 @@ export default function JoinCircle() {
           </div>
           <div className="space-y-2">
             <h1 className="text-xl font-bold text-foreground">
-              {language === "uz" ? "Siz allaqachon a'zosiz!" : "You're already a member!"}
+              {t('joinCircle.alreadyMember')}
             </h1>
             <p className="text-muted-foreground text-lg">{circle.name}</p>
           </div>
@@ -270,7 +268,7 @@ export default function JoinCircle() {
             onClick={() => navigate(`/circles/${circle.id}`)}
             className="w-full h-12 min-h-[48px] rounded-xl touch-manipulation"
           >
-            {language === "uz" ? "Doiraga kirish" : "Go to Circle"}
+            {t('joinCircle.goToCircle')}
           </Button>
         </div>
       </div>
@@ -287,12 +285,10 @@ export default function JoinCircle() {
           </div>
           <div className="space-y-2">
             <h1 className="text-xl font-bold text-foreground">
-              {language === "uz" ? "So'rov yuborildi!" : "Request Submitted!"}
+              {t('joinCircle.requestSubmitted')}
             </h1>
             <p className="text-muted-foreground">
-              {language === "uz"
-                ? `"${circle?.name}" doirasi admini so'rovingizni ko'rib chiqadi.`
-                : `The admin of "${circle?.name}" will review your request.`}
+              {t('joinCircle.adminWillReview', { circleName: circle?.name || '' })}
             </p>
           </div>
           <Button 
@@ -300,7 +296,7 @@ export default function JoinCircle() {
             onClick={() => navigate("/circles")}
             className="w-full h-12 min-h-[48px] rounded-xl touch-manipulation"
           >
-            {language === "uz" ? "Doiralarga qaytish" : "Back to Circles"}
+            {t('joinCircle.backToCircles')}
           </Button>
         </div>
       </div>
@@ -317,12 +313,10 @@ export default function JoinCircle() {
           </div>
           <div className="space-y-2">
             <h1 className="text-xl font-bold text-foreground">
-              {language === "uz" ? "So'rov rad etildi" : "Request Rejected"}
+              {t('joinCircle.requestRejected')}
             </h1>
             <p className="text-muted-foreground">
-              {language === "uz"
-                ? "Admin so'rovingizni rad etgan."
-                : "The admin has rejected your request."}
+              {t('joinCircle.adminRejected')}
             </p>
           </div>
           <Button 
@@ -330,7 +324,7 @@ export default function JoinCircle() {
             onClick={() => navigate("/circles")}
             className="w-full h-12 min-h-[48px] rounded-xl touch-manipulation"
           >
-            {language === "uz" ? "Doiralarga qaytish" : "Back to Circles"}
+            {t('joinCircle.backToCircles')}
           </Button>
         </div>
       </div>
@@ -347,12 +341,10 @@ export default function JoinCircle() {
           </div>
           <div className="space-y-2">
             <h1 className="text-xl font-bold text-foreground">
-              {language === "uz" ? "Kirish taqiqlangan" : "Access Blocked"}
+              {t('joinCircle.accessBlocked')}
             </h1>
             <p className="text-muted-foreground">
-              {language === "uz"
-                ? "Siz bu doiraga qo'shila olmaysiz."
-                : "You cannot join this Circle."}
+              {t('joinCircle.cannotJoin')}
             </p>
           </div>
           <Button 
@@ -360,7 +352,7 @@ export default function JoinCircle() {
             onClick={() => navigate("/circles")}
             className="w-full h-12 min-h-[48px] rounded-xl touch-manipulation"
           >
-            {language === "uz" ? "Doiralarga qaytish" : "Back to Circles"}
+            {t('joinCircle.backToCircles')}
           </Button>
         </div>
       </div>
@@ -377,32 +369,30 @@ export default function JoinCircle() {
             <Users className="w-10 h-10 text-primary" />
           </div>
           <h1 className="text-xl font-bold text-foreground">
-            {language === "uz" ? "Doiraga qo'shilish" : "Join Circle"}
+            {t('joinCircle.title')}
           </h1>
           <p className="text-2xl font-bold text-primary">{circle?.name}</p>
           {circle?.owner_name && (
             <p className="text-sm text-muted-foreground">
-              {language === "uz" ? "Yaratuvchi:" : "Owner:"} {circle.owner_name}
+              {t('joinCircle.owner')}: {circle.owner_name}
             </p>
           )}
         </div>
 
         <div className="space-y-4 p-5 rounded-2xl bg-card border border-border">
           <p className="text-sm text-muted-foreground text-center">
-            {language === "uz"
-              ? "Admin so'rovingizni tasdiqlashi kerak"
-              : "Admin approval is required to join"}
+            {t('joinCircle.approvalRequired')}
           </p>
 
           <div className="space-y-2">
             <Label htmlFor="note" className="text-sm font-medium">
-              {language === "uz" ? "Izoh (ixtiyoriy)" : "Note (optional)"}
+              {t('joinCircle.noteLabel')}
             </Label>
             <Input
               id="note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder={language === "uz" ? "Masalan: Salom, men Ali" : "e.g. Hi, I'm Ali"}
+              placeholder={t('joinCircle.notePlaceholder')}
               maxLength={200}
               className="h-12 min-h-[48px] rounded-xl text-base"
             />
@@ -413,9 +403,7 @@ export default function JoinCircle() {
             disabled={submitting}
             className="w-full h-12 min-h-[48px] rounded-xl touch-manipulation"
           >
-            {submitting
-              ? language === "uz" ? "Yuborilmoqda..." : "Submitting..."
-              : language === "uz" ? "So'rov yuborish" : "Submit Request"}
+            {submitting ? t('joinCircle.submitting') : t('joinCircle.submitRequest')}
           </Button>
         </div>
 
@@ -424,7 +412,7 @@ export default function JoinCircle() {
           onClick={() => navigate("/circles")}
           className="w-full h-11 min-h-[44px] rounded-xl touch-manipulation"
         >
-          {language === "uz" ? "Bekor qilish" : "Cancel"}
+          {t('common.cancel')}
         </Button>
       </div>
     </div>

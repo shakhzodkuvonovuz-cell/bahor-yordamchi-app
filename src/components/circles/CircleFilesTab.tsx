@@ -82,7 +82,7 @@ function isPreviewable(mimeType: string | null): boolean {
 
 export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps) {
   const { user } = useAuth();
-  const { language } = useTranslation();
+  const { t } = useTranslation();
   const { lightTap, mediumTap } = useHaptics();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -132,7 +132,7 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
       );
     } catch (err) {
       console.error("Error fetching files:", err);
-      toast.error(language === "uz" ? "Xatolik yuz berdi" : "Error loading files");
+      toast.error(t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -148,13 +148,13 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
 
     // Validate type
     if (!ACCEPTED_TYPES.includes(file.type)) {
-      toast.error(language === "uz" ? "Bu fayl turi qo'llab-quvvatlanmaydi" : "File type not supported");
+      toast.error(t('circleFiles.typeNotSupported'));
       return;
     }
 
     // Validate size (10MB max)
     if (file.size > 10 * 1024 * 1024) {
-      toast.error(language === "uz" ? "Fayl hajmi 10MB dan oshmasligi kerak" : "File size must be under 10MB");
+      toast.error(t('circleFiles.sizeLimit'));
       return;
     }
 
@@ -184,11 +184,11 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
       if (dbError) throw dbError;
 
       mediumTap();
-      toast.success(language === "uz" ? "Fayl yuklandi" : "File uploaded");
+      toast.success(t('circleFiles.uploaded'));
       fetchFiles();
     } catch (err) {
       console.error("Error uploading file:", err);
-      toast.error(language === "uz" ? "Yuklashda xatolik" : "Upload failed");
+      toast.error(t('circleFiles.uploadFailed'));
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -229,7 +229,7 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
       mediumTap();
     } catch (err) {
       console.error("Error downloading file:", err);
-      toast.error(language === "uz" ? "Yuklab olishda xatolik" : "Download failed");
+      toast.error(t('circleFiles.downloadFailed'));
     }
   };
 
@@ -245,7 +245,7 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
       setPreviewFile(file);
     } catch (err) {
       console.error("Error getting preview URL:", err);
-      toast.error(language === "uz" ? "Xatolik yuz berdi" : "Error loading preview");
+      toast.error(t('common.error'));
     }
   };
 
@@ -271,12 +271,12 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
       if (dbError) throw dbError;
 
       mediumTap();
-      toast.success(language === "uz" ? "Fayl o'chirildi" : "File deleted");
+      toast.success(t('circleFiles.deleted'));
       setDeleteFile(null);
       fetchFiles();
     } catch (err) {
       console.error("Error deleting file:", err);
-      toast.error(language === "uz" ? "O'chirishda xatolik" : "Delete failed");
+      toast.error(t('circleFiles.deleteFailed'));
     } finally {
       setDeleting(false);
     }
@@ -292,14 +292,11 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
 
       if (error) throw error;
 
-      toast.success(file.pinned 
-        ? (language === "uz" ? "Olib tashlandi" : "Unpinned")
-        : (language === "uz" ? "Mahkamlandi" : "Pinned")
-      );
+      toast.success(file.pinned ? t('circleFiles.unpinned') : t('circleFiles.pinned'));
       fetchFiles();
     } catch (err) {
       console.error("Error toggling pin:", err);
-      toast.error(language === "uz" ? "Xatolik yuz berdi" : "Error");
+      toast.error(t('common.error'));
     }
   };
 
@@ -326,10 +323,7 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
           className="gap-2 h-12 min-h-[48px] px-5 rounded-xl touch-manipulation"
         >
           <Upload className="w-5 h-5" />
-          {uploading 
-            ? (language === "uz" ? "Yuklanmoqda..." : "Uploading...")
-            : (language === "uz" ? "Fayl yuklash" : "Upload file")
-          }
+          {uploading ? t('circleFiles.uploading') : t('circleFiles.uploadFile')}
         </Button>
       </div>
 
@@ -339,8 +333,8 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
           <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-secondary flex items-center justify-center">
             <FileText className="w-8 h-8 opacity-50" />
           </div>
-          <p className="font-medium">{language === "uz" ? "Hali fayllar yo'q" : "No files yet"}</p>
-          <p className="text-sm mt-1 opacity-70">{language === "uz" ? "Yuqoridagi tugmani bosib fayl yuklang" : "Click the button above to upload"}</p>
+          <p className="font-medium">{t('circleFiles.noFiles')}</p>
+          <p className="text-sm mt-1 opacity-70">{t('circleFiles.uploadHint')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -390,7 +384,7 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
                       className="min-h-[48px] py-3 px-4 rounded-lg touch-manipulation"
                     >
                       <Eye className="w-5 h-5 mr-3" />
-                      {language === "uz" ? "Ko'rish" : "Preview"}
+                      {t('circleFiles.preview')}
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem 
@@ -398,7 +392,7 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
                     className="min-h-[48px] py-3 px-4 rounded-lg touch-manipulation"
                   >
                     <Download className="w-5 h-5 mr-3" />
-                    {language === "uz" ? "Yuklab olish" : "Download"}
+                    {t('circleFiles.download')}
                   </DropdownMenuItem>
                   {isAdmin && (
                     <DropdownMenuItem 
@@ -408,12 +402,12 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
                       {file.pinned ? (
                         <>
                           <PinOff className="w-5 h-5 mr-3" />
-                          {language === "uz" ? "Olib tashlash" : "Unpin"}
+                          {t('circleFiles.unpin')}
                         </>
                       ) : (
                         <>
                           <Pin className="w-5 h-5 mr-3" />
-                          {language === "uz" ? "Mahkamlash" : "Pin"}
+                          {t('circleFiles.pin')}
                         </>
                       )}
                     </DropdownMenuItem>
@@ -424,7 +418,7 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
                       className="text-destructive focus:text-destructive min-h-[48px] py-3 px-4 rounded-lg touch-manipulation"
                     >
                       <Trash2 className="w-5 h-5 mr-3" />
-                      {language === "uz" ? "O'chirish" : "Delete"}
+                      {t('common.delete')}
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
@@ -461,14 +455,14 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
               onClick={() => { setPreviewFile(null); setPreviewUrl(""); }}
               className="flex-1 h-11 min-h-[44px] rounded-xl touch-manipulation"
             >
-              {language === "uz" ? "Yopish" : "Close"}
+              {t('common.close')}
             </Button>
             <Button 
               onClick={() => previewFile && handleDownload(previewFile)}
               className="flex-1 h-11 min-h-[44px] rounded-xl touch-manipulation gap-2"
             >
               <Download className="w-4 h-4" />
-              {language === "uz" ? "Yuklab olish" : "Download"}
+              {t('circleFiles.download')}
             </Button>
           </div>
         </DialogContent>
@@ -479,32 +473,29 @@ export default function CircleFilesTab({ spaceId, isAdmin }: CircleFilesTabProps
         <DrawerContent className="rounded-t-2xl">
           <DrawerHeader className="text-center pb-2">
             <DrawerTitle className="text-lg">
-              {language === "uz" ? "Faylni o'chirish" : "Delete file"}
+              {t('circleFiles.deleteFile')}
             </DrawerTitle>
           </DrawerHeader>
           <div className="px-6 pb-4">
             <p className="text-muted-foreground text-sm text-center">
-              {language === "uz" 
-                ? `"${deleteFile?.original_name}" faylini o'chirishni xohlaysizmi?`
-                : `Are you sure you want to delete "${deleteFile?.original_name}"?`
-              }
+              {t('circleFiles.deleteConfirm', { filename: deleteFile?.original_name || '' })}
             </p>
           </div>
-          <DrawerFooter className="flex-col gap-2 px-6 pb-8">
-            <Button 
-              variant="destructive" 
-              className="w-full h-12 min-h-[48px] rounded-xl touch-manipulation"
+          <DrawerFooter className="pt-2">
+            <Button
+              variant="destructive"
               onClick={handleDelete}
               disabled={deleting}
+              className="h-12 min-h-[48px] rounded-xl touch-manipulation"
             >
-              {deleting 
-                ? (language === "uz" ? "O'chirilmoqda..." : "Deleting...")
-                : (language === "uz" ? "O'chirish" : "Delete")
-              }
+              {deleting ? t('common.deleting') : t('common.delete')}
             </Button>
             <DrawerClose asChild>
-              <Button variant="ghost" className="w-full h-11 min-h-[44px] rounded-xl touch-manipulation">
-                {language === "uz" ? "Bekor qilish" : "Cancel"}
+              <Button 
+                variant="outline"
+                className="h-12 min-h-[48px] rounded-xl touch-manipulation"
+              >
+                {t('common.cancel')}
               </Button>
             </DrawerClose>
           </DrawerFooter>
