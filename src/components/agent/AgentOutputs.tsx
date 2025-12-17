@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AiResponseRenderer } from "@/components/ai/AiResponseRenderer";
 import { downloadPDF } from "@/lib/pdfGenerator";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 interface ConversationTurn {
   role: "user" | "assistant";
@@ -51,6 +52,7 @@ export function AgentOutputs({
   stepsCount,
   onSourceClick,
 }: AgentOutputsProps) {
+  const { t } = useTranslation();
   const [isSaving, setIsSaving] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"document" | "table" | "code">("document");
@@ -58,7 +60,7 @@ export function AgentOutputs({
   const handleCopyResult = () => {
     if (currentRun?.final_output) {
       navigator.clipboard.writeText(currentRun.final_output);
-      toast.success("Nusxa olindi!");
+      toast.success(t('agent.copiedToClipboard'));
     }
   };
 
@@ -66,7 +68,7 @@ export function AgentOutputs({
     if (!currentRun?.final_output) return;
     
     try {
-      toast.loading("PDF tayyorlanmoqda...");
+      toast.loading(t('agent.pdfPreparing'));
       
       await downloadPDF({
         title: currentRun.goal.slice(0, 60),
@@ -80,11 +82,11 @@ export function AgentOutputs({
       });
       
       toast.dismiss();
-      toast.success("PDF yuklab olindi!");
+      toast.success(t('agent.pdfDownloaded'));
     } catch (error) {
       console.error("PDF export error:", error);
       toast.dismiss();
-      toast.error("PDF yaratishda xato");
+      toast.error(t('agent.pdfError'));
     }
   };
 
@@ -99,7 +101,7 @@ export function AgentOutputs({
         day: "2-digit",
       }).replace(/\//g, "-");
       
-      const mdContent = `# ${currentRun.goal}\n\n*Yaratilgan: ${new Date().toLocaleString("uz-UZ")}*\n\n---\n\n${currentRun.final_output}`;
+      const mdContent = `# ${currentRun.goal}\n\n*${new Date().toLocaleString("uz-UZ")}*\n\n---\n\n${currentRun.final_output}`;
       
       const blob = new Blob([mdContent], { type: "text/markdown" });
       const fileName = `agent-${dateStr}-${currentRun.id.slice(0, 8)}.md`;
@@ -133,10 +135,10 @@ export function AgentOutputs({
 
       if (dbError) throw dbError;
 
-      toast.success("Fayllarimga saqlandi!");
+      toast.success(t('agent.savedToFiles'));
     } catch (error: any) {
       console.error("Save error:", error);
-      toast.error("Saqlashda xato yuz berdi");
+      toast.error(t('agent.saveError'));
     } finally {
       setIsSaving(false);
     }
@@ -154,10 +156,10 @@ export function AgentOutputs({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success("Rasm yuklab olindi!");
+      toast.success(t('agent.imageDownloaded'));
     } catch (error) {
       console.error("Download error:", error);
-      toast.error("Yuklab olishda xato");
+      toast.error(t('agent.downloadError'));
     }
   };
 
@@ -183,9 +185,9 @@ export function AgentOutputs({
                 {turn.role === "user" ? (
                   <>
                     <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                      <span className="text-[10px] font-medium">Siz</span>
+                      <span className="text-[10px] font-medium">{t('agent.outputs.you')}</span>
                     </div>
-                    <span className="text-xs font-medium text-primary">Savol</span>
+                    <span className="text-xs font-medium text-primary">{t('agent.outputs.question')}</span>
                   </>
                 ) : (
                   <>
@@ -195,7 +197,7 @@ export function AgentOutputs({
                     <span className="text-xs font-medium">Bahor AI</span>
                     {turn.sources && turn.sources.length > 0 && (
                       <Badge variant="outline" className="text-[9px] h-4">
-                        {turn.sources.length} manba
+                        {turn.sources.length} {t('agent.outputs.source')}
                       </Badge>
                     )}
                   </>
@@ -218,7 +220,7 @@ export function AgentOutputs({
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Image className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium">Yaratilgan rasmlar</span>
+            <span className="text-sm font-medium">{t('agent.outputs.generatedImages')}</span>
             <Badge variant="secondary" className="text-[10px]">{generatedImages.length}</Badge>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -277,18 +279,18 @@ export function AgentOutputs({
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="gap-1 text-[10px] bg-green-500/10 text-green-600">
                 <Check className="h-2.5 w-2.5" />
-                Tayyor
+                {t('agent.status.ready')}
               </Badge>
               {currentRun.sources && (currentRun.sources as any[]).length > 0 && (
                 <Badge variant="outline" className="text-[10px]">
-                  {(currentRun.sources as any[]).length} manba
+                  {(currentRun.sources as any[]).length} {t('agent.outputs.source')}
                 </Badge>
               )}
             </div>
             <div className="flex gap-1.5 flex-wrap">
               <Button variant="outline" size="sm" onClick={handleCopyResult} className="gap-1 h-7 text-xs">
                 <Copy className="h-3 w-3" />
-                Nusxa
+                {t('agent.outputs.copy')}
               </Button>
               <Button variant="outline" size="sm" onClick={handleExportPDF} className="gap-1 h-7 text-xs">
                 <FileDown className="h-3 w-3" />
@@ -306,7 +308,7 @@ export function AgentOutputs({
                 ) : (
                   <Save className="h-3 w-3" />
                 )}
-                {isSaving ? "Saqlanmoqda..." : "Saqlash"}
+                {isSaving ? t('agent.outputs.saving') : t('agent.outputs.save')}
               </Button>
             </div>
           </div>
@@ -317,18 +319,18 @@ export function AgentOutputs({
               <TabsList className="h-7">
                 <TabsTrigger value="document" className="text-[10px] gap-1 h-6">
                   <FileText className="h-3 w-3" />
-                  Hujjat
+                  {t('agent.outputs.document')}
                 </TabsTrigger>
                 {hasTable && (
                   <TabsTrigger value="table" className="text-[10px] gap-1 h-6">
                     <Table className="h-3 w-3" />
-                    Jadval
+                    {t('agent.outputs.table')}
                   </TabsTrigger>
                 )}
                 {hasCode && (
                   <TabsTrigger value="code" className="text-[10px] gap-1 h-6">
                     <Code className="h-3 w-3" />
-                    Kod
+                    {t('agent.outputs.code')}
                   </TabsTrigger>
                 )}
               </TabsList>
@@ -345,7 +347,7 @@ export function AgentOutputs({
             <div className="space-y-2">
               <h4 className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                 <ExternalLink className="h-3 w-3" />
-                Manbalar
+                {t('agent.sources')}
               </h4>
               <div className="flex flex-wrap gap-1.5">
                 {(currentRun.sources as any[]).slice(0, 8).map((source, i) => (
@@ -367,7 +369,7 @@ export function AgentOutputs({
       ) : generatedImages.length === 0 && conversationHistory.length === 0 ? (
         <div className="text-center py-6 text-muted-foreground">
           <FileText className="h-10 w-10 mx-auto mb-2 opacity-30" />
-          <p className="text-xs">Natijalar bu yerda ko'rsatiladi</p>
+          <p className="text-xs">{t('agent.outputs.resultsWillShow')}</p>
         </div>
       ) : null}
 
