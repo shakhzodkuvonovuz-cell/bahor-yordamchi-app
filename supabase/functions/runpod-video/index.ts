@@ -6,6 +6,27 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// ==========================================
+// CONFIGURABLE SAFETY LIMITS (env vars)
+// ==========================================
+const VIDEO_COOLDOWN_SECONDS = parseInt(Deno.env.get("VIDEO_COOLDOWN_SECONDS") || "90");
+const VIDEO_GLOBAL_CONCURRENCY_CAP = parseInt(Deno.env.get("VIDEO_GLOBAL_CONCURRENCY_CAP") || "3");
+const VIDEO_MAX_SECONDS = parseInt(Deno.env.get("VIDEO_MAX_SECONDS") || "6");
+const VIDEO_MAX_STEPS = parseInt(Deno.env.get("VIDEO_MAX_STEPS") || "30");
+const SIGNED_URL_EXPIRY_SECONDS = 3600; // 1 hour
+
+// Allowed resolution presets (to prevent abuse)
+const ALLOWED_RESOLUTIONS = [
+  { width: 768, height: 432 }, // 16:9 cinematic
+  { width: 768, height: 512 }, // portrait-ish
+  { width: 512, height: 512 }, // square
+  { width: 432, height: 768 }, // 9:16 vertical
+  { width: 640, height: 480 }, // 4:3
+];
+
+// Allowed FPS values
+const ALLOWED_FPS = [8, 12, 24];
+
 // Daily limits per plan - FREE USERS CANNOT ACCESS VIDEO
 const DAILY_LIMITS: Record<string, number> = {
   free: 0, // No video access for free users
@@ -13,6 +34,26 @@ const DAILY_LIMITS: Record<string, number> = {
   premium: 10,
   dev_unlimited: -1, // unlimited
 };
+
+// Helper to create consistent error responses
+function errorResponse(
+  code: string,
+  messageEn: string,
+  messageUz: string,
+  status: number = 400,
+  extra: Record<string, any> = {}
+) {
+  return new Response(
+    JSON.stringify({
+      ok: false,
+      error: code,
+      messageEn,
+      messageUz,
+      ...extra,
+    }),
+    { status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
 
 serve(async (req) => {
   const requestId = crypto.randomUUID().slice(0, 8);
@@ -39,9 +80,11 @@ serve(async (req) => {
     // Auth check
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ ok: false, error: "Avtorizatsiya talab qilinadi" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      return errorResponse(
+        "AUTH_REQUIRED",
+        "Authorization required",
+        "Avtorizatsiya talab qilinadi",
+        401
       );
     }
 
@@ -49,9 +92,11 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
-      return new Response(
-        JSON.stringify({ ok: false, error: "Avtorizatsiya xatosi" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      return errorResponse(
+        "AUTH_FAILED",
+        "Authorization failed",
+        "Avtorizatsiya xatosi",
+        401
       );
     }
 
@@ -59,9 +104,11 @@ serve(async (req) => {
 
     const rawBody = await req.text();
     if (!rawBody) {
-      return new Response(
-        JSON.stringify({ ok: false, error: "So'rov tanasi bo'sh" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      return errorResponse(
+        "EMPTY_BODY",
+        "Request body is empty",
+        "So'rov tanasi bo'sh",
+        400
       );
     }
 
@@ -70,18 +117,22 @@ serve(async (req) => {
       body = JSON.parse(rawBody);
     } catch (e) {
       console.error(`[${requestId}] Invalid JSON body:`, rawBody);
-      return new Response(
-        JSON.stringify({ ok: false, error: "Noto'g'ri JSON", details: rawBody.slice(0, 500) }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      return errorResponse(
+        "INVALID_JSON",
+        "Invalid JSON in request body",
+        "Noto'g'ri JSON",
+        400
       );
     }
 
     const { action } = body;
 
-    if (!action || !["start", "status", "cancel"].includes(action)) {
-      return new Response(
-        JSON.stringify({ ok: false, error: "Invalid action" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    if (!action || !["start", "status", "cancel", "sign"].includes(action)) {
+      return errorResponse(
+        "INVALID_ACTION",
+        "Invalid action. Allowed: start, status, cancel, sign",
+        "Noto'g'ri amal",
+        400
       );
     }
 
@@ -102,17 +153,64 @@ serve(async (req) => {
     const plan = isDevBypass ? 'dev_unlimited' : (profile?.plan || 'free');
     const dailyLimit = DAILY_LIMITS[plan] ?? DAILY_LIMITS.free;
 
-    // Block free users from ALL video actions
-    if (plan === 'free' && !isDevBypass) {
+    // Block free users from ALL video actions (except status check for their own videos)
+    if (plan === 'free' && !isDevBypass && action !== 'status' && action !== 'sign') {
       console.log(`[${requestId}] Free user blocked from video: ${user.id}`);
+      return errorResponse(
+        "VIDEO_NOT_AVAILABLE_FREE",
+        "Video generation is only available for Premium users.",
+        "Video yaratish faqat Premium foydalanuvchilar uchun mavjud.",
+        403
+      );
+    }
+
+    // ==========================================
+    // ACTION: SIGN (refresh signed URL)
+    // ==========================================
+    if (action === "sign") {
+      const { outputVideoPath } = body;
+
+      if (!outputVideoPath || typeof outputVideoPath !== "string") {
+        return errorResponse(
+          "INVALID_PATH",
+          "outputVideoPath is required",
+          "Video yo'li kiritilmagan",
+          400
+        );
+      }
+
+      // Verify the path belongs to this user (must start with user.id/)
+      if (!outputVideoPath.startsWith(`${user.id}/`)) {
+        return errorResponse(
+          "ACCESS_DENIED",
+          "You do not have access to this video",
+          "Bu videoga kirishingiz mumkin emas",
+          403
+        );
+      }
+
+      // Generate signed URL
+      const { data: signedData, error: signError } = await supabase.storage
+        .from("video-generations")
+        .createSignedUrl(outputVideoPath, SIGNED_URL_EXPIRY_SECONDS);
+
+      if (signError || !signedData?.signedUrl) {
+        console.error(`[${requestId}] Sign URL error:`, signError);
+        return errorResponse(
+          "SIGN_FAILED",
+          "Failed to generate signed URL",
+          "Havola yaratishda xatolik",
+          500
+        );
+      }
+
       return new Response(
         JSON.stringify({
-          ok: false,
-          error: "VIDEO_NOT_AVAILABLE_FREE",
-          messageUz: "Video yaratish faqat Premium foydalanuvchilar uchun mavjud.",
-          messageEn: "Video generation is only available for Premium users.",
+          ok: true,
+          outputVideoUrl: signedData.signedUrl,
+          expiresIn: SIGNED_URL_EXPIRY_SECONDS,
         }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -123,13 +221,121 @@ serve(async (req) => {
       const { prompt, negativePrompt, params = {}, assets = [] } = body;
 
       if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
-        return new Response(
-          JSON.stringify({ ok: false, error: "Prompt kiritilmagan" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        return errorResponse(
+          "PROMPT_REQUIRED",
+          "Prompt is required",
+          "Prompt kiritilmagan",
+          400
         );
       }
 
-      // Check daily limit with explicit UTC boundaries
+      // ==========================================
+      // A1: PER-USER COOLDOWN CHECK
+      // ==========================================
+      if (!isDevBypass) {
+        const cooldownTime = new Date(Date.now() - VIDEO_COOLDOWN_SECONDS * 1000).toISOString();
+        const { data: recentGen } = await supabase
+          .from("video_generations")
+          .select("created_at")
+          .eq("user_id", user.id)
+          .in("status", ["queued", "running", "completed"])
+          .gte("created_at", cooldownTime)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (recentGen) {
+          const lastGenTime = new Date(recentGen.created_at).getTime();
+          const elapsed = Math.floor((Date.now() - lastGenTime) / 1000);
+          const remaining = Math.max(0, VIDEO_COOLDOWN_SECONDS - elapsed);
+          
+          console.log(`[${requestId}] Cooldown active: ${remaining}s remaining`);
+          return errorResponse(
+            "VIDEO_COOLDOWN",
+            "Please wait before generating another video.",
+            "Keyingi video yaratishdan oldin biroz kuting.",
+            429,
+            { retryAfterSec: remaining }
+          );
+        }
+      }
+
+      // ==========================================
+      // A2: GLOBAL CONCURRENCY CAP
+      // ==========================================
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+      const { count: activeJobsCount } = await supabase
+        .from("video_generations")
+        .select("*", { count: "exact", head: true })
+        .in("status", ["queued", "running", "starting"])
+        .gte("created_at", twoHoursAgo);
+
+      const activeJobs = activeJobsCount ?? 0;
+      if (activeJobs >= VIDEO_GLOBAL_CONCURRENCY_CAP && !isDevBypass) {
+        console.log(`[${requestId}] Global concurrency cap reached: ${activeJobs}/${VIDEO_GLOBAL_CONCURRENCY_CAP}`);
+        return errorResponse(
+          "VIDEO_BUSY_TRY_LATER",
+          "Video generation is busy right now. Try again in a few minutes.",
+          "Hozir video yaratish band. Bir necha daqiqadan keyin urinib ko'ring.",
+          503
+        );
+      }
+
+      // ==========================================
+      // A3: PARAM VALIDATION & CAPPING
+      // ==========================================
+      const requestedWidth = params.width || 768;
+      const requestedHeight = params.height || 432;
+      
+      // Validate resolution
+      const isValidResolution = ALLOWED_RESOLUTIONS.some(
+        r => r.width === requestedWidth && r.height === requestedHeight
+      );
+      
+      if (!isValidResolution && !isDevBypass) {
+        console.log(`[${requestId}] Invalid resolution: ${requestedWidth}x${requestedHeight}`);
+        return errorResponse(
+          "VIDEO_PARAMS_INVALID",
+          `Invalid resolution. Allowed: ${ALLOWED_RESOLUTIONS.map(r => `${r.width}x${r.height}`).join(", ")}`,
+          `Noto'g'ri o'lcham. Ruxsat etilgan: ${ALLOWED_RESOLUTIONS.map(r => `${r.width}x${r.height}`).join(", ")}`,
+          400
+        );
+      }
+
+      // Validate and cap FPS
+      let fps = params.fps || 24;
+      if (!ALLOWED_FPS.includes(fps) && !isDevBypass) {
+        fps = 24; // Default to 24 if invalid
+      }
+
+      // Validate and cap duration
+      let durationSeconds = params.duration_seconds || 5;
+      if (durationSeconds > VIDEO_MAX_SECONDS && !isDevBypass) {
+        console.log(`[${requestId}] Duration capped: ${durationSeconds} -> ${VIDEO_MAX_SECONDS}`);
+        durationSeconds = VIDEO_MAX_SECONDS;
+      }
+
+      // Validate and cap steps
+      let steps = params.steps || 30;
+      if (steps > VIDEO_MAX_STEPS && !isDevBypass) {
+        console.log(`[${requestId}] Steps capped: ${steps} -> ${VIDEO_MAX_STEPS}`);
+        steps = VIDEO_MAX_STEPS;
+      }
+
+      // Validate guidance_scale (max 8.0)
+      let guidanceScale = params.guidance_scale || 7.5;
+      if (guidanceScale > 8.0 && !isDevBypass) {
+        guidanceScale = 8.0;
+      }
+
+      // Validate motion_strength (0.0-1.0)
+      let motionStrength = params.motion_strength ?? 0.7;
+      if (motionStrength < 0) motionStrength = 0;
+      if (motionStrength > 1) motionStrength = 1;
+
+      // ==========================================
+      // DAILY LIMIT CHECK
+      // ==========================================
       if (!isDevBypass && dailyLimit !== -1) {
         const now = new Date();
         const startOfDayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
@@ -145,20 +351,28 @@ serve(async (req) => {
         const usedCount = count ?? 0;
         if (usedCount >= dailyLimit) {
           console.log(`[${requestId}] Daily limit reached: ${usedCount}/${dailyLimit}`);
-          return new Response(
-            JSON.stringify({
-              ok: false,
-              error: `Bugungi video yaratish limiti tugadi (${usedCount}/${dailyLimit})`,
-              type: "LIMIT_REACHED",
-              used: usedCount,
-              limit: dailyLimit,
-            }),
-            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          return errorResponse(
+            "VIDEO_DAILY_LIMIT",
+            `Daily video limit reached (${usedCount}/${dailyLimit}). Resets at midnight UTC.`,
+            `Bugungi video limiti tugadi (${usedCount}/${dailyLimit}). Yarim kechada yangilanadi.`,
+            429,
+            { used: usedCount, limit: dailyLimit }
           );
         }
       }
 
-      // Insert generation record
+      // Insert generation record with validated params
+      const validatedParams = {
+        ...params,
+        width: requestedWidth,
+        height: requestedHeight,
+        fps,
+        duration_seconds: durationSeconds,
+        steps,
+        guidance_scale: guidanceScale,
+        motion_strength: motionStrength,
+      };
+
       const { data: generation, error: insertError } = await supabase
         .from("video_generations")
         .insert({
@@ -166,11 +380,11 @@ serve(async (req) => {
           status: "queued",
           prompt: prompt.trim(),
           negative_prompt: negativePrompt?.trim() || null,
-          params: params,
-          width: params.width || 768,
-          height: params.height || 512,
-          fps: params.fps || 24,
-          duration_seconds: params.duration_seconds || 5,
+          params: validatedParams,
+          width: requestedWidth,
+          height: requestedHeight,
+          fps,
+          duration_seconds: durationSeconds,
           seed: params.seed || Math.floor(Math.random() * 2147483647),
         })
         .select()
@@ -178,26 +392,28 @@ serve(async (req) => {
 
       if (insertError || !generation) {
         console.error(`[${requestId}] Insert error:`, insertError);
-        return new Response(
-          JSON.stringify({ ok: false, error: "Video yaratishni boshlashda xatolik" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        return errorResponse(
+          "INSERT_FAILED",
+          "Failed to create video generation record",
+          "Video yaratishni boshlashda xatolik",
+          500
         );
       }
 
       console.log(`[${requestId}] Generation created: ${generation.id}`);
 
-      // Build RunPod input payload
-      const runpodInput = {
+      // Build RunPod input payload with validated params
+      const runpodInput: Record<string, any> = {
         prompt: prompt.trim(),
         negative_prompt: negativePrompt?.trim() || "",
-        width: params.width || 768,
-        height: params.height || 512,
-        num_frames: Math.round((params.duration_seconds || 5) * (params.fps || 24)),
-        fps: params.fps || 24,
+        width: requestedWidth,
+        height: requestedHeight,
+        num_frames: Math.round(durationSeconds * fps),
+        fps,
         seed: generation.seed,
-        num_inference_steps: params.steps || 30,
-        guidance_scale: params.guidance_scale || 7.5,
-        ...params, // Pass through all other params for flexibility
+        num_inference_steps: steps,
+        guidance_scale: guidanceScale,
+        motion_strength: motionStrength,
       };
 
       // Add assets if provided
@@ -234,51 +450,47 @@ serve(async (req) => {
           })
           .eq("id", generation.id);
 
-        return new Response(
-          JSON.stringify({ ok: false, error: "RunPod javobini o'qib bo'lmadi", details: responseText.slice(0, 500) }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        return errorResponse(
+          "RUNPOD_PARSE_ERROR",
+          "Failed to parse RunPod response",
+          "RunPod javobini o'qib bo'lmadi",
+          500
         );
       }
 
       if (!runpodResponse.ok || runpodData.error) {
         const statusCode = runpodResponse.status;
-        const runpodErrText =
-          typeof runpodData?.error === "string"
-            ? runpodData.error
-            : responseText?.trim() || "";
-
-        let friendly = "RunPod xatosi";
+        let errorCode = "RUNPOD_ERROR";
+        let messageEn = "RunPod error";
+        let messageUz = "RunPod xatosi";
+        
         if (statusCode === 401 || statusCode === 403) {
-          friendly = "RunPod avtorizatsiya xatosi (API key)";
+          errorCode = "RUNPOD_AUTH_ERROR";
+          messageEn = "RunPod authorization error (API key)";
+          messageUz = "RunPod avtorizatsiya xatosi (API key)";
         } else if (statusCode === 404) {
-          friendly = "RunPod endpoint topilmadi (endpoint ID noto'g'ri bo'lishi mumkin)";
+          errorCode = "RUNPOD_NOT_FOUND";
+          messageEn = "RunPod endpoint not found";
+          messageUz = "RunPod endpoint topilmadi";
         } else if (statusCode === 429) {
-          friendly = "RunPod limit: juda ko'p so'rov (keyinroq urinib ko'ring)";
+          errorCode = "RUNPOD_RATE_LIMIT";
+          messageEn = "RunPod rate limit exceeded. Try again later.";
+          messageUz = "RunPod limit: juda ko'p so'rov. Keyinroq urinib ko'ring.";
         } else if (statusCode >= 500) {
-          friendly = "RunPod server xatosi (keyinroq urinib ko'ring)";
+          errorCode = "RUNPOD_SERVER_ERROR";
+          messageEn = "RunPod server error. Try again later.";
+          messageUz = "RunPod server xatosi. Keyinroq urinib ko'ring.";
         }
 
         await supabase
           .from("video_generations")
           .update({
             status: "failed",
-            error: `${friendly} [${statusCode}] ${runpodErrText.slice(0, 200)}`.trim(),
+            error: `${messageEn} [${statusCode}]`,
           })
           .eq("id", generation.id);
 
-        return new Response(
-          JSON.stringify({
-            ok: false,
-            error: friendly,
-            runpodStatus: statusCode,
-            details: runpodData,
-            detailsText: responseText?.slice(0, 800) || null,
-          }),
-          {
-            status: statusCode >= 400 && statusCode < 600 ? statusCode : 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
+        return errorResponse(errorCode, messageEn, messageUz, statusCode >= 400 && statusCode < 600 ? statusCode : 500);
       }
 
       // Update generation with RunPod job ID
@@ -308,9 +520,11 @@ serve(async (req) => {
       const { generationId } = body;
 
       if (!generationId) {
-        return new Response(
-          JSON.stringify({ ok: false, error: "generationId talab qilinadi" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        return errorResponse(
+          "GENERATION_ID_REQUIRED",
+          "generationId is required",
+          "generationId talab qilinadi",
+          400
         );
       }
 
@@ -323,9 +537,11 @@ serve(async (req) => {
         .single();
 
       if (fetchError || !generation) {
-        return new Response(
-          JSON.stringify({ ok: false, error: "Video topilmadi" }),
-          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        return errorResponse(
+          "VIDEO_NOT_FOUND",
+          "Video not found",
+          "Video topilmadi",
+          404
         );
       }
 
@@ -335,7 +551,7 @@ serve(async (req) => {
         if (generation.output_video_path) {
           const { data: signedData } = await supabase.storage
             .from("video-generations")
-            .createSignedUrl(generation.output_video_path, 3600);
+            .createSignedUrl(generation.output_video_path, SIGNED_URL_EXPIRY_SECONDS);
           outputVideoUrl = signedData?.signedUrl;
         }
 
@@ -347,7 +563,7 @@ serve(async (req) => {
             error: generation.error,
             outputVideoPath: generation.output_video_path,
             outputVideoUrl,
-            runpodStatus: generation.runpod_status,
+            expiresIn: SIGNED_URL_EXPIRY_SECONDS,
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
@@ -355,9 +571,11 @@ serve(async (req) => {
 
       // Poll RunPod status
       if (!generation.runpod_job_id) {
-        return new Response(
-          JSON.stringify({ ok: false, error: "RunPod job ID topilmadi" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        return errorResponse(
+          "RUNPOD_JOB_ID_MISSING",
+          "RunPod job ID not found",
+          "RunPod job ID topilmadi",
+          400
         );
       }
 
@@ -371,29 +589,21 @@ serve(async (req) => {
 
       if (!statusResponse.ok) {
         const statusCode = statusResponse.status;
-        let friendly = "RunPod holatini olishda xatolik";
+        let errorCode = "RUNPOD_STATUS_ERROR";
+        let messageEn = "Failed to get RunPod status";
+        let messageUz = "RunPod holatini olishda xatolik";
+        
         if (statusCode === 401 || statusCode === 403) {
-          friendly = "RunPod avtorizatsiya xatosi (API key)";
+          errorCode = "RUNPOD_AUTH_ERROR";
+          messageEn = "RunPod authorization error";
+          messageUz = "RunPod avtorizatsiya xatosi";
         } else if (statusCode === 404) {
-          friendly = "RunPod endpoint/job topilmadi";
-        } else if (statusCode === 429) {
-          friendly = "RunPod limit: juda ko'p so'rov (keyinroq urinib ko'ring)";
-        } else if (statusCode >= 500) {
-          friendly = "RunPod server xatosi (keyinroq urinib ko'ring)";
+          errorCode = "RUNPOD_JOB_NOT_FOUND";
+          messageEn = "RunPod job not found";
+          messageUz = "RunPod job topilmadi";
         }
 
-        return new Response(
-          JSON.stringify({
-            ok: false,
-            error: friendly,
-            runpodStatus: statusCode,
-            detailsText: statusText?.slice(0, 800) || null,
-          }),
-          {
-            status: statusCode,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
+        return errorResponse(errorCode, messageEn, messageUz, statusCode);
       }
 
       let statusData;
@@ -401,9 +611,11 @@ serve(async (req) => {
         statusData = statusText ? JSON.parse(statusText) : {};
       } catch (parseError) {
         console.error(`[${requestId}] Failed to parse RunPod status:`, parseError);
-        return new Response(
-          JSON.stringify({ ok: false, error: "RunPod holatini o'qib bo'lmadi", details: statusText.slice(0, 500) }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        return errorResponse(
+          "RUNPOD_STATUS_PARSE_ERROR",
+          "Failed to parse RunPod status",
+          "RunPod holatini o'qib bo'lmadi",
+          500
         );
       }
 
@@ -414,8 +626,8 @@ serve(async (req) => {
       let outputVideoPath = generation.output_video_path;
 
       if (statusData.status === "COMPLETED") {
-        newStatus = "completed";
-        progress = 100;
+        newStatus = "uploading"; // Intermediate state while we process
+        progress = 90;
 
         // Get output video URL from RunPod
         const output = statusData.output;
@@ -424,48 +636,33 @@ serve(async (req) => {
         // Log output structure for debugging
         const outputKeys = output ? Object.keys(output) : [];
         console.log(`[${requestId}] RunPod output keys: ${outputKeys.join(", ") || "null"}`);
-        console.log(`[${requestId}] RunPod output: ${JSON.stringify(output)?.slice(0, 500)}`);
 
         // DETECT ECHO/TEST ENDPOINT
-        // If output contains "echo" key or only has "ok: true" without video fields,
-        // this is a test/echo endpoint that doesn't actually generate videos
         const isEchoEndpoint = output && (
           output.echo !== undefined ||
           (output.ok === true && outputKeys.length <= 2 && !output.video_url && !output.url && !output.video && !output.video_base64)
         );
 
         if (isEchoEndpoint) {
-          console.error(`[${requestId}] ECHO ENDPOINT DETECTED - no real video generation`);
+          console.error(`[${requestId}] ECHO ENDPOINT DETECTED`);
           newStatus = "failed";
-          error = "ECHO_ENDPOINT: RunPod endpoint hozircha test/echo rejimida. Video yaratish uchun LTX Video worker o'rnatilishi kerak.";
+          error = "ECHO_ENDPOINT";
           
-          // Update DB with detailed error
           await supabase
             .from("video_generations")
-            .update({
-              status: "failed",
-              error: error,
-              runpod_status: statusData,
-            })
+            .update({ status: "failed", error })
             .eq("id", generation.id);
 
-          return new Response(
-            JSON.stringify({
-              ok: false,
-              status: "failed",
-              errorCode: "ECHO_ENDPOINT",
-              error: error,
-              messageUz: "RunPod endpoint hozircha test/echo rejimida. Video qaytarmayapti. LTX Video worker o'rnatilmagan.",
-              messageEn: "Your RunPod endpoint is a test/echo worker and does not generate video. Deploy an LTX video worker that returns a video file/URL.",
-              runpodOutput: output,
-            }),
-            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          return errorResponse(
+            "ECHO_ENDPOINT",
+            "RunPod endpoint is in test/echo mode. Deploy an LTX video worker.",
+            "RunPod endpoint test/echo rejimida. LTX Video worker o'rnatilishi kerak.",
+            500
           );
         }
 
-        // Helper: decode base64 (handles plain and data URL prefix)
+        // Helper functions
         const decodeBase64ToBytes = (base64String: string): Uint8Array => {
-          // Strip data URL prefix if present (e.g., data:video/mp4;base64,...)
           const cleaned = base64String.replace(/^data:video\/[a-zA-Z0-9]+;base64,/, '');
           const binaryString = atob(cleaned);
           const bytes = new Uint8Array(binaryString.length);
@@ -475,27 +672,18 @@ serve(async (req) => {
           return bytes;
         };
 
-        // Helper: find video_base64 in various output formats
         const findBase64Video = (out: any): string | null => {
           if (!out) return null;
-          // Direct fields
           if (out.video_base64) return out.video_base64;
           if (out.videoBase64) return out.videoBase64;
-          // Array format
           if (Array.isArray(out) && out[0]?.video_base64) return out[0].video_base64;
           if (Array.isArray(out) && out[0]?.videoBase64) return out[0].videoBase64;
-          // Nested output
           if (out.output?.video_base64) return out.output.video_base64;
-          if (out.output?.videoBase64) return out.output.videoBase64;
-          // Result nested
           if (out.result?.video_base64) return out.result.video_base64;
-          if (out.result?.videoBase64) return out.result.videoBase64;
           return null;
         };
 
         if (output) {
-          // Handle different output formats from various video models
-          // Priority order: video_url > url > video > nested paths > result string
           if (typeof output === "string" && (output.startsWith("http") || output.startsWith("/"))) {
             videoUrl = output;
           } else if (output.video_url) {
@@ -506,14 +694,8 @@ serve(async (req) => {
             videoUrl = output.video;
           } else if (output.output?.video_url) {
             videoUrl = output.output.video_url;
-          } else if (output.output?.url) {
-            videoUrl = output.output.url;
           } else if (output.result?.video_url) {
             videoUrl = output.result.video_url;
-          } else if (output.result?.url) {
-            videoUrl = output.result.url;
-          } else if (output.result && typeof output.result === "string" && output.result.startsWith("http")) {
-            videoUrl = output.result;
           } else if (output.file_url) {
             videoUrl = output.file_url;
           } else if (output.download_url) {
@@ -521,13 +703,11 @@ serve(async (req) => {
           }
         }
 
-        // Find base64 video data (tolerant parsing)
         const base64Video = findBase64Video(output);
 
-        // If no video URL found and no base64, mark as failed with debug info
         if (!videoUrl && !base64Video) {
-          console.error(`[${requestId}] No video URL or base64 found in output. Keys: ${outputKeys.join(", ") || "none"}`);
-          error = `Video topilmadi. Kutilgan: video_url, url, video, video_base64, videoBase64. Topildi: ${outputKeys.join(", ") || "bo'sh"}`;
+          console.error(`[${requestId}] No video URL or base64 found`);
+          error = `Video topilmadi. Topilgan kalitlar: ${outputKeys.join(", ") || "bo'sh"}`;
           newStatus = "failed";
         }
 
@@ -535,13 +715,11 @@ serve(async (req) => {
           console.log(`[${requestId}] Downloading video from: ${videoUrl}`);
           
           try {
-            // Fetch video from RunPod output URL
             const videoResponse = await fetch(videoUrl);
             if (videoResponse.ok) {
               const videoBytes = new Uint8Array(await videoResponse.arrayBuffer());
               console.log(`[${requestId}] Video downloaded: ${videoBytes.length} bytes`);
 
-              // Upload to Supabase Storage
               const now = new Date();
               const year = now.getFullYear();
               const month = String(now.getMonth() + 1).padStart(2, "0");
@@ -557,23 +735,26 @@ serve(async (req) => {
               if (uploadError) {
                 console.error(`[${requestId}] Upload error:`, uploadError);
                 error = "Video saqlashda xatolik";
+                newStatus = "failed";
               } else {
                 console.log(`[${requestId}] Video uploaded to: ${outputVideoPath}`);
+                newStatus = "completed";
+                progress = 100;
               }
             } else {
               console.error(`[${requestId}] Video download failed:`, videoResponse.status);
               error = "Video yuklab olishda xatolik";
+              newStatus = "failed";
             }
           } catch (downloadError) {
             console.error(`[${requestId}] Video download error:`, downloadError);
             error = "Video yuklab olishda xatolik";
+            newStatus = "failed";
           }
         } else if (base64Video) {
-          // Handle base64 output with robust decoding
-          console.log(`[${requestId}] Processing base64 video (${base64Video.length} chars)`);
+          console.log(`[${requestId}] Processing base64 video`);
           try {
             const videoBytes = decodeBase64ToBytes(base64Video);
-            console.log(`[${requestId}] Decoded ${videoBytes.length} bytes`);
             
             const now = new Date();
             const year = now.getFullYear();
@@ -590,23 +771,29 @@ serve(async (req) => {
             if (uploadError) {
               console.error(`[${requestId}] Base64 upload error:`, uploadError);
               error = "Video saqlashda xatolik";
+              newStatus = "failed";
             } else {
-              console.log(`[${requestId}] Base64 video uploaded to: ${outputVideoPath}`);
+              console.log(`[${requestId}] Base64 video uploaded`);
+              newStatus = "completed";
+              progress = 100;
             }
           } catch (base64Error) {
             console.error(`[${requestId}] Base64 decode error:`, base64Error);
-            error = "Video dekodlashda xatolik: " + (base64Error instanceof Error ? base64Error.message : "Noma'lum xatolik");
+            error = "Video dekodlashda xatolik";
+            newStatus = "failed";
           }
         }
       } else if (statusData.status === "FAILED") {
         newStatus = "failed";
         error = statusData.error || "RunPod xatosi";
-      } else if (["IN_PROGRESS", "RUNNING", "IN_QUEUE", "QUEUED"].includes(statusData.status)) {
-        newStatus = "running";
-        // Extract progress if available
+      } else if (["IN_PROGRESS", "RUNNING"].includes(statusData.status)) {
+        newStatus = "processing";
         if (statusData.progress) {
-          progress = statusData.progress;
+          progress = Math.min(85, statusData.progress);
         }
+      } else if (["IN_QUEUE", "QUEUED"].includes(statusData.status)) {
+        newStatus = "queued";
+        progress = 5;
       }
 
       // Update generation in DB
@@ -626,7 +813,7 @@ serve(async (req) => {
       if (outputVideoPath && newStatus === "completed") {
         const { data: signedData } = await supabase.storage
           .from("video-generations")
-          .createSignedUrl(outputVideoPath, 3600);
+          .createSignedUrl(outputVideoPath, SIGNED_URL_EXPIRY_SECONDS);
         outputVideoUrl = signedData?.signedUrl;
       }
 
@@ -638,7 +825,7 @@ serve(async (req) => {
           error,
           outputVideoPath,
           outputVideoUrl,
-          runpodStatus: statusData,
+          expiresIn: SIGNED_URL_EXPIRY_SECONDS,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -651,13 +838,14 @@ serve(async (req) => {
       const { generationId } = body;
 
       if (!generationId) {
-        return new Response(
-          JSON.stringify({ ok: false, error: "generationId talab qilinadi" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        return errorResponse(
+          "GENERATION_ID_REQUIRED",
+          "generationId is required",
+          "generationId talab qilinadi",
+          400
         );
       }
 
-      // Load generation
       const { data: generation, error: fetchError } = await supabase
         .from("video_generations")
         .select("*")
@@ -666,9 +854,11 @@ serve(async (req) => {
         .single();
 
       if (fetchError || !generation) {
-        return new Response(
-          JSON.stringify({ ok: false, error: "Video topilmadi" }),
-          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        return errorResponse(
+          "VIDEO_NOT_FOUND",
+          "Video not found",
+          "Video topilmadi",
+          404
         );
       }
 
@@ -685,7 +875,6 @@ serve(async (req) => {
         }
       }
 
-      // Update status in DB
       await supabase
         .from("video_generations")
         .update({ status: "canceled" })
@@ -697,17 +886,21 @@ serve(async (req) => {
       );
     }
 
-    return new Response(
-      JSON.stringify({ ok: false, error: "Unknown action" }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    return errorResponse(
+      "UNKNOWN_ACTION",
+      "Unknown action",
+      "Noma'lum amal",
+      400
     );
 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Server xatosi";
-    console.error(`[${requestId}] Error:`, error);
-    return new Response(
-      JSON.stringify({ ok: false, error: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    console.error(`[requestId] Error:`, error);
+    return errorResponse(
+      "SERVER_ERROR",
+      errorMessage,
+      "Server xatosi",
+      500
     );
   }
 });

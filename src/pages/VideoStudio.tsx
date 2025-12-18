@@ -75,7 +75,20 @@ interface VideoGeneration {
   width?: number;
   height?: number;
   seed?: number;
+  url_expires_at?: number; // timestamp when URL expires
 }
+
+// Status display configs
+const STATUS_CONFIG: Record<string, { label: string; labelEn: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  idle: { label: "Tayyor", labelEn: "Idle", variant: "outline" },
+  queued: { label: "Navbatda", labelEn: "Queued", variant: "secondary" },
+  running: { label: "Ishlamoqda", labelEn: "Running", variant: "default" },
+  processing: { label: "Qayta ishlanmoqda", labelEn: "Processing", variant: "default" },
+  uploading: { label: "Yuklanmoqda", labelEn: "Uploading", variant: "default" },
+  completed: { label: "Tayyor", labelEn: "Completed", variant: "outline" },
+  failed: { label: "Xatolik", labelEn: "Failed", variant: "destructive" },
+  canceled: { label: "Bekor qilindi", labelEn: "Canceled", variant: "secondary" },
+};
 
 export default function VideoStudio() {
   const { t } = useTranslation();
@@ -111,10 +124,12 @@ export default function VideoStudio() {
   const [dailyLimit, setDailyLimit] = useState(5);
   const [isFreeUser, setIsFreeUser] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
   
-  // Polling
+  // Polling & timers
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pollCountRef = useRef(0);
+  const cooldownTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load history on mount
   useEffect(() => {
@@ -126,8 +141,31 @@ export default function VideoStudio() {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
       }
+      if (cooldownTimerRef.current) {
+        clearInterval(cooldownTimerRef.current);
+      }
     };
   }, [user]);
+
+  // Cooldown timer function
+  const startCooldownTimer = useCallback((seconds: number) => {
+    if (cooldownTimerRef.current) {
+      clearInterval(cooldownTimerRef.current);
+    }
+    setCooldownRemaining(seconds);
+    cooldownTimerRef.current = setInterval(() => {
+      setCooldownRemaining(prev => {
+        if (prev <= 1) {
+          if (cooldownTimerRef.current) {
+            clearInterval(cooldownTimerRef.current);
+            cooldownTimerRef.current = null;
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
 
   // Apply preset when changed
   useEffect(() => {
@@ -254,6 +292,7 @@ export default function VideoStudio() {
 
       const data = response.data;
       if (!data.ok) {
+        // Handle specific error codes
         if (data.error === "VIDEO_NOT_AVAILABLE_FREE") {
           toast({ 
             title: t("videoStudio.freeBlocked.title"),
@@ -261,14 +300,36 @@ export default function VideoStudio() {
             variant: "destructive" 
           });
           setIsFreeUser(true);
-        } else if (data.type === "LIMIT_REACHED") {
+        } else if (data.error === "VIDEO_COOLDOWN") {
+          // Start cooldown timer
+          const retryAfter = data.retryAfterSec || 90;
+          setCooldownRemaining(retryAfter);
+          startCooldownTimer(retryAfter);
+          toast({ 
+            title: "Kutish kerak", 
+            description: data.messageUz || `Keyingi video yaratish uchun ${retryAfter} soniya kuting.`,
+            variant: "default" 
+          });
+        } else if (data.error === "VIDEO_BUSY_TRY_LATER") {
+          toast({ 
+            title: "Tizim band", 
+            description: data.messageUz || "Hozir video yaratish band. Bir necha daqiqadan keyin urinib ko'ring.",
+            variant: "destructive" 
+          });
+        } else if (data.error === "VIDEO_PARAMS_INVALID" || data.error === "VIDEO_PARAMS_TOO_HIGH") {
+          toast({ 
+            title: "Noto'g'ri parametrlar", 
+            description: data.messageUz || "Parametrlar noto'g'ri yoki juda yuqori.",
+            variant: "destructive" 
+          });
+        } else if (data.error === "VIDEO_DAILY_LIMIT") {
           toast({ 
             title: "Limit tugadi", 
-            description: data.error,
+            description: data.messageUz || `Bugungi video limiti tugadi (${data.used}/${data.limit}).`,
             variant: "destructive" 
           });
         } else {
-          throw new Error(data.error || data.messageUz || "Video yaratishda xatolik");
+          throw new Error(data.messageUz || data.error || "Video yaratishda xatolik");
         }
         setIsGenerating(false);
         return;
@@ -461,18 +522,26 @@ export default function VideoStudio() {
     }
   };
 
-  // Refresh signed URL for expired links
+  // Refresh signed URL using server-side sign action
   const refreshVideoUrl = async () => {
     if (!currentGeneration?.output_video_path) return;
     
-    const { data, error } = await supabase.storage
-      .from("video-generations")
-      .createSignedUrl(currentGeneration.output_video_path, 3600);
-    
-    if (data?.signedUrl) {
-      setCurrentGeneration(prev => prev ? { ...prev, output_video_url: data.signedUrl } : null);
-      toast({ title: "Havola yangilandi" });
-    } else {
+    try {
+      const response = await supabase.functions.invoke("runpod-video", {
+        body: { action: "sign", outputVideoPath: currentGeneration.output_video_path },
+      });
+      
+      if (response.data?.ok && response.data.outputVideoUrl) {
+        setCurrentGeneration(prev => prev ? { 
+          ...prev, 
+          output_video_url: response.data.outputVideoUrl,
+          url_expires_at: Date.now() + (response.data.expiresIn * 1000),
+        } : null);
+        toast({ title: "Havola yangilandi" });
+      } else {
+        toast({ title: "Havolani yangilashda xatolik", variant: "destructive" });
+      }
+    } catch (error) {
       toast({ title: "Havolani yangilashda xatolik", variant: "destructive" });
     }
   };
@@ -520,14 +589,7 @@ export default function VideoStudio() {
   };
 
   const getStatusBadge = (status: string) => {
-    const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-      queued: { label: "Navbatda", variant: "secondary" },
-      running: { label: "Yaratilmoqda", variant: "default" },
-      completed: { label: "Tayyor", variant: "outline" },
-      failed: { label: "Xatolik", variant: "destructive" },
-      canceled: { label: "Bekor qilindi", variant: "secondary" },
-    };
-    const config = statusConfig[status] || { label: status, variant: "secondary" as const };
+    const config = STATUS_CONFIG[status] || { label: status, labelEn: status, variant: "secondary" as const };
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
