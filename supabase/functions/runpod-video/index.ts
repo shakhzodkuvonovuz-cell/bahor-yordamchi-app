@@ -36,6 +36,74 @@ const DAILY_LIMITS: Record<string, number> = {
   dev_unlimited: -1, // unlimited
 };
 
+// Video style presets for prompt enhancement
+const VIDEO_STYLE_PRESETS: Record<string, string> = {
+  cinematic: "cinematic film quality, professional cinematography, movie-like visuals, dramatic lighting, shallow depth of field, film grain, 35mm film look",
+  realistic: "ultra realistic, photorealistic, natural lighting, high detail, sharp focus, lifelike motion",
+  anime: "anime style, japanese animation, studio ghibli inspired, vibrant colors, smooth animation",
+  artistic: "artistic, creative, stylized visuals, unique aesthetic, visually striking",
+  documentary: "documentary style, natural footage, authentic, real-world feel, observational",
+};
+
+// Translate Uzbek/Russian to English using Lovable AI Gateway
+async function translateToEnglish(prompt: string, requestId: string): Promise<string> {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) {
+    console.log(`[${requestId}] No LOVABLE_API_KEY, skipping translation`);
+    return prompt;
+  }
+
+  // Simple check if already English-ish (mostly ASCII letters)
+  const asciiRatio = (prompt.match(/[a-zA-Z]/g) || []).length / prompt.length;
+  if (asciiRatio > 0.7) {
+    console.log(`[${requestId}] Prompt appears to be English, skipping translation`);
+    return prompt;
+  }
+
+  const translatorPrompt = `Translate the following text to English for video generation. Keep it simple and direct. Preserve all place names, proper nouns, and specific details exactly. Output ONLY the English translation, nothing else.
+
+Text: ${prompt}`;
+
+  try {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-lite",
+        messages: [{ role: "user", content: translatorPrompt }],
+        max_tokens: 300,
+        temperature: 0.1,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error(`[${requestId}] Translation API error:`, response.status);
+      return prompt;
+    }
+
+    const data = await response.json();
+    const translated = data.choices?.[0]?.message?.content?.trim();
+    console.log(`[${requestId}] Translated: "${prompt}" -> "${translated}"`);
+    return translated || prompt;
+  } catch (error) {
+    console.error(`[${requestId}] Translation failed:`, error);
+    return prompt;
+  }
+}
+
+// Enhance prompt with cinematic quality keywords
+function enhanceVideoPrompt(prompt: string, style: string = "cinematic"): string {
+  const styleSuffix = VIDEO_STYLE_PRESETS[style] || VIDEO_STYLE_PRESETS.cinematic;
+  
+  // Core video quality keywords
+  const qualityBoost = "smooth motion, high quality video, consistent lighting, stable camera, professional production";
+  
+  return `${prompt}. ${styleSuffix}, ${qualityBoost}`;
+}
+
 // Helper to create consistent error responses
 function errorResponse(
   code: string,
@@ -231,6 +299,20 @@ serve(async (req) => {
       }
 
       // ==========================================
+      // PROMPT ENHANCEMENT: Translate + Enhance
+      // ==========================================
+      const originalPrompt = prompt.trim();
+      const videoStyle = params.style || "cinematic";
+      
+      // Step 1: Translate non-English prompts
+      const translatedPrompt = await translateToEnglish(originalPrompt, requestId);
+      
+      // Step 2: Enhance with cinematic quality keywords
+      const enhancedPrompt = enhanceVideoPrompt(translatedPrompt, videoStyle);
+      
+      console.log(`[${requestId}] Prompt enhancement: "${originalPrompt}" -> "${enhancedPrompt}"`)
+
+      // ==========================================
       // A1: PER-USER COOLDOWN CHECK
       // ==========================================
       if (!isDevBypass) {
@@ -379,7 +461,7 @@ serve(async (req) => {
         .insert({
           user_id: user.id,
           status: "queued",
-          prompt: prompt.trim(),
+          prompt: originalPrompt, // Store original for user reference
           negative_prompt: negativePrompt?.trim() || null,
           params: validatedParams,
           width: requestedWidth,
@@ -405,7 +487,7 @@ serve(async (req) => {
 
       // Build RunPod input payload with validated params
       const runpodInput: Record<string, any> = {
-        prompt: prompt.trim(),
+        prompt: enhancedPrompt, // Send enhanced prompt to RunPod
         negative_prompt: negativePrompt?.trim() || "",
         width: requestedWidth,
         height: requestedHeight,
