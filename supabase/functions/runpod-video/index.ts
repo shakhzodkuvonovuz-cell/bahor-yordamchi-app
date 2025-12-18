@@ -17,18 +17,14 @@ const SIGNED_URL_EXPIRY_SECONDS = 3600; // 1 hour
 
 // Allowed resolution presets (to prevent abuse)
 // NOTE: All dimensions MUST be divisible by 32 for LTX model
+// Keeping resolutions moderate to prevent quality loss from scaling
 const ALLOWED_RESOLUTIONS = [
-  // HD resolutions
-  { width: 1280, height: 704 }, // 16:9 HD
-  { width: 704, height: 1280 }, // 9:16 HD vertical
-  { width: 1024, height: 576 }, // 16:9 standard
-  { width: 576, height: 1024 }, // 9:16 vertical
-  // Standard resolutions
-  { width: 768, height: 448 }, // 16:9 
-  { width: 768, height: 512 }, // portrait-ish
-  { width: 512, height: 512 }, // square
-  { width: 448, height: 768 }, // 9:16 vertical
+  { width: 768, height: 512 }, // 3:2 (default, good quality)
   { width: 640, height: 480 }, // 4:3
+  { width: 768, height: 448 }, // 16:9 
+  { width: 512, height: 512 }, // 1:1 square
+  { width: 448, height: 768 }, // 9:16 vertical
+  { width: 480, height: 640 }, // 3:4 vertical
 ];
 
 // Allowed FPS values
@@ -49,6 +45,12 @@ const VIDEO_STYLE_PRESETS: Record<string, string> = {
   anime: "anime style, japanese animation, studio ghibli inspired, vibrant colors, smooth animation",
   artistic: "artistic, creative, stylized visuals, unique aesthetic, visually striking",
   documentary: "documentary style, natural footage, authentic, real-world feel, observational",
+  sharper: "sharp, crisp details, high definition, ultra clear, razor sharp edges, precise textures, detailed features",
+};
+
+// Negative prompts for presets
+const VIDEO_NEGATIVE_PRESETS: Record<string, string> = {
+  sharper: "blurry, low detail, compression artifacts, soft focus, pixelated, grainy, noise, out of focus, motion blur",
 };
 
 // Translate Uzbek/Russian to English using Lovable AI Gateway
@@ -101,13 +103,17 @@ Text: ${prompt}`;
 }
 
 // Enhance prompt with cinematic quality keywords
-function enhanceVideoPrompt(prompt: string, style: string = "cinematic"): string {
+function enhanceVideoPrompt(prompt: string, style: string = "cinematic"): { enhancedPrompt: string; negativeEnhancement: string } {
   const styleSuffix = VIDEO_STYLE_PRESETS[style] || VIDEO_STYLE_PRESETS.cinematic;
+  const negativeEnhancement = VIDEO_NEGATIVE_PRESETS[style] || "";
   
   // Core video quality keywords
   const qualityBoost = "smooth motion, high quality video, consistent lighting, stable camera, professional production";
   
-  return `${prompt}. ${styleSuffix}, ${qualityBoost}`;
+  return {
+    enhancedPrompt: `${prompt}. ${styleSuffix}, ${qualityBoost}`,
+    negativeEnhancement,
+  };
 }
 
 // Helper to create consistent error responses
@@ -308,15 +314,21 @@ serve(async (req) => {
       // PROMPT ENHANCEMENT: Translate + Enhance
       // ==========================================
       const originalPrompt = prompt.trim();
-      const videoStyle = params.style || "cinematic";
+      const videoStyle = params.style || params.preset || "cinematic";
       
       // Step 1: Translate non-English prompts
       const translatedPrompt = await translateToEnglish(originalPrompt, requestId);
       
-      // Step 2: Enhance with cinematic quality keywords
-      const enhancedPrompt = enhanceVideoPrompt(translatedPrompt, videoStyle);
+      // Step 2: Enhance with cinematic quality keywords + get preset-specific negative
+      const { enhancedPrompt, negativeEnhancement } = enhanceVideoPrompt(translatedPrompt, videoStyle);
       
-      console.log(`[${requestId}] Prompt enhancement: "${originalPrompt}" -> "${enhancedPrompt}"`)
+      // Merge user negative prompt with preset negative enhancement
+      const combinedNegativePrompt = [negativePrompt?.trim(), negativeEnhancement].filter(Boolean).join(", ");
+      
+      console.log(`[${requestId}] Prompt enhancement: "${originalPrompt}" -> "${enhancedPrompt}"`);
+      if (negativeEnhancement) {
+        console.log(`[${requestId}] Added preset negative prompt for style: ${videoStyle}`);
+      }
 
       // ==========================================
       // A1: PER-USER COOLDOWN CHECK
@@ -494,7 +506,7 @@ serve(async (req) => {
       // Build RunPod input payload with validated params
       const runpodInput: Record<string, any> = {
         prompt: enhancedPrompt, // Send enhanced prompt to RunPod
-        negative_prompt: negativePrompt?.trim() || "",
+        negative_prompt: combinedNegativePrompt, // Use combined negative (user + preset)
         width: requestedWidth,
         height: requestedHeight,
         num_frames: Math.round(durationSeconds * fps),
@@ -793,6 +805,7 @@ serve(async (req) => {
         }
 
         const base64Video = findBase64Video(output);
+        let fileSizeBytes: number | null = null;
 
         if (!videoUrl && !base64Video) {
           console.error(`[${requestId}] No video URL or base64 found`);
@@ -807,13 +820,15 @@ serve(async (req) => {
             const videoResponse = await fetch(videoUrl);
             if (videoResponse.ok) {
               const videoBytes = new Uint8Array(await videoResponse.arrayBuffer());
-              console.log(`[${requestId}] Video downloaded: ${videoBytes.length} bytes`);
+              fileSizeBytes = videoBytes.length;
+              console.log(`[${requestId}] Video downloaded: ${fileSizeBytes} bytes (${(fileSizeBytes / 1024 / 1024).toFixed(2)} MB)`);
 
               const now = new Date();
               const year = now.getFullYear();
               const month = String(now.getMonth() + 1).padStart(2, "0");
               outputVideoPath = `${user.id}/${year}/${month}/${generation.id}.mp4`;
 
+              // Upload raw bytes directly - NO RE-ENCODING
               const { error: uploadError } = await supabase.storage
                 .from("video-generations")
                 .upload(outputVideoPath, videoBytes, {
@@ -826,7 +841,7 @@ serve(async (req) => {
                 error = "Video saqlashda xatolik";
                 newStatus = "failed";
               } else {
-                console.log(`[${requestId}] Video uploaded to: ${outputVideoPath}`);
+                console.log(`[${requestId}] Video uploaded to: ${outputVideoPath} (raw bytes, no re-encoding)`);
                 newStatus = "completed";
                 progress = 100;
               }
@@ -841,15 +856,18 @@ serve(async (req) => {
             newStatus = "failed";
           }
         } else if (base64Video) {
-          console.log(`[${requestId}] Processing base64 video`);
+          console.log(`[${requestId}] Processing base64 video (raw decode, no re-encoding)`);
           try {
             const videoBytes = decodeBase64ToBytes(base64Video);
+            fileSizeBytes = videoBytes.length;
+            console.log(`[${requestId}] Base64 decoded: ${fileSizeBytes} bytes (${(fileSizeBytes / 1024 / 1024).toFixed(2)} MB)`);
             
             const now = new Date();
             const year = now.getFullYear();
             const month = String(now.getMonth() + 1).padStart(2, "0");
             outputVideoPath = `${user.id}/${year}/${month}/${generation.id}.mp4`;
 
+            // Upload raw bytes directly - NO RE-ENCODING
             const { error: uploadError } = await supabase.storage
               .from("video-generations")
               .upload(outputVideoPath, videoBytes, {
@@ -862,7 +880,7 @@ serve(async (req) => {
               error = "Video saqlashda xatolik";
               newStatus = "failed";
             } else {
-              console.log(`[${requestId}] Base64 video uploaded`);
+              console.log(`[${requestId}] Base64 video uploaded (raw bytes, no re-encoding)`);
               newStatus = "completed";
               progress = 100;
             }
@@ -871,6 +889,21 @@ serve(async (req) => {
             error = "Video dekodlashda xatolik";
             newStatus = "failed";
           }
+        }
+        
+        // Store debug metadata including file size
+        if (fileSizeBytes && newStatus === "completed") {
+          const existingParams = generation.params || {};
+          const debugMeta = {
+            ...existingParams,
+            file_size_bytes: fileSizeBytes,
+            upload_method: videoUrl ? "url_download" : "base64_decode",
+            no_reencode: true, // Confirm no ffmpeg re-encoding
+          };
+          await supabase
+            .from("video_generations")
+            .update({ params: debugMeta })
+            .eq("id", generation.id);
         }
       } else if (statusData.status === "FAILED") {
         newStatus = "failed";
