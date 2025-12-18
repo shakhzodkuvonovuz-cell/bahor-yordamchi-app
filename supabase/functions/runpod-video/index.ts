@@ -11,7 +11,7 @@ const corsHeaders = {
 // ==========================================
 const VIDEO_COOLDOWN_SECONDS = parseInt(Deno.env.get("VIDEO_COOLDOWN_SECONDS") || "90");
 const VIDEO_GLOBAL_CONCURRENCY_CAP = parseInt(Deno.env.get("VIDEO_GLOBAL_CONCURRENCY_CAP") || "3");
-const VIDEO_MAX_SECONDS = parseInt(Deno.env.get("VIDEO_MAX_SECONDS") || "6");
+const VIDEO_MAX_SECONDS = parseInt(Deno.env.get("VIDEO_MAX_SECONDS") || "8");
 const VIDEO_MAX_STEPS = parseInt(Deno.env.get("VIDEO_MAX_STEPS") || "30");
 const SIGNED_URL_EXPIRY_SECONDS = 3600; // 1 hour
 
@@ -25,7 +25,7 @@ const ALLOWED_RESOLUTIONS = [
 ];
 
 // Allowed FPS values
-const ALLOWED_FPS = [8, 12, 24];
+const ALLOWED_FPS = [8, 12, 24, 30];
 
 // Daily limits per plan - FREE USERS CANNOT ACCESS VIDEO
 const DAILY_LIMITS: Record<string, number> = {
