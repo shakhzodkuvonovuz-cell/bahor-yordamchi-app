@@ -226,6 +226,7 @@ export default function Chat() {
   const [isUploading, setIsUploading] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<string | null>(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [isWaitingForFirstToken, setIsWaitingForFirstToken] = useState(false);
   
   const [searchUsed, setSearchUsed] = useState(false);
   const [searchUrls, setSearchUrls] = useState<string[]>([]);
@@ -419,6 +420,60 @@ export default function Chat() {
       }
     };
   }, []);
+
+  // Warmup call to reduce cold-start latency (silent, no UI)
+  useEffect(() => {
+    if (!session?.access_token) return;
+    
+    // Fire and forget warmup ping to edge function
+    const warmup = async () => {
+      try {
+        await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            warmup: true,
+          }),
+        });
+      } catch {
+        // Silently ignore warmup errors
+      }
+    };
+    
+    // Use requestIdleCallback for non-blocking warmup
+    if ('requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(() => warmup());
+    } else {
+      setTimeout(warmup, 100);
+    }
+  }, [session?.access_token]);
+
+  // Cancel request handler
+  const handleCancelRequest = useCallback(() => {
+    if (streamAbortControllerRef.current) {
+      streamAbortControllerRef.current.abort();
+    }
+    setIsLoading(false);
+    setTyping(false);
+    setIsWaitingForFirstToken(false);
+    setIsGeneratingImage(false);
+    setProcessingStatus(null);
+    
+    // Stop trace timer
+    if (traceTimerRef.current) {
+      clearInterval(traceTimerRef.current);
+      traceTimerRef.current = null;
+    }
+    traceStartTimeRef.current = null;
+    setActiveTrace(null);
+    
+    toast({
+      description: language === "uz" ? "So'rov bekor qilindi" : "Request cancelled",
+    });
+  }, [language, toast]);
 
   // Load threads from Supabase
   const loadThreads = useCallback(async () => {
@@ -1253,6 +1308,7 @@ export default function Chat() {
     setPendingAttachments([]);
     setIsLoading(true);
     setTyping(true);
+    setIsWaitingForFirstToken(true); // Show instant feedback
     
     // IMMEDIATELY start trace and timer when user sends message
     traceStepsRef.current.clear();
@@ -1504,6 +1560,7 @@ export default function Chat() {
 
       // Add timeout with AbortController (40 seconds)
       const controller = new AbortController();
+      streamAbortControllerRef.current = controller; // Store ref for cancel button
       const timeoutId = setTimeout(() => controller.abort(), 40000);
       
       let response: Response;
@@ -1604,6 +1661,7 @@ export default function Chat() {
           
           setMessages((prev) => addMessageSafe(prev, imageMessage));
           setTyping(false);
+          setIsWaitingForFirstToken(false);
           setIsGeneratingImage(false);
           setProcessingStatus(null);
           
@@ -1673,6 +1731,7 @@ export default function Chat() {
           setMessages((prev) => addMessageSafe(prev, errorMessage));
           setTyping(false);
           setIsLoading(false);
+          setIsWaitingForFirstToken(false);
           setIsGeneratingImage(false);
           setProcessingStatus(null);
           
@@ -1808,6 +1867,7 @@ export default function Chat() {
             };
             setMessages((prev) => addMessageSafe(prev, newAssistantMessage));
             setLastAssistantMessageId(assistantId);
+            setIsWaitingForFirstToken(false); // First token arrived, hide waiting bubble
             assistantMessageCreated = true;
           } else {
             setMessages((prev) =>
@@ -1880,6 +1940,7 @@ export default function Chat() {
           // NOW set loading to false - after message is saved and marked as seen
           setTyping(false);
           setIsLoading(false);
+          setIsWaitingForFirstToken(false);
           
           refreshProfile();
           refreshUsage().then(() => {
@@ -1934,6 +1995,7 @@ export default function Chat() {
       
       setTyping(false);
       setIsLoading(false);
+      setIsWaitingForFirstToken(false);
       setProcessingStatus(null);
       setIsGeneratingImage(false);
       setActiveTrace(null);
@@ -2309,6 +2371,8 @@ export default function Chat() {
                     setTraceSheetOpen(true);
                   }}
                   isGeneratingImage={isGeneratingImage}
+                  isWaitingForFirstToken={isWaitingForFirstToken}
+                  onCancelRequest={handleCancelRequest}
                 />
               </>
             )}
