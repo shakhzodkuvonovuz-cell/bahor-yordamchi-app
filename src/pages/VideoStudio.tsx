@@ -16,6 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
+import { checkAdminStatus } from "@/lib/entitlements";
 import { 
   Play, 
   Download, 
@@ -31,7 +32,9 @@ import {
   Trash2,
   Settings2,
   History,
-  ImageIcon
+  ImageIcon,
+  FlaskConical,
+  Lock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -103,6 +106,11 @@ export default function VideoStudio() {
   const { user, session } = useAuth();
   const { toast } = useToast();
   
+  // Access control state
+  const [hasLabsAccess, setHasLabsAccess] = useState(false);
+  const [featureDisabled, setFeatureDisabled] = useState(false);
+  const [checkingAccess, setCheckingAccess] = useState(true);
+  
   // Form state
   const [prompt, setPrompt] = useState("");
   const [negativePrompt, setNegativePrompt] = useState("");
@@ -141,6 +149,28 @@ export default function VideoStudio() {
   const activePollGenerationIdRef = useRef<string | null>(null);
   const lastCompletedToastGenerationIdRef = useRef<string | null>(null);
   const cooldownTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Check access on mount (only admin/dev emails can access)
+  useEffect(() => {
+    const checkAccess = async () => {
+      if (!user) {
+        setCheckingAccess(false);
+        return;
+      }
+      
+      try {
+        const { isAdmin, isDevBypass } = await checkAdminStatus();
+        setHasLabsAccess(isAdmin || isDevBypass);
+      } catch (err) {
+        console.error('Failed to check labs access:', err);
+        setHasLabsAccess(false);
+      } finally {
+        setCheckingAccess(false);
+      }
+    };
+    
+    checkAccess();
+  }, [user]);
 
   // Load history on mount
   useEffect(() => {
@@ -304,7 +334,14 @@ export default function VideoStudio() {
       const data = response.data;
       if (!data.ok) {
         // Handle specific error codes
-        if (data.error === "VIDEO_NOT_AVAILABLE_FREE") {
+        if (data.error === "VIDEO_DISABLED_TEMPORARILY") {
+          setFeatureDisabled(true);
+          toast({ 
+            title: "Vaqtincha to'xtatildi",
+            description: data.messageUz || "Video funksiyasi vaqtincha o'chirildi. Sifatni oshirib qaytamiz.",
+            variant: "destructive" 
+          });
+        } else if (data.error === "VIDEO_NOT_AVAILABLE_FREE") {
           toast({ 
             title: t("videoStudio.freeBlocked.title"),
             description: t("videoStudio.freeBlocked.description"),
@@ -783,13 +820,13 @@ export default function VideoStudio() {
             <div className="flex items-center gap-2">
               <VideoIcon className="w-5 h-5 text-primary" />
               <h1 className="text-lg font-semibold">{t("videoStudio.title")}</h1>
+              <Badge variant="secondary" className="gap-1">
+                <FlaskConical className="w-3 h-3" />
+                Labs
+              </Badge>
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              {isFreeUser ? (
-                <Badge variant="outline" className="text-destructive border-destructive">
-                  {t("videoStudio.premiumOnly")}
-                </Badge>
-              ) : (
+              {hasLabsAccess && !featureDisabled && !isFreeUser && (
                 <>
                   <Clock className="w-4 h-4" />
                   <span>{dailyUsed}/{dailyLimit === -1 ? '∞' : dailyLimit} {t("videoStudio.today")}</span>
@@ -799,8 +836,52 @@ export default function VideoStudio() {
           </div>
         </div>
 
-        {/* Free user blocking overlay */}
-        {isFreeUser && (
+        {/* Loading state while checking access */}
+        {checkingAccess && (
+          <div className="flex-1 flex items-center justify-center p-8">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          </div>
+        )}
+
+        {/* Labs Coming Soon / Access Restricted card */}
+        {!checkingAccess && (!hasLabsAccess || featureDisabled) && (
+          <div className="flex-1 flex items-center justify-center p-8">
+            <Card className="max-w-md w-full p-8 text-center space-y-6">
+              <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center">
+                <FlaskConical className="w-10 h-10 text-purple-500" />
+              </div>
+              <div className="space-y-2">
+                <Badge variant="secondary" className="gap-1.5 mb-3">
+                  <Lock className="w-3 h-3" />
+                  Labs
+                </Badge>
+                <h2 className="text-2xl font-bold">Video Studio</h2>
+                <p className="text-lg text-muted-foreground">
+                  {featureDisabled 
+                    ? "Vaqtincha to'xtatildi" 
+                    : "Tez orada"}
+                </p>
+              </div>
+              <p className="text-muted-foreground">
+                {featureDisabled 
+                  ? "Video funksiyasi vaqtincha o'chirildi. Sifatni oshirib qaytamiz. Tez orada yangilangan versiyasi chiqadi!"
+                  : "Video yaratish funksiyasi hozirda sinovda. Tez orada barcha foydalanuvchilar uchun ochiladi!"}
+              </p>
+              <div className="pt-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => window.location.href = "/modes"}
+                >
+                  Bosh sahifaga qaytish
+                </Button>
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* Free user blocking overlay - only for users with labs access */}
+        {!checkingAccess && hasLabsAccess && !featureDisabled && isFreeUser && (
           <div className="flex-1 flex items-center justify-center p-8">
             <Card className="max-w-md w-full p-6 text-center space-y-4">
               <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
@@ -815,8 +896,8 @@ export default function VideoStudio() {
           </div>
         )}
 
-        {/* Main content - only show for non-free users */}
-        {!isFreeUser && (
+        {/* Main content - only show for labs users who aren't free */}
+        {!checkingAccess && hasLabsAccess && !featureDisabled && !isFreeUser && (
         <div className="flex-1 flex overflow-hidden">
           {/* Left Panel - Inputs */}
           <div className="w-[400px] flex-shrink-0 border-r border-border overflow-y-auto">
