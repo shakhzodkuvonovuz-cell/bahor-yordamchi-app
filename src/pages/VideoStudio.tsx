@@ -109,6 +109,8 @@ export default function VideoStudio() {
   const [history, setHistory] = useState<VideoGeneration[]>([]);
   const [dailyUsed, setDailyUsed] = useState(0);
   const [dailyLimit, setDailyLimit] = useState(5);
+  const [isFreeUser, setIsFreeUser] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
   
   // Polling
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -168,6 +170,28 @@ export default function VideoStudio() {
       .gte("created_at", today);
     
     setDailyUsed(count ?? 0);
+    
+    // Check user plan
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-entitlements", {
+        method: "GET",
+      });
+      
+      if (!error && data) {
+        const userIsPremium = data.plan === "beta_premium" || data.plan === "premium" || data.isDevBypass;
+        setIsPremium(userIsPremium);
+        setIsFreeUser(!userIsPremium && !data.isDevBypass);
+        setDailyLimit(data.isDevBypass ? -1 : (userIsPremium ? 5 : 0));
+      } else {
+        // Default to free user if we can't check
+        setIsFreeUser(true);
+        setDailyLimit(0);
+      }
+    } catch (error) {
+      console.warn("Entitlement check failed:", error);
+      setIsFreeUser(true);
+      setDailyLimit(0);
+    }
   };
 
   const randomizeSeed = () => {
@@ -225,14 +249,21 @@ export default function VideoStudio() {
 
       const data = response.data;
       if (!data.ok) {
-        if (data.type === "LIMIT_REACHED") {
+        if (data.error === "VIDEO_NOT_AVAILABLE_FREE") {
+          toast({ 
+            title: t("videoStudio.freeBlocked.title"),
+            description: t("videoStudio.freeBlocked.description"),
+            variant: "destructive" 
+          });
+          setIsFreeUser(true);
+        } else if (data.type === "LIMIT_REACHED") {
           toast({ 
             title: "Limit tugadi", 
             description: data.error,
             variant: "destructive" 
           });
         } else {
-          throw new Error(data.error || "Video yaratishda xatolik");
+          throw new Error(data.error || data.messageUz || "Video yaratishda xatolik");
         }
         setIsGenerating(false);
         return;
@@ -503,16 +534,41 @@ export default function VideoStudio() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <VideoIcon className="w-5 h-5 text-primary" />
-              <h1 className="text-lg font-semibold">Video Studiya</h1>
+              <h1 className="text-lg font-semibold">{t("videoStudio.title")}</h1>
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Clock className="w-4 h-4" />
-              <span>{dailyUsed}/{dailyLimit} bugun</span>
+              {isFreeUser ? (
+                <Badge variant="outline" className="text-destructive border-destructive">
+                  {t("videoStudio.premiumOnly")}
+                </Badge>
+              ) : (
+                <>
+                  <Clock className="w-4 h-4" />
+                  <span>{dailyUsed}/{dailyLimit === -1 ? '∞' : dailyLimit} {t("videoStudio.today")}</span>
+                </>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Main content */}
+        {/* Free user blocking overlay */}
+        {isFreeUser && (
+          <div className="flex-1 flex items-center justify-center p-8">
+            <Card className="max-w-md w-full p-6 text-center space-y-4">
+              <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                <VideoIcon className="w-8 h-8 text-primary" />
+              </div>
+              <h2 className="text-xl font-semibold">{t("videoStudio.freeBlocked.title")}</h2>
+              <p className="text-muted-foreground">{t("videoStudio.freeBlocked.description")}</p>
+              <Button className="w-full" onClick={() => window.location.href = "/settings"}>
+                {t("videoStudio.freeBlocked.upgrade")}
+              </Button>
+            </Card>
+          </div>
+        )}
+
+        {/* Main content - only show for non-free users */}
+        {!isFreeUser && (
         <div className="flex-1 flex overflow-hidden">
           {/* Left Panel - Inputs */}
           <div className="w-[400px] flex-shrink-0 border-r border-border overflow-y-auto">
@@ -906,6 +962,7 @@ export default function VideoStudio() {
             </div>
           </div>
         </div>
+        )}
       </div>
     </AppShellV2>
   );

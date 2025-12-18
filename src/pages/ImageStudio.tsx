@@ -75,6 +75,8 @@ interface UsageInfo {
   used: number;
   limit: number;
   isUnlimited: boolean;
+  isPremium: boolean;
+  isFreeUser: boolean;
 }
 
 export default function ImageStudio() {
@@ -97,7 +99,7 @@ export default function ImageStudio() {
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
   const [historyImages, setHistoryImages] = useState<GeneratedImage[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
-  const [usage, setUsage] = useState<UsageInfo>({ used: 0, limit: 5, isUnlimited: false });
+  const [usage, setUsage] = useState<UsageInfo>({ used: 0, limit: 1, isUnlimited: false, isPremium: false, isFreeUser: true });
   const [activeTab, setActiveTab] = useState<"create" | "history">("create");
   
   // Lightbox state
@@ -143,7 +145,8 @@ export default function ImageStudio() {
 
       // If user has generated more than limit allows, they're likely dev unlimited
       // (server enforces limits, so if they have 16 images, server allowed it)
-      const defaultLimit = isPremium ? 20 : 5;
+      // Free: 1/day (watermarked), Premium: 20/day
+      const defaultLimit = isPremium ? 20 : 1;
       const impliedUnlimited = usedCount > defaultLimit && !isDevBypass;
       
       if (impliedUnlimited) {
@@ -152,16 +155,19 @@ export default function ImageStudio() {
       }
 
       const dailyLimit = isDevBypass ? -1 : defaultLimit;
+      const isFreeUser = !isPremium && !isDevBypass;
 
       setUsage({
         used: usedCount,
         limit: dailyLimit,
         isUnlimited: isDevBypass,
+        isPremium,
+        isFreeUser,
       });
     } catch (error) {
       console.error("Failed to fetch usage:", error);
       // Set safe defaults on any error
-      setUsage({ used: 0, limit: 5, isUnlimited: false });
+      setUsage({ used: 0, limit: 1, isUnlimited: false, isPremium: false, isFreeUser: true });
     }
   }, [user]);
 
@@ -439,10 +445,19 @@ export default function ImageStudio() {
               >
                 {usage.isUnlimited ? (
                   <span>{t("imageStudio.unlimited")}</span>
+                ) : usage.isFreeUser ? (
+                  <span>{t("imageStudio.freeUsage", { used: usage.used, limit: usage.limit })}</span>
                 ) : (
                   <span>{t("imageStudio.dailyUsage", { used: usage.used, limit: usage.limit })}</span>
                 )}
               </Badge>
+              
+              {/* Free user watermark notice */}
+              {usage.isFreeUser && !usage.isUnlimited && (
+                <Badge variant="outline" className="text-xs py-1 px-2 text-muted-foreground">
+                  {t("imageStudio.watermarkNotice")}
+                </Badge>
+              )}
               
               {/* Info tooltip */}
               <Tooltip>
