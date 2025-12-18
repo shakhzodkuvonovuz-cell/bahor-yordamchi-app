@@ -130,6 +130,7 @@ export default function VideoStudio() {
   const [isFreeUser, setIsFreeUser] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Polling & timers
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -551,6 +552,74 @@ export default function VideoStudio() {
     }
   };
 
+  // Refresh status for stuck/processing jobs
+  const refreshStatus = async (generationId?: string) => {
+    const targetId = generationId || currentGeneration?.id;
+    if (!targetId) return;
+    
+    setIsRefreshing(true);
+    try {
+      const response = await supabase.functions.invoke("runpod-video", {
+        body: { action: "status", generationId: targetId },
+      });
+
+      if (response.error) {
+        toast({ title: "Status tekshirishda xatolik", variant: "destructive" });
+        return;
+      }
+
+      const data = response.data;
+      
+      if (!data.ok) {
+        // Error from RunPod
+        setCurrentGeneration(prev => prev ? {
+          ...prev,
+          status: "failed",
+          error: data.messageUz || data.error || "Noma'lum xatolik",
+        } : null);
+        toast({ title: "Xatolik", description: data.messageUz || data.error, variant: "destructive" });
+        loadHistory();
+        return;
+      }
+
+      // Update current generation with new status
+      setCurrentGeneration(prev => prev ? {
+        ...prev,
+        status: data.status,
+        progress: data.progress || prev.progress,
+        error: data.error,
+        output_video_path: data.outputVideoPath,
+        output_video_url: data.outputVideoUrl,
+      } : null);
+
+      if (data.status === "completed" && data.outputVideoUrl) {
+        toast({ title: "Video tayyor!" });
+        setIsGenerating(false);
+      } else if (data.status === "completed" && !data.outputVideoUrl) {
+        setCurrentGeneration(prev => prev ? {
+          ...prev,
+          status: "failed",
+          error: "Video URL topilmadi",
+        } : null);
+        toast({ title: "Xatolik", description: "Video URL topilmadi", variant: "destructive" });
+      } else if (data.status === "failed") {
+        toast({ title: "Xatolik", description: data.error, variant: "destructive" });
+        setIsGenerating(false);
+      } else if (["queued", "running", "processing"].includes(data.status)) {
+        // Still in progress - resume polling
+        toast({ title: "Hali ishlamoqda", description: "Polling qayta boshlanmoqda..." });
+        startPolling(targetId);
+      }
+      
+      loadHistory();
+    } catch (error) {
+      console.error("Refresh status error:", error);
+      toast({ title: "Status tekshirishda xatolik", variant: "destructive" });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   // Send video to chat as attachment
   const sendToChat = async () => {
     if (!currentGeneration?.output_video_path || !currentGeneration.output_video_url) {
@@ -944,15 +1013,38 @@ export default function VideoStudio() {
                         {currentGeneration.prompt}
                       </p>
                     </div>
-                    {currentGeneration.status === "running" && (
-                      <Button variant="ghost" size="sm" onClick={cancelGeneration}>
-                        <X className="w-4 h-4" />
-                      </Button>
+                    {(currentGeneration.status === "running" || currentGeneration.status === "processing") && (
+                      <div className="flex gap-2">
+                        <Button variant="ghost" size="sm" onClick={cancelGeneration}>
+                          <X className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => refreshStatus()}
+                          disabled={isRefreshing}
+                        >
+                          <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
+                        </Button>
+                      </div>
                     )}
                   </div>
 
-                  {currentGeneration.status === "running" && (
-                    <Progress value={currentGeneration.progress || 0} className="mb-3" />
+                  {(currentGeneration.status === "running" || currentGeneration.status === "processing") && (
+                    <div className="space-y-2 mb-3">
+                      <Progress value={currentGeneration.progress || 0} />
+                      <p className="text-xs text-muted-foreground text-center">
+                        {currentGeneration.status === "processing" ? "RunPod ishlamoqda..." : "Video yaratilmoqda..."}
+                        {" "}
+                        <button 
+                          onClick={() => refreshStatus()} 
+                          className="text-primary hover:underline"
+                          disabled={isRefreshing}
+                        >
+                          {isRefreshing ? "Tekshirilmoqda..." : "Statusni yangilash"}
+                        </button>
+                      </p>
+                    </div>
                   )}
 
                   {currentGeneration.status === "failed" && currentGeneration.error && (
