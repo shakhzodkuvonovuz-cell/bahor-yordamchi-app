@@ -129,14 +129,18 @@ serve(async (req) => {
         );
       }
 
-      // Check daily limit
+      // Check daily limit with explicit UTC boundaries
       if (!isDevBypass && dailyLimit !== -1) {
-        const today = new Date().toISOString().split("T")[0];
+        const now = new Date();
+        const startOfDayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
+        const endOfDayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
+        
         const { count } = await supabase
           .from("video_generations")
           .select("*", { count: "exact", head: true })
           .eq("user_id", user.id)
-          .gte("created_at", today);
+          .gte("created_at", startOfDayUTC.toISOString())
+          .lt("created_at", endOfDayUTC.toISOString());
 
         const usedCount = count ?? 0;
         if (usedCount >= dailyLimit) {
