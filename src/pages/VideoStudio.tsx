@@ -907,7 +907,7 @@ export default function VideoStudio() {
                 className="w-full"
                 size="lg"
                 onClick={startGeneration}
-                disabled={isGenerating || !prompt.trim() || dailyUsed >= dailyLimit}
+                disabled={isGenerating || !prompt.trim() || (dailyLimit >= 0 && dailyUsed >= dailyLimit)}
               >
                 {isGenerating ? (
                   <>
