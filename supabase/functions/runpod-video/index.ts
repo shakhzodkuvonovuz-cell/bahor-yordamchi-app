@@ -317,8 +317,14 @@ serve(async (req) => {
       const originalPrompt = prompt.trim();
       const videoStyle = params.style || params.preset || "cinematic";
       
+      console.log(`[${requestId}] === START ACTION ===`);
+      console.log(`[${requestId}] Original prompt: "${originalPrompt}"`);
+      console.log(`[${requestId}] Video style: ${videoStyle}`);
+      console.log(`[${requestId}] Params received:`, JSON.stringify(params));
+      
       // Step 1: Translate non-English prompts
       const translatedPrompt = await translateToEnglish(originalPrompt, requestId);
+      console.log(`[${requestId}] After translation: "${translatedPrompt}"`);
       
       // Step 2: Enhance with cinematic quality keywords + get preset-specific negative
       const { enhancedPrompt, negativeEnhancement } = enhanceVideoPrompt(translatedPrompt, videoStyle);
@@ -326,7 +332,8 @@ serve(async (req) => {
       // Merge user negative prompt with preset negative enhancement
       const combinedNegativePrompt = [negativePrompt?.trim(), negativeEnhancement].filter(Boolean).join(", ");
       
-      console.log(`[${requestId}] Prompt enhancement: "${originalPrompt}" -> "${enhancedPrompt}"`);
+      console.log(`[${requestId}] Final enhanced prompt: "${enhancedPrompt}"`);
+      console.log(`[${requestId}] Combined negative prompt: "${combinedNegativePrompt}"`);
       if (negativeEnhancement) {
         console.log(`[${requestId}] Added preset negative prompt for style: ${videoStyle}`);
       }
@@ -523,7 +530,9 @@ serve(async (req) => {
         runpodInput.assets = assets;
       }
 
-      console.log(`[${requestId}] RunPod input:`, JSON.stringify(runpodInput));
+      console.log(`[${requestId}] === RUNPOD PAYLOAD ===`);
+      console.log(`[${requestId}] RunPod input FULL:`, JSON.stringify(runpodInput, null, 2));
+      console.log(`[${requestId}] RunPod endpoint: ${runpodEndpointId}`);
 
       // Call RunPod /run
       const runpodUrl = `https://api.runpod.ai/v2/${runpodEndpointId}/run`;
@@ -537,7 +546,8 @@ serve(async (req) => {
       });
 
       const responseText = await runpodResponse.text();
-      console.log(`[${requestId}] RunPod response status: ${runpodResponse.status}, body: ${responseText}`);
+      console.log(`[${requestId}] RunPod /run response status: ${runpodResponse.status}`);
+      console.log(`[${requestId}] RunPod /run response body: ${responseText.slice(0, 500)}`);
 
       let runpodData;
       try {
