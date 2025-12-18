@@ -9,6 +9,9 @@ const corsHeaders = {
 // ==========================================
 // CONFIGURABLE SAFETY LIMITS (env vars)
 // ==========================================
+// Global kill switch - set VIDEO_FEATURE_ENABLED=true to enable
+const VIDEO_FEATURE_ENABLED = Deno.env.get("VIDEO_FEATURE_ENABLED")?.toLowerCase() === "true";
+
 const VIDEO_COOLDOWN_SECONDS = parseInt(Deno.env.get("VIDEO_COOLDOWN_SECONDS") || "90");
 const VIDEO_GLOBAL_CONCURRENCY_CAP = parseInt(Deno.env.get("VIDEO_GLOBAL_CONCURRENCY_CAP") || "3");
 const VIDEO_MAX_SECONDS = parseInt(Deno.env.get("VIDEO_MAX_SECONDS") || "8");
@@ -194,6 +197,23 @@ serve(async (req) => {
     }
 
     console.log(`[${requestId}] User authenticated: ${user.id}`);
+
+    // Check global kill switch
+    if (!VIDEO_FEATURE_ENABLED) {
+      console.log(`[${requestId}] Video feature disabled globally`);
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          error: "VIDEO_DISABLED_TEMPORARILY",
+          messageUz: "Video funksiyasi vaqtincha o'chirildi. Sifatni oshirib qaytamiz.",
+          messageEn: "Video feature is temporarily disabled. We're improving quality.",
+        }),
+        {
+          status: 503,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
 
     const rawBody = await req.text();
     if (!rawBody) {
