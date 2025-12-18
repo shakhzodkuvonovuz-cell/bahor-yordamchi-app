@@ -179,8 +179,6 @@ const IMAGE_BLOCKERS = [
   "yordam", "help", "помощь", "yardım",
   // Analysis patterns
   "tahlil", "analysis", "analyze", "анализ",
-  // Text/prompt request patterns - user wants text help, not image
-  "prompt", "give me a", "write me", "suggest", "ber menga", "yozib ber",
 ];
 
 // Router decision type
@@ -273,26 +271,7 @@ function routeRequest(
   
   // PRIORITY 4: Check for image generation keywords FIRST
   const imageResult = detectImageKeywords(q, qLower);
-
-  // If user is asking for help WRITING a prompt, treat as text even if message includes image keywords
-  // Examples: "give me a prompt to create an image of...", "write a prompt for..."
-  const looksLikePromptHelp =
-    qLower.includes("prompt") &&
-    (qLower.includes("give me") ||
-      qLower.includes("write") ||
-      qLower.includes("suggest") ||
-      qLower.includes("yoz") ||
-      qLower.includes("ber "));
-
-  if (imageResult.isImageGen && looksLikePromptHelp) {
-    decision.selectedTool = 'text';
-    decision.imageIntent = false;
-    decision.blockersHit.push('prompt');
-    decision.confidence = 1.0;
-    console.log('[Router] Prompt-writing request detected → text (blocking image gen)');
-    return decision;
-  }
-
+  
   // PRIORITY 5: If strong image intent, allow it regardless of blockers
   if (imageResult.isImageGen) {
     // Check if it has STRONG image keywords that should override blockers
@@ -304,7 +283,7 @@ function routeRequest(
       '/image', '/rasm'
     ];
     const hasStrongIntent = strongImageKeywords.some(kw => qLower.includes(kw));
-
+    
     if (hasStrongIntent) {
       // Strong image keywords override blockers
       decision.selectedTool = 'image';
@@ -314,19 +293,19 @@ function routeRequest(
       console.log('[Router] Strong image intent - overriding blockers');
       return decision;
     }
-
+    
     // For weak image intent, check blockers
     for (const blocker of IMAGE_BLOCKERS) {
       if (qLower.includes(blocker)) {
         decision.blockersHit.push(blocker);
       }
     }
-
+    
     // Question mark = never image (unless strong intent)
     if (q.endsWith('?')) {
       decision.blockersHit.push('?');
     }
-
+    
     if (decision.blockersHit.length === 0) {
       decision.selectedTool = 'image';
       decision.imageIntent = true;
