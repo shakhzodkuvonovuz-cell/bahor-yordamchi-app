@@ -445,6 +445,36 @@ serve(async (req) => {
           );
         }
 
+        // Helper: decode base64 (handles plain and data URL prefix)
+        const decodeBase64ToBytes = (base64String: string): Uint8Array => {
+          // Strip data URL prefix if present (e.g., data:video/mp4;base64,...)
+          const cleaned = base64String.replace(/^data:video\/[a-zA-Z0-9]+;base64,/, '');
+          const binaryString = atob(cleaned);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          return bytes;
+        };
+
+        // Helper: find video_base64 in various output formats
+        const findBase64Video = (out: any): string | null => {
+          if (!out) return null;
+          // Direct fields
+          if (out.video_base64) return out.video_base64;
+          if (out.videoBase64) return out.videoBase64;
+          // Array format
+          if (Array.isArray(out) && out[0]?.video_base64) return out[0].video_base64;
+          if (Array.isArray(out) && out[0]?.videoBase64) return out[0].videoBase64;
+          // Nested output
+          if (out.output?.video_base64) return out.output.video_base64;
+          if (out.output?.videoBase64) return out.output.videoBase64;
+          // Result nested
+          if (out.result?.video_base64) return out.result.video_base64;
+          if (out.result?.videoBase64) return out.result.videoBase64;
+          return null;
+        };
+
         if (output) {
           // Handle different output formats from various video models
           // Priority order: video_url > url > video > nested paths > result string
@@ -473,10 +503,13 @@ serve(async (req) => {
           }
         }
 
+        // Find base64 video data (tolerant parsing)
+        const base64Video = findBase64Video(output);
+
         // If no video URL found and no base64, mark as failed with debug info
-        if (!videoUrl && !output?.video_base64) {
-          console.error(`[${requestId}] No video URL found in output. Keys: ${outputKeys.join(", ") || "none"}`);
-          error = `Video URL topilmadi. Kutilgan: video_url, url, video, yoki video_base64. Topildi: ${outputKeys.join(", ") || "bo'sh"}`;
+        if (!videoUrl && !base64Video) {
+          console.error(`[${requestId}] No video URL or base64 found in output. Keys: ${outputKeys.join(", ") || "none"}`);
+          error = `Video topilmadi. Kutilgan: video_url, url, video, video_base64, videoBase64. Topildi: ${outputKeys.join(", ") || "bo'sh"}`;
           newStatus = "failed";
         }
 
@@ -517,11 +550,12 @@ serve(async (req) => {
             console.error(`[${requestId}] Video download error:`, downloadError);
             error = "Video yuklab olishda xatolik";
           }
-        } else if (output?.video_base64) {
-          // Handle base64 output
+        } else if (base64Video) {
+          // Handle base64 output with robust decoding
+          console.log(`[${requestId}] Processing base64 video (${base64Video.length} chars)`);
           try {
-            const base64Data = output.video_base64.replace(/^data:video\/\w+;base64,/, '');
-            const videoBytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+            const videoBytes = decodeBase64ToBytes(base64Video);
+            console.log(`[${requestId}] Decoded ${videoBytes.length} bytes`);
             
             const now = new Date();
             const year = now.getFullYear();
@@ -538,10 +572,12 @@ serve(async (req) => {
             if (uploadError) {
               console.error(`[${requestId}] Base64 upload error:`, uploadError);
               error = "Video saqlashda xatolik";
+            } else {
+              console.log(`[${requestId}] Base64 video uploaded to: ${outputVideoPath}`);
             }
           } catch (base64Error) {
             console.error(`[${requestId}] Base64 decode error:`, base64Error);
-            error = "Video dekodlashda xatolik";
+            error = "Video dekodlashda xatolik: " + (base64Error instanceof Error ? base64Error.message : "Noma'lum xatolik");
           }
         }
       } else if (statusData.status === "FAILED") {

@@ -425,6 +425,50 @@ export default function VideoStudio() {
     }
   };
 
+  // Refresh signed URL for expired links
+  const refreshVideoUrl = async () => {
+    if (!currentGeneration?.output_video_path) return;
+    
+    const { data, error } = await supabase.storage
+      .from("video-generations")
+      .createSignedUrl(currentGeneration.output_video_path, 3600);
+    
+    if (data?.signedUrl) {
+      setCurrentGeneration(prev => prev ? { ...prev, output_video_url: data.signedUrl } : null);
+      toast({ title: "Havola yangilandi" });
+    } else {
+      toast({ title: "Havolani yangilashda xatolik", variant: "destructive" });
+    }
+  };
+
+  // Send video to chat as attachment
+  const sendToChat = async () => {
+    if (!currentGeneration?.output_video_path || !currentGeneration.output_video_url) {
+      toast({ title: "Video topilmadi", variant: "destructive" });
+      return;
+    }
+
+    try {
+      // Import the chatStore to add message
+      const { addMessage, createThread } = await import("@/lib/chatStore");
+      
+      // Create a thread for video sharing
+      const thread = await createThread(user!.id, { mode: "general", title: "Video Studio" });
+      
+      // Add message with video info
+      await addMessage(user!.id, {
+        threadId: thread.id,
+        role: "assistant",
+        content: `🎬 Video yaratildi:\n\n**Prompt:** ${currentGeneration.prompt}\n\n📥 [Video yuklab olish](${currentGeneration.output_video_url})`,
+      });
+      
+      toast({ title: "Chatga yuborildi" });
+    } catch (error) {
+      console.error("Send to chat error:", error);
+      toast({ title: "Chatga yuborishda xatolik", variant: "destructive" });
+    }
+  };
+
   const selectHistoryItem = async (item: VideoGeneration) => {
     // Get signed URL if needed
     if (item.output_video_path && !item.output_video_url) {
@@ -786,7 +830,9 @@ export default function VideoStudio() {
                       <video
                         src={currentGeneration.output_video_url}
                         controls
-                        className="w-full rounded-lg bg-black max-h-[400px]"
+                        playsInline
+                        className="w-full rounded-xl bg-black max-h-[400px]"
+                        style={{ borderRadius: 12 }}
                       />
                       <div className="flex gap-2 flex-wrap">
                         <Button
@@ -801,10 +847,16 @@ export default function VideoStudio() {
                           <RefreshCw className="w-4 h-4 mr-2" />
                           Qayta yaratish
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={sendToChat}>
                           <Send className="w-4 h-4 mr-2" />
                           Chatga yuborish
                         </Button>
+                        {currentGeneration.output_video_path && (
+                          <Button variant="ghost" size="sm" onClick={refreshVideoUrl}>
+                            <RefreshCw className="w-4 h-4 mr-2" />
+                            Havolani yangilash
+                          </Button>
+                        )}
                       </div>
                     </div>
                   )}
