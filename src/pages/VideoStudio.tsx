@@ -162,12 +162,17 @@ export default function VideoStudio() {
   };
 
   const loadDailyUsage = async () => {
-    const today = new Date().toISOString().split("T")[0];
+    // Use explicit UTC boundaries for consistent counting
+    const now = new Date();
+    const startOfDayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
+    const endOfDayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
+    
     const { count } = await supabase
       .from("video_generations")
       .select("*", { count: "exact", head: true })
       .eq("user_id", user!.id)
-      .gte("created_at", today);
+      .gte("created_at", startOfDayUTC.toISOString())
+      .lt("created_at", endOfDayUTC.toISOString());
     
     setDailyUsed(count ?? 0);
     
