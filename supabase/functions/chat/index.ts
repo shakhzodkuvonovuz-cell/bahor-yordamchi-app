@@ -179,6 +179,8 @@ const IMAGE_BLOCKERS = [
   "yordam", "help", "помощь", "yardım",
   // Analysis patterns
   "tahlil", "analysis", "analyze", "анализ",
+  // Text/prompt request patterns - user wants text help, not image
+  "prompt", "give me a", "write me", "suggest", "ber menga", "yozib ber",
 ];
 
 // Router decision type
