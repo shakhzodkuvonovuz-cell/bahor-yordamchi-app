@@ -35,14 +35,14 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Video generation presets
+// Video generation presets - optimized for quality
 const PRESETS = [
-  { id: "cinematic", label: "Kinematografik", params: { guidance_scale: 8, steps: 30, motion_strength: 0.8 } },
-  { id: "sharper", label: "Aniqroq (Sharper)", params: { guidance_scale: 7.5, steps: 30, motion_strength: 0.6 } },
-  { id: "anime", label: "Anime", params: { guidance_scale: 7, steps: 30, motion_strength: 0.7 } },
-  { id: "realistic", label: "Realistik", params: { guidance_scale: 7.5, steps: 30, motion_strength: 0.6 } },
-  { id: "retro", label: "Retro film", params: { guidance_scale: 6.5, steps: 25, motion_strength: 0.5 } },
-  { id: "samarkand", label: "Samarqand uslubi", params: { guidance_scale: 7, steps: 30, motion_strength: 0.7 } },
+  { id: "cinematic", label: "Kinematografik", params: { guidance_scale: 9, steps: 40, motion_strength: 0.8 } },
+  { id: "sharper", label: "Aniqroq (Sharper)", params: { guidance_scale: 10, steps: 45, motion_strength: 0.6 } },
+  { id: "anime", label: "Anime", params: { guidance_scale: 8.5, steps: 40, motion_strength: 0.7 } },
+  { id: "realistic", label: "Realistik", params: { guidance_scale: 9.5, steps: 45, motion_strength: 0.6 } },
+  { id: "retro", label: "Retro film", params: { guidance_scale: 7.5, steps: 35, motion_strength: 0.5 } },
+  { id: "samarkand", label: "Samarqand uslubi", params: { guidance_scale: 8.5, steps: 40, motion_strength: 0.7 } },
   { id: "custom", label: "Maxsus", params: {} },
 ];
 
@@ -57,15 +57,15 @@ const ASPECT_RATIOS = [
 ];
 
 const QUALITY_TIERS = [
-  { id: "fast", label: "Tez", steps: 15 },
-  { id: "balanced", label: "Muvozanat", steps: 25 },
-  { id: "high", label: "Yuqori sifat", steps: 30 },
+  { id: "fast", label: "Tez", steps: 25 },
+  { id: "balanced", label: "Muvozanat", steps: 40 },
+  { id: "high", label: "Yuqori sifat", steps: 50 },
 ];
 
 // Allowed FPS values (must match server)
 const ALLOWED_FPS = [8, 12, 24, 30];
 const MAX_DURATION_SECONDS = 8;
-const MAX_STEPS = 30;
+const MAX_STEPS = 50;
 
 interface VideoGeneration {
   id: string;
@@ -112,8 +112,8 @@ export default function VideoStudio() {
   const [durationSeconds, setDurationSeconds] = useState(5);
   const [fps, setFps] = useState(24);
   const [seed, setSeed] = useState<number | null>(null);
-  const [guidanceScale, setGuidanceScale] = useState(7.5);
-  const [steps, setSteps] = useState(30);
+  const [guidanceScale, setGuidanceScale] = useState(9);
+  const [steps, setSteps] = useState(40);
   const [motionStrength, setMotionStrength] = useState(0.7);
   const [customWidth, setCustomWidth] = useState(768);
   const [customHeight, setCustomHeight] = useState(512);

@@ -12,7 +12,7 @@ const corsHeaders = {
 const VIDEO_COOLDOWN_SECONDS = parseInt(Deno.env.get("VIDEO_COOLDOWN_SECONDS") || "90");
 const VIDEO_GLOBAL_CONCURRENCY_CAP = parseInt(Deno.env.get("VIDEO_GLOBAL_CONCURRENCY_CAP") || "3");
 const VIDEO_MAX_SECONDS = parseInt(Deno.env.get("VIDEO_MAX_SECONDS") || "8");
-const VIDEO_MAX_STEPS = parseInt(Deno.env.get("VIDEO_MAX_STEPS") || "30");
+const VIDEO_MAX_STEPS = parseInt(Deno.env.get("VIDEO_MAX_STEPS") || "50");
 const SIGNED_URL_EXPIRY_SECONDS = 3600; // 1 hour
 
 // Allowed resolution presets (to prevent abuse)
@@ -41,17 +41,25 @@ const DAILY_LIMITS: Record<string, number> = {
 
 // Video style presets for prompt enhancement
 const VIDEO_STYLE_PRESETS: Record<string, string> = {
-  cinematic: "cinematic film quality, professional cinematography, movie-like visuals, dramatic lighting, shallow depth of field, film grain, 35mm film look",
-  realistic: "ultra realistic, photorealistic, natural lighting, high detail, sharp focus, lifelike motion",
-  anime: "anime style, japanese animation, studio ghibli inspired, vibrant colors, smooth animation",
-  artistic: "artistic, creative, stylized visuals, unique aesthetic, visually striking",
-  documentary: "documentary style, natural footage, authentic, real-world feel, observational",
-  sharper: "sharp, crisp details, high definition, ultra clear, razor sharp edges, precise textures, detailed features",
+  cinematic: "cinematic film quality, professional cinematography, movie-like visuals, dramatic lighting, shallow depth of field, film grain, 35mm film look, 4K quality, high resolution",
+  realistic: "ultra realistic, photorealistic, natural lighting, high detail, sharp focus, lifelike motion, 4K quality, high definition, crisp details",
+  anime: "anime style, japanese animation, studio ghibli inspired, vibrant colors, smooth animation, clean lines",
+  artistic: "artistic, creative, stylized visuals, unique aesthetic, visually striking, high quality",
+  documentary: "documentary style, natural footage, authentic, real-world feel, observational, high quality footage",
+  sharper: "sharp, crisp details, high definition, ultra clear, 4K quality, razor sharp edges, precise textures, detailed features, crystal clear",
 };
 
-// Negative prompts for presets
+// Base quality enhancement added to ALL prompts
+const BASE_QUALITY_BOOST = "best quality, high resolution, sharp focus, detailed, professional quality, 4K, ultra HD";
+
+// Negative prompts - applied to ALL generations
+const BASE_NEGATIVE_PROMPT = "blurry, low quality, pixelated, grainy, noisy, soft focus, out of focus, motion blur, compression artifacts, distorted, deformed, ugly, poorly rendered, low resolution, bad quality";
+
+// Additional negative prompts for presets
 const VIDEO_NEGATIVE_PRESETS: Record<string, string> = {
-  sharper: "blurry, low detail, compression artifacts, soft focus, pixelated, grainy, noise, out of focus, motion blur",
+  sharper: "washed out colors, overexposed, underexposed, foggy, hazy",
+  cinematic: "amateur, home video quality",
+  realistic: "fake, artificial, CGI looking, uncanny",
 };
 
 // Translate Uzbek/Russian to English using Lovable AI Gateway
@@ -106,13 +114,16 @@ Text: ${prompt}`;
 // Enhance prompt with cinematic quality keywords
 function enhanceVideoPrompt(prompt: string, style: string = "cinematic"): { enhancedPrompt: string; negativeEnhancement: string } {
   const styleSuffix = VIDEO_STYLE_PRESETS[style] || VIDEO_STYLE_PRESETS.cinematic;
-  const negativeEnhancement = VIDEO_NEGATIVE_PRESETS[style] || "";
+  const presetNegative = VIDEO_NEGATIVE_PRESETS[style] || "";
   
-  // Core video quality keywords
-  const qualityBoost = "smooth motion, high quality video, consistent lighting, stable camera, professional production";
+  // Combine base quality + style-specific enhancement
+  const enhancedPrompt = `${prompt}. ${BASE_QUALITY_BOOST}, ${styleSuffix}`;
+  
+  // Combine base negative + style-specific negative
+  const negativeEnhancement = `${BASE_NEGATIVE_PROMPT}, ${presetNegative}`.trim().replace(/,\s*$/, '');
   
   return {
-    enhancedPrompt: `${prompt}. ${styleSuffix}, ${qualityBoost}`,
+    enhancedPrompt,
     negativeEnhancement,
   };
 }
@@ -431,10 +442,10 @@ serve(async (req) => {
         steps = VIDEO_MAX_STEPS;
       }
 
-      // Validate guidance_scale (max 8.0)
-      let guidanceScale = params.guidance_scale || 7.5;
-      if (guidanceScale > 8.0 && !isDevBypass) {
-        guidanceScale = 8.0;
+      // Validate guidance_scale (max 10.0 for better sharpness)
+      let guidanceScale = params.guidance_scale || 8.5;
+      if (guidanceScale > 10.0 && !isDevBypass) {
+        guidanceScale = 10.0;
       }
 
       // Validate motion_strength (0.0-1.0)
