@@ -816,7 +816,7 @@ export default function VideoStudio() {
                         value={[guidanceScale]}
                         onValueChange={([v]) => setGuidanceScale(v)}
                         min={1}
-                        max={20}
+                        max={8}
                         step={0.5}
                       />
                     </div>
