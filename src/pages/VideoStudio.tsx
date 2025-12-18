@@ -54,10 +54,15 @@ const ASPECT_RATIOS = [
 ];
 
 const QUALITY_TIERS = [
-  { id: "fast", label: "Tez", steps: 20 },
-  { id: "balanced", label: "Muvozanat", steps: 30 },
-  { id: "high", label: "Yuqori sifat", steps: 50 },
+  { id: "fast", label: "Tez", steps: 15 },
+  { id: "balanced", label: "Muvozanat", steps: 25 },
+  { id: "high", label: "Yuqori sifat", steps: 30 },
 ];
+
+// Allowed FPS values (must match server)
+const ALLOWED_FPS = [8, 12, 24, 30];
+const MAX_DURATION_SECONDS = 8;
+const MAX_STEPS = 30;
 
 interface VideoGeneration {
   id: string;
@@ -272,12 +277,12 @@ export default function VideoStudio() {
           params: {
             width: resolution.width,
             height: resolution.height,
-            fps,
-            duration_seconds: durationSeconds,
+            fps: ALLOWED_FPS.includes(fps) ? fps : 24,
+            duration_seconds: Math.min(durationSeconds, MAX_DURATION_SECONDS),
             seed: seed ?? Math.floor(Math.random() * 2147483647),
-            guidance_scale: guidanceScale,
-            steps,
-            motion_strength: motionStrength,
+            guidance_scale: Math.min(guidanceScale, 8),
+            steps: Math.min(steps, MAX_STEPS),
+            motion_strength: Math.max(0, Math.min(1, motionStrength)),
             generate_audio: generateAudio,
             output_format: outputFormat,
             preset,
@@ -739,13 +744,16 @@ export default function VideoStudio() {
               {/* Duration */}
               <div className="space-y-2">
                 <Label>Davomiyligi: {durationSeconds}s</Label>
-                <Slider
-                  value={[durationSeconds]}
-                  onValueChange={([v]) => setDurationSeconds(v)}
-                  min={1}
-                  max={15}
-                  step={1}
-                />
+                <Select value={String(durationSeconds)} onValueChange={(v) => setDurationSeconds(parseInt(v))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[2, 3, 4, 5, 6, 7, 8].map(d => (
+                      <SelectItem key={d} value={String(d)}>{d} soniya</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Advanced Settings */}
@@ -760,14 +768,17 @@ export default function VideoStudio() {
                   <AccordionContent className="space-y-4 pt-2">
                     {/* FPS */}
                     <div className="space-y-2">
-                      <Label>FPS: {fps}</Label>
-                      <Slider
-                        value={[fps]}
-                        onValueChange={([v]) => setFps(v)}
-                        min={12}
-                        max={60}
-                        step={1}
-                      />
+                      <Label>FPS</Label>
+                      <Select value={String(fps)} onValueChange={(v) => setFps(parseInt(v))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ALLOWED_FPS.map(f => (
+                            <SelectItem key={f} value={String(f)}>{f} fps</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     {/* Seed */}
@@ -791,9 +802,9 @@ export default function VideoStudio() {
                       <Label>Steps: {steps}</Label>
                       <Slider
                         value={[steps]}
-                        onValueChange={([v]) => setSteps(v)}
+                        onValueChange={([v]) => setSteps(Math.min(v, MAX_STEPS))}
                         min={10}
-                        max={100}
+                        max={MAX_STEPS}
                         step={5}
                       />
                     </div>
