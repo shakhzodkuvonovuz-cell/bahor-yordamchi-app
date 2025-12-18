@@ -327,21 +327,28 @@ export default function VideoStudio() {
         },
       });
 
-      if (response.error) {
+      // Check response data first (even on HTTP errors like 503, data may contain useful info)
+      const data = response.data;
+      
+      // Handle VIDEO_DISABLED_TEMPORARILY first (comes with 503 status)
+      if (data?.error === "VIDEO_DISABLED_TEMPORARILY") {
+        setFeatureDisabled(true);
+        setIsGenerating(false);
+        toast({ 
+          title: "Vaqtincha to'xtatildi",
+          description: data.messageUz || "Video funksiyasi vaqtincha o'chirildi. Sifatni oshirib qaytamiz.",
+          variant: "destructive" 
+        });
+        return;
+      }
+
+      if (response.error && !data) {
         throw new Error(response.error.message || "Video yaratishda xatolik");
       }
 
-      const data = response.data;
-      if (!data.ok) {
-        // Handle specific error codes
-        if (data.error === "VIDEO_DISABLED_TEMPORARILY") {
-          setFeatureDisabled(true);
-          toast({ 
-            title: "Vaqtincha to'xtatildi",
-            description: data.messageUz || "Video funksiyasi vaqtincha o'chirildi. Sifatni oshirib qaytamiz.",
-            variant: "destructive" 
-          });
-        } else if (data.error === "VIDEO_NOT_AVAILABLE_FREE") {
+      if (!data?.ok) {
+        // Handle specific error codes (VIDEO_DISABLED_TEMPORARILY handled above)
+        if (data?.error === "VIDEO_NOT_AVAILABLE_FREE") {
           toast({ 
             title: t("videoStudio.freeBlocked.title"),
             description: t("videoStudio.freeBlocked.description"),
