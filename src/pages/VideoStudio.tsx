@@ -135,6 +135,8 @@ export default function VideoStudio() {
   // Polling & timers
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pollCountRef = useRef(0);
+  const activePollGenerationIdRef = useRef<string | null>(null);
+  const lastCompletedToastGenerationIdRef = useRef<string | null>(null);
   const cooldownTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load history on mount
@@ -366,7 +368,24 @@ export default function VideoStudio() {
     }
   };
 
+  const notifyCompletedOnce = (generationId: string) => {
+    if (lastCompletedToastGenerationIdRef.current === generationId) return;
+    lastCompletedToastGenerationIdRef.current = generationId;
+    toast({ title: "Video tayyor!" });
+  };
+
   const startPolling = (generationId: string) => {
+    // Ensure we never create multiple polling intervals
+    if (pollIntervalRef.current && activePollGenerationIdRef.current === generationId) {
+      console.log(`[VideoStudio] Poll already active for ${generationId}`);
+      return;
+    }
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+
+    activePollGenerationIdRef.current = generationId;
     pollCountRef.current = 0;
     
     const poll = async () => {
@@ -451,7 +470,7 @@ export default function VideoStudio() {
           loadHistory();
           
           if (data.status === "completed" && data.outputVideoUrl) {
-            toast({ title: "Video tayyor!" });
+            notifyCompletedOnce(generationId);
           } else if (data.status === "completed" && !data.outputVideoUrl) {
             // Edge case: completed but no video URL - try to get signed URL
             console.warn("[VideoStudio] Completed but no URL, checking path:", data.outputVideoPath);
@@ -466,7 +485,7 @@ export default function VideoStudio() {
                     ...prev, 
                     output_video_url: signResponse.data.outputVideoUrl 
                   } : null);
-                  toast({ title: "Video tayyor!" });
+                  notifyCompletedOnce(generationId);
                   return;
                 }
               } catch (e) {
@@ -620,7 +639,7 @@ export default function VideoStudio() {
             output_video_url: signResponse.data.outputVideoUrl,
           } : null);
           setIsGenerating(false);
-          toast({ title: "Video tayyor!" });
+          notifyCompletedOnce(targetId);
           loadHistory();
           return;
         }
@@ -663,7 +682,7 @@ export default function VideoStudio() {
       } : null);
 
       if (data.status === "completed" && data.outputVideoUrl) {
-        toast({ title: "Video tayyor!" });
+        notifyCompletedOnce(targetId);
         setIsGenerating(false);
       } else if (data.status === "completed" && !data.outputVideoUrl) {
         setCurrentGeneration(prev => prev ? {
@@ -724,17 +743,27 @@ export default function VideoStudio() {
   };
 
   const selectHistoryItem = async (item: VideoGeneration) => {
-    // Get signed URL if needed
-    if (item.output_video_path && !item.output_video_url) {
-      const { data } = await supabase.storage
-        .from("video-generations")
-        .createSignedUrl(item.output_video_path, 3600);
-      
-      if (data?.signedUrl) {
-        item.output_video_url = data.signedUrl;
+    // Stop any ongoing polling when user manually selects an item
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+    activePollGenerationIdRef.current = null;
+    setIsGenerating(false);
+
+    const selected: VideoGeneration = { ...item };
+
+    // Always ensure we have a playable URL for completed items
+    if (selected.status === "completed" && selected.output_video_path) {
+      const { data } = await supabase.functions.invoke("runpod-video", {
+        body: { action: "sign", outputVideoPath: selected.output_video_path },
+      });
+      if (data?.ok && data.outputVideoUrl) {
+        selected.output_video_url = data.outputVideoUrl;
       }
     }
-    setCurrentGeneration(item);
+
+    setCurrentGeneration(selected);
   };
 
   const getStatusBadge = (status: string) => {
