@@ -37,21 +37,22 @@ import { cn } from "@/lib/utils";
 
 // Video generation presets
 const PRESETS = [
-  { id: "cinematic", label: "Kinematografik", params: { guidance_scale: 8, steps: 40, motion_strength: 0.8 } },
-  { id: "anime", label: "Anime", params: { guidance_scale: 7, steps: 35, motion_strength: 0.7 } },
+  { id: "cinematic", label: "Kinematografik", params: { guidance_scale: 8, steps: 30, motion_strength: 0.8 } },
+  { id: "sharper", label: "Aniqroq (Sharper)", params: { guidance_scale: 7.5, steps: 30, motion_strength: 0.6 } },
+  { id: "anime", label: "Anime", params: { guidance_scale: 7, steps: 30, motion_strength: 0.7 } },
   { id: "realistic", label: "Realistik", params: { guidance_scale: 7.5, steps: 30, motion_strength: 0.6 } },
   { id: "retro", label: "Retro film", params: { guidance_scale: 6.5, steps: 25, motion_strength: 0.5 } },
-  { id: "samarkand", label: "Samarqand uslubi", params: { guidance_scale: 7, steps: 35, motion_strength: 0.7 } },
+  { id: "samarkand", label: "Samarqand uslubi", params: { guidance_scale: 7, steps: 30, motion_strength: 0.7 } },
   { id: "custom", label: "Maxsus", params: {} },
 ];
 
 const ASPECT_RATIOS = [
-  { id: "16:9-hd", label: "16:9 HD (1280×704)", width: 1280, height: 704 },
-  { id: "16:9", label: "16:9 (1024×576)", width: 1024, height: 576 },
-  { id: "9:16-hd", label: "9:16 HD (704×1280)", width: 704, height: 1280 },
-  { id: "9:16", label: "9:16 (576×1024)", width: 576, height: 1024 },
-  { id: "1:1", label: "1:1 (512×512)", width: 512, height: 512 },
+  { id: "3:2", label: "3:2 (768×512)", width: 768, height: 512 },
   { id: "4:3", label: "4:3 (640×480)", width: 640, height: 480 },
+  { id: "16:9", label: "16:9 (768×448)", width: 768, height: 448 },
+  { id: "1:1", label: "1:1 (512×512)", width: 512, height: 512 },
+  { id: "9:16", label: "9:16 (448×768)", width: 448, height: 768 },
+  { id: "3:4", label: "3:4 (480×640)", width: 480, height: 640 },
 ];
 
 const QUALITY_TIERS = [
@@ -105,7 +106,7 @@ export default function VideoStudio() {
   const [prompt, setPrompt] = useState("");
   const [negativePrompt, setNegativePrompt] = useState("");
   const [preset, setPreset] = useState("cinematic");
-  const [aspectRatio, setAspectRatio] = useState("16:9-hd");
+  const [aspectRatio, setAspectRatio] = useState("3:2");
   const [qualityTier, setQualityTier] = useState("balanced");
   const [durationSeconds, setDurationSeconds] = useState(5);
   const [fps, setFps] = useState(24);
@@ -1189,6 +1190,43 @@ export default function VideoStudio() {
                           </Button>
                         )}
                       </div>
+                      
+                      {/* Debug Metadata Panel - shown for dev/admin users or with ?debug=1 */}
+                      {(dailyLimit === -1 || new URLSearchParams(window.location.search).get("debug") === "1") && currentGeneration.params && (
+                        <div className="mt-3 p-3 bg-muted/50 rounded-lg border border-border">
+                          <p className="text-xs font-medium text-muted-foreground mb-2">Debug Metadata</p>
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs font-mono">
+                            <span className="text-muted-foreground">Width:</span>
+                            <span>{currentGeneration.width || currentGeneration.params?.width || "—"}</span>
+                            <span className="text-muted-foreground">Height:</span>
+                            <span>{currentGeneration.height || currentGeneration.params?.height || "—"}</span>
+                            <span className="text-muted-foreground">FPS:</span>
+                            <span>{currentGeneration.fps || currentGeneration.params?.fps || "—"}</span>
+                            <span className="text-muted-foreground">Duration:</span>
+                            <span>{currentGeneration.duration_seconds || currentGeneration.params?.duration_seconds || "—"}s</span>
+                            <span className="text-muted-foreground">Steps:</span>
+                            <span>{currentGeneration.params?.steps || "—"}</span>
+                            <span className="text-muted-foreground">Guidance:</span>
+                            <span>{currentGeneration.params?.guidance_scale || "—"}</span>
+                            <span className="text-muted-foreground">Motion:</span>
+                            <span>{currentGeneration.params?.motion_strength || "—"}</span>
+                            <span className="text-muted-foreground">Seed:</span>
+                            <span>{currentGeneration.seed || currentGeneration.params?.seed || "—"}</span>
+                            <span className="text-muted-foreground">File Size:</span>
+                            <span>
+                              {currentGeneration.params?.file_size_bytes 
+                                ? `${(currentGeneration.params.file_size_bytes / 1024 / 1024).toFixed(2)} MB`
+                                : "—"}
+                            </span>
+                            <span className="text-muted-foreground">Upload:</span>
+                            <span>{currentGeneration.params?.upload_method || "—"}</span>
+                            <span className="text-muted-foreground">Re-encode:</span>
+                            <span className={currentGeneration.params?.no_reencode ? "text-green-500" : "text-yellow-500"}>
+                              {currentGeneration.params?.no_reencode ? "No (raw)" : "Unknown"}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </Card>
