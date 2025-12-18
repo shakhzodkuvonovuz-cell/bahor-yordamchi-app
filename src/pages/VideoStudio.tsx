@@ -1219,8 +1219,13 @@ export default function VideoStudio() {
                         <div className="flex items-start justify-between">
                           <div className="flex-1 min-w-0">
                             <p className="text-sm truncate">{item.prompt}</p>
-                            <div className="flex items-center gap-2 mt-1">
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
                               {getStatusBadge(item.status)}
+                              {item.width && item.height && (
+                                <Badge variant="outline" className="text-xs font-mono px-1.5 py-0">
+                                  {item.width}×{item.height}
+                                </Badge>
+                              )}
                               <span className="text-xs text-muted-foreground">
                                 {new Date(item.created_at).toLocaleDateString()}
                               </span>
