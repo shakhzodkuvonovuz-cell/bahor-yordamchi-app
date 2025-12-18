@@ -46,8 +46,8 @@ const PRESETS = [
 ];
 
 const ASPECT_RATIOS = [
-  { id: "16:9", label: "16:9 (Keng)", width: 768, height: 432 },
-  { id: "9:16", label: "9:16 (Vertikal)", width: 432, height: 768 },
+  { id: "16:9", label: "16:9 (Keng)", width: 768, height: 448 },
+  { id: "9:16", label: "9:16 (Vertikal)", width: 448, height: 768 },
   { id: "1:1", label: "1:1 (Kvadrat)", width: 512, height: 512 },
   { id: "4:3", label: "4:3", width: 640, height: 480 },
   { id: "custom", label: "Maxsus", width: 768, height: 512 },

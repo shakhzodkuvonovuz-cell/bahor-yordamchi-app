@@ -16,11 +16,12 @@ const VIDEO_MAX_STEPS = parseInt(Deno.env.get("VIDEO_MAX_STEPS") || "30");
 const SIGNED_URL_EXPIRY_SECONDS = 3600; // 1 hour
 
 // Allowed resolution presets (to prevent abuse)
+// NOTE: All dimensions MUST be divisible by 32 for LTX model
 const ALLOWED_RESOLUTIONS = [
-  { width: 768, height: 432 }, // 16:9 cinematic
+  { width: 768, height: 448 }, // 16:9 cinematic
   { width: 768, height: 512 }, // portrait-ish
   { width: 512, height: 512 }, // square
-  { width: 432, height: 768 }, // 9:16 vertical
+  { width: 448, height: 768 }, // 9:16 vertical
   { width: 640, height: 480 }, // 4:3
 ];
 
