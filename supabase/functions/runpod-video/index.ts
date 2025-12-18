@@ -512,16 +512,34 @@ serve(async (req) => {
       console.log(`[${requestId}] Generation created: ${generation.id}`);
 
       // Build RunPod input payload with validated params
+      // Use multiple parameter name variants for compatibility with different LTX-Video worker implementations
       const runpodInput: Record<string, any> = {
-        prompt: enhancedPrompt, // Send enhanced prompt to RunPod
-        negative_prompt: combinedNegativePrompt, // Use combined negative (user + preset)
+        // Primary prompt fields - try multiple variants for compatibility
+        prompt: enhancedPrompt,
+        text_prompt: enhancedPrompt, // Some workers expect this
+        positive_prompt: enhancedPrompt, // Some workers expect this
+        
+        // Negative prompt
+        negative_prompt: combinedNegativePrompt,
+        
+        // Resolution
         width: requestedWidth,
         height: requestedHeight,
+        
+        // Frame settings
         num_frames: Math.round(durationSeconds * fps),
         fps,
+        
+        // Generation parameters - try multiple variants
         seed: generation.seed,
+        random_seed: generation.seed, // Some workers use this
+        
         num_inference_steps: steps,
+        steps: steps, // Some workers use this
+        
         guidance_scale: guidanceScale,
+        cfg_scale: guidanceScale, // Some workers use this
+        
         motion_strength: motionStrength,
       };
 
@@ -529,6 +547,9 @@ serve(async (req) => {
       if (assets && assets.length > 0) {
         runpodInput.assets = assets;
       }
+      
+      console.log(`[${requestId}] CRITICAL - Prompt being sent: "${enhancedPrompt}"`);
+      console.log(`[${requestId}] CRITICAL - Seed being sent: ${generation.seed}`);
 
       console.log(`[${requestId}] === RUNPOD PAYLOAD ===`);
       console.log(`[${requestId}] RunPod input FULL:`, JSON.stringify(runpodInput, null, 2));
