@@ -3,7 +3,7 @@ import ChatMessage from "@/components/ChatMessage";
 import { ThinkBar } from "@/components/chat/ThinkBar";
 import { ReasonedChip } from "@/components/chat/ReasonedChip";
 import { FollowUpSuggestions } from "@/components/chat/FollowUpSuggestions";
-import { ThinkingBubble } from "@/components/chat/ThinkingBubble";
+import { WaitingBubble } from "@/components/chat/WaitingBubble";
 import { Message } from "@/types/chat";
 import type { MessageTrace } from "@/types/trace";
 import type { ModelPreference } from "@/components/ModelToggle";
@@ -162,6 +162,8 @@ interface VirtualizedMessageListProps {
   mode?: string;
   onTraceClick: (messageId: string) => void;
   isGeneratingImage: boolean;
+  isWaitingForFirstToken?: boolean;
+  onCancelRequest?: () => void;
 }
 
 export interface VirtualizedMessageListHandle {
@@ -194,6 +196,8 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListHandle, Virtuali
       mode,
       onTraceClick,
       isGeneratingImage,
+      isWaitingForFirstToken,
+      onCancelRequest,
     },
     ref
   ) => {
@@ -260,11 +264,11 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListHandle, Virtuali
             </div>
           ))}
           
-          {/* Instant thinking bubble - shows immediately when user sends */}
-          {typing && !isGeneratingImage && (
-            <ThinkingBubble
-              modelPreference={modelPreference}
+          {/* Instant waiting bubble - shows immediately when user sends, before first token */}
+          {isWaitingForFirstToken && !isGeneratingImage && (
+            <WaitingBubble
               language={language}
+              onCancel={onCancelRequest}
             />
           )}
           
