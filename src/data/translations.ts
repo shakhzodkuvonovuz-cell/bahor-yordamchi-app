@@ -132,6 +132,20 @@ export const translations = {
         "Sog'lom ovqatlanish bo'yicha maslahat ber",
       ],
     },
+    videoStudio: {
+      title: "Video studiya",
+      today: "bugun",
+      premiumOnly: "Faqat Premium",
+      freeBlocked: {
+        title: "Video yaratish faqat Premium uchun",
+        description: "Video yaratish uchun Premium obunaga o'ting.",
+        upgrade: "Premium'ga o'tish",
+      },
+    },
+    imageStudio: {
+      freeUsage: "{used}/{limit} (suv belgili)",
+      watermarkNotice: "Suv belgili",
+    },
   },
   en: {
     // Homepage
