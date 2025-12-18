@@ -582,6 +582,13 @@ export const translations: Record<Lang, Record<string, string>> = {
     'videoStudio.canceled': 'Video yaratish bekor qilindi',
     'videoStudio.enterPrompt': 'Video tavsifini kiriting',
     'videoStudio.pleaseLogin': 'Avval tizimga kiring',
+    'videoStudio.today': 'bugun',
+    'videoStudio.premiumOnly': 'Faqat Premium',
+    'videoStudio.freeBlocked.title': 'Video yaratish faqat Premium uchun',
+    'videoStudio.freeBlocked.description': 'Video yaratish uchun Premium obunaga o\'ting.',
+    'videoStudio.freeBlocked.upgrade': 'Premium\'ga o\'tish',
+    'imageStudio.freeUsage': '{used}/{limit} (suv belgili)',
+    'imageStudio.watermarkNotice': 'Suv belgili',
     
     // Sidebar
     'sidebar.chats': 'Chat tarixi',
@@ -2786,6 +2793,13 @@ export const translations: Record<Lang, Record<string, string>> = {
     'videoStudio.canceled': 'Video generation canceled',
     'videoStudio.enterPrompt': 'Please enter a description',
     'videoStudio.pleaseLogin': 'Please log in first',
+    'videoStudio.today': 'today',
+    'videoStudio.premiumOnly': 'Premium only',
+    'videoStudio.freeBlocked.title': 'Video generation is Premium only',
+    'videoStudio.freeBlocked.description': 'Upgrade to Premium to create videos.',
+    'videoStudio.freeBlocked.upgrade': 'Upgrade to Premium',
+    'imageStudio.freeUsage': '{used}/{limit} (watermarked)',
+    'imageStudio.watermarkNotice': 'Watermarked',
     
     // Auth Pages
     'auth.title': 'Log in or sign up',
@@ -4246,6 +4260,13 @@ export const translations: Record<Lang, Record<string, string>> = {
     'videoStudio.canceled': 'Создание видео отменено',
     'videoStudio.enterPrompt': 'Введите описание',
     'videoStudio.pleaseLogin': 'Сначала войдите в систему',
+    'videoStudio.today': 'сегодня',
+    'videoStudio.premiumOnly': 'Только Premium',
+    'videoStudio.freeBlocked.title': 'Создание видео доступно только в Premium',
+    'videoStudio.freeBlocked.description': 'Перейдите на Premium для создания видео.',
+    'videoStudio.freeBlocked.upgrade': 'Перейти на Premium',
+    'imageStudio.freeUsage': '{used}/{limit} (с водяным знаком)',
+    'imageStudio.watermarkNotice': 'С водяным знаком',
     
     // Auth Pages
     'auth.title': 'Вход или регистрация',
@@ -5753,6 +5774,13 @@ export const translations: Record<Lang, Record<string, string>> = {
     'videoStudio.canceled': 'Video oluşturma iptal edildi',
     'videoStudio.enterPrompt': 'Lütfen bir açıklama girin',
     'videoStudio.pleaseLogin': 'Lütfen önce giriş yapın',
+    'videoStudio.today': 'bugün',
+    'videoStudio.premiumOnly': 'Sadece Premium',
+    'videoStudio.freeBlocked.title': 'Video oluşturma sadece Premium\'da',
+    'videoStudio.freeBlocked.description': 'Video oluşturmak için Premium\'a yükseltin.',
+    'videoStudio.freeBlocked.upgrade': 'Premium\'a yükselt',
+    'imageStudio.freeUsage': '{used}/{limit} (filigranlı)',
+    'imageStudio.watermarkNotice': 'Filigranlı',
     
     // Auth Pages
     'auth.title': 'Giriş yap veya kayıt ol',
