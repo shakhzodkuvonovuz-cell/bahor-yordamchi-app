@@ -371,6 +371,7 @@ export default function VideoStudio() {
     
     const poll = async () => {
       pollCountRef.current++;
+      console.log(`[VideoStudio] Poll #${pollCountRef.current} for ${generationId}`);
       
       try {
         const response = await supabase.functions.invoke("runpod-video", {
@@ -378,15 +379,17 @@ export default function VideoStudio() {
         });
 
         if (response.error) {
-          console.error("Poll error:", response.error);
+          console.error("[VideoStudio] Poll network error:", response.error);
+          // Don't stop polling on network errors, just retry
           return;
         }
 
         const data = response.data;
+        console.log(`[VideoStudio] Poll response:`, { status: data.status, ok: data.ok, progress: data.progress, hasUrl: !!data.outputVideoUrl });
         
         // Handle error responses (including ECHO_ENDPOINT)
         if (!data.ok) {
-          console.error("Poll failed:", data.error, data.errorCode);
+          console.error("[VideoStudio] Poll failed:", data.error, data.errorCode);
           
           // Stop polling on error
           if (pollIntervalRef.current) {
@@ -422,17 +425,24 @@ export default function VideoStudio() {
           return;
         }
 
-        setCurrentGeneration(prev => prev ? {
-          ...prev,
-          status: data.status,
-          progress: data.progress || prev.progress,
-          error: data.error,
-          output_video_path: data.outputVideoPath,
-          output_video_url: data.outputVideoUrl,
-        } : null);
+        // Update state with new data
+        setCurrentGeneration(prev => {
+          if (!prev) return null;
+          const updated = {
+            ...prev,
+            status: data.status,
+            progress: data.progress || prev.progress,
+            error: data.error,
+            output_video_path: data.outputVideoPath,
+            output_video_url: data.outputVideoUrl,
+          };
+          console.log(`[VideoStudio] State updated:`, { status: updated.status, hasUrl: !!updated.output_video_url });
+          return updated;
+        });
 
         // Stop polling if completed or failed
         if (["completed", "failed", "canceled"].includes(data.status)) {
+          console.log(`[VideoStudio] Polling finished with status: ${data.status}`);
           if (pollIntervalRef.current) {
             clearInterval(pollIntervalRef.current);
             pollIntervalRef.current = null;
@@ -443,39 +453,63 @@ export default function VideoStudio() {
           if (data.status === "completed" && data.outputVideoUrl) {
             toast({ title: "Video tayyor!" });
           } else if (data.status === "completed" && !data.outputVideoUrl) {
-            // Edge case: completed but no video URL
+            // Edge case: completed but no video URL - try to get signed URL
+            console.warn("[VideoStudio] Completed but no URL, checking path:", data.outputVideoPath);
+            if (data.outputVideoPath) {
+              // Attempt to get signed URL
+              try {
+                const signResponse = await supabase.functions.invoke("runpod-video", {
+                  body: { action: "sign", outputVideoPath: data.outputVideoPath },
+                });
+                if (signResponse.data?.ok && signResponse.data.outputVideoUrl) {
+                  setCurrentGeneration(prev => prev ? { 
+                    ...prev, 
+                    output_video_url: signResponse.data.outputVideoUrl 
+                  } : null);
+                  toast({ title: "Video tayyor!" });
+                  return;
+                }
+              } catch (e) {
+                console.error("[VideoStudio] Sign URL failed:", e);
+              }
+            }
             setCurrentGeneration(prev => prev ? {
               ...prev,
               status: "failed",
-              error: data.error || "Video URL topilmadi",
+              error: "Video URL topilmadi",
             } : null);
-            toast({ title: "Xatolik", description: data.error || "Video URL topilmadi", variant: "destructive" });
+            toast({ title: "Xatolik", description: "Video URL topilmadi", variant: "destructive" });
           } else if (data.status === "failed") {
             toast({ title: "Xatolik", description: data.error, variant: "destructive" });
           }
+          return; // Don't adjust interval after completion
         }
 
-        // Adjust poll interval based on count
-        if (pollCountRef.current > 60) {
-          // After 2 minutes, poll every 5s
+        // Adjust poll interval based on count (only if still polling)
+        if (pollCountRef.current > 60 && pollCountRef.current % 30 === 0) {
+          // After 2 minutes, poll every 5s (only adjust once)
           if (pollIntervalRef.current) {
             clearInterval(pollIntervalRef.current);
             pollIntervalRef.current = setInterval(poll, 5000);
+            console.log("[VideoStudio] Slowed polling to 5s interval");
           }
-        } else if (pollCountRef.current > 30) {
-          // After 1 minute, poll every 3s
+        } else if (pollCountRef.current === 30) {
+          // At 1 minute mark, poll every 3s
           if (pollIntervalRef.current) {
             clearInterval(pollIntervalRef.current);
             pollIntervalRef.current = setInterval(poll, 3000);
+            console.log("[VideoStudio] Slowed polling to 3s interval");
           }
         }
 
       } catch (error) {
-        console.error("Polling error:", error);
+        console.error("[VideoStudio] Polling exception:", error);
+        // Don't stop polling on exceptions, let it retry
       }
     };
 
     // Start with 2s interval
+    console.log(`[VideoStudio] Starting polling for ${generationId}`);
     pollIntervalRef.current = setInterval(poll, 2000);
     poll(); // Immediate first poll
   };
@@ -552,13 +586,47 @@ export default function VideoStudio() {
     }
   };
 
-  // Refresh status for stuck/processing jobs
+  // Refresh status for stuck/processing jobs - more robust with direct DB check
   const refreshStatus = async (generationId?: string) => {
     const targetId = generationId || currentGeneration?.id;
     if (!targetId) return;
     
     setIsRefreshing(true);
+    console.log(`[VideoStudio] Refreshing status for ${targetId}`);
+    
     try {
+      // First, check if it's already completed in our database (faster than calling RunPod)
+      const { data: dbGen } = await supabase
+        .from("video_generations")
+        .select("status, output_video_path, progress, error")
+        .eq("id", targetId)
+        .single();
+      
+      console.log(`[VideoStudio] DB status:`, dbGen);
+      
+      if (dbGen?.status === "completed" && dbGen.output_video_path) {
+        // Already completed in DB - just get signed URL
+        const signResponse = await supabase.functions.invoke("runpod-video", {
+          body: { action: "sign", outputVideoPath: dbGen.output_video_path },
+        });
+        
+        if (signResponse.data?.ok && signResponse.data.outputVideoUrl) {
+          setCurrentGeneration(prev => prev ? {
+            ...prev,
+            status: "completed",
+            progress: 100,
+            error: undefined,
+            output_video_path: dbGen.output_video_path,
+            output_video_url: signResponse.data.outputVideoUrl,
+          } : null);
+          setIsGenerating(false);
+          toast({ title: "Video tayyor!" });
+          loadHistory();
+          return;
+        }
+      }
+      
+      // Otherwise, call the status endpoint which will poll RunPod
       const response = await supabase.functions.invoke("runpod-video", {
         body: { action: "status", generationId: targetId },
       });
@@ -569,6 +637,7 @@ export default function VideoStudio() {
       }
 
       const data = response.data;
+      console.log(`[VideoStudio] Refresh response:`, data);
       
       if (!data.ok) {
         // Error from RunPod
@@ -577,6 +646,7 @@ export default function VideoStudio() {
           status: "failed",
           error: data.messageUz || data.error || "Noma'lum xatolik",
         } : null);
+        setIsGenerating(false);
         toast({ title: "Xatolik", description: data.messageUz || data.error, variant: "destructive" });
         loadHistory();
         return;
@@ -602,18 +672,23 @@ export default function VideoStudio() {
           error: "Video URL topilmadi",
         } : null);
         toast({ title: "Xatolik", description: "Video URL topilmadi", variant: "destructive" });
+        setIsGenerating(false);
       } else if (data.status === "failed") {
         toast({ title: "Xatolik", description: data.error, variant: "destructive" });
         setIsGenerating(false);
       } else if (["queued", "running", "processing"].includes(data.status)) {
-        // Still in progress - resume polling
-        toast({ title: "Hali ishlamoqda", description: "Polling qayta boshlanmoqda..." });
-        startPolling(targetId);
+        // Still in progress - resume polling if not already polling
+        if (!pollIntervalRef.current) {
+          toast({ title: "Hali ishlamoqda", description: "Polling qayta boshlanmoqda..." });
+          startPolling(targetId);
+        } else {
+          toast({ title: "Hali ishlamoqda", description: `Status: ${data.status}` });
+        }
       }
       
       loadHistory();
     } catch (error) {
-      console.error("Refresh status error:", error);
+      console.error("[VideoStudio] Refresh status error:", error);
       toast({ title: "Status tekshirishda xatolik", variant: "destructive" });
     } finally {
       setIsRefreshing(false);
