@@ -264,6 +264,20 @@ export const translations = {
         "Give me advice on healthy eating",
       ],
     },
+    videoStudio: {
+      title: "Video Studio",
+      today: "today",
+      premiumOnly: "Premium only",
+      freeBlocked: {
+        title: "Video generation is Premium only",
+        description: "Upgrade to Premium to create videos.",
+        upgrade: "Upgrade to Premium",
+      },
+    },
+    imageStudio: {
+      freeUsage: "{used}/{limit} (watermarked)",
+      watermarkNotice: "Watermarked",
+    },
   },
   ru: {
     // Homepage
@@ -527,6 +541,22 @@ export const translations = {
         "Bana bir egzersiz planı hazırla",
         "Sağlıklı beslenme hakkında tavsiye ver",
       ],
+    },
+    // Video Studio
+    videoStudio: {
+      title: "Video Studiya",
+      today: "bugün",
+      premiumOnly: "Faqat Premium",
+      freeBlocked: {
+        title: "Video yaratish faqat Premium uchun",
+        description: "Video yaratish imkoniyatidan foydalanish uchun Premium obunaga o'ting.",
+        upgrade: "Premium'ga o'tish",
+      },
+    },
+    // Image Studio
+    imageStudio: {
+      freeUsage: "{used}/{limit} (suv belgili)",
+      watermarkNotice: "Suv belgili",
     },
   },
 } as const;

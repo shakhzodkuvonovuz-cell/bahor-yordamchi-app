@@ -289,8 +289,11 @@ serve(async (req) => {
       .eq("user_id", user.id)
       .maybeSingle();
 
-    const isPremium = isDevBypass || (profile?.plan && ["premium", "beta_premium", "dev_unlimited"].includes(profile.plan));
-    const dailyLimit = isDevBypass ? -1 : (isPremium ? 20 : 5);
+    const userPlan = profile?.plan || 'free';
+    const isPremium = isDevBypass || ["premium", "beta_premium", "dev_unlimited"].includes(userPlan);
+    const isFreeUser = !isPremium && !isDevBypass;
+    // Free: 1/day with watermark, Premium: 20/day, Dev: unlimited
+    const dailyLimit = isDevBypass ? -1 : (isPremium ? 20 : 1);
 
     // Only check limits for non-dev users
     if (!isDevBypass) {
@@ -307,7 +310,10 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({
             ok: false,
-            error: `Bugungi rasm yaratish limiti tugadi (${usedCount}/${dailyLimit})`,
+            error: "IMAGE_DAILY_LIMIT",
+            messageUz: isFreeUser 
+              ? `Bugungi bepul rasm limiti tugadi (${usedCount}/${dailyLimit}). Premium obunada ko'proq rasm yarating!`
+              : `Bugungi rasm yaratish limiti tugadi (${usedCount}/${dailyLimit})`,
             type: "LIMIT_REACHED",
             used: usedCount,
             limit: dailyLimit,
@@ -318,6 +324,11 @@ serve(async (req) => {
       }
     } else {
       console.log(`[${requestId}] Dev unlimited user - bypassing limits`);
+    }
+
+    // Log if free user (will get watermark)
+    if (isFreeUser) {
+      console.log(`[${requestId}] Free user - image will be watermarked`);
     }
 
     console.log(`[${requestId}] Final prompt (${finalPrompt.length} chars): "${finalPrompt}"`);
@@ -407,6 +418,75 @@ serve(async (req) => {
       );
     }
 
+    // Apply watermark for free users using AI Gateway image editing
+    let finalImageBytes = imageBytes;
+    let isWatermarked = false;
+    
+    if (isFreeUser) {
+      console.log(`[${requestId}] Applying watermark for free user`);
+      const watermarkStep = startStep('watermarking');
+      
+      try {
+        const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+        if (LOVABLE_API_KEY) {
+          // Convert image bytes to base64 for AI Gateway
+          const base64Image = btoa(String.fromCharCode(...imageBytes));
+          const imageDataUrl = `data:image/png;base64,${base64Image}`;
+          
+          const watermarkResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash-image-preview",
+              messages: [{
+                role: "user",
+                content: [
+                  {
+                    type: "text",
+                    text: "Add a semi-transparent watermark text 'Bahor AI' in the bottom-right corner of this image. The watermark should be subtle, white with 40% opacity, positioned 24px from the bottom-right edges. Keep the original image exactly as is, only add the watermark."
+                  },
+                  {
+                    type: "image_url",
+                    image_url: { url: imageDataUrl }
+                  }
+                ]
+              }],
+              modalities: ["image", "text"]
+            }),
+          });
+          
+          if (watermarkResponse.ok) {
+            const watermarkData = await watermarkResponse.json();
+            const watermarkedImageUrl = watermarkData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+            
+            if (watermarkedImageUrl && watermarkedImageUrl.startsWith('data:image')) {
+              // Extract base64 and convert back to bytes
+              const base64Part = watermarkedImageUrl.split(',')[1];
+              if (base64Part) {
+                const binaryString = atob(base64Part);
+                finalImageBytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                  finalImageBytes[i] = binaryString.charCodeAt(i);
+                }
+                isWatermarked = true;
+                console.log(`[${requestId}] Watermark applied successfully, new size: ${finalImageBytes.length} bytes`);
+              }
+            }
+          } else {
+            console.warn(`[${requestId}] Watermark API failed:`, watermarkResponse.status);
+          }
+        }
+      } catch (watermarkError) {
+        console.error(`[${requestId}] Watermark error (non-fatal):`, watermarkError);
+        // Continue without watermark if it fails - still save original image
+      }
+      
+      endStep(watermarkStep, { watermarked: isWatermarked });
+    }
+
     const mimeType = "image/png";
     const extension = 'png'; // We're always requesting image/png
 
@@ -423,7 +503,7 @@ serve(async (req) => {
     // Upload to Supabase Storage
     const { error: uploadError } = await supabase.storage
       .from("user-files")
-      .upload(filePath, imageBytes, {
+      .upload(filePath, finalImageBytes, {
         contentType: mimeType,
         upsert: false,
       });
@@ -468,7 +548,7 @@ serve(async (req) => {
         title: fileName,
         tool: "imagegen",
         mime_type: mimeType,
-        size_bytes: imageBytes.length,
+        size_bytes: finalImageBytes.length,
         bucket: "user-files",
         path: filePath,
         status: "success",
@@ -481,6 +561,8 @@ serve(async (req) => {
           seed: seed,
           steps: steps,
           guidance: guidanceScale,
+          is_watermarked: isWatermarked,
+          is_free_user: isFreeUser,
         },
       });
 
@@ -500,7 +582,7 @@ serve(async (req) => {
             path: filePath,
             mime_type: mimeType,
             original_name: fileName,
-            size_bytes: imageBytes.length,
+            size_bytes: finalImageBytes.length,
           });
 
         if (attachError) {
@@ -553,6 +635,8 @@ serve(async (req) => {
         quality_boost: qualityBoost,
         file_path: filePath,
         file_name: fileName,
+        is_watermarked: isWatermarked,
+        is_free_user: isFreeUser,
         requestId,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

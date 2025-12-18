@@ -6,9 +6,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Daily limits per plan
+// Daily limits per plan - FREE USERS CANNOT ACCESS VIDEO
 const DAILY_LIMITS: Record<string, number> = {
-  free: 1,
+  free: 0, // No video access for free users
   beta_premium: 5,
   premium: 10,
   dev_unlimited: -1, // unlimited
@@ -101,6 +101,20 @@ serve(async (req) => {
     
     const plan = isDevBypass ? 'dev_unlimited' : (profile?.plan || 'free');
     const dailyLimit = DAILY_LIMITS[plan] ?? DAILY_LIMITS.free;
+
+    // Block free users from ALL video actions
+    if (plan === 'free' && !isDevBypass) {
+      console.log(`[${requestId}] Free user blocked from video: ${user.id}`);
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          error: "VIDEO_NOT_AVAILABLE_FREE",
+          messageUz: "Video yaratish faqat Premium foydalanuvchilar uchun mavjud.",
+          messageEn: "Video generation is only available for Premium users.",
+        }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // ==========================================
     // ACTION: START
