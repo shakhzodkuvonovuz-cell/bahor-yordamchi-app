@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,6 +22,110 @@ const BLOCKED_PATTERNS = [
 
 function isBlockedPrompt(prompt: string): boolean {
   return BLOCKED_PATTERNS.some(p => p.test(prompt));
+}
+
+// Simple bitmap font for "Bahor AI" watermark - returns pixel data
+function createWatermarkBitmap(): { width: number; height: number; data: Uint8Array } {
+  // 5-pixel tall bitmap font for "Bahor AI"
+  const chars: Record<string, number[][]> = {
+    'B': [[1,1,1,0],[1,0,1,0],[1,1,0,0],[1,0,1,0],[1,1,1,0]],
+    'a': [[0,1,1,0],[1,0,1,0],[1,1,1,0],[1,0,1,0],[1,0,1,0]],
+    'h': [[1,0,0,0],[1,0,0,0],[1,1,1,0],[1,0,1,0],[1,0,1,0]],
+    'o': [[0,1,1,0],[1,0,0,1],[1,0,0,1],[1,0,0,1],[0,1,1,0]],
+    'r': [[1,1,1,0],[1,0,1,0],[1,1,0,0],[1,0,1,0],[1,0,1,0]],
+    ' ': [[0,0],[0,0],[0,0],[0,0],[0,0]],
+    'A': [[0,1,1,0],[1,0,0,1],[1,1,1,1],[1,0,0,1],[1,0,0,1]],
+    'I': [[1,1,1],[0,1,0],[0,1,0],[0,1,0],[1,1,1]],
+  };
+  
+  const text = "Bahor AI";
+  let totalWidth = 0;
+  const charWidths: number[] = [];
+  
+  for (const c of text) {
+    const charData = chars[c] || chars[' '];
+    const w = charData[0].length;
+    charWidths.push(w);
+    totalWidth += w + 1;
+  }
+  totalWidth -= 1;
+  
+  const height = 5;
+  const data = new Uint8Array(totalWidth * height);
+  
+  let xOffset = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    const charData = chars[c] || chars[' '];
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < charData[y].length; x++) {
+        if (charData[y][x]) {
+          data[y * totalWidth + xOffset + x] = 255;
+        }
+      }
+    }
+    xOffset += charWidths[i] + 1;
+  }
+  
+  return { width: totalWidth, height, data };
+}
+
+// Apply local watermark - NO paid API calls
+async function applyLocalWatermark(imageBytes: Uint8Array, requestId: string): Promise<Uint8Array<ArrayBuffer>> {
+  const img = await Image.decode(imageBytes);
+  const imgWidth = img.width;
+  const imgHeight = img.height;
+  
+  // Scale based on image size (min 2px, scales with image)
+  const scale = Math.max(2, Math.floor(Math.min(imgWidth, imgHeight) / 200));
+  const padding = 24;
+  
+  const wm = createWatermarkBitmap();
+  const scaledWidth = wm.width * scale;
+  const scaledHeight = wm.height * scale;
+  
+  // Position: bottom-right with padding
+  const xStart = imgWidth - scaledWidth - padding;
+  const yStart = imgHeight - scaledHeight - padding;
+  
+  // Draw watermark with ~40% opacity white blend
+  for (let sy = 0; sy < wm.height; sy++) {
+    for (let sx = 0; sx < wm.width; sx++) {
+      const pixelVal = wm.data[sy * wm.width + sx];
+      if (pixelVal > 0) {
+        for (let dy = 0; dy < scale; dy++) {
+          for (let dx = 0; dx < scale; dx++) {
+            const imgX = xStart + sx * scale + dx;
+            const imgY = yStart + sy * scale + dy;
+            
+            if (imgX >= 0 && imgX < imgWidth && imgY >= 0 && imgY < imgHeight) {
+              const existing = img.getPixelAt(imgX + 1, imgY + 1);
+              const r = (existing >> 24) & 0xFF;
+              const g = (existing >> 16) & 0xFF;
+              const b = (existing >> 8) & 0xFF;
+              const a = existing & 0xFF;
+              
+              // Blend with white at 40% opacity
+              const alpha = 0.4;
+              const newR = Math.round(r * (1 - alpha) + 255 * alpha);
+              const newG = Math.round(g * (1 - alpha) + 255 * alpha);
+              const newB = Math.round(b * (1 - alpha) + 255 * alpha);
+              
+              const newPixel = (newR << 24) | (newG << 16) | (newB << 8) | a;
+              img.setPixelAt(imgX + 1, imgY + 1, newPixel);
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  const encoded = await img.encode();
+  // Create fresh ArrayBuffer to ensure correct type
+  const result = new Uint8Array(encoded.length);
+  result.set(encoded);
+  console.log(`[${requestId}] Local watermark applied, size: ${result.length} bytes`);
+  return result;
 }
 
 // Translate Uzbek/Russian to English using Lovable AI Gateway
@@ -297,12 +402,17 @@ serve(async (req) => {
 
     // Only check limits for non-dev users
     if (!isDevBypass) {
-      const today = new Date().toISOString().split("T")[0];
+      // Explicit UTC boundaries for daily limit
+      const now = new Date();
+      const startOfDayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
+      const endOfDayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
+      
       const { count } = await supabase
         .from("image_generations")
         .select("*", { count: "exact", head: true })
         .eq("user_id", user.id)
-        .gte("created_at", today);
+        .gte("created_at", startOfDayUtc.toISOString())
+        .lt("created_at", endOfDayUtc.toISOString());
 
       const usedCount = count ?? 0;
       if (usedCount >= dailyLimit) {
@@ -418,70 +528,22 @@ serve(async (req) => {
       );
     }
 
-    // Apply watermark for free users using AI Gateway image editing
+    // Apply watermark for free users using local PNG compositing (NO paid API calls)
     let finalImageBytes = imageBytes;
     let isWatermarked = false;
     
     if (isFreeUser) {
-      console.log(`[${requestId}] Applying watermark for free user`);
+      console.log(`[${requestId}] Applying local watermark for free user`);
       const watermarkStep = startStep('watermarking');
       
       try {
-        const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-        if (LOVABLE_API_KEY) {
-          // Convert image bytes to base64 for AI Gateway
-          const base64Image = btoa(String.fromCharCode(...imageBytes));
-          const imageDataUrl = `data:image/png;base64,${base64Image}`;
-          
-          const watermarkResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${LOVABLE_API_KEY}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: "google/gemini-2.5-flash-image-preview",
-              messages: [{
-                role: "user",
-                content: [
-                  {
-                    type: "text",
-                    text: "Add a semi-transparent watermark text 'Bahor AI' in the bottom-right corner of this image. The watermark should be subtle, white with 40% opacity, positioned 24px from the bottom-right edges. Keep the original image exactly as is, only add the watermark."
-                  },
-                  {
-                    type: "image_url",
-                    image_url: { url: imageDataUrl }
-                  }
-                ]
-              }],
-              modalities: ["image", "text"]
-            }),
-          });
-          
-          if (watermarkResponse.ok) {
-            const watermarkData = await watermarkResponse.json();
-            const watermarkedImageUrl = watermarkData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-            
-            if (watermarkedImageUrl && watermarkedImageUrl.startsWith('data:image')) {
-              // Extract base64 and convert back to bytes
-              const base64Part = watermarkedImageUrl.split(',')[1];
-              if (base64Part) {
-                const binaryString = atob(base64Part);
-                finalImageBytes = new Uint8Array(binaryString.length);
-                for (let i = 0; i < binaryString.length; i++) {
-                  finalImageBytes[i] = binaryString.charCodeAt(i);
-                }
-                isWatermarked = true;
-                console.log(`[${requestId}] Watermark applied successfully, new size: ${finalImageBytes.length} bytes`);
-              }
-            }
-          } else {
-            console.warn(`[${requestId}] Watermark API failed:`, watermarkResponse.status);
-          }
-        }
+        finalImageBytes = await applyLocalWatermark(imageBytes, requestId);
+        isWatermarked = true;
       } catch (watermarkError) {
-        console.error(`[${requestId}] Watermark error (non-fatal):`, watermarkError);
-        // Continue without watermark if it fails - still save original image
+        console.error(`[${requestId}] Local watermark error (non-fatal):`, watermarkError);
+        // Continue without watermark - still return original image
+        finalImageBytes = imageBytes;
+        isWatermarked = false;
       }
       
       endStep(watermarkStep, { watermarked: isWatermarked });
