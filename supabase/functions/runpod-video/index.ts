@@ -18,7 +18,13 @@ const SIGNED_URL_EXPIRY_SECONDS = 3600; // 1 hour
 // Allowed resolution presets (to prevent abuse)
 // NOTE: All dimensions MUST be divisible by 32 for LTX model
 const ALLOWED_RESOLUTIONS = [
-  { width: 768, height: 448 }, // 16:9 cinematic
+  // HD resolutions
+  { width: 1280, height: 704 }, // 16:9 HD
+  { width: 704, height: 1280 }, // 9:16 HD vertical
+  { width: 1024, height: 576 }, // 16:9 standard
+  { width: 576, height: 1024 }, // 9:16 vertical
+  // Standard resolutions
+  { width: 768, height: 448 }, // 16:9 
   { width: 768, height: 512 }, // portrait-ish
   { width: 512, height: 512 }, // square
   { width: 448, height: 768 }, // 9:16 vertical

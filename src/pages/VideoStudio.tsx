@@ -46,11 +46,12 @@ const PRESETS = [
 ];
 
 const ASPECT_RATIOS = [
-  { id: "16:9", label: "16:9 (Keng)", width: 768, height: 448 },
-  { id: "9:16", label: "9:16 (Vertikal)", width: 448, height: 768 },
-  { id: "1:1", label: "1:1 (Kvadrat)", width: 512, height: 512 },
-  { id: "4:3", label: "4:3", width: 640, height: 480 },
-  { id: "custom", label: "Maxsus", width: 768, height: 512 },
+  { id: "16:9-hd", label: "16:9 HD (1280×704)", width: 1280, height: 704 },
+  { id: "16:9", label: "16:9 (1024×576)", width: 1024, height: 576 },
+  { id: "9:16-hd", label: "9:16 HD (704×1280)", width: 704, height: 1280 },
+  { id: "9:16", label: "9:16 (576×1024)", width: 576, height: 1024 },
+  { id: "1:1", label: "1:1 (512×512)", width: 512, height: 512 },
+  { id: "4:3", label: "4:3 (640×480)", width: 640, height: 480 },
 ];
 
 const QUALITY_TIERS = [
@@ -104,7 +105,7 @@ export default function VideoStudio() {
   const [prompt, setPrompt] = useState("");
   const [negativePrompt, setNegativePrompt] = useState("");
   const [preset, setPreset] = useState("cinematic");
-  const [aspectRatio, setAspectRatio] = useState("16:9");
+  const [aspectRatio, setAspectRatio] = useState("16:9-hd");
   const [qualityTier, setQualityTier] = useState("balanced");
   const [durationSeconds, setDurationSeconds] = useState(5);
   const [fps, setFps] = useState(24);
