@@ -410,6 +410,20 @@ export const translations = {
         "Дай совет по здоровому питанию",
       ],
     },
+    videoStudio: {
+      title: "Видео студия",
+      today: "сегодня",
+      premiumOnly: "Только Premium",
+      freeBlocked: {
+        title: "Создание видео доступно только в Premium",
+        description: "Перейдите на Premium для создания видео.",
+        upgrade: "Перейти на Premium",
+      },
+    },
+    imageStudio: {
+      freeUsage: "{used}/{limit} (с водяным знаком)",
+      watermarkNotice: "С водяным знаком",
+    },
   },
   tr: {
     // Homepage
@@ -542,21 +556,19 @@ export const translations = {
         "Sağlıklı beslenme hakkında tavsiye ver",
       ],
     },
-    // Video Studio
     videoStudio: {
-      title: "Video Studiya",
+      title: "Video Stüdyosu",
       today: "bugün",
-      premiumOnly: "Faqat Premium",
+      premiumOnly: "Sadece Premium",
       freeBlocked: {
-        title: "Video yaratish faqat Premium uchun",
-        description: "Video yaratish imkoniyatidan foydalanish uchun Premium obunaga o'ting.",
-        upgrade: "Premium'ga o'tish",
+        title: "Video oluşturma sadece Premium'da",
+        description: "Video oluşturmak için Premium'a yükseltin.",
+        upgrade: "Premium'a yükselt",
       },
     },
-    // Image Studio
     imageStudio: {
-      freeUsage: "{used}/{limit} (suv belgili)",
-      watermarkNotice: "Suv belgili",
+      freeUsage: "{used}/{limit} (filigranlı)",
+      watermarkNotice: "Filigranlı",
     },
   },
 } as const;
