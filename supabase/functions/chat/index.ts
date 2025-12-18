@@ -737,7 +737,17 @@ serve(async (req) => {
     // STEP: preparing
     const preparingStart = Date.now() - requestStartTime;
     
-    const { messages, mode, modelPreference, threadSummary, hasAnalysis, analysisType, reply_language, ui_language, attachments, userToneContext, device_id } = await req.json();
+    const body = await req.json();
+    
+    // Handle warmup requests (pre-flight to wake up the function)
+    if (body.warmup === true) {
+      return new Response(
+        JSON.stringify({ ok: true, status: "warm" }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    const { messages, mode, modelPreference, threadSummary, hasAnalysis, analysisType, reply_language, ui_language, attachments, userToneContext, device_id } = body;
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(
