@@ -47,6 +47,7 @@ const PRESETS = [
 ];
 
 const ASPECT_RATIOS = [
+  { id: "16:9-hd", label: "16:9 HD (1280×704)", width: 1280, height: 704 },
   { id: "3:2", label: "3:2 (768×512)", width: 768, height: 512 },
   { id: "4:3", label: "4:3 (640×480)", width: 640, height: 480 },
   { id: "16:9", label: "16:9 (768×448)", width: 768, height: 448 },

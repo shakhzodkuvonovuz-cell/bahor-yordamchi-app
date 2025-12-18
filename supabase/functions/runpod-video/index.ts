@@ -19,6 +19,7 @@ const SIGNED_URL_EXPIRY_SECONDS = 3600; // 1 hour
 // NOTE: All dimensions MUST be divisible by 32 for LTX model
 // Keeping resolutions moderate to prevent quality loss from scaling
 const ALLOWED_RESOLUTIONS = [
+  { width: 1280, height: 704 }, // 16:9 HD (720p equivalent)
   { width: 768, height: 512 }, // 3:2 (default, good quality)
   { width: 640, height: 480 }, // 4:3
   { width: 768, height: 448 }, // 16:9 
