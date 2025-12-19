@@ -14,6 +14,9 @@ const SDXL_I2I_API_URL = "https://api.fireworks.ai/inference/v1/image_generation
 
 const MAX_PROMPT_LENGTH = 500;
 const ALLOWED_BUCKETS = ["user-files", "chat-attachments"];
+const ALLOWED_ASPECT_RATIOS = ["1:1", "16:9", "9:16", "4:5"];
+const REMIX_STRENGTH_MIN = 0.05;
+const REMIX_STRENGTH_MAX = 0.9;
 
 // Content guardrails
 const BLOCKED_PATTERNS = [
@@ -332,7 +335,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`[${requestId}] User authenticated: ${user.id}`);
+    const shortUserId = user.id.slice(0, 8);
     endStep(prepareStep);
 
     // Parse body
@@ -354,7 +357,39 @@ serve(async (req) => {
       rawMode = false,
     } = body;
 
-    console.log(`[${requestId}] Input: toolMode=${toolMode}, modelChoice=${modelChoice}, aspectRatio=${aspectRatio}`);
+    // Lightweight log - no raw prompt
+    console.log(`[${requestId}] Request: user=${shortUserId} toolMode=${toolMode} modelChoice=${modelChoice} aspectRatio=${aspectRatio}`);
+
+    // Guardrail: validate aspectRatio
+    if (!ALLOWED_ASPECT_RATIOS.includes(aspectRatio)) {
+      console.log(`[${requestId}] Rejected: invalid aspectRatio="${aspectRatio}"`);
+      return new Response(
+        JSON.stringify({ ok: false, error: "Noto'g'ri aspect ratio", requestId }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Guardrail: remix mode requires inputImage
+    if (toolMode === "remix" && (!inputImage || !inputImage.bucket || !inputImage.path)) {
+      console.log(`[${requestId}] Rejected: remix mode missing inputImage`);
+      return new Response(
+        JSON.stringify({ ok: false, error: "Remix rejimi uchun manba rasm kerak", requestId }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Guardrail: remixStrength range
+    if (toolMode === "remix" && (remixStrength < REMIX_STRENGTH_MIN || remixStrength > REMIX_STRENGTH_MAX)) {
+      console.log(`[${requestId}] Rejected: remixStrength=${remixStrength} out of range [${REMIX_STRENGTH_MIN}, ${REMIX_STRENGTH_MAX}]`);
+      return new Response(
+        JSON.stringify({ 
+          ok: false, 
+          error: `Remix kuchi ${REMIX_STRENGTH_MIN} va ${REMIX_STRENGTH_MAX} orasida bo'lishi kerak`, 
+          requestId 
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Validate prompt
     if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
@@ -496,7 +531,8 @@ serve(async (req) => {
       );
     }
 
-    console.log(`[${requestId}] Final prompt (${finalPrompt.length} chars): "${finalPrompt.slice(0, 100)}..."`);
+    // Log prompt length only (no raw content in prod logs)
+    console.log(`[${requestId}] Prompt: ${promptOriginal.length} chars -> ${finalPrompt.length} chars boosted`);
 
     // Generate image based on mode
     let imageBytes: Uint8Array;
@@ -603,7 +639,7 @@ serve(async (req) => {
       }
 
       // Download input image
-      console.log(`[${requestId}] Downloading input image from ${inputImage.bucket}/${inputImage.path}`);
+      console.log(`[${requestId}] Downloading input image`);
       const downloadStep = startStep('downloading_input');
 
       const { data: inputData, error: downloadError } = await supabase.storage
@@ -619,8 +655,8 @@ serve(async (req) => {
       }
 
       const inputImageBytes = new Uint8Array(await inputData.arrayBuffer());
-      endStep(downloadStep, { size: inputImageBytes.length });
-      console.log(`[${requestId}] Input image downloaded: ${inputImageBytes.length} bytes`);
+      endStep(downloadStep, { inputBytes: inputImageBytes.length });
+      
 
       // Build multipart form data for SDXL I2I
       steps = 30;
@@ -664,8 +700,8 @@ serve(async (req) => {
       );
     }
 
-    endStep(generateStep, { model: modelUsed, steps });
-    console.log(`[${requestId}] Image generated: ${imageBytes.length} bytes, model: ${modelUsed}`);
+    endStep(generateStep, { model: modelUsed, steps, rawBytes: imageBytes.length });
+    
 
     if (imageBytes.length === 0) {
       throw new Error("Empty image response");
@@ -677,7 +713,7 @@ serve(async (req) => {
 
     if (isFreeUser) {
       // Free users: watermark (also converts to PNG)
-      console.log(`[${requestId}] Applying watermark for free user`);
+      
       const watermarkStep = startStep('watermarking');
       try {
         finalImageBytes = await applyLocalWatermark(imageBytes, requestId);
@@ -720,7 +756,7 @@ serve(async (req) => {
       throw new Error("Rasmni saqlashda xatolik");
     }
 
-    console.log(`[${requestId}] Image uploaded to: ${filePath}`);
+    
 
     // Insert into image_generations
     const guidanceScale = modelChoice === "flux" ? 3.5 : 7;
@@ -816,7 +852,8 @@ serve(async (req) => {
       model_choice: modelChoice,
     });
 
-    console.log(`[${requestId}] Success! Duration: ${Date.now() - requestStart}ms`);
+    // Summary log: lightweight, no PII, no raw prompts
+    console.log(`[${requestId}] OK user=${shortUserId} mode=${toolMode}/${modelChoice} in=${imageBytes.length}b out=${finalImageBytes.length}b dur=${Date.now() - requestStart}ms status=200`);
 
     return new Response(
       JSON.stringify({
@@ -848,7 +885,8 @@ serve(async (req) => {
 
   } catch (error) {
     const errMessage = error instanceof Error ? error.message : String(error);
-    console.error(`[${requestId}] fireworks-image-router error:`, errMessage);
+    const shortUserId = user?.id?.slice(0, 8) || "unknown";
+    console.error(`[${requestId}] FAIL user=${shortUserId} dur=${Date.now() - requestStart}ms status=500 err=${errMessage}`);
 
     if (supabase && user?.id) {
       await logImageGenEvent(supabase, user.id, {
