@@ -578,6 +578,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'imageStudioV2.sdxlPremiumOnly': 'Sifatli (SDXL) model faqat Premium foydalanuvchilar uchun mavjud.',
     'imageStudioV2.remixPremiumOnly': 'Remix rejimi faqat Premium foydalanuvchilar uchun mavjud.',
     'imageStudioV2.remixRequiresImage': 'Remix rejimi uchun manba rasm yuklang.',
+    'imageStudioV2.controlnetComingSoon': 'Struktura rejimi tez kunda',
+    'imageStudioV2.controlnetComingSoonDesc': 'Struktura (ControlNet) rejimi ustida ishlamoqdamiz. Tez orada qo\'shiladi!',
     
     // Video Studio
     'videoStudio.navTitle': 'Video studiyasi',
@@ -2846,6 +2848,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'imageStudioV2.sdxlPremiumOnly': 'Quality (SDXL) model is only available for Premium users.',
     'imageStudioV2.remixPremiumOnly': 'Remix mode is only available for Premium users.',
     'imageStudioV2.remixRequiresImage': 'Please upload an image for Remix mode.',
+    'imageStudioV2.controlnetComingSoon': 'Structure mode coming soon',
+    'imageStudioV2.controlnetComingSoonDesc': 'We are working on Structure (ControlNet) mode. Coming soon!',
     
     // Video Studio
     'videoStudio.navTitle': 'Video Studio',

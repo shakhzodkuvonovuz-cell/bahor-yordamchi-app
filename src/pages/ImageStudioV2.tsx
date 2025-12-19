@@ -551,22 +551,34 @@ export default function ImageStudioV2() {
               >
                 <TabsList className="grid w-full grid-cols-3">
                   {TOOL_MODES.map((mode) => (
-                    <TabsTrigger
+                    <div
                       key={mode.id}
-                      value={mode.id}
-                      disabled={mode.disabled}
-                      className="relative"
+                      onClick={() => {
+                        if (mode.disabled) {
+                          toast({
+                            title: t("imageStudioV2.controlnetComingSoon"),
+                            description: t("imageStudioV2.controlnetComingSoonDesc"),
+                          });
+                        }
+                      }}
+                      className={mode.disabled ? "cursor-pointer" : ""}
                     >
-                      {t(mode.labelKey)}
-                      {mode.badge && (
-                        <Badge 
-                          variant="outline" 
-                          className="ml-2 text-[10px] px-1.5 py-0 h-4 bg-muted"
-                        >
-                          {t(mode.badge)}
-                        </Badge>
-                      )}
-                    </TabsTrigger>
+                      <TabsTrigger
+                        value={mode.id}
+                        disabled={mode.disabled}
+                        className="relative w-full"
+                      >
+                        {t(mode.labelKey)}
+                        {mode.badge && (
+                          <Badge 
+                            variant="outline" 
+                            className="ml-2 text-[10px] px-1.5 py-0 h-4 bg-muted"
+                          >
+                            {t(mode.badge)}
+                          </Badge>
+                        )}
+                      </TabsTrigger>
+                    </div>
                   ))}
                 </TabsList>
               </Tabs>
