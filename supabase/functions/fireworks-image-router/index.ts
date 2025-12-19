@@ -259,13 +259,143 @@ async function applyLocalWatermark(imageBytes: Uint8Array, requestId: string): P
   return result;
 }
 
-// Convert JPEG to PNG
+/**
+ * Read EXIF orientation from JPEG bytes
+ * Returns 1-8 for orientation, or 1 (normal) if not found
+ */
+function readExifOrientation(bytes: Uint8Array): number {
+  // Check for JPEG magic bytes
+  if (bytes[0] !== 0xFF || bytes[1] !== 0xD8) return 1;
+  
+  let offset = 2;
+  while (offset < bytes.length - 2) {
+    if (bytes[offset] !== 0xFF) return 1;
+    
+    const marker = bytes[offset + 1];
+    
+    // Skip padding
+    if (marker === 0xFF) {
+      offset++;
+      continue;
+    }
+    
+    // APP1 marker (EXIF)
+    if (marker === 0xE1) {
+      const length = (bytes[offset + 2] << 8) | bytes[offset + 3];
+      const exifStart = offset + 4;
+      
+      // Check for "Exif\0\0"
+      if (bytes[exifStart] === 0x45 && bytes[exifStart + 1] === 0x78 &&
+          bytes[exifStart + 2] === 0x69 && bytes[exifStart + 3] === 0x66 &&
+          bytes[exifStart + 4] === 0x00 && bytes[exifStart + 5] === 0x00) {
+        
+        const tiffStart = exifStart + 6;
+        const isLittleEndian = bytes[tiffStart] === 0x49; // 'II'
+        
+        const readUint16 = (pos: number) => {
+          if (isLittleEndian) {
+            return bytes[tiffStart + pos] | (bytes[tiffStart + pos + 1] << 8);
+          }
+          return (bytes[tiffStart + pos] << 8) | bytes[tiffStart + pos + 1];
+        };
+        
+        const readUint32 = (pos: number) => {
+          if (isLittleEndian) {
+            return bytes[tiffStart + pos] | (bytes[tiffStart + pos + 1] << 8) |
+                   (bytes[tiffStart + pos + 2] << 16) | (bytes[tiffStart + pos + 3] << 24);
+          }
+          return (bytes[tiffStart + pos] << 24) | (bytes[tiffStart + pos + 1] << 16) |
+                 (bytes[tiffStart + pos + 2] << 8) | bytes[tiffStart + pos + 3];
+        };
+        
+        // Skip TIFF header (8 bytes), get IFD0 offset
+        const ifd0Offset = readUint32(4);
+        const numEntries = readUint16(ifd0Offset);
+        
+        // Search for orientation tag (0x0112)
+        for (let i = 0; i < numEntries; i++) {
+          const entryOffset = ifd0Offset + 2 + (i * 12);
+          const tag = readUint16(entryOffset);
+          if (tag === 0x0112) {
+            return readUint16(entryOffset + 8);
+          }
+        }
+      }
+      return 1;
+    }
+    
+    // Skip other markers
+    if (marker >= 0xE0 && marker <= 0xEF || marker === 0xFE || marker === 0xDB || marker === 0xC4) {
+      const length = (bytes[offset + 2] << 8) | bytes[offset + 3];
+      offset += 2 + length;
+    } else {
+      // End of markers we care about
+      return 1;
+    }
+  }
+  return 1;
+}
+
+/**
+ * Apply EXIF orientation to image
+ * Orientation values: 1=normal, 3=180°, 6=90°CW, 8=90°CCW, etc.
+ */
+async function applyExifOrientation(img: any, orientation: number): Promise<any> {
+  switch (orientation) {
+    case 3: // 180° rotation
+      return img.rotate(180, false);
+    case 6: // 90° CW
+      return img.rotate(90, false);
+    case 8: // 90° CCW
+      return img.rotate(-90, false);
+    case 2: // Horizontal flip
+      return img.flipX();
+    case 4: // Vertical flip
+      return img.flipY();
+    case 5: // Transpose (flip X + 90° CCW)
+      return img.flipX().rotate(-90, false);
+    case 7: // Transverse (flip X + 90° CW)
+      return img.flipX().rotate(90, false);
+    default: // 1 or unknown - no rotation needed
+      return img;
+  }
+}
+
+// Convert JPEG to PNG with EXIF orientation handling
 async function convertToPng(imageBytes: Uint8Array, requestId: string): Promise<Uint8Array<ArrayBuffer>> {
   const img = await Image.decode(imageBytes);
   const encoded = await img.encode();
   const result = new Uint8Array(encoded.length);
   result.set(encoded);
   console.log(`[${requestId}] Converted to PNG, size: ${result.length} bytes`);
+  return result;
+}
+
+// Normalize image orientation for JPEG inputs
+async function normalizeImageOrientation(imageBytes: Uint8Array, requestId: string): Promise<Uint8Array> {
+  const { mime } = sniffImageMime(imageBytes);
+  
+  // Only process JPEGs which can have EXIF orientation
+  if (mime !== "image/jpeg") {
+    return imageBytes;
+  }
+  
+  const orientation = readExifOrientation(imageBytes);
+  if (orientation === 1) {
+    // Already normal orientation
+    return imageBytes;
+  }
+  
+  console.log(`[${requestId}] Normalizing EXIF orientation: ${orientation}`);
+  
+  // Decode, apply orientation, re-encode as PNG to strip EXIF
+  let img = await Image.decode(imageBytes);
+  img = await applyExifOrientation(img, orientation);
+  const encoded = await img.encode();
+  const result = new Uint8Array(encoded.length);
+  result.set(encoded);
+  
+  console.log(`[${requestId}] Orientation normalized, new size: ${result.length} bytes`);
   return result;
 }
 
@@ -758,15 +888,17 @@ serve(async (req) => {
         );
       }
 
-      const inputImageBytes = new Uint8Array(await inputData.arrayBuffer());
+      let inputImageBytes = new Uint8Array(await inputData.arrayBuffer());
       endStep(downloadStep, { inputBytes: inputImageBytes.length });
       
+      // Normalize EXIF orientation to prevent rotated outputs
+      inputImageBytes = await normalizeImageOrientation(inputImageBytes, requestId);
 
       // Build multipart form data for SDXL I2I
       steps = 30;
       const imageStrength = remixStrength;
 
-      // Create FormData - auto-detect MIME type from magic bytes
+      // Create FormData - auto-detect MIME type from magic bytes (re-check after normalization)
       const { mime: inputMime, ext: inputExt } = sniffImageMime(inputImageBytes);
       if (inputMime === "application/octet-stream") {
         console.error(`[${requestId}] Unsupported input image format`);
