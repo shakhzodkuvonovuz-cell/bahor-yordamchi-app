@@ -507,9 +507,9 @@ export default function ImageStudioV2() {
   return (
     <>
       <SEO 
-        title="Rasm studiyasi v2" 
+        title="Rasm studiyasi" 
         description="Bahor AI bilan sun'iy intellekt yordamida rasmlar yarating, remix qiling yoki strukturasini saqlang."
-        url="/image-studio-v2"
+        url="/image-studio"
       />
       <div className="min-h-screen bg-background">
         {/* Header */}
