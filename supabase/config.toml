@@ -66,3 +66,5 @@ verify_jwt = false
 [functions.runpod-video]
 verify_jwt = false
 
+[functions.fireworks-image-router]
+verify_jwt = false
