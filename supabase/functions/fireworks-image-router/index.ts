@@ -108,6 +108,33 @@ function isBlockedPrompt(prompt: string): boolean {
   return BLOCKED_PATTERNS.some(p => p.test(prompt));
 }
 
+/**
+ * Detect image MIME type from magic bytes
+ * Supports PNG, JPEG, WebP - falls back to octet-stream for unknown formats
+ */
+function sniffImageMime(bytes: Uint8Array): { mime: string; ext: string } {
+  // PNG: 89 50 4E 47 0D 0A 1A 0A
+  if (
+    bytes.length >= 8 &&
+    bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47 &&
+    bytes[4] === 0x0d && bytes[5] === 0x0a && bytes[6] === 0x1a && bytes[7] === 0x0a
+  ) return { mime: "image/png", ext: "png" };
+
+  // JPEG: FF D8 FF
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff)
+    return { mime: "image/jpeg", ext: "jpg" };
+
+  // WebP: "RIFF"...."WEBP"
+  if (
+    bytes.length >= 12 &&
+    bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
+    bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50
+  ) return { mime: "image/webp", ext: "webp" };
+
+  // Fallback - unknown format
+  return { mime: "application/octet-stream", ext: "bin" };
+}
+
 // Types
 type ToolMode = "t2i" | "remix" | "controlnet";
 type ModelChoice = "flux" | "sdxl";
@@ -739,9 +766,20 @@ serve(async (req) => {
       steps = 30;
       const imageStrength = remixStrength;
 
-      // Create FormData
+      // Create FormData - auto-detect MIME type from magic bytes
+      const { mime: inputMime, ext: inputExt } = sniffImageMime(inputImageBytes);
+      if (inputMime === "application/octet-stream") {
+        console.error(`[${requestId}] Unsupported input image format`);
+        return new Response(
+          JSON.stringify({ ok: false, error: "UNSUPPORTED_INPUT_IMAGE_FORMAT", requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      console.log(`[${requestId}] Input image detected: ${inputMime}`);
+      
       const formData = new FormData();
-      formData.append("init_image", new Blob([inputImageBytes], { type: "image/jpeg" }), "input.jpg");
+      // Note: For future ControlNet support, use same sniffImageMime for control_image
+      formData.append("init_image", new Blob([inputImageBytes], { type: inputMime }), `input.${inputExt}`);
       formData.append("prompt", finalPrompt);
       formData.append("init_image_mode", "IMAGE_STRENGTH");
       formData.append("image_strength", String(imageStrength));
