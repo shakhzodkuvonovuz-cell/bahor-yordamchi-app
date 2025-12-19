@@ -585,41 +585,43 @@ export default function ImageStudioV2() {
             </CardContent>
           </Card>
 
-          {/* Model selector */}
-          <Card>
-            <CardContent className="p-4">
-              <Label className="text-sm font-medium mb-3 block">{t("imageStudioV2.modelLabel")}</Label>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => updateDraft("modelChoice", "flux")}
-                  className={cn(
-                    "flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border transition-all",
-                    draft.modelChoice === "flux"
-                      ? "border-primary bg-primary/5 ring-1 ring-primary"
-                      : "border-border hover:border-primary/50"
-                  )}
-                >
-                  <Zap className="w-4 h-4 text-amber-500" />
-                  <span className="font-medium">{t("imageStudioV2.model.flux")}</span>
-                </button>
-                <button
-                  onClick={() => updateDraft("modelChoice", "sdxl")}
-                  className={cn(
-                    "flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border transition-all",
-                    draft.modelChoice === "sdxl"
-                      ? "border-primary bg-primary/5 ring-1 ring-primary"
-                      : "border-border hover:border-primary/50"
-                  )}
-                >
-                  <Crown className="w-4 h-4 text-purple-500" />
-                  <span className="font-medium">{t("imageStudioV2.model.sdxl")}</span>
-                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
-                    Premium
-                  </Badge>
-                </button>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Model selector - hidden for remix mode since it always uses SDXL */}
+          {draft.toolMode !== "remix" && (
+            <Card>
+              <CardContent className="p-4">
+                <Label className="text-sm font-medium mb-3 block">{t("imageStudioV2.modelLabel")}</Label>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => updateDraft("modelChoice", "flux")}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border transition-all",
+                      draft.modelChoice === "flux"
+                        ? "border-primary bg-primary/5 ring-1 ring-primary"
+                        : "border-border hover:border-primary/50"
+                    )}
+                  >
+                    <Zap className="w-4 h-4 text-amber-500" />
+                    <span className="font-medium">{t("imageStudioV2.model.flux")}</span>
+                  </button>
+                  <button
+                    onClick={() => updateDraft("modelChoice", "sdxl")}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border transition-all",
+                      draft.modelChoice === "sdxl"
+                        ? "border-primary bg-primary/5 ring-1 ring-primary"
+                        : "border-border hover:border-primary/50"
+                    )}
+                  >
+                    <Crown className="w-4 h-4 text-purple-500" />
+                    <span className="font-medium">{t("imageStudioV2.model.sdxl")}</span>
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
+                      Premium
+                    </Badge>
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Image upload (only for Remix / ControlNet) */}
           {isImageRequired && (
