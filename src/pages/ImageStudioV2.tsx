@@ -339,8 +339,8 @@ export default function ImageStudioV2() {
       return;
     }
 
-    // Currently supporting: t2i with flux or sdxl
-    if (draft.toolMode !== "t2i") {
+    // Currently supporting: t2i (flux/sdxl) and remix (sdxl only)
+    if (draft.toolMode === "controlnet") {
       toast({
         title: t("imageStudioV2.backendPending"),
         description: t("imageStudioV2.backendPendingDesc"),
@@ -348,11 +348,24 @@ export default function ImageStudioV2() {
       return;
     }
 
-    // Premium check for SDXL
-    if (draft.modelChoice === "sdxl" && !isPremiumUser) {
+    // Remix mode requires inputImage
+    if (draft.toolMode === "remix" && !inputImage) {
+      toast({
+        title: t("imageStudioV2.error"),
+        description: t("imageStudioV2.remixRequiresImage"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Premium check for SDXL and Remix (Remix always uses SDXL)
+    const requiresPremium = draft.modelChoice === "sdxl" || draft.toolMode === "remix";
+    if (requiresPremium && !isPremiumUser) {
       toast({
         title: t("imageStudioV2.premiumRequired"),
-        description: t("imageStudioV2.sdxlPremiumOnly"),
+        description: draft.toolMode === "remix" 
+          ? t("imageStudioV2.remixPremiumOnly") 
+          : t("imageStudioV2.sdxlPremiumOnly"),
         variant: "destructive",
       });
       return;
@@ -373,17 +386,37 @@ export default function ImageStudioV2() {
         return;
       }
 
-      // Build request payload with toolMode and modelChoice
-      const requestPayload = {
+      // Build request payload based on mode
+      const basePayload = {
         prompt: draft.prompt.trim(),
         aspectRatio: draft.aspectRatio,
         renderMode: draft.renderMode,
-        qualityBoost: draft.modelChoice === "sdxl" ? false : draft.qualityBoost,
         stylePreset: draft.stylePreset,
         attachToChat: false,
         toolMode: draft.toolMode,
-        modelChoice: draft.modelChoice,
       };
+
+      let requestPayload: Record<string, unknown>;
+
+      if (draft.toolMode === "remix") {
+        // Remix mode: always SDXL with inputImage and remixStrength
+        requestPayload = {
+          ...basePayload,
+          modelChoice: "sdxl",
+          qualityBoost: false,
+          inputImage: inputImage,
+          remixStrength: draft.remixStrength,
+        };
+      } else {
+        // T2I mode
+        requestPayload = {
+          ...basePayload,
+          modelChoice: draft.modelChoice,
+          qualityBoost: draft.modelChoice === "sdxl" ? false : draft.qualityBoost,
+        };
+      }
+
+      console.log('[ImageStudioV2] Sending request:', requestPayload);
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fireworks-generate-image`,
@@ -416,7 +449,7 @@ export default function ImageStudioV2() {
           seed: result.seed,
           steps: result.steps,
           toolMode: draft.toolMode,
-          modelChoice: draft.modelChoice,
+          modelChoice: draft.toolMode === "remix" ? "sdxl" : draft.modelChoice,
         },
         createdAt: new Date(),
       });
