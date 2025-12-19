@@ -567,6 +567,11 @@ export const translations: Record<Lang, Record<string, string>> = {
     'imageStudioV2.backendPending': 'Backend ulanishi',
     'imageStudioV2.backendPendingDesc': 'Backend ulanishi keyingi qadamda qo\'shiladi.',
     'imageStudioV2.downloadStarted': 'Yuklab olish boshlandi',
+    'imageStudioV2.resizing': 'Rasm kichraytirilmoqda...',
+    'imageStudioV2.uploading': 'Yuklanmoqda...',
+    'imageStudioV2.uploadComplete': 'Yuklandi',
+    'imageStudioV2.uploadFailed': 'Yuklashda xatolik yuz berdi',
+    'imageStudioV2.pleaseLogin': 'Avval tizimga kiring',
     
     // Video Studio
     'videoStudio.navTitle': 'Video studiyasi',
@@ -2824,6 +2829,11 @@ export const translations: Record<Lang, Record<string, string>> = {
     'imageStudioV2.backendPending': 'Backend connection',
     'imageStudioV2.backendPendingDesc': 'Backend connection will be added in the next step.',
     'imageStudioV2.downloadStarted': 'Download started',
+    'imageStudioV2.resizing': 'Resizing image...',
+    'imageStudioV2.uploading': 'Uploading...',
+    'imageStudioV2.uploadComplete': 'Upload complete',
+    'imageStudioV2.uploadFailed': 'Upload failed',
+    'imageStudioV2.pleaseLogin': 'Please log in first',
     
     // Video Studio
     'videoStudio.navTitle': 'Video Studio',
