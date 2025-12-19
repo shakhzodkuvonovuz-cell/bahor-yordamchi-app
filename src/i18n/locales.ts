@@ -572,6 +572,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'imageStudioV2.uploadComplete': 'Yuklandi',
     'imageStudioV2.uploadFailed': 'Yuklashda xatolik yuz berdi',
     'imageStudioV2.pleaseLogin': 'Avval tizimga kiring',
+    'imageStudioV2.success': 'Rasm yaratildi!',
+    'imageStudioV2.imageSaved': 'Rasm fayllaringizga saqlandi.',
     
     // Video Studio
     'videoStudio.navTitle': 'Video studiyasi',
@@ -2834,6 +2836,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'imageStudioV2.uploadComplete': 'Upload complete',
     'imageStudioV2.uploadFailed': 'Upload failed',
     'imageStudioV2.pleaseLogin': 'Please log in first',
+    'imageStudioV2.success': 'Image generated!',
+    'imageStudioV2.imageSaved': 'Image saved to your files.',
     
     // Video Studio
     'videoStudio.navTitle': 'Video Studio',

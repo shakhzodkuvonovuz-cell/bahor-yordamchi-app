@@ -69,6 +69,22 @@ interface InputImageState {
   path: string;
 }
 
+interface GeneratedImageResult {
+  url: string;
+  fileName: string;
+  meta: {
+    prompt_used: string;
+    prompt_original: string;
+    model: string;
+    width: number;
+    height: number;
+    render_mode: string;
+    seed?: number;
+    steps?: number;
+  };
+  createdAt: Date;
+}
+
 type UploadStatus = "idle" | "resizing" | "uploading" | "done" | "error";
 
 // ========== CONSTANTS ==========
@@ -128,7 +144,8 @@ export default function ImageStudioV2() {
 
   // UI state
   const [loading, setLoading] = useState(false);
-  const [resultImage, setResultImage] = useState<string | null>(null);
+  const [generatedResult, setGeneratedResult] = useState<GeneratedImageResult | null>(null);
+  const [requestInFlight, setRequestInFlight] = useState(false);
 
   // Helper to update draft
   const updateDraft = useCallback(<K extends keyof ImageStudioRequestDraft>(
@@ -299,20 +316,126 @@ export default function ImageStudioV2() {
     (!isImageRequired || hasValidInputImage) &&
     draft.toolMode !== "controlnet"; // ControlNet is still disabled
 
-  // Handle generate (placeholder for now)
-  const handleGenerate = () => {
-    if (!canGenerate) return;
-    
-    toast({
-      title: t("imageStudioV2.backendPending"),
-      description: t("imageStudioV2.backendPendingDesc"),
-    });
+  // Handle generate
+  const handleGenerate = async () => {
+    if (!canGenerate || requestInFlight || loading) {
+      console.log('[ImageStudioV2] Request already in flight or invalid state, ignoring');
+      return;
+    }
+
+    // For now, only t2i + flux is implemented
+    if (draft.toolMode !== "t2i" || draft.modelChoice !== "flux") {
+      toast({
+        title: t("imageStudioV2.backendPending"),
+        description: t("imageStudioV2.backendPendingDesc"),
+      });
+      return;
+    }
+
+    setLoading(true);
+    setRequestInFlight(true);
+    setGeneratedResult(null);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: t("imageStudioV2.error"),
+          description: t("imageStudioV2.pleaseLogin"),
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fireworks-generate-image`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            prompt: draft.prompt.trim(),
+            aspectRatio: draft.aspectRatio,
+            renderMode: draft.renderMode,
+            qualityBoost: draft.qualityBoost,
+            stylePreset: draft.stylePreset,
+            attachToChat: false,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!result.ok) {
+        throw new Error(result.error || t("imageStudioV2.error"));
+      }
+
+      setGeneratedResult({
+        url: result.image_url,
+        fileName: result.file_name,
+        meta: {
+          prompt_used: result.prompt_used,
+          prompt_original: result.prompt_original,
+          model: result.model,
+          width: result.width,
+          height: result.height,
+          render_mode: result.render_mode,
+          seed: result.seed,
+          steps: result.steps,
+        },
+        createdAt: new Date(),
+      });
+
+      toast({
+        title: t("imageStudioV2.success"),
+        description: t("imageStudioV2.imageSaved"),
+      });
+    } catch (error) {
+      console.error("[ImageStudioV2] Generation error:", error);
+      toast({
+        title: t("imageStudioV2.error"),
+        description: error instanceof Error ? error.message : t("imageStudioV2.error"),
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+      setRequestInFlight(false);
+    }
   };
 
-  // Handle download (placeholder)
-  const handleDownload = () => {
-    if (!resultImage) return;
-    toast({ title: t("imageStudioV2.downloadStarted") });
+  // Handle download
+  const handleDownload = async () => {
+    if (!generatedResult) return;
+
+    try {
+      const response = await fetch(generatedResult.url);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = generatedResult.fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast({ title: t("imageStudioV2.downloadStarted") });
+    } catch (error) {
+      console.error("Download error:", error);
+      window.open(generatedResult.url, "_blank");
+    }
+  };
+
+  // Handle open in new tab
+  const handleOpen = () => {
+    if (!generatedResult) return;
+    window.open(generatedResult.url, "_blank");
+  };
+
+  // Format time
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
   return (
@@ -707,13 +830,13 @@ export default function ImageStudioV2() {
                     <p className="text-sm text-muted-foreground">{t("imageStudioV2.generatingProgress")}</p>
                   </div>
                 </div>
-              ) : resultImage ? (
+              ) : generatedResult ? (
                 <div className="space-y-4">
-                  <div className="relative rounded-lg overflow-hidden">
+                  <div className="relative rounded-lg overflow-hidden bg-muted">
                     <img
-                      src={resultImage}
+                      src={generatedResult.url}
                       alt="Generated"
-                      className="w-full aspect-square object-cover"
+                      className="w-full h-auto object-contain max-h-[500px]"
                     />
                   </div>
                   <div className="flex gap-2">
@@ -721,15 +844,20 @@ export default function ImageStudioV2() {
                       <Download className="w-4 h-4 mr-2" />
                       {t("imageStudioV2.download")}
                     </Button>
-                    <Button variant="outline" className="flex-1">
+                    <Button variant="outline" className="flex-1" onClick={handleOpen}>
                       <Eye className="w-4 h-4 mr-2" />
                       {t("imageStudioV2.open")}
                     </Button>
                   </div>
                   {/* Metadata line */}
-                  <p className="text-xs text-muted-foreground text-center">
-                    {draft.modelChoice === "flux" ? "FLUX" : "SDXL"} · {draft.toolMode.toUpperCase()} · {draft.aspectRatio}
-                  </p>
+                  <div className="text-xs text-muted-foreground text-center space-y-1">
+                    <p>
+                      {generatedResult.meta.model} · {generatedResult.meta.width}×{generatedResult.meta.height} · {formatTime(generatedResult.createdAt)}
+                    </p>
+                    {generatedResult.meta.seed && (
+                      <p className="font-mono">seed: {generatedResult.meta.seed}</p>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="aspect-square bg-muted/30 rounded-lg flex items-center justify-center border border-dashed border-border">
