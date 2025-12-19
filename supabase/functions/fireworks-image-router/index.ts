@@ -1,3 +1,80 @@
+/**
+ * fireworks-image-router - Multi-model image generation edge function
+ * 
+ * Supports:
+ *   - FLUX Schnell (t2i) - fast, free tier
+ *   - SDXL 1.0 (t2i) - higher quality, premium only
+ *   - SDXL Remix (i2i) - image-to-image, premium only
+ * 
+ * ============================================================================
+ * TESTING GUIDE
+ * ============================================================================
+ * 
+ * 1. FLUX T2I (Free users allowed)
+ *    Request:
+ *    {
+ *      "prompt": "A cute cat",
+ *      "toolMode": "t2i",
+ *      "modelChoice": "flux",
+ *      "aspectRatio": "1:1"
+ *    }
+ *    Expected logs:
+ *      [abc123] Request: user=xxxxxxxx toolMode=t2i modelChoice=flux aspectRatio=1:1
+ *      [abc123] OK user=xxxxxxxx mode=t2i/flux in=XXXXXb out=XXXXXb dur=XXXms status=200
+ *    Response fields:
+ *      ok=true, model="flux-schnell", tool_mode="t2i", model_choice="flux"
+ * 
+ * 2. SDXL T2I (Premium only)
+ *    Request:
+ *    {
+ *      "prompt": "A cute cat",
+ *      "toolMode": "t2i",
+ *      "modelChoice": "sdxl",
+ *      "aspectRatio": "16:9"
+ *    }
+ *    Expected logs:
+ *      [abc123] Request: user=xxxxxxxx toolMode=t2i modelChoice=sdxl aspectRatio=16:9
+ *      [abc123] OK user=xxxxxxxx mode=t2i/sdxl in=XXXXXb out=XXXXXb dur=XXXms status=200
+ *    Response fields:
+ *      ok=true, model="sdxl", tool_mode="t2i", model_choice="sdxl", width=1344, height=768
+ *    Free user rejection:
+ *      status=403, error="PREMIUM_REQUIRED"
+ * 
+ * 3. SDXL REMIX (Premium + inputImage required)
+ *    Request:
+ *    {
+ *      "prompt": "Make it sunset colors",
+ *      "toolMode": "remix",
+ *      "modelChoice": "sdxl",
+ *      "aspectRatio": "1:1",
+ *      "inputImage": { "bucket": "user-files", "path": "<userId>/images/..." },
+ *      "remixStrength": 0.35
+ *    }
+ *    Expected logs:
+ *      [abc123] Request: user=xxxxxxxx toolMode=remix modelChoice=sdxl aspectRatio=1:1
+ *      [abc123] Downloading input image
+ *      [abc123] OK user=xxxxxxxx mode=remix/sdxl in=XXXXXb out=XXXXXb dur=XXXms status=200
+ *    Response fields:
+ *      ok=true, model="sdxl-remix", tool_mode="remix", model_choice="sdxl"
+ *    Guardrails:
+ *      - remixStrength must be 0.05-0.9 (else 400)
+ *      - inputImage required (else 400)
+ *      - inputImage.path must start with userId (else 403)
+ *      - inputImage.bucket must be in ALLOWED_BUCKETS (else 400)
+ * 
+ * Common response fields for all modes:
+ *   ok, image_url, prompt_original, prompt_final, model, tool_mode, model_choice,
+ *   aspect_ratio, seed, steps, file_path, file_name, is_watermarked, requestId
+ * 
+ * Error responses:
+ *   status=400: validation errors (bad prompt, invalid params)
+ *   status=401: missing/invalid auth
+ *   status=403: premium required, controlnet not ready, security violation
+ *   status=429: daily limit reached
+ *   status=500: internal/API errors
+ * ============================================================================
+ */
+
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
