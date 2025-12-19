@@ -34,7 +34,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/i18n/LanguageProvider";
-import { useEntitlements } from "@/hooks/useEntitlements";
+import { useDailyUsageServer } from "@/hooks/useEntitlements";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { resizeImage, generateStudioInputPath } from "@/lib/imageResize";
@@ -121,11 +121,11 @@ export default function ImageStudioV2() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { entitlement, loading: entitlementLoading } = useEntitlements();
+  const { isPremium, isDevBypass, isBetaActive, loading: entitlementLoading } = useDailyUsageServer();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Check if user has premium access
-  const isPremiumUser = entitlement.isPremium || entitlement.isBetaActive || entitlement.plan === 'dev_unlimited';
+  // Check if user has premium access (includes dev bypass)
+  const isPremiumUser = isPremium || isBetaActive || isDevBypass;
 
   // Form state - single object
   const [draft, setDraft] = useState<ImageStudioRequestDraft>({
