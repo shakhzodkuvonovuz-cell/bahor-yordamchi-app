@@ -16,22 +16,27 @@ import {
   Crown,
   Lock,
   Info,
-  Clock
+  Clock,
+  Loader2,
+  CheckCircle2,
+  AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { resizeImage, generateStudioInputPath } from "@/lib/imageResize";
 
 // ========== TYPE DEFINITIONS ==========
 type ToolMode = "t2i" | "remix" | "controlnet";
@@ -58,6 +63,13 @@ interface UploadedImage {
   file: File;
   preview: string;
 }
+
+interface InputImageState {
+  bucket: string;
+  path: string;
+}
+
+type UploadStatus = "idle" | "resizing" | "uploading" | "done" | "error";
 
 // ========== CONSTANTS ==========
 const STYLE_PRESETS: { id: StylePreset; labelKey: string; icon: React.ElementType; color: string }[] = [
@@ -109,6 +121,9 @@ export default function ImageStudioV2() {
 
   // Image upload state
   const [uploadedImage, setUploadedImage] = useState<UploadedImage | null>(null);
+  const [inputImage, setInputImage] = useState<InputImageState | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<UploadStatus>("idle");
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [isDragOver, setIsDragOver] = useState(false);
 
   // UI state
@@ -123,8 +138,8 @@ export default function ImageStudioV2() {
     setDraft(prev => ({ ...prev, [key]: value }));
   }, []);
 
-  // File handling
-  const handleFileSelect = useCallback((file: File) => {
+  // File handling with resize and upload
+  const handleFileSelect = useCallback(async (file: File) => {
     if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
       toast({
         title: t("imageStudioV2.error"),
@@ -142,9 +157,98 @@ export default function ImageStudioV2() {
       return;
     }
 
+    if (!user) {
+      toast({
+        title: t("imageStudioV2.error"),
+        description: t("imageStudioV2.pleaseLogin"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Set local preview immediately
     const preview = URL.createObjectURL(file);
     setUploadedImage({ file, preview });
-  }, [toast, t]);
+    setInputImage(null);
+    setUploadStatus("resizing");
+    setUploadProgress(0);
+
+    try {
+      // Step 1: Resize image (0-30%)
+      setUploadProgress(10);
+      const resizedBlob = await resizeImage(file, {
+        maxLongEdge: 1536,
+        quality: 0.85,
+        format: "image/jpeg",
+      });
+      setUploadProgress(30);
+      setUploadStatus("uploading");
+
+      // Step 2: Upload to Supabase storage (30-100%)
+      const storagePath = generateStudioInputPath(user.id);
+      
+      // Use XMLHttpRequest for progress tracking
+      const uploadPromise = new Promise<{ path: string; error: Error | null }>((resolve) => {
+        const xhr = new XMLHttpRequest();
+        
+        xhr.upload.addEventListener("progress", (e) => {
+          if (e.lengthComputable) {
+            const percent = 30 + Math.round((e.loaded / e.total) * 70);
+            setUploadProgress(percent);
+          }
+        });
+
+        xhr.addEventListener("load", async () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve({ path: storagePath, error: null });
+          } else {
+            resolve({ path: "", error: new Error(`Upload failed: ${xhr.status}`) });
+          }
+        });
+
+        xhr.addEventListener("error", () => {
+          resolve({ path: "", error: new Error("Upload failed") });
+        });
+
+        // Get session for auth header
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (!session) {
+            resolve({ path: "", error: new Error("Not authenticated") });
+            return;
+          }
+
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          const uploadUrl = `${supabaseUrl}/storage/v1/object/user-files/${storagePath}`;
+          
+          xhr.open("POST", uploadUrl);
+          xhr.setRequestHeader("Authorization", `Bearer ${session.access_token}`);
+          xhr.setRequestHeader("Content-Type", "image/jpeg");
+          xhr.setRequestHeader("x-upsert", "true");
+          xhr.send(resizedBlob);
+        });
+      });
+
+      const { path, error } = await uploadPromise;
+
+      if (error) {
+        throw error;
+      }
+
+      setUploadProgress(100);
+      setUploadStatus("done");
+      setInputImage({ bucket: "user-files", path });
+      
+    } catch (error) {
+      console.error("Image upload error:", error);
+      setUploadStatus("error");
+      setInputImage(null);
+      toast({
+        title: t("imageStudioV2.error"),
+        description: t("imageStudioV2.uploadFailed"),
+        variant: "destructive",
+      });
+    }
+  }, [toast, t, user]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -174,6 +278,9 @@ export default function ImageStudioV2() {
       URL.revokeObjectURL(uploadedImage.preview);
       setUploadedImage(null);
     }
+    setInputImage(null);
+    setUploadStatus("idle");
+    setUploadProgress(0);
   }, [uploadedImage]);
 
   // Format file size
@@ -185,7 +292,12 @@ export default function ImageStudioV2() {
 
   // Validation
   const isImageRequired = draft.toolMode === "remix" || draft.toolMode === "controlnet";
-  const canGenerate = draft.prompt.trim().length > 0 && (!isImageRequired || uploadedImage);
+  // For Remix: require uploaded image with successful upload
+  // For ControlNet: upload works but mode is disabled anyway
+  const hasValidInputImage = inputImage !== null && uploadStatus === "done";
+  const canGenerate = draft.prompt.trim().length > 0 && 
+    (!isImageRequired || hasValidInputImage) &&
+    draft.toolMode !== "controlnet"; // ControlNet is still disabled
 
   // Handle generate (placeholder for now)
   const handleGenerate = () => {
@@ -345,26 +457,74 @@ export default function ImageStudioV2() {
                     />
                   </div>
                 ) : (
-                  <div className="flex items-start gap-4 p-3 bg-muted/50 rounded-lg">
-                    <img
-                      src={uploadedImage.preview}
-                      alt="Preview"
-                      className="w-20 h-20 object-cover rounded-lg"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{uploadedImage.file.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatFileSize(uploadedImage.file.size)}
-                      </p>
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-4 p-3 bg-muted/50 rounded-lg">
+                      <div className="relative">
+                        <img
+                          src={uploadedImage.preview}
+                          alt="Preview"
+                          className={cn(
+                            "w-20 h-20 object-cover rounded-lg transition-opacity",
+                            uploadStatus === "resizing" || uploadStatus === "uploading" ? "opacity-50" : ""
+                          )}
+                        />
+                        {(uploadStatus === "resizing" || uploadStatus === "uploading") && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                          </div>
+                        )}
+                        {uploadStatus === "done" && (
+                          <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-0.5">
+                            <CheckCircle2 className="w-4 h-4 text-white" />
+                          </div>
+                        )}
+                        {uploadStatus === "error" && (
+                          <div className="absolute -bottom-1 -right-1 bg-destructive rounded-full p-0.5">
+                            <AlertCircle className="w-4 h-4 text-white" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{uploadedImage.file.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatFileSize(uploadedImage.file.size)}
+                        </p>
+                        {/* Upload status text */}
+                        {uploadStatus === "resizing" && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {t("imageStudioV2.resizing")}
+                          </p>
+                        )}
+                        {uploadStatus === "uploading" && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {t("imageStudioV2.uploading")}
+                          </p>
+                        )}
+                        {uploadStatus === "done" && (
+                          <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                            {t("imageStudioV2.uploadComplete")}
+                          </p>
+                        )}
+                        {uploadStatus === "error" && (
+                          <p className="text-xs text-destructive mt-1">
+                            {t("imageStudioV2.uploadFailed")}
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 shrink-0"
+                        onClick={removeUploadedImage}
+                        disabled={uploadStatus === "resizing" || uploadStatus === "uploading"}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 shrink-0"
-                      onClick={removeUploadedImage}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
+                    {/* Progress bar */}
+                    {(uploadStatus === "resizing" || uploadStatus === "uploading") && (
+                      <Progress value={uploadProgress} className="h-1.5" />
+                    )}
                   </div>
                 )}
               </CardContent>
