@@ -339,23 +339,24 @@ function readExifOrientation(bytes: Uint8Array): number {
 /**
  * Apply EXIF orientation to image
  * Orientation values: 1=normal, 3=180°, 6=90°CW, 8=90°CCW, etc.
+ * Note: rotate(angle, true) resizes canvas to fit rotated image
  */
 async function applyExifOrientation(img: any, orientation: number): Promise<any> {
   switch (orientation) {
     case 3: // 180° rotation
-      return img.rotate(180, false);
+      return img.rotate(180, true);
     case 6: // 90° CW
-      return img.rotate(90, false);
+      return img.rotate(90, true);
     case 8: // 90° CCW
-      return img.rotate(-90, false);
+      return img.rotate(-90, true);
     case 2: // Horizontal flip
       return img.flipX();
     case 4: // Vertical flip
       return img.flipY();
     case 5: // Transpose (flip X + 90° CCW)
-      return img.flipX().rotate(-90, false);
+      return img.flipX().rotate(-90, true);
     case 7: // Transverse (flip X + 90° CW)
-      return img.flipX().rotate(90, false);
+      return img.flipX().rotate(90, true);
     default: // 1 or unknown - no rotation needed
       return img;
   }
