@@ -574,6 +574,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'imageStudioV2.pleaseLogin': 'Avval tizimga kiring',
     'imageStudioV2.success': 'Rasm yaratildi!',
     'imageStudioV2.imageSaved': 'Rasm fayllaringizga saqlandi.',
+    'imageStudioV2.premiumRequired': 'Premium talab qilinadi',
+    'imageStudioV2.sdxlPremiumOnly': 'Sifatli (SDXL) model faqat Premium foydalanuvchilar uchun mavjud.',
     
     // Video Studio
     'videoStudio.navTitle': 'Video studiyasi',
@@ -2838,6 +2840,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'imageStudioV2.pleaseLogin': 'Please log in first',
     'imageStudioV2.success': 'Image generated!',
     'imageStudioV2.imageSaved': 'Image saved to your files.',
+    'imageStudioV2.premiumRequired': 'Premium required',
+    'imageStudioV2.sdxlPremiumOnly': 'Quality (SDXL) model is only available for Premium users.',
     
     // Video Studio
     'videoStudio.navTitle': 'Video Studio',

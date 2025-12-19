@@ -34,6 +34,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/i18n/LanguageProvider";
+import { useEntitlements } from "@/hooks/useEntitlements";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { resizeImage, generateStudioInputPath } from "@/lib/imageResize";
@@ -81,6 +82,8 @@ interface GeneratedImageResult {
     render_mode: string;
     seed?: number;
     steps?: number;
+    toolMode?: ToolMode;
+    modelChoice?: ModelChoice;
   };
   createdAt: Date;
 }
@@ -118,7 +121,11 @@ export default function ImageStudioV2() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { entitlement, loading: entitlementLoading } = useEntitlements();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Check if user has premium access
+  const isPremiumUser = entitlement.isPremium || entitlement.isBetaActive || entitlement.plan === 'dev_unlimited';
 
   // Form state - single object
   const [draft, setDraft] = useState<ImageStudioRequestDraft>({
@@ -147,13 +154,22 @@ export default function ImageStudioV2() {
   const [generatedResult, setGeneratedResult] = useState<GeneratedImageResult | null>(null);
   const [requestInFlight, setRequestInFlight] = useState(false);
 
-  // Helper to update draft
+  // Helper to update draft with premium gating for SDXL
   const updateDraft = useCallback(<K extends keyof ImageStudioRequestDraft>(
     key: K,
     value: ImageStudioRequestDraft[K]
   ) => {
+    // Gate SDXL model selection for non-premium users
+    if (key === "modelChoice" && value === "sdxl" && !isPremiumUser) {
+      toast({
+        title: t("imageStudioV2.premiumRequired"),
+        description: t("imageStudioV2.sdxlPremiumOnly"),
+        variant: "destructive",
+      });
+      return;
+    }
     setDraft(prev => ({ ...prev, [key]: value }));
-  }, []);
+  }, [isPremiumUser, toast, t]);
 
   // File handling with resize and upload
   const handleFileSelect = useCallback(async (file: File) => {
@@ -323,11 +339,21 @@ export default function ImageStudioV2() {
       return;
     }
 
-    // For now, only t2i + flux is implemented
-    if (draft.toolMode !== "t2i" || draft.modelChoice !== "flux") {
+    // Currently supporting: t2i with flux or sdxl
+    if (draft.toolMode !== "t2i") {
       toast({
         title: t("imageStudioV2.backendPending"),
         description: t("imageStudioV2.backendPendingDesc"),
+      });
+      return;
+    }
+
+    // Premium check for SDXL
+    if (draft.modelChoice === "sdxl" && !isPremiumUser) {
+      toast({
+        title: t("imageStudioV2.premiumRequired"),
+        description: t("imageStudioV2.sdxlPremiumOnly"),
+        variant: "destructive",
       });
       return;
     }
@@ -347,6 +373,18 @@ export default function ImageStudioV2() {
         return;
       }
 
+      // Build request payload with toolMode and modelChoice
+      const requestPayload = {
+        prompt: draft.prompt.trim(),
+        aspectRatio: draft.aspectRatio,
+        renderMode: draft.renderMode,
+        qualityBoost: draft.modelChoice === "sdxl" ? false : draft.qualityBoost,
+        stylePreset: draft.stylePreset,
+        attachToChat: false,
+        toolMode: draft.toolMode,
+        modelChoice: draft.modelChoice,
+      };
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fireworks-generate-image`,
         {
@@ -355,14 +393,7 @@ export default function ImageStudioV2() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({
-            prompt: draft.prompt.trim(),
-            aspectRatio: draft.aspectRatio,
-            renderMode: draft.renderMode,
-            qualityBoost: draft.qualityBoost,
-            stylePreset: draft.stylePreset,
-            attachToChat: false,
-          }),
+          body: JSON.stringify(requestPayload),
         }
       );
 
@@ -384,6 +415,8 @@ export default function ImageStudioV2() {
           render_mode: result.render_mode,
           seed: result.seed,
           steps: result.steps,
+          toolMode: draft.toolMode,
+          modelChoice: draft.modelChoice,
         },
         createdAt: new Date(),
       });
@@ -852,6 +885,11 @@ export default function ImageStudioV2() {
                   {/* Metadata line */}
                   <div className="text-xs text-muted-foreground text-center space-y-1">
                     <p>
+                      {generatedResult.meta.toolMode && generatedResult.meta.modelChoice && (
+                        <span className="font-medium">
+                          {t(`imageStudioV2.mode.${generatedResult.meta.toolMode}`)} · {t(`imageStudioV2.model.${generatedResult.meta.modelChoice}`)} · 
+                        </span>
+                      )}
                       {generatedResult.meta.model} · {generatedResult.meta.width}×{generatedResult.meta.height} · {formatTime(generatedResult.createdAt)}
                     </p>
                     {generatedResult.meta.seed && (
