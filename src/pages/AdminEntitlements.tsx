@@ -385,9 +385,10 @@ export default function AdminEntitlements() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              To'lov gateway (Click, Payme, Uzum) ro'yxatdan o'tkazish uchun serverning tashqi IP manzili kerak.
+              Uzbekistan payment gateways (Click, Payme, Uzum) require a static IP for API whitelisting.
             </p>
             
+            {/* Current IP Check */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <Button 
@@ -401,7 +402,7 @@ export default function AdminEntitlements() {
                   ) : (
                     <RefreshCw className="w-4 h-4 mr-2" />
                   )}
-                  IP manzilni olish
+                  Check Current IP
                 </Button>
               </div>
               
@@ -419,14 +420,61 @@ export default function AdminEntitlements() {
               )}
             </div>
             
-            <Alert variant="default" className="border-amber-500/30 bg-amber-500/5">
-              <AlertCircle className="w-4 h-4 text-amber-500" />
-              <AlertDescription className="text-amber-700 dark:text-amber-400">
-                <strong>Diqqat:</strong> Bu IP manzil o'zgarishi mumkin. Supabase Edge Functions 
-                taqsimlangan infratuzilmada ishlaydi. Gateway ro'yxatdan o'tgandan keyin 
-                IP o'zgarsa, qayta sozlash kerak bo'lishi mumkin.
+            <Alert variant="destructive" className="border-destructive/30">
+              <AlertCircle className="w-4 h-4" />
+              <AlertDescription>
+                <strong>Important:</strong> Supabase Edge Functions do NOT have static IPs. 
+                The IP changes on every request. You need a proxy service for static IP.
               </AlertDescription>
             </Alert>
+
+            {/* Fixie Proxy Setup */}
+            <div className="border-t border-border pt-4 space-y-3">
+              <h4 className="font-medium flex items-center gap-2">
+                🔧 Solution: Fixie Proxy (~$20/month)
+              </h4>
+              <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+                <li>Sign up at <a href="https://usefixie.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">usefixie.com</a></li>
+                <li>Get your static IP and proxy URL</li>
+                <li>Add <code className="px-1 py-0.5 rounded bg-muted">FIXIE_URL</code> secret in Lovable Cloud</li>
+                <li>Give the Fixie static IP to your payment gateway</li>
+              </ol>
+              
+              <div className="p-3 rounded-lg bg-muted/50 space-y-2">
+                <p className="text-xs font-medium">Edge Function Usage Example:</p>
+                <pre className="text-xs overflow-x-auto p-2 rounded bg-background border">
+{`// In your Edge Function
+const FIXIE_URL = Deno.env.get('FIXIE_URL');
+const proxyUrl = new URL(FIXIE_URL);
+
+const response = await fetch(paymentGatewayUrl, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  // Deno uses this for proxy
+  client: Deno.createHttpClient({
+    proxy: { url: FIXIE_URL }
+  }),
+  body: JSON.stringify(payload)
+});`}
+                </pre>
+              </div>
+            </div>
+
+            {/* Alternative: VPS */}
+            <div className="border-t border-border pt-4 space-y-3">
+              <h4 className="font-medium flex items-center gap-2">
+                💰 Cheaper Alternative: VPS Proxy (~$4/month)
+              </h4>
+              <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+                <li>Create a $4/month DigitalOcean Droplet or Hetzner VPS</li>
+                <li>Install nginx as reverse proxy</li>
+                <li>Point Edge Functions to VPS, VPS forwards to payment gateway</li>
+                <li>Give the VPS static IP to payment gateway</li>
+              </ol>
+              <p className="text-xs text-muted-foreground">
+                Requires basic Linux/nginx knowledge. More setup, but significantly cheaper.
+              </p>
+            </div>
           </CardContent>
         </Card>
 
