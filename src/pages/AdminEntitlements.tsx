@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, Crown, UserCheck, AlertCircle, Loader2, Shield, Calendar, Trash2 } from 'lucide-react';
+import { ArrowLeft, Search, Crown, UserCheck, AlertCircle, Loader2, Shield, Calendar, Trash2, CreditCard, Copy, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { checkAdminStatus, adminLookupUser, adminSetEntitlement, adminRevokeEntitlement, type PlanType } from '@/lib/entitlements';
-
+import { supabase } from '@/integrations/supabase/client';
 interface LookupResult {
   user: {
     id: string;
@@ -41,6 +42,33 @@ export default function AdminEntitlements() {
   const [expiryDate, setExpiryDate] = useState('');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
+  
+  // Payment setup
+  const [publicIp, setPublicIp] = useState<string | null>(null);
+  const [ipLoading, setIpLoading] = useState(false);
+  const [ipError, setIpError] = useState<string | null>(null);
+  
+  const fetchPublicIp = async () => {
+    setIpLoading(true);
+    setIpError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('get-public-ip');
+      if (error) throw error;
+      setPublicIp(data.ip);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'IP olishda xatolik';
+      setIpError(message);
+    } finally {
+      setIpLoading(false);
+    }
+  };
+  
+  const copyIp = () => {
+    if (publicIp) {
+      navigator.clipboard.writeText(publicIp);
+      toast.success('IP nusxalandi');
+    }
+  };
 
   useEffect(() => {
     async function check() {
@@ -346,6 +374,61 @@ export default function AdminEntitlements() {
             </CardContent>
           </Card>
         )}
+
+        {/* Payment Setup Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <CreditCard className="w-4 h-4" />
+              Payment Gateway Setup
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              To'lov gateway (Click, Payme, Uzum) ro'yxatdan o'tkazish uchun serverning tashqi IP manzili kerak.
+            </p>
+            
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Button 
+                  onClick={fetchPublicIp} 
+                  variant="outline" 
+                  size="sm"
+                  disabled={ipLoading}
+                >
+                  {ipLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                  )}
+                  IP manzilni olish
+                </Button>
+              </div>
+              
+              {publicIp && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+                  <code className="flex-1 font-mono text-lg">{publicIp}</code>
+                  <Button size="icon" variant="ghost" onClick={copyIp}>
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+              
+              {ipError && (
+                <p className="text-sm text-destructive">{ipError}</p>
+              )}
+            </div>
+            
+            <Alert variant="default" className="border-amber-500/30 bg-amber-500/5">
+              <AlertCircle className="w-4 h-4 text-amber-500" />
+              <AlertDescription className="text-amber-700 dark:text-amber-400">
+                <strong>Diqqat:</strong> Bu IP manzil o'zgarishi mumkin. Supabase Edge Functions 
+                taqsimlangan infratuzilmada ishlaydi. Gateway ro'yxatdan o'tgandan keyin 
+                IP o'zgarsa, qayta sozlash kerak bo'lishi mumkin.
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
 
         {/* Dev Info Card */}
         <Card>
