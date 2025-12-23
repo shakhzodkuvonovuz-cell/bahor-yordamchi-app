@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.fireworks-image-router]
 verify_jwt = false
+
+[functions.get-public-ip]
+verify_jwt = false
