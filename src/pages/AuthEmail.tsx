@@ -4,7 +4,7 @@ import bahorLogo from "@/assets/bahor-logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, ArrowLeft, Mail, AlertCircle, CheckCircle, Eye, EyeOff } from "lucide-react";
+import { Loader2, ArrowLeft, Mail, AlertCircle, CheckCircle, Eye, EyeOff, Inbox } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { trackSignupStarted, trackSignupCompleted, trackLoginCompleted } from "@/lib/analytics";
 import { useTranslation } from "@/i18n/LanguageProvider";
@@ -22,6 +22,9 @@ export default function AuthEmail() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Email verification pending state
+  const [verificationPending, setVerificationPending] = useState(false);
   
   // Password visibility
   const [showPassword, setShowPassword] = useState(false);
@@ -88,19 +91,30 @@ export default function AuthEmail() {
     try {
       if (isSignUp) {
         trackSignupStarted("email");
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/`
+            emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`
           }
         });
         
         if (signUpError) {
           setError(mapSupabaseError(signUpError));
         } else {
-          trackSignupCompleted("email");
-          navigate(redirectTo);
+          // Check if email confirmation is required
+          // If user.identities is empty, it means the user already exists
+          if (data.user && data.user.identities && data.user.identities.length === 0) {
+            setError(t('auth.error.alreadyRegistered'));
+          } else if (data.user && !data.session) {
+            // Email confirmation required - show pending state
+            trackSignupCompleted("email");
+            setVerificationPending(true);
+          } else if (data.session) {
+            // Auto-confirmed (shouldn't happen with our settings, but handle it)
+            trackSignupCompleted("email");
+            navigate(redirectTo);
+          }
         }
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({ 
@@ -114,6 +128,29 @@ export default function AuthEmail() {
           trackLoginCompleted("email");
           navigate(redirectTo);
         }
+      }
+    } catch (err) {
+      setError(t('auth.error.generic'));
+    }
+    
+    setLoading(false);
+  };
+
+  const handleResendVerification = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`
+        }
+      });
+      
+      if (error) {
+        setError(t('auth.error.generic'));
       }
     } catch (err) {
       setError(t('auth.error.generic'));
@@ -173,6 +210,63 @@ export default function AuthEmail() {
 
           {/* Auth Card */}
           <div className="bg-card rounded-[24px] shadow-xl border border-border/30 p-6 sm:p-8 animate-scale-in">
+            {/* Email Verification Pending State */}
+            {verificationPending ? (
+              <div className="text-center py-4">
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-5">
+                  <Inbox className="w-8 h-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold text-foreground mb-3">
+                  {t('auth.checkEmail')}
+                </h3>
+                <p className="text-sm text-muted-foreground mb-2">
+                  {t('auth.verificationSent')}
+                </p>
+                <p className="text-sm font-medium text-foreground mb-6">
+                  {email}
+                </p>
+                <p className="text-xs text-muted-foreground mb-6">
+                  {t('auth.verificationHint')}
+                </p>
+                
+                {/* Error Banner */}
+                {error && (
+                  <div className="mb-5 p-4 bg-destructive/10 border border-destructive/20 rounded-2xl flex items-start gap-3 animate-fade-in">
+                    <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                    <p className="text-sm text-destructive">{error}</p>
+                  </div>
+                )}
+                
+                <Button 
+                  onClick={handleResendVerification}
+                  disabled={loading}
+                  variant="outline"
+                  className="w-full h-12 rounded-xl mb-3"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      {t('auth.sending')}
+                    </>
+                  ) : (
+                    t('auth.resendEmail')
+                  )}
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setVerificationPending(false);
+                    setEmail("");
+                    setPassword("");
+                    setConfirmPassword("");
+                  }}
+                  variant="ghost"
+                  className="w-full h-12 rounded-xl text-muted-foreground"
+                >
+                  {t('auth.useDifferentEmail')}
+                </Button>
+              </div>
+            ) : (
+              <>
             {/* Back Button & Title */}
             <div className="flex items-center gap-3 mb-6">
               <Link to={`/auth${searchParams.toString() ? `?${searchParams.toString()}` : ''}`}>
@@ -406,6 +500,8 @@ export default function AuthEmail() {
                   </span>
                 </button>
               </div>
+            )}
+              </>
             )}
           </div>
         </div>

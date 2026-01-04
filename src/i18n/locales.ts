@@ -1361,6 +1361,12 @@ export const translations: Record<Lang, Record<string, string>> = {
     'auth.error.passwordMismatch': 'Parollar mos kelmadi. Qayta tekshiring.',
     'auth.error.confirmRequired': 'Parolni qayta kiriting.',
     'auth.error.enterEmail': 'Iltimos, emailingizni kiriting.',
+    // Email Verification
+    'auth.checkEmail': 'Emailingizni tekshiring',
+    'auth.verificationSent': 'Tasdiqlash havolasini quyidagi manzilga yubordik:',
+    'auth.verificationHint': 'Havolani bosib hisobingizni tasdiqlang. Spam papkasini ham tekshiring.',
+    'auth.resendEmail': 'Qayta yuborish',
+    'auth.useDifferentEmail': 'Boshqa email ishlatish',
     // Terms Page Content
     'terms.section1.title': '1. Umumiy qoidalar',
     'terms.section1.content': 'Bahor AI — bu sun\'iy intellekt yordamchisi bo\'lib, foydalanuvchilarga turli mavzularda yordam berish uchun mo\'ljallangan. Xizmatdan foydalanish orqali siz ushbu shartlarga rozilik bildirasiz.',
@@ -2992,6 +2998,12 @@ export const translations: Record<Lang, Record<string, string>> = {
     'auth.error.passwordMismatch': 'Passwords do not match.',
     'auth.error.confirmRequired': 'Please confirm your password.',
     'auth.error.enterEmail': 'Please enter your email.',
+    // Email Verification
+    'auth.checkEmail': 'Check your email',
+    'auth.verificationSent': 'We sent a verification link to:',
+    'auth.verificationHint': 'Click the link to verify your account. Check your spam folder too.',
+    'auth.resendEmail': 'Resend email',
+    'auth.useDifferentEmail': 'Use a different email',
     // Terms Page Content
     'terms.section1.title': '1. General Terms',
     'terms.section1.content': 'Bahor AI is an artificial intelligence assistant designed to help users with various topics. By using the service, you agree to these terms.',
@@ -4459,6 +4471,12 @@ export const translations: Record<Lang, Record<string, string>> = {
     'auth.error.passwordMismatch': 'Пароли не совпадают.',
     'auth.error.confirmRequired': 'Подтвердите пароль.',
     'auth.error.enterEmail': 'Введите ваш email.',
+    // Email Verification
+    'auth.checkEmail': 'Проверьте почту',
+    'auth.verificationSent': 'Мы отправили ссылку для подтверждения на:',
+    'auth.verificationHint': 'Нажмите на ссылку чтобы подтвердить аккаунт. Проверьте папку спам.',
+    'auth.resendEmail': 'Отправить снова',
+    'auth.useDifferentEmail': 'Другой email',
     // Terms Page Content
     'terms.section1.title': '1. Общие положения',
     'terms.section1.content': 'Bahor AI — это ИИ-помощник, созданный для помощи пользователям по различным темам. Используя сервис, вы соглашаетесь с этими условиями.',
@@ -5973,6 +5991,12 @@ export const translations: Record<Lang, Record<string, string>> = {
     'auth.error.passwordMismatch': 'Şifreler eşleşmiyor.',
     'auth.error.confirmRequired': 'Şifreyi onaylayın.',
     'auth.error.enterEmail': 'Emailinizi girin.',
+    // Email Verification
+    'auth.checkEmail': 'Emailinizi kontrol edin',
+    'auth.verificationSent': 'Doğrulama linkini şu adrese gönderdik:',
+    'auth.verificationHint': 'Hesabınızı doğrulamak için linke tıklayın. Spam klasörünü de kontrol edin.',
+    'auth.resendEmail': 'Tekrar gönder',
+    'auth.useDifferentEmail': 'Farklı email kullan',
     // Terms Page Content
     'terms.section1.title': '1. Genel Koşullar',
     'terms.section1.content': 'Bahor AI, kullanıcılara çeşitli konularda yardımcı olmak için tasarlanmış bir yapay zeka asistanıdır. Servisi kullanarak bu koşulları kabul etmiş olursunuz.',
