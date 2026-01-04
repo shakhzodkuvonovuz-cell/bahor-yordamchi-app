@@ -19,18 +19,63 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // Get the code from URL first
+        // Get URL parameters
         const params = new URLSearchParams(window.location.search);
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        
         const code = params.get("code");
-        const errorParam = params.get("error");
-        const errorDescription = params.get("error_description");
+        const errorParam = params.get("error") || hashParams.get("error");
+        const errorDescription = params.get("error_description") || hashParams.get("error_description");
+        
+        // Check for token_hash and type (email confirmation flow)
+        const tokenHash = hashParams.get("token_hash") || params.get("token_hash");
+        const type = hashParams.get("type") || params.get("type");
+        const accessToken = hashParams.get("access_token");
+        const refreshToken = hashParams.get("refresh_token");
 
         if (errorParam) {
           setError(errorDescription || "Kirish bekor qilindi.");
           return;
         }
 
-        // Exchange code for session if we have one
+        // Handle email confirmation with token_hash
+        if (tokenHash && type === "signup") {
+          const { data, error: verifyError } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: "signup"
+          });
+          
+          if (verifyError) {
+            setError("Email tasdiqlanmadi. Havola eskirgan bo'lishi mumkin.");
+            return;
+          }
+          
+          if (data.session) {
+            trackLoginCompleted("email");
+            navigate(redirectTo, { replace: true });
+            return;
+          }
+        }
+
+        // Handle recovery (password reset) flow
+        if (type === "recovery" && accessToken) {
+          // Set the session from the tokens in the URL
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken || ""
+          });
+          
+          if (sessionError) {
+            setError("Sessiya yaratishda xatolik yuz berdi.");
+            return;
+          }
+          
+          // Redirect to password reset page
+          navigate("/auth/reset", { replace: true });
+          return;
+        }
+
+        // Exchange code for session (OAuth flow)
         if (code) {
           const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
           
@@ -42,7 +87,6 @@ export default function AuthCallback() {
           trackLoginCompleted("google");
 
           // If this is a native app callback, close the browser
-          // The app will pick up the session via onAuthStateChange
           if (isNativeCallback && Capacitor.isNativePlatform()) {
             console.log('[AuthCallback] Native callback - closing browser');
             try {
@@ -50,12 +94,10 @@ export default function AuthCallback() {
             } catch (e) {
               console.log('[AuthCallback] Browser close failed:', e);
             }
-            // Navigate within the app
             navigate(redirectTo, { replace: true });
             return;
           }
 
-          // Web flow - just navigate
           navigate(redirectTo, { replace: true });
           return;
         }
