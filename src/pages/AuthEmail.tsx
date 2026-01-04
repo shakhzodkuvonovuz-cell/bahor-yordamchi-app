@@ -107,8 +107,22 @@ export default function AuthEmail() {
           if (data.user && data.user.identities && data.user.identities.length === 0) {
             setError(t('auth.error.alreadyRegistered'));
           } else if (data.user && !data.session) {
-            // Email confirmation required - show pending state
+            // Email confirmation required - send branded email and show pending state
             trackSignupCompleted("email");
+            
+            // Send branded verification email via edge function
+            try {
+              await supabase.functions.invoke('auth-send-email', {
+                body: {
+                  type: 'signup',
+                  email,
+                  redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`
+                }
+              });
+            } catch (emailErr) {
+              console.warn('Failed to send branded email, falling back to default:', emailErr);
+            }
+            
             setVerificationPending(true);
           } else if (data.session) {
             // Auto-confirmed (shouldn't happen with our settings, but handle it)
@@ -141,16 +155,24 @@ export default function AuthEmail() {
     setError(null);
     
     try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`
+      // Send branded verification email via edge function
+      const { error } = await supabase.functions.invoke('auth-send-email', {
+        body: {
+          type: 'resend',
+          email,
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`
         }
       });
       
       if (error) {
-        setError(t('auth.error.generic'));
+        // Fall back to default Supabase resend
+        await supabase.auth.resend({
+          type: 'signup',
+          email,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`
+          }
+        });
       }
     } catch (err) {
       setError(t('auth.error.generic'));
@@ -169,15 +191,23 @@ export default function AuthEmail() {
     setError(null);
     
     try {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset`
+      // Send branded recovery email via edge function
+      const { error } = await supabase.functions.invoke('auth-send-email', {
+        body: {
+          type: 'recovery',
+          email,
+          redirectTo: `${window.location.origin}/auth/reset`
+        }
       });
       
-      if (resetError) {
-        setError(t('auth.error.generic'));
-      } else {
-        setResetSuccess(true);
+      if (error) {
+        // Fall back to default Supabase password reset
+        await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/auth/reset`
+        });
       }
+      
+      setResetSuccess(true);
     } catch (err) {
       setError(t('auth.error.generic'));
     }
