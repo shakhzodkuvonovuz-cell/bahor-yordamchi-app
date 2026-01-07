@@ -1385,6 +1385,7 @@ export type Database = {
       }
       video_generations: {
         Row: {
+          aspect_ratio: string | null
           cost_estimate: Json | null
           created_at: string
           duration_seconds: number | null
@@ -1392,21 +1393,27 @@ export type Database = {
           fps: number | null
           height: number | null
           id: string
+          mode: string | null
           negative_prompt: string | null
           output_video_path: string | null
           output_video_url: string | null
           params: Json | null
           progress: number | null
           prompt: string | null
+          prompt_en: string | null
+          prompt_uz: string | null
           runpod_job_id: string | null
           runpod_status: Json | null
           seed: number | null
+          source_path: string | null
+          source_type: string | null
           status: string
           updated_at: string
           user_id: string
           width: number | null
         }
         Insert: {
+          aspect_ratio?: string | null
           cost_estimate?: Json | null
           created_at?: string
           duration_seconds?: number | null
@@ -1414,21 +1421,27 @@ export type Database = {
           fps?: number | null
           height?: number | null
           id?: string
+          mode?: string | null
           negative_prompt?: string | null
           output_video_path?: string | null
           output_video_url?: string | null
           params?: Json | null
           progress?: number | null
           prompt?: string | null
+          prompt_en?: string | null
+          prompt_uz?: string | null
           runpod_job_id?: string | null
           runpod_status?: Json | null
           seed?: number | null
+          source_path?: string | null
+          source_type?: string | null
           status?: string
           updated_at?: string
           user_id: string
           width?: number | null
         }
         Update: {
+          aspect_ratio?: string | null
           cost_estimate?: Json | null
           created_at?: string
           duration_seconds?: number | null
@@ -1436,15 +1449,20 @@ export type Database = {
           fps?: number | null
           height?: number | null
           id?: string
+          mode?: string | null
           negative_prompt?: string | null
           output_video_path?: string | null
           output_video_url?: string | null
           params?: Json | null
           progress?: number | null
           prompt?: string | null
+          prompt_en?: string | null
+          prompt_uz?: string | null
           runpod_job_id?: string | null
           runpod_status?: Json | null
           seed?: number | null
+          source_path?: string | null
+          source_type?: string | null
           status?: string
           updated_at?: string
           user_id?: string
