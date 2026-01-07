@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { AppShellV2 } from "@/components/layout/AppShellV2";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -12,11 +11,12 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { checkAdminStatus } from "@/lib/entitlements";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { 
   Play, 
   Download, 
@@ -24,51 +24,45 @@ import {
   RefreshCw, 
   X, 
   Shuffle, 
-  Upload, 
   Video as VideoIcon, 
   Clock, 
   Loader2,
-  ChevronRight,
-  Trash2,
   Settings2,
-  History,
   ImageIcon,
+  Type,
   FlaskConical,
-  Lock
+  Lock,
+  Zap,
+  Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Video generation presets - optimized for quality
-const PRESETS = [
-  { id: "cinematic", label: "Kinematografik", params: { guidance_scale: 9, steps: 40, motion_strength: 0.8 } },
-  { id: "sharper", label: "Aniqroq (Sharper)", params: { guidance_scale: 10, steps: 45, motion_strength: 0.6 } },
-  { id: "anime", label: "Anime", params: { guidance_scale: 8.5, steps: 40, motion_strength: 0.7 } },
-  { id: "realistic", label: "Realistik", params: { guidance_scale: 9.5, steps: 45, motion_strength: 0.6 } },
-  { id: "retro", label: "Retro film", params: { guidance_scale: 7.5, steps: 35, motion_strength: 0.5 } },
-  { id: "samarkand", label: "Samarqand uslubi", params: { guidance_scale: 8.5, steps: 40, motion_strength: 0.7 } },
+// ========== CONSTANTS ==========
+const STYLE_PRESETS = [
+  { id: "cinematic", label: "Kinematografik", params: { guidance_scale: 7, steps: 30, motion_strength: 0.8 } },
+  { id: "realistic", label: "Realistik", params: { guidance_scale: 7.5, steps: 35, motion_strength: 0.6 } },
+  { id: "anime", label: "Anime", params: { guidance_scale: 6.5, steps: 30, motion_strength: 0.7 } },
+  { id: "retro", label: "Retro film", params: { guidance_scale: 6, steps: 25, motion_strength: 0.5 } },
   { id: "custom", label: "Maxsus", params: {} },
 ];
 
 const ASPECT_RATIOS = [
-  { id: "16:9-hd", label: "16:9 HD (1280×704)", width: 1280, height: 704 },
-  { id: "3:2", label: "3:2 (768×512)", width: 768, height: 512 },
-  { id: "4:3", label: "4:3 (640×480)", width: 640, height: 480 },
-  { id: "16:9", label: "16:9 (768×448)", width: 768, height: 448 },
-  { id: "1:1", label: "1:1 (512×512)", width: 512, height: 512 },
-  { id: "9:16", label: "9:16 (448×768)", width: 448, height: 768 },
-  { id: "3:4", label: "3:4 (480×640)", width: 480, height: 640 },
+  { id: "9:16", label: "9:16 (Vertikal)", width: 448, height: 768 },
+  { id: "16:9", label: "16:9 (Keng)", width: 768, height: 448 },
+  { id: "1:1", label: "1:1 (Kvadrat)", width: 512, height: 512 },
 ];
 
-const QUALITY_TIERS = [
-  { id: "fast", label: "Tez", steps: 25 },
-  { id: "balanced", label: "Muvozanat", steps: 40 },
-  { id: "high", label: "Yuqori sifat", steps: 50 },
+const DURATIONS = [
+  { id: "4", label: "4s", seconds: 4 },
+  { id: "6", label: "6s", seconds: 6 },
+  { id: "8", label: "8s", seconds: 8 },
 ];
 
-// Allowed FPS values (must match server)
 const ALLOWED_FPS = [8, 12, 24, 30];
-const MAX_DURATION_SECONDS = 8;
 const MAX_STEPS = 50;
+
+type SourceType = "text" | "image";
+type ModeType = "fast" | "pro";
 
 interface VideoGeneration {
   id: string;
@@ -86,19 +80,17 @@ interface VideoGeneration {
   width?: number;
   height?: number;
   seed?: number;
-  url_expires_at?: number; // timestamp when URL expires
 }
 
-// Status display configs
-const STATUS_CONFIG: Record<string, { label: string; labelEn: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  idle: { label: "Tayyor", labelEn: "Idle", variant: "outline" },
-  queued: { label: "Navbatda", labelEn: "Queued", variant: "secondary" },
-  running: { label: "Ishlamoqda", labelEn: "Running", variant: "default" },
-  processing: { label: "Qayta ishlanmoqda", labelEn: "Processing", variant: "default" },
-  uploading: { label: "Yuklanmoqda", labelEn: "Uploading", variant: "default" },
-  completed: { label: "Tayyor", labelEn: "Completed", variant: "outline" },
-  failed: { label: "Xatolik", labelEn: "Failed", variant: "destructive" },
-  canceled: { label: "Bekor qilindi", labelEn: "Canceled", variant: "secondary" },
+const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  idle: { label: "Tayyor", variant: "outline" },
+  queued: { label: "Navbatda", variant: "secondary" },
+  running: { label: "Ishlamoqda", variant: "default" },
+  processing: { label: "Qayta ishlanmoqda", variant: "default" },
+  uploading: { label: "Yuklanmoqda", variant: "default" },
+  completed: { label: "Tayyor", variant: "outline" },
+  failed: { label: "Xatolik", variant: "destructive" },
+  canceled: { label: "Bekor qilindi", variant: "secondary" },
 };
 
 export default function VideoStudio() {
@@ -106,51 +98,45 @@ export default function VideoStudio() {
   const { user, session } = useAuth();
   const { toast } = useToast();
   
-  // Access control state
+  // Access control
   const [hasLabsAccess, setHasLabsAccess] = useState(false);
   const [featureDisabled, setFeatureDisabled] = useState(false);
   const [checkingAccess, setCheckingAccess] = useState(true);
+  const [isFreeUser, setIsFreeUser] = useState(false);
   
   // Form state
   const [prompt, setPrompt] = useState("");
-  const [negativePrompt, setNegativePrompt] = useState("");
-  const [preset, setPreset] = useState("cinematic");
-  const [aspectRatio, setAspectRatio] = useState("3:2");
-  const [qualityTier, setQualityTier] = useState("balanced");
-  const [durationSeconds, setDurationSeconds] = useState(5);
-  const [fps, setFps] = useState(24);
-  const [seed, setSeed] = useState<number | null>(null);
-  const [guidanceScale, setGuidanceScale] = useState(9);
-  const [steps, setSteps] = useState(40);
-  const [motionStrength, setMotionStrength] = useState(0.7);
-  const [customWidth, setCustomWidth] = useState(768);
-  const [customHeight, setCustomHeight] = useState(512);
-  const [generateAudio, setGenerateAudio] = useState(false);
-  const [outputFormat, setOutputFormat] = useState("mp4");
+  const [sourceType, setSourceType] = useState<SourceType>("text");
+  const [mode, setMode] = useState<ModeType>("fast");
+  const [duration, setDuration] = useState("4");
+  const [aspectRatio, setAspectRatio] = useState("16:9");
+  const [stylePreset, setStylePreset] = useState("cinematic");
   
-  // Reference uploads
+  // Advanced settings
+  const [seed, setSeed] = useState<number | null>(null);
+  const [motionStrength, setMotionStrength] = useState(0.7);
+  const [guidanceScale, setGuidanceScale] = useState(7);
+  const [steps, setSteps] = useState(30);
+  const [fps, setFps] = useState(24);
+  
+  // Reference image for image→video
   const [referenceImage, setReferenceImage] = useState<File | null>(null);
-  const [referenceVideo, setReferenceVideo] = useState<File | null>(null);
+  const [referenceImagePreview, setReferenceImagePreview] = useState<string | null>(null);
   
   // Generation state
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentGeneration, setCurrentGeneration] = useState<VideoGeneration | null>(null);
-  const [history, setHistory] = useState<VideoGeneration[]>([]);
+  const [estimatedTime, setEstimatedTime] = useState<number | null>(null);
   const [dailyUsed, setDailyUsed] = useState(0);
   const [dailyLimit, setDailyLimit] = useState(5);
-  const [isFreeUser, setIsFreeUser] = useState(false);
-  const [isPremium, setIsPremium] = useState(false);
-  const [cooldownRemaining, setCooldownRemaining] = useState(0);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   
-  // Polling & timers
+  // Polling
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pollCountRef = useRef(0);
   const activePollGenerationIdRef = useRef<string | null>(null);
   const lastCompletedToastGenerationIdRef = useRef<string | null>(null);
-  const cooldownTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Check access on mount (only admin/dev emails can access)
+  // Check access on mount
   useEffect(() => {
     const checkAccess = async () => {
       if (!user) {
@@ -172,76 +158,49 @@ export default function VideoStudio() {
     checkAccess();
   }, [user]);
 
-  // Load history on mount
+  // Load daily usage
   useEffect(() => {
     if (user) {
-      loadHistory();
       loadDailyUsage();
     }
     return () => {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
       }
-      if (cooldownTimerRef.current) {
-        clearInterval(cooldownTimerRef.current);
-      }
     };
   }, [user]);
 
-  // Cooldown timer function
-  const startCooldownTimer = useCallback((seconds: number) => {
-    if (cooldownTimerRef.current) {
-      clearInterval(cooldownTimerRef.current);
-    }
-    setCooldownRemaining(seconds);
-    cooldownTimerRef.current = setInterval(() => {
-      setCooldownRemaining(prev => {
-        if (prev <= 1) {
-          if (cooldownTimerRef.current) {
-            clearInterval(cooldownTimerRef.current);
-            cooldownTimerRef.current = null;
-          }
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  }, []);
-
   // Apply preset when changed
   useEffect(() => {
-    const presetData = PRESETS.find(p => p.id === preset);
-    if (presetData && preset !== "custom") {
+    const presetData = STYLE_PRESETS.find(p => p.id === stylePreset);
+    if (presetData && stylePreset !== "custom") {
       if (presetData.params.guidance_scale) setGuidanceScale(presetData.params.guidance_scale);
       if (presetData.params.steps) setSteps(presetData.params.steps);
       if (presetData.params.motion_strength) setMotionStrength(presetData.params.motion_strength);
     }
-  }, [preset]);
+  }, [stylePreset]);
 
-  // Apply quality tier when changed
+  // Update steps based on mode
   useEffect(() => {
-    const tier = QUALITY_TIERS.find(q => q.id === qualityTier);
-    if (tier && preset !== "custom") {
-      setSteps(tier.steps);
+    if (mode === "fast") {
+      setSteps(Math.min(25, steps));
+    } else {
+      setSteps(Math.max(35, steps));
     }
-  }, [qualityTier]);
+  }, [mode]);
 
-  const loadHistory = async () => {
-    const { data, error } = await supabase
-      .from("video_generations")
-      .select("*")
-      .eq("user_id", user!.id)
-      .order("created_at", { ascending: false })
-      .limit(20);
-
-    if (!error && data) {
-      // Type cast the data since Supabase types might not be updated yet
-      setHistory(data as unknown as VideoGeneration[]);
+  // Handle reference image preview
+  useEffect(() => {
+    if (referenceImage) {
+      const url = URL.createObjectURL(referenceImage);
+      setReferenceImagePreview(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setReferenceImagePreview(null);
     }
-  };
+  }, [referenceImage]);
 
   const loadDailyUsage = async () => {
-    // Use explicit UTC boundaries for consistent counting
     const now = new Date();
     const startOfDayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
     const endOfDayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
@@ -255,7 +214,6 @@ export default function VideoStudio() {
     
     setDailyUsed(count ?? 0);
     
-    // Check user plan
     try {
       const { data, error } = await supabase.functions.invoke("admin-entitlements", {
         method: "GET",
@@ -263,11 +221,9 @@ export default function VideoStudio() {
       
       if (!error && data) {
         const userIsPremium = data.plan === "beta_premium" || data.plan === "premium" || data.isDevBypass;
-        setIsPremium(userIsPremium);
         setIsFreeUser(!userIsPremium && !data.isDevBypass);
         setDailyLimit(data.isDevBypass ? -1 : (userIsPremium ? 5 : 0));
       } else {
-        // Default to free user if we can't check
         setIsFreeUser(true);
         setDailyLimit(0);
       }
@@ -283,25 +239,34 @@ export default function VideoStudio() {
   };
 
   const getResolution = () => {
-    if (aspectRatio === "custom") {
-      return { width: customWidth, height: customHeight };
-    }
     const ar = ASPECT_RATIOS.find(a => a.id === aspectRatio);
-    return ar ? { width: ar.width, height: ar.height } : { width: 768, height: 512 };
+    return ar ? { width: ar.width, height: ar.height } : { width: 768, height: 448 };
+  };
+
+  const getDurationSeconds = () => {
+    const d = DURATIONS.find(dur => dur.id === duration);
+    return d ? d.seconds : 4;
+  };
+
+  const calculateETA = () => {
+    const durationSec = getDurationSeconds();
+    const baseTime = mode === "fast" ? 60 : 120;
+    return baseTime + (durationSec * 10);
   };
 
   const startGeneration = async () => {
     if (!prompt.trim()) {
-      toast({ title: "Prompt kiriting", variant: "destructive" });
+      toast({ title: t("videoStudio.enterPrompt"), variant: "destructive" });
       return;
     }
 
     if (!session?.access_token) {
-      toast({ title: "Iltimos, tizimga kiring", variant: "destructive" });
+      toast({ title: t("videoStudio.pleaseLogin"), variant: "destructive" });
       return;
     }
 
     setIsGenerating(true);
+    setEstimatedTime(calculateETA());
     const resolution = getResolution();
 
     try {
@@ -309,45 +274,39 @@ export default function VideoStudio() {
         body: {
           action: "start",
           prompt: prompt.trim(),
-          negativePrompt: negativePrompt.trim() || null,
           params: {
             width: resolution.width,
             height: resolution.height,
             fps: ALLOWED_FPS.includes(fps) ? fps : 24,
-            duration_seconds: Math.min(durationSeconds, MAX_DURATION_SECONDS),
+            duration_seconds: getDurationSeconds(),
             seed: seed ?? Math.floor(Math.random() * 2147483647),
             guidance_scale: Math.min(guidanceScale, 8),
             steps: Math.min(steps, MAX_STEPS),
             motion_strength: Math.max(0, Math.min(1, motionStrength)),
-            generate_audio: generateAudio,
-            output_format: outputFormat,
-            preset,
-            quality_tier: qualityTier,
+            preset: stylePreset,
+            mode,
           },
         },
       });
 
-      // Check response data first (even on HTTP errors like 503, data may contain useful info)
       const data = response.data;
       
-      // Handle VIDEO_DISABLED_TEMPORARILY first (comes with 503 status)
       if (data?.error === "VIDEO_DISABLED_TEMPORARILY") {
         setFeatureDisabled(true);
         setIsGenerating(false);
         toast({ 
           title: "Vaqtincha to'xtatildi",
-          description: data.messageUz || "Video funksiyasi vaqtincha o'chirildi. Sifatni oshirib qaytamiz.",
+          description: data.messageUz || "Video funksiyasi vaqtincha o'chirildi.",
           variant: "destructive" 
         });
         return;
       }
 
       if (response.error && !data) {
-        throw new Error(response.error.message || "Video yaratishda xatolik");
+        throw new Error(response.error.message || t("videoStudio.error"));
       }
 
       if (!data?.ok) {
-        // Handle specific error codes (VIDEO_DISABLED_TEMPORARILY handled above)
         if (data?.error === "VIDEO_NOT_AVAILABLE_FREE") {
           toast({ 
             title: t("videoStudio.freeBlocked.title"),
@@ -355,48 +314,18 @@ export default function VideoStudio() {
             variant: "destructive" 
           });
           setIsFreeUser(true);
-        } else if (data.error === "VIDEO_COOLDOWN") {
-          // Start cooldown timer
-          const retryAfter = data.retryAfterSec || 90;
-          setCooldownRemaining(retryAfter);
-          startCooldownTimer(retryAfter);
-          toast({ 
-            title: "Kutish kerak", 
-            description: data.messageUz || `Keyingi video yaratish uchun ${retryAfter} soniya kuting.`,
-            variant: "default" 
-          });
-        } else if (data.error === "VIDEO_BUSY_TRY_LATER") {
-          toast({ 
-            title: "Tizim band", 
-            description: data.messageUz || "Hozir video yaratish band. Bir necha daqiqadan keyin urinib ko'ring.",
-            variant: "destructive" 
-          });
-        } else if (data.error === "VIDEO_PARAMS_INVALID" || data.error === "VIDEO_PARAMS_TOO_HIGH") {
-          toast({ 
-            title: "Noto'g'ri parametrlar", 
-            description: data.messageUz || "Parametrlar noto'g'ri yoki juda yuqori.",
-            variant: "destructive" 
-          });
-        } else if (data.error === "VIDEO_DAILY_LIMIT") {
-          toast({ 
-            title: "Limit tugadi", 
-            description: data.messageUz || `Bugungi video limiti tugadi (${data.used}/${data.limit}).`,
-            variant: "destructive" 
-          });
         } else {
-          throw new Error(data.messageUz || data.error || "Video yaratishda xatolik");
+          throw new Error(data?.messageUz || data?.error || t("videoStudio.error"));
         }
         setIsGenerating(false);
         return;
       }
 
-      // Start polling
       setCurrentGeneration({
         id: data.generationId,
         created_at: new Date().toISOString(),
         status: "running",
         prompt: prompt.trim(),
-        negative_prompt: negativePrompt.trim() || undefined,
         params: {},
         progress: 0,
       });
@@ -407,8 +336,8 @@ export default function VideoStudio() {
     } catch (error: any) {
       console.error("Generation error:", error);
       toast({ 
-        title: "Xatolik", 
-        description: error.message || "Video yaratishda xatolik",
+        title: t("videoStudio.error"), 
+        description: error.message,
         variant: "destructive" 
       });
       setIsGenerating(false);
@@ -418,13 +347,11 @@ export default function VideoStudio() {
   const notifyCompletedOnce = (generationId: string) => {
     if (lastCompletedToastGenerationIdRef.current === generationId) return;
     lastCompletedToastGenerationIdRef.current = generationId;
-    toast({ title: "Video tayyor!" });
+    toast({ title: t("videoStudio.videoReady") });
   };
 
   const startPolling = (generationId: string) => {
-    // Ensure we never create multiple polling intervals
     if (pollIntervalRef.current && activePollGenerationIdRef.current === generationId) {
-      console.log(`[VideoStudio] Poll already active for ${generationId}`);
       return;
     }
     if (pollIntervalRef.current) {
@@ -437,7 +364,6 @@ export default function VideoStudio() {
     
     const poll = async () => {
       pollCountRef.current++;
-      console.log(`[VideoStudio] Poll #${pollCountRef.current} for ${generationId}`);
       
       try {
         const response = await supabase.functions.invoke("runpod-video", {
@@ -445,56 +371,33 @@ export default function VideoStudio() {
         });
 
         if (response.error) {
-          console.error("[VideoStudio] Poll network error:", response.error);
-          // Don't stop polling on network errors, just retry
           return;
         }
 
         const data = response.data;
-        console.log(`[VideoStudio] Poll response:`, { status: data.status, ok: data.ok, progress: data.progress, hasUrl: !!data.outputVideoUrl });
         
-        // Handle error responses (including ECHO_ENDPOINT)
         if (!data.ok) {
-          console.error("[VideoStudio] Poll failed:", data.error, data.errorCode);
-          
-          // Stop polling on error
           if (pollIntervalRef.current) {
             clearInterval(pollIntervalRef.current);
             pollIntervalRef.current = null;
           }
           setIsGenerating(false);
-          
-          // Update UI with error state
           setCurrentGeneration(prev => prev ? {
             ...prev,
             status: "failed",
             error: data.messageUz || data.error || "Noma'lum xatolik",
           } : null);
-          
-          // Show specific toast for echo endpoint
-          if (data.errorCode === "ECHO_ENDPOINT") {
-            toast({ 
-              title: "RunPod konfiguratsiya xatosi", 
-              description: "RunPod endpoint test/echo rejimida. LTX Video worker o'rnatilishi kerak.",
-              variant: "destructive",
-              duration: 10000,
-            });
-          } else {
-            toast({ 
-              title: "Xatolik", 
-              description: data.error || "Video yaratishda xatolik", 
-              variant: "destructive" 
-            });
-          }
-          
-          loadHistory();
+          toast({ 
+            title: t("videoStudio.error"), 
+            description: data.error, 
+            variant: "destructive" 
+          });
           return;
         }
 
-        // Update state with new data
         setCurrentGeneration(prev => {
           if (!prev) return null;
-          const updated = {
+          return {
             ...prev,
             status: data.status,
             progress: data.progress || prev.progress,
@@ -502,82 +405,29 @@ export default function VideoStudio() {
             output_video_path: data.outputVideoPath,
             output_video_url: data.outputVideoUrl,
           };
-          console.log(`[VideoStudio] State updated:`, { status: updated.status, hasUrl: !!updated.output_video_url });
-          return updated;
         });
 
-        // Stop polling if completed or failed
         if (["completed", "failed", "canceled"].includes(data.status)) {
-          console.log(`[VideoStudio] Polling finished with status: ${data.status}`);
           if (pollIntervalRef.current) {
             clearInterval(pollIntervalRef.current);
             pollIntervalRef.current = null;
           }
           setIsGenerating(false);
-          loadHistory();
           
           if (data.status === "completed" && data.outputVideoUrl) {
             notifyCompletedOnce(generationId);
-          } else if (data.status === "completed" && !data.outputVideoUrl) {
-            // Edge case: completed but no video URL - try to get signed URL
-            console.warn("[VideoStudio] Completed but no URL, checking path:", data.outputVideoPath);
-            if (data.outputVideoPath) {
-              // Attempt to get signed URL
-              try {
-                const signResponse = await supabase.functions.invoke("runpod-video", {
-                  body: { action: "sign", outputVideoPath: data.outputVideoPath },
-                });
-                if (signResponse.data?.ok && signResponse.data.outputVideoUrl) {
-                  setCurrentGeneration(prev => prev ? { 
-                    ...prev, 
-                    output_video_url: signResponse.data.outputVideoUrl 
-                  } : null);
-                  notifyCompletedOnce(generationId);
-                  return;
-                }
-              } catch (e) {
-                console.error("[VideoStudio] Sign URL failed:", e);
-              }
-            }
-            setCurrentGeneration(prev => prev ? {
-              ...prev,
-              status: "failed",
-              error: "Video URL topilmadi",
-            } : null);
-            toast({ title: "Xatolik", description: "Video URL topilmadi", variant: "destructive" });
           } else if (data.status === "failed") {
-            toast({ title: "Xatolik", description: data.error, variant: "destructive" });
-          }
-          return; // Don't adjust interval after completion
-        }
-
-        // Adjust poll interval based on count (only if still polling)
-        if (pollCountRef.current > 60 && pollCountRef.current % 30 === 0) {
-          // After 2 minutes, poll every 5s (only adjust once)
-          if (pollIntervalRef.current) {
-            clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = setInterval(poll, 5000);
-            console.log("[VideoStudio] Slowed polling to 5s interval");
-          }
-        } else if (pollCountRef.current === 30) {
-          // At 1 minute mark, poll every 3s
-          if (pollIntervalRef.current) {
-            clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = setInterval(poll, 3000);
-            console.log("[VideoStudio] Slowed polling to 3s interval");
+            toast({ title: t("videoStudio.error"), description: data.error, variant: "destructive" });
           }
         }
 
       } catch (error) {
-        console.error("[VideoStudio] Polling exception:", error);
-        // Don't stop polling on exceptions, let it retry
+        console.error("Polling exception:", error);
       }
     };
 
-    // Start with 2s interval
-    console.log(`[VideoStudio] Starting polling for ${generationId}`);
     pollIntervalRef.current = setInterval(poll, 2000);
-    poll(); // Immediate first poll
+    poll();
   };
 
   const cancelGeneration = async () => {
@@ -595,7 +445,7 @@ export default function VideoStudio() {
 
       setCurrentGeneration(prev => prev ? { ...prev, status: "canceled" } : null);
       setIsGenerating(false);
-      toast({ title: "Video yaratish bekor qilindi" });
+      toast({ title: t("videoStudio.canceled") });
     } catch (error) {
       console.error("Cancel error:", error);
     }
@@ -614,407 +464,233 @@ export default function VideoStudio() {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
-      toast({ title: "Yuklab olishda xatolik", variant: "destructive" });
+      toast({ title: t("videoStudio.error"), variant: "destructive" });
     }
   };
 
-  const regenerateWithSameSettings = () => {
-    if (currentGeneration) {
-      setPrompt(currentGeneration.prompt);
-      if (currentGeneration.negative_prompt) {
-        setNegativePrompt(currentGeneration.negative_prompt);
-      }
-      randomizeSeed();
-    }
-  };
-
-  // Refresh signed URL using server-side sign action
-  const refreshVideoUrl = async () => {
-    if (!currentGeneration?.output_video_path) return;
-    
-    try {
-      const response = await supabase.functions.invoke("runpod-video", {
-        body: { action: "sign", outputVideoPath: currentGeneration.output_video_path },
-      });
-      
-      if (response.data?.ok && response.data.outputVideoUrl) {
-        setCurrentGeneration(prev => prev ? { 
-          ...prev, 
-          output_video_url: response.data.outputVideoUrl,
-          url_expires_at: Date.now() + (response.data.expiresIn * 1000),
-        } : null);
-        toast({ title: "Havola yangilandi" });
-      } else {
-        toast({ title: "Havolani yangilashda xatolik", variant: "destructive" });
-      }
-    } catch (error) {
-      toast({ title: "Havolani yangilashda xatolik", variant: "destructive" });
-    }
-  };
-
-  // Refresh status for stuck/processing jobs - more robust with direct DB check
-  const refreshStatus = async (generationId?: string) => {
-    const targetId = generationId || currentGeneration?.id;
-    if (!targetId) return;
-    
-    setIsRefreshing(true);
-    console.log(`[VideoStudio] Refreshing status for ${targetId}`);
-    
-    try {
-      // First, check if it's already completed in our database (faster than calling RunPod)
-      const { data: dbGen } = await supabase
-        .from("video_generations")
-        .select("status, output_video_path, progress, error")
-        .eq("id", targetId)
-        .single();
-      
-      console.log(`[VideoStudio] DB status:`, dbGen);
-      
-      if (dbGen?.status === "completed" && dbGen.output_video_path) {
-        // Already completed in DB - just get signed URL
-        const signResponse = await supabase.functions.invoke("runpod-video", {
-          body: { action: "sign", outputVideoPath: dbGen.output_video_path },
-        });
-        
-        if (signResponse.data?.ok && signResponse.data.outputVideoUrl) {
-          setCurrentGeneration(prev => prev ? {
-            ...prev,
-            status: "completed",
-            progress: 100,
-            error: undefined,
-            output_video_path: dbGen.output_video_path,
-            output_video_url: signResponse.data.outputVideoUrl,
-          } : null);
-          setIsGenerating(false);
-          notifyCompletedOnce(targetId);
-          loadHistory();
-          return;
-        }
-      }
-      
-      // Otherwise, call the status endpoint which will poll RunPod
-      const response = await supabase.functions.invoke("runpod-video", {
-        body: { action: "status", generationId: targetId },
-      });
-
-      if (response.error) {
-        toast({ title: "Status tekshirishda xatolik", variant: "destructive" });
-        return;
-      }
-
-      const data = response.data;
-      console.log(`[VideoStudio] Refresh response:`, data);
-      
-      if (!data.ok) {
-        // Error from RunPod
-        setCurrentGeneration(prev => prev ? {
-          ...prev,
-          status: "failed",
-          error: data.messageUz || data.error || "Noma'lum xatolik",
-        } : null);
-        setIsGenerating(false);
-        toast({ title: "Xatolik", description: data.messageUz || data.error, variant: "destructive" });
-        loadHistory();
-        return;
-      }
-
-      // Update current generation with new status
-      setCurrentGeneration(prev => prev ? {
-        ...prev,
-        status: data.status,
-        progress: data.progress || prev.progress,
-        error: data.error,
-        output_video_path: data.outputVideoPath,
-        output_video_url: data.outputVideoUrl,
-      } : null);
-
-      if (data.status === "completed" && data.outputVideoUrl) {
-        notifyCompletedOnce(targetId);
-        setIsGenerating(false);
-      } else if (data.status === "completed" && !data.outputVideoUrl) {
-        setCurrentGeneration(prev => prev ? {
-          ...prev,
-          status: "failed",
-          error: "Video URL topilmadi",
-        } : null);
-        toast({ title: "Xatolik", description: "Video URL topilmadi", variant: "destructive" });
-        setIsGenerating(false);
-      } else if (data.status === "failed") {
-        toast({ title: "Xatolik", description: data.error, variant: "destructive" });
-        setIsGenerating(false);
-      } else if (["queued", "running", "processing"].includes(data.status)) {
-        // Still in progress - resume polling if not already polling
-        if (!pollIntervalRef.current) {
-          toast({ title: "Hali ishlamoqda", description: "Polling qayta boshlanmoqda..." });
-          startPolling(targetId);
-        } else {
-          toast({ title: "Hali ishlamoqda", description: `Status: ${data.status}` });
-        }
-      }
-      
-      loadHistory();
-    } catch (error) {
-      console.error("[VideoStudio] Refresh status error:", error);
-      toast({ title: "Status tekshirishda xatolik", variant: "destructive" });
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
-  // Send video to chat as attachment
   const sendToChat = async () => {
     if (!currentGeneration?.output_video_path || !currentGeneration.output_video_url) {
-      toast({ title: "Video topilmadi", variant: "destructive" });
+      toast({ title: t("videoStudio.error"), variant: "destructive" });
       return;
     }
 
     try {
-      // Import the chatStore to add message
       const { addMessage, createThread } = await import("@/lib/chatStore");
-      
-      // Create a thread for video sharing
       const thread = await createThread(user!.id, { mode: "general", title: "Video Studio" });
-      
-      // Add message with video info
       await addMessage(user!.id, {
         threadId: thread.id,
         role: "assistant",
         content: `🎬 Video yaratildi:\n\n**Prompt:** ${currentGeneration.prompt}\n\n📥 [Video yuklab olish](${currentGeneration.output_video_url})`,
       });
-      
-      toast({ title: "Chatga yuborildi" });
+      toast({ title: t("videoStudio.sendToChat") + " ✓" });
     } catch (error) {
       console.error("Send to chat error:", error);
-      toast({ title: "Chatga yuborishda xatolik", variant: "destructive" });
+      toast({ title: t("videoStudio.error"), variant: "destructive" });
     }
-  };
-
-  const selectHistoryItem = async (item: VideoGeneration) => {
-    // Stop any ongoing polling when user manually selects an item
-    if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current);
-      pollIntervalRef.current = null;
-    }
-    activePollGenerationIdRef.current = null;
-    setIsGenerating(false);
-
-    const selected: VideoGeneration = { ...item };
-
-    // Always ensure we have a playable URL for completed items
-    if (selected.status === "completed" && selected.output_video_path) {
-      const { data } = await supabase.functions.invoke("runpod-video", {
-        body: { action: "sign", outputVideoPath: selected.output_video_path },
-      });
-      if (data?.ok && data.outputVideoUrl) {
-        selected.output_video_url = data.outputVideoUrl;
-      }
-    }
-
-    setCurrentGeneration(selected);
   };
 
   const getStatusBadge = (status: string) => {
-    const config = STATUS_CONFIG[status] || { label: status, labelEn: status, variant: "secondary" as const };
+    const config = STATUS_CONFIG[status] || { label: status, variant: "secondary" as const };
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
+  const formatETA = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `~${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Loading state
+  if (checkingAccess) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Access restricted
+  if (!hasLabsAccess || featureDisabled) {
+    return (
+      <div className="flex items-center justify-center h-full p-8">
+        <Card className="max-w-md w-full p-8 text-center space-y-6">
+          <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center">
+            <FlaskConical className="w-10 h-10 text-purple-500" />
+          </div>
+          <div className="space-y-2">
+            <Badge variant="secondary" className="gap-1.5 mb-3">
+              <Lock className="w-3 h-3" />
+              Labs
+            </Badge>
+            <h2 className="text-2xl font-bold">Video Studio</h2>
+            <p className="text-lg text-muted-foreground">
+              {featureDisabled ? "Vaqtincha to'xtatildi" : "Tez orada"}
+            </p>
+          </div>
+          <p className="text-muted-foreground">
+            {featureDisabled 
+              ? "Video funksiyasi vaqtincha o'chirildi. Sifatni oshirib qaytamiz."
+              : "Video yaratish funksiyasi hozirda sinovda. Tez orada barcha foydalanuvchilar uchun ochiladi!"}
+          </p>
+          <Button variant="outline" className="w-full" onClick={() => window.location.href = "/modes"}>
+            Bosh sahifaga qaytish
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  // Free user blocked
+  if (isFreeUser) {
+    return (
+      <div className="flex items-center justify-center h-full p-8">
+        <Card className="max-w-md w-full p-6 text-center space-y-4">
+          <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+            <VideoIcon className="w-8 h-8 text-primary" />
+          </div>
+          <h2 className="text-xl font-semibold">{t("videoStudio.freeBlocked.title")}</h2>
+          <p className="text-muted-foreground">{t("videoStudio.freeBlocked.description")}</p>
+          <Button className="w-full" onClick={() => window.location.href = "/settings"}>
+            {t("videoStudio.freeBlocked.upgrade")}
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <AppShellV2>
-      <div className="flex flex-col h-full overflow-hidden">
-        {/* Header */}
-        <div className="flex-shrink-0 px-4 py-3 border-b border-border">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <VideoIcon className="w-5 h-5 text-primary" />
-              <h1 className="text-lg font-semibold">{t("videoStudio.title")}</h1>
-              <Badge variant="secondary" className="gap-1">
-                <FlaskConical className="w-3 h-3" />
-                Labs
-              </Badge>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              {hasLabsAccess && !featureDisabled && !isFreeUser && (
-                <>
-                  <Clock className="w-4 h-4" />
-                  <span>{dailyUsed}/{dailyLimit === -1 ? '∞' : dailyLimit} {t("videoStudio.today")}</span>
-                </>
-              )}
-            </div>
-          </div>
+    <div className="h-full flex flex-col overflow-hidden bg-background">
+      {/* Header */}
+      <header className="flex-shrink-0 h-14 border-b border-border flex items-center justify-between px-4">
+        <div className="flex items-center gap-3">
+          <VideoIcon className="w-5 h-5 text-primary" />
+          <h1 className="text-lg font-semibold">{t("videoStudio.title")}</h1>
+          <Badge variant="secondary" className="gap-1">
+            <FlaskConical className="w-3 h-3" />
+            Labs
+          </Badge>
         </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Clock className="w-4 h-4" />
+          <span>{dailyUsed}/{dailyLimit === -1 ? '∞' : dailyLimit} {t("videoStudio.today")}</span>
+        </div>
+      </header>
 
-        {/* Loading state while checking access */}
-        {checkingAccess && (
-          <div className="flex-1 flex items-center justify-center p-8">
-            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-          </div>
-        )}
-
-        {/* Labs Coming Soon / Access Restricted card */}
-        {!checkingAccess && (!hasLabsAccess || featureDisabled) && (
-          <div className="flex-1 flex items-center justify-center p-8">
-            <Card className="max-w-md w-full p-8 text-center space-y-6">
-              <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center">
-                <FlaskConical className="w-10 h-10 text-purple-500" />
-              </div>
-              <div className="space-y-2">
-                <Badge variant="secondary" className="gap-1.5 mb-3">
-                  <Lock className="w-3 h-3" />
-                  Labs
-                </Badge>
-                <h2 className="text-2xl font-bold">Video Studio</h2>
-                <p className="text-lg text-muted-foreground">
-                  {featureDisabled 
-                    ? "Vaqtincha to'xtatildi" 
-                    : "Tez orada"}
-                </p>
-              </div>
-              <p className="text-muted-foreground">
-                {featureDisabled 
-                  ? "Video funksiyasi vaqtincha o'chirildi. Sifatni oshirib qaytamiz. Tez orada yangilangan versiyasi chiqadi!"
-                  : "Video yaratish funksiyasi hozirda sinovda. Tez orada barcha foydalanuvchilar uchun ochiladi!"}
-              </p>
-              <div className="pt-2">
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => window.location.href = "/modes"}
-                >
-                  Bosh sahifaga qaytish
-                </Button>
-              </div>
-            </Card>
-          </div>
-        )}
-
-        {/* Free user blocking overlay - only for users with labs access */}
-        {!checkingAccess && hasLabsAccess && !featureDisabled && isFreeUser && (
-          <div className="flex-1 flex items-center justify-center p-8">
-            <Card className="max-w-md w-full p-6 text-center space-y-4">
-              <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
-                <VideoIcon className="w-8 h-8 text-primary" />
-              </div>
-              <h2 className="text-xl font-semibold">{t("videoStudio.freeBlocked.title")}</h2>
-              <p className="text-muted-foreground">{t("videoStudio.freeBlocked.description")}</p>
-              <Button className="w-full" onClick={() => window.location.href = "/settings"}>
-                {t("videoStudio.freeBlocked.upgrade")}
-              </Button>
-            </Card>
-          </div>
-        )}
-
-        {/* Main content - only show for labs users who aren't free */}
-        {!checkingAccess && hasLabsAccess && !featureDisabled && !isFreeUser && (
-        <div className="flex-1 flex overflow-hidden">
-          {/* Left Panel - Inputs */}
-          <div className="w-[400px] flex-shrink-0 border-r border-border overflow-y-auto">
-            <div className="p-4 space-y-4">
+      {/* Main content with resizable panels */}
+      <ResizablePanelGroup direction="horizontal" className="flex-1">
+        {/* Left Panel - Inputs */}
+        <ResizablePanel defaultSize={35} minSize={25} maxSize={50}>
+          <ScrollArea className="h-full">
+            <div className="p-4 space-y-5">
               {/* Prompt */}
               <div className="space-y-2">
-                <Label>Prompt</Label>
+                <Label className="text-sm font-medium">{t("videoStudio.promptLabel")}</Label>
                 <Textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Video tavsifini kiriting..."
-                  className="min-h-[100px] resize-none"
+                  placeholder={t("videoStudio.promptPlaceholder")}
+                  className="min-h-[120px] resize-none"
                 />
               </div>
 
-              {/* Negative Prompt */}
-              <Accordion type="single" collapsible className="w-full">
-                <AccordionItem value="negative">
-                  <AccordionTrigger className="text-sm">Salbiy prompt</AccordionTrigger>
-                  <AccordionContent>
-                    <Textarea
-                      value={negativePrompt}
-                      onChange={(e) => setNegativePrompt(e.target.value)}
-                      placeholder="Nima bo'lmasligi kerak..."
-                      className="min-h-[60px] resize-none"
-                    />
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-
-              {/* Preset */}
+              {/* Mode Toggle */}
               <div className="space-y-2">
-                <Label>Uslub</Label>
-                <Select value={preset} onValueChange={setPreset}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PRESETS.map(p => (
-                      <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+                <Label className="text-sm font-medium">Rejim</Label>
+                <Tabs value={mode} onValueChange={(v) => setMode(v as ModeType)} className="w-full">
+                  <TabsList className="w-full grid grid-cols-2">
+                    <TabsTrigger value="fast" className="gap-2">
+                      <Zap className="w-4 h-4" />
+                      Tez
+                    </TabsTrigger>
+                    <TabsTrigger value="pro" className="gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      Pro
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+
+              {/* Source Type Toggle */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Manba turi</Label>
+                <Tabs value={sourceType} onValueChange={(v) => setSourceType(v as SourceType)} className="w-full">
+                  <TabsList className="w-full grid grid-cols-2">
+                    <TabsTrigger value="text" className="gap-2">
+                      <Type className="w-4 h-4" />
+                      Matn → Video
+                    </TabsTrigger>
+                    <TabsTrigger value="image" className="gap-2">
+                      <ImageIcon className="w-4 h-4" />
+                      Rasm → Video
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+
+              {/* Reference Image (only for image→video) */}
+              {sourceType === "image" && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">{t("videoStudio.referenceImage")}</Label>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setReferenceImage(e.target.files?.[0] || null)}
+                    className="cursor-pointer"
+                  />
+                  {referenceImagePreview && (
+                    <div className="relative rounded-lg overflow-hidden border border-border">
+                      <img 
+                        src={referenceImagePreview} 
+                        alt="Reference" 
+                        className="w-full h-32 object-cover"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-2 right-2 h-6 w-6 bg-background/80"
+                        onClick={() => setReferenceImage(null)}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Duration Select */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">{t("videoStudio.duration")}</Label>
+                <Tabs value={duration} onValueChange={setDuration} className="w-full">
+                  <TabsList className="w-full grid grid-cols-3">
+                    {DURATIONS.map(d => (
+                      <TabsTrigger key={d.id} value={d.id}>{d.label}</TabsTrigger>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </TabsList>
+                </Tabs>
               </div>
 
               {/* Aspect Ratio */}
               <div className="space-y-2">
-                <Label>Format</Label>
-                <Select value={aspectRatio} onValueChange={setAspectRatio}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
+                <Label className="text-sm font-medium">{t("videoStudio.aspectRatio")}</Label>
+                <Tabs value={aspectRatio} onValueChange={setAspectRatio} className="w-full">
+                  <TabsList className="w-full grid grid-cols-3">
                     {ASPECT_RATIOS.map(ar => (
-                      <SelectItem key={ar.id} value={ar.id}>{ar.label}</SelectItem>
+                      <TabsTrigger key={ar.id} value={ar.id}>{ar.id}</TabsTrigger>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </TabsList>
+                </Tabs>
               </div>
 
-              {aspectRatio === "custom" && (
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <Label className="text-xs">Kenglik</Label>
-                    <Input
-                      type="number"
-                      value={customWidth}
-                      onChange={(e) => setCustomWidth(parseInt(e.target.value) || 768)}
-                      min={256}
-                      max={1920}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Balandlik</Label>
-                    <Input
-                      type="number"
-                      value={customHeight}
-                      onChange={(e) => setCustomHeight(parseInt(e.target.value) || 512)}
-                      min={256}
-                      max={1920}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Quality Tier */}
+              {/* Style Preset */}
               <div className="space-y-2">
-                <Label>Sifat</Label>
-                <Select value={qualityTier} onValueChange={setQualityTier}>
+                <Label className="text-sm font-medium">{t("videoStudio.preset")}</Label>
+                <Select value={stylePreset} onValueChange={setStylePreset}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {QUALITY_TIERS.map(q => (
-                      <SelectItem key={q.id} value={q.id}>{q.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Duration */}
-              <div className="space-y-2">
-                <Label>Davomiyligi: {durationSeconds}s</Label>
-                <Select value={String(durationSeconds)} onValueChange={(v) => setDurationSeconds(parseInt(v))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[2, 3, 4, 5, 6, 7, 8].map(d => (
-                      <SelectItem key={d} value={String(d)}>{d} soniya</SelectItem>
+                    {STYLE_PRESETS.map(p => (
+                      <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -1022,17 +698,70 @@ export default function VideoStudio() {
 
               {/* Advanced Settings */}
               <Accordion type="single" collapsible className="w-full">
-                <AccordionItem value="advanced">
-                  <AccordionTrigger className="text-sm">
+                <AccordionItem value="advanced" className="border-none">
+                  <AccordionTrigger className="text-sm py-2 hover:no-underline">
                     <div className="flex items-center gap-2">
                       <Settings2 className="w-4 h-4" />
-                      Kengaytirilgan sozlamalar
+                      {t("videoStudio.advancedSettings")}
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="space-y-4 pt-2">
+                    {/* Seed */}
+                    <div className="space-y-2">
+                      <Label className="text-xs">{t("videoStudio.seed")}</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="number"
+                          value={seed ?? ""}
+                          onChange={(e) => setSeed(e.target.value ? parseInt(e.target.value) : null)}
+                          placeholder={t("videoStudio.seedPlaceholder")}
+                          className="flex-1"
+                        />
+                        <Button variant="outline" size="icon" onClick={randomizeSeed}>
+                          <Shuffle className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Motion Strength */}
+                    <div className="space-y-2">
+                      <Label className="text-xs">{t("videoStudio.motionStrength")}: {(motionStrength * 100).toFixed(0)}%</Label>
+                      <Slider
+                        value={[motionStrength]}
+                        onValueChange={([v]) => setMotionStrength(v)}
+                        min={0}
+                        max={1}
+                        step={0.1}
+                      />
+                    </div>
+
+                    {/* Guidance */}
+                    <div className="space-y-2">
+                      <Label className="text-xs">{t("videoStudio.guidance")}: {guidanceScale.toFixed(1)}</Label>
+                      <Slider
+                        value={[guidanceScale]}
+                        onValueChange={([v]) => setGuidanceScale(v)}
+                        min={1}
+                        max={8}
+                        step={0.5}
+                      />
+                    </div>
+
+                    {/* Steps */}
+                    <div className="space-y-2">
+                      <Label className="text-xs">{t("videoStudio.steps")}: {steps}</Label>
+                      <Slider
+                        value={[steps]}
+                        onValueChange={([v]) => setSteps(Math.min(v, MAX_STEPS))}
+                        min={10}
+                        max={MAX_STEPS}
+                        step={5}
+                      />
+                    </div>
+
                     {/* FPS */}
                     <div className="space-y-2">
-                      <Label>FPS</Label>
+                      <Label className="text-xs">{t("videoStudio.fps")}</Label>
                       <Select value={String(fps)} onValueChange={(v) => setFps(parseInt(v))}>
                         <SelectTrigger>
                           <SelectValue />
@@ -1043,124 +772,6 @@ export default function VideoStudio() {
                           ))}
                         </SelectContent>
                       </Select>
-                    </div>
-
-                    {/* Seed */}
-                    <div className="space-y-2">
-                      <Label>Seed</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          type="number"
-                          value={seed ?? ""}
-                          onChange={(e) => setSeed(e.target.value ? parseInt(e.target.value) : null)}
-                          placeholder="Tasodifiy"
-                        />
-                        <Button variant="outline" size="icon" onClick={randomizeSeed}>
-                          <Shuffle className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Steps */}
-                    <div className="space-y-2">
-                      <Label>Steps: {steps}</Label>
-                      <Slider
-                        value={[steps]}
-                        onValueChange={([v]) => setSteps(Math.min(v, MAX_STEPS))}
-                        min={10}
-                        max={MAX_STEPS}
-                        step={5}
-                      />
-                    </div>
-
-                    {/* Guidance Scale */}
-                    <div className="space-y-2">
-                      <Label>Guidance: {guidanceScale.toFixed(1)}</Label>
-                      <Slider
-                        value={[guidanceScale]}
-                        onValueChange={([v]) => setGuidanceScale(v)}
-                        min={1}
-                        max={8}
-                        step={0.5}
-                      />
-                    </div>
-
-                    {/* Motion Strength */}
-                    <div className="space-y-2">
-                      <Label>Harakat kuchi: {(motionStrength * 100).toFixed(0)}%</Label>
-                      <Slider
-                        value={[motionStrength]}
-                        onValueChange={([v]) => setMotionStrength(v)}
-                        min={0}
-                        max={1}
-                        step={0.1}
-                      />
-                    </div>
-
-                    {/* Audio */}
-                    <div className="flex items-center justify-between">
-                      <Label>Audio yaratish</Label>
-                      <Switch checked={generateAudio} onCheckedChange={setGenerateAudio} />
-                    </div>
-
-                    {/* Output Format */}
-                    <div className="space-y-2">
-                      <Label>Format</Label>
-                      <Select value={outputFormat} onValueChange={setOutputFormat}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="mp4">MP4</SelectItem>
-                          <SelectItem value="webm">WebM</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-
-              {/* Reference Uploads */}
-              <Accordion type="single" collapsible className="w-full">
-                <AccordionItem value="references">
-                  <AccordionTrigger className="text-sm">
-                    <div className="flex items-center gap-2">
-                      <ImageIcon className="w-4 h-4" />
-                      Namuna fayllar
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="space-y-3 pt-2">
-                    <div className="space-y-2">
-                      <Label className="text-xs">Namuna rasm</Label>
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => setReferenceImage(e.target.files?.[0] || null)}
-                      />
-                      {referenceImage && (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span className="truncate">{referenceImage.name}</span>
-                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setReferenceImage(null)}>
-                            <X className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs">Namuna video</Label>
-                      <Input
-                        type="file"
-                        accept="video/*"
-                        onChange={(e) => setReferenceVideo(e.target.files?.[0] || null)}
-                      />
-                      {referenceVideo && (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span className="truncate">{referenceVideo.name}</span>
-                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setReferenceVideo(null)}>
-                            <X className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      )}
                     </div>
                   </AccordionContent>
                 </AccordionItem>
@@ -1176,201 +787,125 @@ export default function VideoStudio() {
                 {isGenerating ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Yaratilmoqda...
+                    {t("videoStudio.generating")}
                   </>
                 ) : (
                   <>
                     <Play className="w-4 h-4 mr-2" />
-                    Video yaratish
+                    {t("videoStudio.generateBtn")}
                   </>
                 )}
               </Button>
             </div>
-          </div>
+          </ScrollArea>
+        </ResizablePanel>
 
-          {/* Right Panel - Results & History */}
-          <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Current Generation */}
-            {currentGeneration && (
-              <div className="p-4 border-b border-border">
-                <Card className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        {getStatusBadge(currentGeneration.status)}
-                        {currentGeneration.status === "running" && (
-                          <span className="text-sm text-muted-foreground">
-                            {Math.round(currentGeneration.progress || 0)}%
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {currentGeneration.prompt}
-                      </p>
-                    </div>
-                    {(currentGeneration.status === "running" || currentGeneration.status === "processing") && (
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="sm" onClick={cancelGeneration}>
-                          <X className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => refreshStatus()}
-                          disabled={isRefreshing}
-                        >
-                          <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
+        <ResizableHandle withHandle />
 
-                  {(currentGeneration.status === "running" || currentGeneration.status === "processing") && (
-                    <div className="space-y-2 mb-3">
-                      <Progress value={currentGeneration.progress || 0} />
-                      <p className="text-xs text-muted-foreground text-center">
-                        {currentGeneration.status === "processing" ? "RunPod ishlamoqda..." : "Video yaratilmoqda..."}
-                        {" "}
-                        <button 
-                          onClick={() => refreshStatus()} 
-                          className="text-primary hover:underline"
-                          disabled={isRefreshing}
-                        >
-                          {isRefreshing ? "Tekshirilmoqda..." : "Statusni yangilash"}
-                        </button>
-                      </p>
-                    </div>
-                  )}
-
-                  {currentGeneration.status === "failed" && currentGeneration.error && (
-                    <p className="text-sm text-destructive mb-3">{currentGeneration.error}</p>
-                  )}
-
-                  {currentGeneration.status === "completed" && currentGeneration.output_video_url && (
-                    <div className="space-y-3">
-                      <video
-                        src={currentGeneration.output_video_url}
-                        controls
-                        playsInline
-                        className="w-full rounded-xl bg-black max-h-[400px]"
-                        style={{ borderRadius: 12 }}
-                      />
-                      <div className="flex gap-2 flex-wrap">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => downloadVideo(currentGeneration.output_video_url!)}
-                        >
-                          <Download className="w-4 h-4 mr-2" />
-                          Yuklab olish
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={regenerateWithSameSettings}>
-                          <RefreshCw className="w-4 h-4 mr-2" />
-                          Qayta yaratish
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={sendToChat}>
-                          <Send className="w-4 h-4 mr-2" />
-                          Chatga yuborish
-                        </Button>
-                        {currentGeneration.output_video_path && (
-                          <Button variant="ghost" size="sm" onClick={refreshVideoUrl}>
-                            <RefreshCw className="w-4 h-4 mr-2" />
-                            Havolani yangilash
-                          </Button>
-                        )}
-                      </div>
-                      
-                      {/* Debug Metadata Panel - shown for dev/admin users or with ?debug=1 */}
-                      {(dailyLimit === -1 || new URLSearchParams(window.location.search).get("debug") === "1") && currentGeneration.params && (
-                        <div className="mt-3 p-3 bg-muted/50 rounded-lg border border-border">
-                          <p className="text-xs font-medium text-muted-foreground mb-2">Debug Metadata</p>
-                          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs font-mono">
-                            <span className="text-muted-foreground">Width:</span>
-                            <span>{currentGeneration.width || currentGeneration.params?.width || "—"}</span>
-                            <span className="text-muted-foreground">Height:</span>
-                            <span>{currentGeneration.height || currentGeneration.params?.height || "—"}</span>
-                            <span className="text-muted-foreground">FPS:</span>
-                            <span>{currentGeneration.fps || currentGeneration.params?.fps || "—"}</span>
-                            <span className="text-muted-foreground">Duration:</span>
-                            <span>{currentGeneration.duration_seconds || currentGeneration.params?.duration_seconds || "—"}s</span>
-                            <span className="text-muted-foreground">Steps:</span>
-                            <span>{currentGeneration.params?.steps || "—"}</span>
-                            <span className="text-muted-foreground">Guidance:</span>
-                            <span>{currentGeneration.params?.guidance_scale || "—"}</span>
-                            <span className="text-muted-foreground">Motion:</span>
-                            <span>{currentGeneration.params?.motion_strength || "—"}</span>
-                            <span className="text-muted-foreground">Seed:</span>
-                            <span>{currentGeneration.seed || currentGeneration.params?.seed || "—"}</span>
-                            <span className="text-muted-foreground">File Size:</span>
-                            <span>
-                              {currentGeneration.params?.file_size_bytes 
-                                ? `${(currentGeneration.params.file_size_bytes / 1024 / 1024).toFixed(2)} MB`
-                                : "—"}
-                            </span>
-                            <span className="text-muted-foreground">Upload:</span>
-                            <span>{currentGeneration.params?.upload_method || "—"}</span>
-                            <span className="text-muted-foreground">Re-encode:</span>
-                            <span className={currentGeneration.params?.no_reencode ? "text-green-500" : "text-yellow-500"}>
-                              {currentGeneration.params?.no_reencode ? "No (raw)" : "Unknown"}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </Card>
+        {/* Right Panel - Preview */}
+        <ResizablePanel defaultSize={65}>
+          <div className="h-full flex flex-col items-center justify-center p-6">
+            {/* Empty State */}
+            {!currentGeneration && (
+              <div className="text-center space-y-4">
+                <div className="w-24 h-24 mx-auto rounded-2xl bg-muted/50 flex items-center justify-center">
+                  <VideoIcon className="w-12 h-12 text-muted-foreground/50" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-lg font-medium text-muted-foreground">Video yarating</h3>
+                  <p className="text-sm text-muted-foreground/70 max-w-sm">
+                    Chap panelda video tavsifini kiriting va "Video yaratish" tugmasini bosing
+                  </p>
+                </div>
               </div>
             )}
 
-            {/* History */}
-            <div className="flex-1 overflow-hidden flex flex-col">
-              <div className="px-4 py-2 border-b border-border flex items-center gap-2">
-                <History className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Tarix</span>
-              </div>
-              <ScrollArea className="flex-1">
-                <div className="p-4 space-y-2">
-                  {history.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">
-                      Hali video yaratilmagan
+            {/* Status Card */}
+            {currentGeneration && (
+              <Card className="w-full max-w-2xl p-6 space-y-4">
+                {/* Header */}
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1 flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      {getStatusBadge(currentGeneration.status)}
+                      {(currentGeneration.status === "running" || currentGeneration.status === "processing") && (
+                        <span className="text-sm text-muted-foreground">
+                          {Math.round(currentGeneration.progress || 0)}%
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground line-clamp-2 pr-4">
+                      {currentGeneration.prompt}
                     </p>
-                  ) : (
-                    history.map(item => (
-                      <Card
-                        key={item.id}
-                        className={cn(
-                          "p-3 cursor-pointer hover:bg-accent/50 transition-colors",
-                          currentGeneration?.id === item.id && "ring-2 ring-primary"
-                        )}
-                        onClick={() => selectHistoryItem(item)}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm truncate">{item.prompt}</p>
-                            <div className="flex items-center gap-2 mt-1 flex-wrap">
-                              {getStatusBadge(item.status)}
-                              {item.width && item.height && (
-                                <Badge variant="outline" className="text-xs font-mono px-1.5 py-0">
-                                  {item.width}×{item.height}
-                                </Badge>
-                              )}
-                              <span className="text-xs text-muted-foreground">
-                                {new Date(item.created_at).toLocaleDateString()}
-                              </span>
-                            </div>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                        </div>
-                      </Card>
-                    ))
+                  </div>
+                  {(currentGeneration.status === "running" || currentGeneration.status === "processing") && (
+                    <Button variant="ghost" size="sm" onClick={cancelGeneration}>
+                      <X className="w-4 h-4 mr-1" />
+                      {t("videoStudio.cancel")}
+                    </Button>
                   )}
                 </div>
-              </ScrollArea>
-            </div>
+
+                {/* Progress Bar & ETA */}
+                {(currentGeneration.status === "running" || currentGeneration.status === "processing") && (
+                  <div className="space-y-3">
+                    <Progress value={currentGeneration.progress || 0} className="h-2" />
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>
+                        {currentGeneration.status === "processing" ? "Qayta ishlanmoqda..." : "Video yaratilmoqda..."}
+                      </span>
+                      {estimatedTime && (
+                        <span>ETA: {formatETA(estimatedTime)}</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Error */}
+                {currentGeneration.status === "failed" && currentGeneration.error && (
+                  <div className="p-3 bg-destructive/10 rounded-lg">
+                    <p className="text-sm text-destructive">{currentGeneration.error}</p>
+                  </div>
+                )}
+
+                {/* Completed - Video Player */}
+                {currentGeneration.status === "completed" && currentGeneration.output_video_url && (
+                  <div className="space-y-4">
+                    <video
+                      src={currentGeneration.output_video_url}
+                      controls
+                      playsInline
+                      autoPlay
+                      loop
+                      className="w-full rounded-xl bg-black aspect-video"
+                    />
+                    <div className="flex gap-3 justify-center">
+                      <Button
+                        variant="default"
+                        onClick={() => downloadVideo(currentGeneration.output_video_url!)}
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        {t("videoStudio.download")}
+                      </Button>
+                      <Button variant="outline" onClick={sendToChat}>
+                        <Send className="w-4 h-4 mr-2" />
+                        {t("videoStudio.sendToChat")}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Canceled */}
+                {currentGeneration.status === "canceled" && (
+                  <div className="p-3 bg-muted rounded-lg text-center">
+                    <p className="text-sm text-muted-foreground">{t("videoStudio.canceled")}</p>
+                  </div>
+                )}
+              </Card>
+            )}
           </div>
-        </div>
-        )}
-      </div>
-    </AppShellV2>
+        </ResizablePanel>
+      </ResizablePanelGroup>
+    </div>
   );
 }
