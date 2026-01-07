@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { Crown, Check, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Crown, Check, Loader2, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export default function PricingPlansSection() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const navigate = useNavigate();
 
-  const handlePayWithAtmos = async (plan: "monthly" | "yearly") => {
+  const handlePayWithAtmos = async (plan: "premium_monthly" | "premium_yearly") => {
     setLoadingPlan(plan);
     
     try {
@@ -15,6 +17,7 @@ export default function PricingPlansSection() {
       
       if (!session) {
         toast.error("Iltimos, avval tizimga kiring");
+        navigate("/login");
         return;
       }
       
@@ -33,16 +36,11 @@ export default function PricingPlansSection() {
         return;
       }
       
-      // Store transaction ID for return page
-      const returnUrl = `${window.location.origin}/payment/return?transactionId=${data.transaction_id}`;
-      
-      // Open checkout in new tab or same window
+      // Open checkout in new tab
       window.open(data.checkout_url, "_blank");
       
-      // Also navigate to return page in current window after a short delay
-      setTimeout(() => {
-        window.location.href = returnUrl;
-      }, 1000);
+      // Navigate to return page in current window
+      navigate(`/payment/return?transactionId=${data.transaction_id}`);
       
     } catch (err) {
       console.error("Payment error:", err);
@@ -79,9 +77,9 @@ export default function PricingPlansSection() {
         "Tezroq javoblar",
         "Kelajakdagi yangi funksiyalarga ustuvor kirish",
       ],
-      buttonText: "ATMOS orqali to'lash",
+      buttonText: "Uzcard/Humo orqali to'lash (ATMOS)",
       buttonVariant: "default" as const,
-      plan: "monthly" as const,
+      plan: "premium_monthly" as const,
     },
     {
       name: "Yillik Premium",
@@ -94,9 +92,9 @@ export default function PricingPlansSection() {
         "Oylik rejaga nisbatan tejash",
         "Ustuvor qo'llab-quvvatlash",
       ],
-      buttonText: "ATMOS orqali to'lash",
+      buttonText: "Uzcard/Humo orqali to'lash (ATMOS)",
       buttonVariant: "outline" as const,
-      plan: "yearly" as const,
+      plan: "premium_yearly" as const,
     },
   ];
 
@@ -105,7 +103,7 @@ export default function PricingPlansSection() {
       <div className="px-6 py-4 border-b border-border">
         <div className="flex items-center gap-2">
           <Crown className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-semibold text-foreground">Rejalar va narxlar</h2>
+          <h2 className="text-lg font-semibold text-foreground">Rejani boshqarish</h2>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
           O'zingizga mos rejani tanlang va Bahor AI'ning to'liq imkoniyatlaridan foydalaning
@@ -175,7 +173,10 @@ export default function PricingPlansSection() {
                   Yuklanmoqda...
                 </>
               ) : (
-                plan.buttonText
+                <>
+                  {plan.plan && <CreditCard className="w-4 h-4 mr-2" />}
+                  {plan.buttonText}
+                </>
               )}
             </Button>
           </div>
