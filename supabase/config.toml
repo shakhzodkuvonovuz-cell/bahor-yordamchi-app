@@ -80,3 +80,6 @@ verify_jwt = false
 
 [functions.video-create-job]
 verify_jwt = false
+
+[functions.video-poll-job]
+verify_jwt = false
