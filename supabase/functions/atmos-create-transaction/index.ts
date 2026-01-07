@@ -209,6 +209,15 @@ serve(async (req) => {
       throw new Error("Failed to save transaction");
     }
     
+    // Log payment event (no secrets logged)
+    await adminSupabase.from("payment_events").insert({
+      user_id: user.id,
+      event: "create_transaction",
+      transaction_id: String(transaction_id),
+      status: "pending",
+      meta: { plan, amount_tiyin },
+    });
+    
     // Build checkout URL
     const ATMOS_CHECKOUT_BASE = ATMOS_TEST_MODE 
       ? Deno.env.get("ATMOS_CHECKOUT_BASE_TEST")
