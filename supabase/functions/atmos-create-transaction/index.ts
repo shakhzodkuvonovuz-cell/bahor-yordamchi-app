@@ -68,29 +68,6 @@ async function getAtmosToken(): Promise<string> {
   }
 }
 
-// Log payment event (no secrets logged)
-// deno-lint-ignore no-explicit-any
-async function logPaymentEvent(
-  adminSupabase: any,
-  userId: string,
-  event: string,
-  transactionId: string | null,
-  status: string | null,
-  meta: Record<string, unknown> = {}
-) {
-  try {
-    await adminSupabase.from("payment_events").insert({
-      user_id: userId,
-      event,
-      transaction_id: transactionId,
-      status,
-      meta,
-    });
-  } catch (e) {
-    console.error("[payment_events] Failed to log event:", e);
-  }
-}
-
 // Server-side pricing (don't trust client)
 const PLAN_PRICES: Record<string, number> = {
   premium_monthly: 49000 * 100,  // 4,900,000 tiyin = 49,000 UZS
@@ -155,13 +132,11 @@ serve(async (req) => {
     const uniqueId = crypto.randomUUID().split('-')[0];
     const account = `user_${user.id.substring(0, 8)}_${plan}_${uniqueId}`;
     
-    // Use service role for DB writes
-    const adminSupabase = createClient(supabaseUrl, serviceRoleKey);
-    
     console.log("[atmos-create-transaction] Creating transaction:", {
       user_id: user.id,
       plan,
       amount_tiyin,
+      account,
       test_mode: ATMOS_TEST_MODE,
     });
     
@@ -191,13 +166,6 @@ serve(async (req) => {
       clearTimeout(timeoutId);
     } catch (error) {
       clearTimeout(timeoutId);
-      
-      // Log failure
-      await logPaymentEvent(adminSupabase, user.id, "create_transaction", null, "error", {
-        error: error instanceof Error ? error.message : "timeout",
-        plan,
-      });
-      
       if (error instanceof Error && error.name === 'AbortError') {
         throw new Error("ATMOS transaction creation timed out");
       }
@@ -207,24 +175,19 @@ serve(async (req) => {
     if (!atmosResponse.ok) {
       const errorText = await atmosResponse.text();
       console.error("[atmos-create-transaction] ATMOS API error:", atmosResponse.status, errorText);
-      
-      // Log failure
-      await logPaymentEvent(adminSupabase, user.id, "create_transaction", null, "atmos_error", {
-        http_status: atmosResponse.status,
-        plan,
-      });
-      
       throw new Error(`ATMOS API error: ${atmosResponse.status}`);
     }
     
     const atmosData = await atmosResponse.json();
-    console.log("[atmos-create-transaction] ATMOS response received");
+    console.log("[atmos-create-transaction] ATMOS response:", JSON.stringify(atmosData));
     
     const transaction_id = atmosData.transaction_id || atmosData.result?.transaction_id;
     if (!transaction_id) {
-      await logPaymentEvent(adminSupabase, user.id, "create_transaction", null, "no_tx_id", { plan });
       throw new Error("No transaction_id in ATMOS response");
     }
+    
+    // Use service role for DB writes
+    const adminSupabase = createClient(supabaseUrl, serviceRoleKey);
     
     // Save transaction to database
     const { error: insertError } = await adminSupabase
@@ -246,12 +209,6 @@ serve(async (req) => {
       throw new Error("Failed to save transaction");
     }
     
-    // Log successful creation
-    await logPaymentEvent(adminSupabase, user.id, "create_transaction", String(transaction_id), "pending", {
-      plan,
-      amount_tiyin,
-    });
-    
     // Build checkout URL
     const ATMOS_CHECKOUT_BASE = ATMOS_TEST_MODE 
       ? Deno.env.get("ATMOS_CHECKOUT_BASE_TEST")
@@ -268,7 +225,10 @@ serve(async (req) => {
     // URL format: ${base}?storeId=${ATMOS_STORE_ID}&transactionId=${transaction_id}&redirectLink=${encoded}
     const checkout_url = `${ATMOS_CHECKOUT_BASE}?storeId=${ATMOS_STORE_ID}&transactionId=${transaction_id}&redirectLink=${encodeURIComponent(redirectLink)}`;
     
-    console.log("[atmos-create-transaction] Success, transaction_id:", transaction_id);
+    console.log("[atmos-create-transaction] Success:", {
+      transaction_id,
+      checkout_url,
+    });
     
     return new Response(JSON.stringify({
       transaction_id: String(transaction_id),
