@@ -6,15 +6,18 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// In-memory token cache (duplicated for now - could use shared module)
+// In-memory token cache
 let cachedToken: { access_token: string; expires_at: number } | null = null;
 
 async function getAtmosToken(): Promise<string> {
   const now = Date.now();
   
   if (cachedToken && cachedToken.expires_at > now + 5 * 60 * 1000) {
+    console.log("[atmos] Using cached token");
     return cachedToken.access_token;
   }
+  
+  console.log("[atmos] Fetching new token");
   
   const ATMOS_API_BASE = Deno.env.get("ATMOS_API_BASE") || "https://apigw.atmos.uz";
   const ATMOS_CONSUMER_ID = Deno.env.get("ATMOS_CONSUMER_ID");
@@ -26,33 +29,49 @@ async function getAtmosToken(): Promise<string> {
   
   const credentials = btoa(`${ATMOS_CONSUMER_ID}:${ATMOS_CONSUMER_SECRET}`);
   
-  const response = await fetch(`${ATMOS_API_BASE}/token?grant_type=client_credentials`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Basic ${credentials}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
   
-  if (!response.ok) {
-    throw new Error(`ATMOS token request failed: ${response.status}`);
+  try {
+    const response = await fetch(`${ATMOS_API_BASE}/token?grant_type=client_credentials`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Basic ${credentials}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("[atmos] Token request failed:", response.status, errorText);
+      throw new Error(`ATMOS token request failed: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    const expiresIn = data.expires_in ? (data.expires_in - 300) * 1000 : 55 * 60 * 1000;
+    
+    cachedToken = {
+      access_token: data.access_token,
+      expires_at: now + expiresIn,
+    };
+    
+    return data.access_token;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error("ATMOS token request timed out");
+    }
+    throw error;
   }
-  
-  const data = await response.json();
-  const expiresIn = data.expires_in ? (data.expires_in - 300) * 1000 : 55 * 60 * 1000;
-  
-  cachedToken = {
-    access_token: data.access_token,
-    expires_at: now + expiresIn,
-  };
-  
-  return data.access_token;
 }
 
-// Plan pricing in tiyin (1 UZS = 100 tiyin)
+// Server-side pricing (don't trust client)
 const PLAN_PRICES: Record<string, number> = {
-  monthly: 49000 * 100,  // 49,000 UZS
-  yearly: 340000 * 100,  // 340,000 UZS
+  premium_monthly: 49000 * 100,  // 4,900,000 tiyin = 49,000 UZS
+  premium_yearly: 340000 * 100,  // 34,000,000 tiyin = 340,000 UZS
 };
 
 serve(async (req) => {
@@ -61,9 +80,10 @@ serve(async (req) => {
   }
   
   try {
+    // Strict auth: user must be logged in
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Missing authorization" }), {
+      return new Response(JSON.stringify({ error: "Authorization required" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -80,7 +100,7 @@ serve(async (req) => {
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      return new Response(JSON.stringify({ error: "Invalid or expired token" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -89,49 +109,68 @@ serve(async (req) => {
     const { plan } = await req.json();
     
     if (!plan || !PLAN_PRICES[plan]) {
-      return new Response(JSON.stringify({ error: "Invalid plan" }), {
+      return new Response(JSON.stringify({ 
+        error: "Invalid plan. Must be 'premium_monthly' or 'premium_yearly'" 
+      }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     
-    const amountTiyin = PLAN_PRICES[plan];
-    const storeId = Deno.env.get("ATMOS_STORE_ID");
-    const testMode = Deno.env.get("ATMOS_TEST_MODE") === "true";
-    const apiBase = Deno.env.get("ATMOS_API_BASE") || "https://apigw.atmos.uz";
+    // Server computes amount (don't trust client)
+    const amount_tiyin = PLAN_PRICES[plan];
     
-    if (!storeId) {
-      throw new Error("Missing ATMOS_STORE_ID");
+    const ATMOS_STORE_ID = Deno.env.get("ATMOS_STORE_ID");
+    const ATMOS_TEST_MODE = Deno.env.get("ATMOS_TEST_MODE") === "true";
+    const ATMOS_API_BASE = Deno.env.get("ATMOS_API_BASE") || "https://apigw.atmos.uz";
+    
+    if (!ATMOS_STORE_ID) {
+      throw new Error("ATMOS_STORE_ID not configured");
     }
     
-    // Generate unique account number for this transaction
-    const account = `BAHOR-${user.id.slice(0, 8)}-${Date.now()}`;
+    // Create unique account = "user_<uid>_<plan>_<uuid>"
+    const uniqueId = crypto.randomUUID().split('-')[0];
+    const account = `user_${user.id.substring(0, 8)}_${plan}_${uniqueId}`;
     
     console.log("[atmos-create-transaction] Creating transaction:", {
       user_id: user.id,
       plan,
-      amountTiyin,
+      amount_tiyin,
       account,
-      testMode,
+      test_mode: ATMOS_TEST_MODE,
     });
     
     // Get ATMOS token
     const accessToken = await getAtmosToken();
     
-    // Create transaction in ATMOS
-    const atmosResponse = await fetch(`${apiBase}/merchant/pay/create`, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        store_id: parseInt(storeId),
-        amount: amountTiyin,
-        account,
-        lang: "uz",
-      }),
-    });
+    // Create transaction with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    
+    let atmosResponse;
+    try {
+      atmosResponse = await fetch(`${ATMOS_API_BASE}/merchant/pay/create`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          store_id: parseInt(ATMOS_STORE_ID),
+          amount: amount_tiyin,
+          account,
+          lang: "uz",
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error("ATMOS transaction creation timed out");
+      }
+      throw error;
+    }
     
     if (!atmosResponse.ok) {
       const errorText = await atmosResponse.text();
@@ -140,53 +179,60 @@ serve(async (req) => {
     }
     
     const atmosData = await atmosResponse.json();
-    console.log("[atmos-create-transaction] ATMOS response:", atmosData);
+    console.log("[atmos-create-transaction] ATMOS response:", JSON.stringify(atmosData));
     
-    if (!atmosData.transaction_id) {
+    const transaction_id = atmosData.transaction_id || atmosData.result?.transaction_id;
+    if (!transaction_id) {
       throw new Error("No transaction_id in ATMOS response");
     }
     
-    // Store transaction in DB using service role
+    // Use service role for DB writes
     const adminSupabase = createClient(supabaseUrl, serviceRoleKey);
     
-    const { data: txn, error: insertError } = await adminSupabase
+    // Save transaction to database
+    const { error: insertError } = await adminSupabase
       .from("atmos_transactions")
       .insert({
         user_id: user.id,
         plan,
-        amount_tiyin: amountTiyin,
+        amount_tiyin,
         currency: "UZS",
         account,
-        store_id: storeId,
-        transaction_id: String(atmosData.transaction_id),
+        store_id: ATMOS_STORE_ID,
+        transaction_id: String(transaction_id),
         status: "pending",
         provider_payload: atmosData,
-      })
-      .select()
-      .single();
+      });
     
     if (insertError) {
       console.error("[atmos-create-transaction] DB insert error:", insertError);
       throw new Error("Failed to save transaction");
     }
     
-    // Generate checkout URL
-    const checkoutBase = testMode 
-      ? Deno.env.get("ATMOS_CHECKOUT_BASE_TEST") || "http://test-checkout.pays.uz/invoice/get"
-      : Deno.env.get("ATMOS_CHECKOUT_BASE_PROD") || "https://checkout.pays.uz/invoice/get";
+    // Build checkout URL
+    const ATMOS_CHECKOUT_BASE = ATMOS_TEST_MODE 
+      ? Deno.env.get("ATMOS_CHECKOUT_BASE_TEST")
+      : Deno.env.get("ATMOS_CHECKOUT_BASE_PROD");
     
-    const checkoutUrl = `${checkoutBase}/${atmosData.transaction_id}`;
+    if (!ATMOS_CHECKOUT_BASE) {
+      throw new Error("ATMOS checkout base URL not configured");
+    }
+    
+    // APP_URL for redirect - fallback to bahorai.uz
+    const APP_URL = Deno.env.get("APP_URL") || "https://bahorai.uz";
+    const redirectLink = `${APP_URL}/payment/return?transactionId=${transaction_id}`;
+    
+    // URL format: ${base}?storeId=${ATMOS_STORE_ID}&transactionId=${transaction_id}&redirectLink=${encoded}
+    const checkout_url = `${ATMOS_CHECKOUT_BASE}?storeId=${ATMOS_STORE_ID}&transactionId=${transaction_id}&redirectLink=${encodeURIComponent(redirectLink)}`;
     
     console.log("[atmos-create-transaction] Success:", {
-      transaction_id: atmosData.transaction_id,
-      checkout_url: checkoutUrl,
+      transaction_id,
+      checkout_url,
     });
     
     return new Response(JSON.stringify({
-      transaction_id: atmosData.transaction_id,
-      checkout_url: checkoutUrl,
-      account,
-      internal_id: txn.id,
+      transaction_id: String(transaction_id),
+      checkout_url,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
