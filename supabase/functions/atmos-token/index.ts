@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,7 +8,7 @@ const corsHeaders = {
 // In-memory token cache
 let cachedToken: { access_token: string; expires_at: number } | null = null;
 
-async function getAtmosToken(): Promise<string> {
+export async function getAtmosToken(): Promise<string> {
   const now = Date.now();
   
   // Return cached token if still valid (with 5 min buffer)
@@ -30,32 +29,46 @@ async function getAtmosToken(): Promise<string> {
   
   const credentials = btoa(`${ATMOS_CONSUMER_ID}:${ATMOS_CONSUMER_SECRET}`);
   
-  const response = await fetch(`${ATMOS_API_BASE}/token?grant_type=client_credentials`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Basic ${credentials}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
   
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("[atmos-token] Token request failed:", response.status, errorText);
-    throw new Error(`ATMOS token request failed: ${response.status}`);
+  try {
+    const response = await fetch(`${ATMOS_API_BASE}/token?grant_type=client_credentials`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Basic ${credentials}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("[atmos-token] Token request failed:", response.status, errorText);
+      throw new Error(`ATMOS token request failed: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log("[atmos-token] Token received, expires_in:", data.expires_in);
+    
+    // Cache for ~55 minutes (or expires_in - 5 min if provided)
+    const expiresIn = data.expires_in ? (data.expires_in - 300) * 1000 : 55 * 60 * 1000;
+    
+    cachedToken = {
+      access_token: data.access_token,
+      expires_at: now + expiresIn,
+    };
+    
+    return data.access_token;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error("ATMOS token request timed out");
+    }
+    throw error;
   }
-  
-  const data = await response.json();
-  console.log("[atmos-token] Token received, expires_in:", data.expires_in);
-  
-  // Cache for ~55 minutes (or expires_in - 5 min if provided)
-  const expiresIn = data.expires_in ? (data.expires_in - 300) * 1000 : 55 * 60 * 1000;
-  
-  cachedToken = {
-    access_token: data.access_token,
-    expires_at: now + expiresIn,
-  };
-  
-  return data.access_token;
 }
 
 serve(async (req) => {
@@ -65,25 +78,6 @@ serve(async (req) => {
   
   try {
     // This endpoint is internal - only called by other edge functions
-    // But we'll allow auth'd requests for debugging
-    const authHeader = req.headers.get("Authorization");
-    
-    if (authHeader) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-      const supabase = createClient(supabaseUrl, supabaseKey, {
-        global: { headers: { Authorization: authHeader } },
-      });
-      
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (error || !user) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
-    
     const access_token = await getAtmosToken();
     
     return new Response(JSON.stringify({ access_token }), {
