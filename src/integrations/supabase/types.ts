@@ -232,6 +232,93 @@ export type Database = {
         }
         Relationships: []
       }
+      atmos_cards: {
+        Row: {
+          binding_id: string | null
+          card_token: string | null
+          created_at: string
+          expiry: string | null
+          id: string
+          masked_pan: string | null
+          phone: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          binding_id?: string | null
+          card_token?: string | null
+          created_at?: string
+          expiry?: string | null
+          id?: string
+          masked_pan?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          binding_id?: string | null
+          card_token?: string | null
+          created_at?: string
+          expiry?: string | null
+          id?: string
+          masked_pan?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      atmos_transactions: {
+        Row: {
+          account: string
+          amount_tiyin: number
+          confirmed_at: string | null
+          created_at: string
+          currency: string
+          id: string
+          plan: string
+          provider_payload: Json | null
+          status: string
+          store_id: string | null
+          transaction_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account: string
+          amount_tiyin: number
+          confirmed_at?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          plan: string
+          provider_payload?: Json | null
+          status?: string
+          store_id?: string | null
+          transaction_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account?: string
+          amount_tiyin?: number
+          confirmed_at?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          plan?: string
+          provider_payload?: Json | null
+          status?: string
+          store_id?: string | null
+          transaction_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       attachment_text: {
         Row: {
           attachment_id: string
@@ -1140,6 +1227,60 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          atmos_card_id: string | null
+          created_at: string
+          current_period_end: string
+          current_period_start: string
+          id: string
+          last_transaction_id: string | null
+          plan: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          atmos_card_id?: string | null
+          created_at?: string
+          current_period_end: string
+          current_period_start?: string
+          id?: string
+          last_transaction_id?: string | null
+          plan: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          atmos_card_id?: string | null
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          last_transaction_id?: string | null
+          plan?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_atmos_card_id_fkey"
+            columns: ["atmos_card_id"]
+            isOneToOne: false
+            referencedRelation: "atmos_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_last_transaction_id_fkey"
+            columns: ["last_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "atmos_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tool_decisions: {
         Row: {
