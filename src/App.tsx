@@ -326,7 +326,9 @@ const App = () => (
                     path="/video-studio" 
                     element={
                       <ProtectedRoute>
-                        <LazyRoute><VideoStudio /></LazyRoute>
+                        <AppShellV2>
+                          <LazyRoute><VideoStudio /></LazyRoute>
+                        </AppShellV2>
                       </ProtectedRoute>
                     } 
                   />
