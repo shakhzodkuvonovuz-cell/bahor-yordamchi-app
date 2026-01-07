@@ -129,12 +129,16 @@ export default function VideoStudio() {
   const [estimatedTime, setEstimatedTime] = useState<number | null>(null);
   const [dailyUsed, setDailyUsed] = useState(0);
   const [dailyLimit, setDailyLimit] = useState(5);
+  const [queuePosition, setQueuePosition] = useState<number | null>(null);
   
-  // Polling
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const pollCountRef = useRef(0);
+  // Polling with exponential backoff
+  const pollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pollAttemptRef = useRef(0);
   const activePollGenerationIdRef = useRef<string | null>(null);
   const lastCompletedToastGenerationIdRef = useRef<string | null>(null);
+  
+  // LocalStorage key for persisting active generation
+  const STORAGE_KEY = "video_studio_active_generation";
 
   // Check access on mount
   useEffect(() => {
@@ -158,14 +162,15 @@ export default function VideoStudio() {
     checkAccess();
   }, [user]);
 
-  // Load daily usage
+  // Load daily usage and restore active generation on mount
   useEffect(() => {
     if (user) {
       loadDailyUsage();
+      restoreActiveGeneration();
     }
     return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
+      if (pollTimeoutRef.current) {
+        clearTimeout(pollTimeoutRef.current);
       }
     };
   }, [user]);
@@ -199,6 +204,85 @@ export default function VideoStudio() {
       setReferenceImagePreview(null);
     }
   }, [referenceImage]);
+
+  // Persist active generation to localStorage
+  const persistActiveGeneration = (generationId: string | null) => {
+    if (generationId) {
+      localStorage.setItem(STORAGE_KEY, generationId);
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  };
+
+  // Restore active generation from localStorage
+  const restoreActiveGeneration = async () => {
+    const storedId = localStorage.getItem(STORAGE_KEY);
+    if (!storedId || !session?.access_token) return;
+
+    try {
+      // Fetch current status from backend
+      const { data, error } = await supabase.functions.invoke("video-poll-job", {
+        body: { generation_id: storedId },
+      });
+
+      if (error || !data) {
+        localStorage.removeItem(STORAGE_KEY);
+        return;
+      }
+
+      // If still in progress, restore and resume polling
+      if (data.status === "queued" || data.status === "running") {
+        // Fetch full record from DB
+        const { data: genData } = await supabase
+          .from("video_generations")
+          .select("*")
+          .eq("id", storedId)
+          .maybeSingle();
+
+        if (genData) {
+          setCurrentGeneration({
+            id: genData.id,
+            created_at: genData.created_at,
+            status: data.status,
+            prompt: genData.prompt_uz || genData.prompt || "",
+            progress: data.progress || 0,
+            params: (typeof genData.params === 'object' && genData.params !== null && !Array.isArray(genData.params)) ? genData.params as Record<string, any> : {},
+          });
+          setIsGenerating(true);
+          setEstimatedTime(calculateETA());
+          startPolling(storedId);
+        }
+      } else if (data.status === "done") {
+        // Completed while away - show result
+        const { data: genData } = await supabase
+          .from("video_generations")
+          .select("*")
+          .eq("id", storedId)
+          .maybeSingle();
+
+        if (genData) {
+          setCurrentGeneration({
+            id: genData.id,
+            created_at: genData.created_at,
+            status: "completed",
+            prompt: genData.prompt_uz || genData.prompt || "",
+            progress: 100,
+            output_video_url: data.output_video_url || genData.output_video_url,
+            output_video_path: genData.output_video_path,
+            params: (typeof genData.params === 'object' && genData.params !== null && !Array.isArray(genData.params)) ? genData.params as Record<string, any> : {},
+          });
+          notifyCompletedOnce(storedId);
+        }
+        localStorage.removeItem(STORAGE_KEY);
+      } else {
+        // Error or other terminal state
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    } catch (err) {
+      console.error("Failed to restore generation:", err);
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  };
 
   const loadDailyUsage = async () => {
     const now = new Date();
@@ -254,6 +338,13 @@ export default function VideoStudio() {
     return baseTime + (durationSec * 10);
   };
 
+  // Exponential backoff: 2s, 4s, 8s, 16s... max 30s
+  const getPollingDelay = (attempt: number) => {
+    const baseDelay = 2000;
+    const maxDelay = 30000;
+    return Math.min(baseDelay * Math.pow(2, attempt), maxDelay);
+  };
+
   const startGeneration = async () => {
     if (!prompt.trim()) {
       toast({ title: t("videoStudio.enterPrompt"), variant: "destructive" });
@@ -267,24 +358,27 @@ export default function VideoStudio() {
 
     setIsGenerating(true);
     setEstimatedTime(calculateETA());
+    setQueuePosition(null);
     const resolution = getResolution();
 
     try {
-      const response = await supabase.functions.invoke("runpod-video", {
+      // Call new video-create-job edge function
+      const response = await supabase.functions.invoke("video-create-job", {
         body: {
-          action: "start",
           prompt: prompt.trim(),
+          mode,
+          source_type: sourceType,
+          duration_seconds: getDurationSeconds(),
+          aspect_ratio: aspectRatio,
+          seed: seed ?? Math.floor(Math.random() * 2147483647),
           params: {
             width: resolution.width,
             height: resolution.height,
             fps: ALLOWED_FPS.includes(fps) ? fps : 24,
-            duration_seconds: getDurationSeconds(),
-            seed: seed ?? Math.floor(Math.random() * 2147483647),
             guidance_scale: Math.min(guidanceScale, 8),
             steps: Math.min(steps, MAX_STEPS),
             motion_strength: Math.max(0, Math.min(1, motionStrength)),
             preset: stylePreset,
-            mode,
           },
         },
       });
@@ -296,41 +390,31 @@ export default function VideoStudio() {
         setIsGenerating(false);
         toast({ 
           title: "Vaqtincha to'xtatildi",
-          description: data.messageUz || "Video funksiyasi vaqtincha o'chirildi.",
+          description: data.message || "Video funksiyasi vaqtincha o'chirildi.",
           variant: "destructive" 
         });
         return;
       }
 
-      if (response.error && !data) {
-        throw new Error(response.error.message || t("videoStudio.error"));
+      if (response.error || !data?.generation_id) {
+        throw new Error(data?.error || response.error?.message || t("videoStudio.error"));
       }
 
-      if (!data?.ok) {
-        if (data?.error === "VIDEO_NOT_AVAILABLE_FREE") {
-          toast({ 
-            title: t("videoStudio.freeBlocked.title"),
-            description: t("videoStudio.freeBlocked.description"),
-            variant: "destructive" 
-          });
-          setIsFreeUser(true);
-        } else {
-          throw new Error(data?.messageUz || data?.error || t("videoStudio.error"));
-        }
-        setIsGenerating(false);
-        return;
-      }
-
+      const generationId = data.generation_id;
+      
       setCurrentGeneration({
-        id: data.generationId,
+        id: generationId,
         created_at: new Date().toISOString(),
-        status: "running",
+        status: data.status || "queued",
         prompt: prompt.trim(),
         params: {},
         progress: 0,
       });
 
-      startPolling(data.generationId);
+      // Persist to localStorage for page leave/resume
+      persistActiveGeneration(generationId);
+      
+      startPolling(generationId);
       setDailyUsed(prev => prev + 1);
 
     } catch (error: any) {
@@ -351,82 +435,82 @@ export default function VideoStudio() {
   };
 
   const startPolling = (generationId: string) => {
-    if (pollIntervalRef.current && activePollGenerationIdRef.current === generationId) {
-      return;
-    }
-    if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current);
-      pollIntervalRef.current = null;
+    // Clear any existing poll
+    if (pollTimeoutRef.current) {
+      clearTimeout(pollTimeoutRef.current);
+      pollTimeoutRef.current = null;
     }
 
     activePollGenerationIdRef.current = generationId;
-    pollCountRef.current = 0;
+    pollAttemptRef.current = 0;
     
     const poll = async () => {
-      pollCountRef.current++;
+      if (activePollGenerationIdRef.current !== generationId) return;
       
       try {
-        const response = await supabase.functions.invoke("runpod-video", {
-          body: { action: "status", generationId },
+        const response = await supabase.functions.invoke("video-poll-job", {
+          body: { generation_id: generationId },
         });
 
         if (response.error) {
+          console.error("Poll error:", response.error);
+          scheduleNextPoll(generationId);
           return;
         }
 
         const data = response.data;
         
-        if (!data.ok) {
-          if (pollIntervalRef.current) {
-            clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = null;
-          }
-          setIsGenerating(false);
-          setCurrentGeneration(prev => prev ? {
-            ...prev,
-            status: "failed",
-            error: data.messageUz || data.error || "Noma'lum xatolik",
-          } : null);
-          toast({ 
-            title: t("videoStudio.error"), 
-            description: data.error, 
-            variant: "destructive" 
-          });
-          return;
-        }
-
+        // Map backend status to UI status
+        let uiStatus = data.status;
+        if (data.status === "done") uiStatus = "completed";
+        if (data.status === "error") uiStatus = "failed";
+        
         setCurrentGeneration(prev => {
-          if (!prev) return null;
+          if (!prev || prev.id !== generationId) return prev;
           return {
             ...prev,
-            status: data.status,
-            progress: data.progress || prev.progress,
+            status: uiStatus,
+            progress: data.progress ?? prev.progress,
             error: data.error,
-            output_video_path: data.outputVideoPath,
-            output_video_url: data.outputVideoUrl,
+            output_video_url: data.output_video_url,
           };
         });
 
-        if (["completed", "failed", "canceled"].includes(data.status)) {
-          if (pollIntervalRef.current) {
-            clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = null;
-          }
+        // Update queue position if available
+        if (data.queue_position !== undefined) {
+          setQueuePosition(data.queue_position);
+        }
+
+        if (["done", "completed", "error", "failed", "canceled"].includes(data.status)) {
           setIsGenerating(false);
+          persistActiveGeneration(null);
           
-          if (data.status === "completed" && data.outputVideoUrl) {
+          if ((data.status === "done" || data.status === "completed") && data.output_video_url) {
             notifyCompletedOnce(generationId);
-          } else if (data.status === "failed") {
+          } else if (data.status === "error" || data.status === "failed") {
             toast({ title: t("videoStudio.error"), description: data.error, variant: "destructive" });
           }
+        } else {
+          // Still in progress - schedule next poll with backoff
+          scheduleNextPoll(generationId);
         }
 
       } catch (error) {
         console.error("Polling exception:", error);
+        scheduleNextPoll(generationId);
       }
     };
 
-    pollIntervalRef.current = setInterval(poll, 2000);
+    const scheduleNextPoll = (genId: string) => {
+      if (activePollGenerationIdRef.current !== genId) return;
+      
+      const delay = getPollingDelay(pollAttemptRef.current);
+      pollAttemptRef.current++;
+      
+      pollTimeoutRef.current = setTimeout(poll, delay);
+    };
+
+    // Start immediately
     poll();
   };
 
@@ -434,17 +518,16 @@ export default function VideoStudio() {
     if (!currentGeneration) return;
 
     try {
-      await supabase.functions.invoke("runpod-video", {
-        body: { action: "cancel", generationId: currentGeneration.id },
-      });
-
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-        pollIntervalRef.current = null;
+      // Stop polling
+      if (pollTimeoutRef.current) {
+        clearTimeout(pollTimeoutRef.current);
+        pollTimeoutRef.current = null;
       }
+      activePollGenerationIdRef.current = null;
 
       setCurrentGeneration(prev => prev ? { ...prev, status: "canceled" } : null);
       setIsGenerating(false);
+      persistActiveGeneration(null);
       toast({ title: t("videoStudio.canceled") });
     } catch (error) {
       console.error("Cancel error:", error);
