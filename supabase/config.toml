@@ -77,3 +77,6 @@ verify_jwt = false
 
 [functions.auth-send-email]
 verify_jwt = false
+
+[functions.video-create-job]
+verify_jwt = false
