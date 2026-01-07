@@ -83,3 +83,12 @@ verify_jwt = false
 
 [functions.video-poll-job]
 verify_jwt = false
+
+[functions.atmos-token]
+verify_jwt = false
+
+[functions.atmos-create-transaction]
+verify_jwt = false
+
+[functions.atmos-transaction-info]
+verify_jwt = false
