@@ -227,10 +227,19 @@ serve(async (req) => {
       throw new Error("ATMOS checkout base URL not configured");
     }
     
-    // APP_URL for redirect - fallback to bahorai.uz
-    const APP_URL = Deno.env.get("APP_URL") || "https://bahorai.uz";
+    // Prefer configured APP_URL, otherwise fall back to the caller origin.
+    const originHeader = req.headers.get("origin");
+    const refererHeader = req.headers.get("referer");
+    let fallbackOrigin = "";
+    try {
+      const u = new URL(originHeader || refererHeader || "");
+      fallbackOrigin = u.origin;
+    } catch {
+      fallbackOrigin = "";
+    }
+
+    const APP_URL = Deno.env.get("APP_URL") || fallbackOrigin || "https://bahorai.uz";
     const redirectLink = `${APP_URL}/payment/return?transactionId=${transaction_id}`;
-    
     // URL format: ${base}?storeId=${ATMOS_STORE_ID}&transactionId=${transaction_id}&redirectLink=${encoded}
     const checkout_url = `${ATMOS_CHECKOUT_BASE}?storeId=${ATMOS_STORE_ID}&transactionId=${transaction_id}&redirectLink=${encodeURIComponent(redirectLink)}`;
     

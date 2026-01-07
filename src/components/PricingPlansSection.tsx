@@ -27,7 +27,7 @@ export default function PricingPlansSection() {
       
       if (error) {
         console.error("Payment init error:", error);
-        toast.error("To'lovni boshlashda xatolik yuz berdi");
+        toast.error(error.message || "To'lovni boshlashda xatolik yuz berdi");
         return;
       }
       
@@ -36,12 +36,11 @@ export default function PricingPlansSection() {
         return;
       }
       
-      // Open checkout in new tab
-      window.open(data.checkout_url, "_blank");
-      
-      // Navigate to return page in current window
-      navigate(`/payment/return?transactionId=${data.transaction_id}`);
-      
+      // Redirect in the same tab (more reliable on mobile / in-app browsers)
+      window.location.assign(data.checkout_url);
+
+      // ATMOS will redirect back to /payment/return via redirectLink.
+
     } catch (err) {
       console.error("Payment error:", err);
       toast.error("To'lovda xatolik yuz berdi");
