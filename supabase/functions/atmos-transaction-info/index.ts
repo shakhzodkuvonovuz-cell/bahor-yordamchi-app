@@ -126,6 +126,15 @@ serve(async (req) => {
     const ATMOS_API_BASE = Deno.env.get("ATMOS_API_BASE") || "https://apigw.atmos.uz";
     const ATMOS_STORE_ID = Deno.env.get("ATMOS_STORE_ID");
     
+    // Log status poll event (no secrets)
+    await adminSupabase.from("payment_events").insert({
+      user_id: user.id,
+      event: "status_poll",
+      transaction_id: String(transaction_id),
+      status: "polling",
+      meta: {},
+    });
+    
     // Get transaction from DB
     const { data: txn, error: fetchError } = await adminSupabase
       .from("atmos_transactions")
@@ -258,6 +267,15 @@ serve(async (req) => {
         // Continue - subscription is created
       }
       
+      // Log confirmed_activation event (no secrets)
+      await adminSupabase.from("payment_events").insert({
+        user_id: user.id,
+        event: "confirmed_activation",
+        transaction_id: String(transaction_id),
+        status: "confirmed",
+        meta: { plan: txn.plan, subscription_end: periodEnd.toISOString() },
+      });
+      
       console.log("[atmos-transaction-info] Subscription activated successfully");
       
       return new Response(JSON.stringify({
@@ -268,6 +286,17 @@ serve(async (req) => {
         message: "Payment confirmed and subscription activated",
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    
+    // Log failure event if status is failed or canceled
+    if (newStatus === "failed" || newStatus === "canceled") {
+      await adminSupabase.from("payment_events").insert({
+        user_id: user.id,
+        event: "failure",
+        transaction_id: String(transaction_id),
+        status: newStatus,
+        meta: { atmos_status: atmosStatus },
       });
     }
     

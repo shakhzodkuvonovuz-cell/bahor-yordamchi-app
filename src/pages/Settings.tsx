@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { SEO } from "@/components/SEO";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
-import { ArrowLeft, User, Globe, Moon, Sun, Shield, HelpCircle, FileText, Mail, LogOut, ChevronRight, CreditCard, Bell, Zap, Edit, Crown, Lock, RotateCcw, Loader2, Infinity, Download, Trash2, Info, ExternalLink } from "lucide-react";
+import { ArrowLeft, User, Globe, Moon, Sun, Shield, HelpCircle, FileText, Mail, LogOut, ChevronRight, CreditCard, Bell, Zap, Edit, Crown, Lock, RotateCcw, Loader2, Infinity, Download, Trash2, Info, ExternalLink, Calendar } from "lucide-react";
+import PaymentVerifyModal from "@/components/PaymentVerifyModal";
 import { useTheme } from "@/hooks/useTheme";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { useAuth } from "@/contexts/AuthContext";
@@ -24,6 +25,7 @@ import UserPreferencesSection from "@/components/UserPreferencesSection";
 import { APP_INFO } from "@/data/appIdentity";
 
 import { useDailyUsageServer } from "@/hooks/useEntitlements";
+import { useTrialStatus } from "@/hooks/useTrialStatus";
 
 import { supabase } from "@/integrations/supabase/client";
 
@@ -34,6 +36,7 @@ export default function Settings() {
   const { language, setLanguage, t } = useTranslation();
   const { user, profile, profileLoading, signOut, refreshProfile } = useAuth();
   const { usage, loading: usageLoading, isPremium, isDevBypass, hasReachedLimit } = useDailyUsageServer();
+  const { status: trialStatus, refresh: refreshTrialStatus } = useTrialStatus();
   
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [subscriptionDrawerOpen, setSubscriptionDrawerOpen] = useState(false);
@@ -247,6 +250,51 @@ export default function Settings() {
                       plan={profile.plan || 'free'}
                     />
                   )}
+                </section>
+              )}
+
+              {/* Subscription Status */}
+              {profile && trialStatus && trialStatus.isPremium && (
+                <section className="bg-card border border-primary/30 rounded-2xl p-4 shadow-premium-sm w-full">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <Crown className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">
+                          {language === "uz" ? "Joriy reja" : "Current Plan"}
+                        </p>
+                        <p className="text-lg font-bold text-primary">
+                          {trialStatus.plan === 'dev_unlimited' ? 'Dev Unlimited' : 
+                           trialStatus.plan === 'beta_premium' ? 'Beta Premium' : 'Premium'}
+                        </p>
+                      </div>
+                    </div>
+                    {trialStatus.betaExpiresAt && (
+                      <div className="text-right">
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span className="text-xs">
+                            {language === "uz" ? "Tugaydi" : "Expires"}
+                          </span>
+                        </div>
+                        <p className="text-sm font-medium text-foreground">
+                          {new Date(trialStatus.betaExpiresAt).toLocaleDateString(language === "uz" ? "uz-UZ" : "en-US", {
+                            year: "numeric",
+                            month: "short", 
+                            day: "numeric"
+                          })}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-border/40">
+                    <PaymentVerifyModal onVerified={() => {
+                      refreshProfile();
+                      refreshTrialStatus();
+                    }} />
+                  </div>
                 </section>
               )}
 
