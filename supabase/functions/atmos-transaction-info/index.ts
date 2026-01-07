@@ -63,6 +63,29 @@ async function getAtmosToken(): Promise<string> {
   }
 }
 
+// Log payment event (no secrets logged)
+// deno-lint-ignore no-explicit-any
+async function logPaymentEvent(
+  adminSupabase: any,
+  userId: string,
+  event: string,
+  transactionId: string | null,
+  status: string | null,
+  meta: Record<string, unknown> = {}
+) {
+  try {
+    await adminSupabase.from("payment_events").insert({
+      user_id: userId,
+      event,
+      transaction_id: transactionId,
+      status,
+      meta,
+    });
+  } catch (e) {
+    console.error("[payment_events] Failed to log event:", e);
+  }
+}
+
 // Map ATMOS status to our status: confirmed|failed|canceled|pending
 function mapAtmosStatus(atmosStatus: string | undefined): string {
   if (!atmosStatus) return "pending";
@@ -142,6 +165,11 @@ serve(async (req) => {
       });
     }
     
+    // Log status poll
+    await logPaymentEvent(adminSupabase, user.id, "status_poll", String(transaction_id), txn.status, {
+      current_status: txn.status,
+    });
+    
     // Idempotency: if already confirmed with confirmed_at, return success immediately
     if (txn.status === "confirmed" && txn.confirmed_at) {
       console.log("[atmos-transaction-info] Transaction already confirmed:", transaction_id);
@@ -191,7 +219,7 @@ serve(async (req) => {
     }
     
     const atmosData = await atmosResponse.json();
-    console.log("[atmos-transaction-info] ATMOS status response:", JSON.stringify(atmosData));
+    console.log("[atmos-transaction-info] ATMOS status response received");
     
     // Map ATMOS status to our status
     const atmosStatus = atmosData.state || atmosData.status || atmosData.result?.state;
@@ -258,6 +286,12 @@ serve(async (req) => {
         // Continue - subscription is created
       }
       
+      // Log confirmed activation
+      await logPaymentEvent(adminSupabase, user.id, "confirmed_activation", String(transaction_id), "confirmed", {
+        plan: txn.plan,
+        period_end: periodEnd.toISOString(),
+      });
+      
       console.log("[atmos-transaction-info] Subscription activated successfully");
       
       return new Response(JSON.stringify({
@@ -268,6 +302,14 @@ serve(async (req) => {
         message: "Payment confirmed and subscription activated",
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    
+    // Log failure if status is failed or canceled
+    if (newStatus === "failed" || newStatus === "canceled") {
+      await logPaymentEvent(adminSupabase, user.id, "failure", String(transaction_id), newStatus, {
+        plan: txn.plan,
+        atmos_status: atmosStatus,
       });
     }
     
