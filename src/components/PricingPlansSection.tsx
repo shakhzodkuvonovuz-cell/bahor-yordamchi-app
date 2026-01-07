@@ -1,9 +1,56 @@
-import { Crown, Check } from "lucide-react";
+import { useState } from "react";
+import { Crown, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export default function PricingPlansSection() {
-  const navigate = useNavigate();
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+
+  const handlePayWithAtmos = async (plan: "monthly" | "yearly") => {
+    setLoadingPlan(plan);
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast.error("Iltimos, avval tizimga kiring");
+        return;
+      }
+      
+      const { data, error } = await supabase.functions.invoke("atmos-create-transaction", {
+        body: { plan },
+      });
+      
+      if (error) {
+        console.error("Payment init error:", error);
+        toast.error("To'lovni boshlashda xatolik yuz berdi");
+        return;
+      }
+      
+      if (!data?.checkout_url) {
+        toast.error("To'lov havolasini olishda xatolik");
+        return;
+      }
+      
+      // Store transaction ID for return page
+      const returnUrl = `${window.location.origin}/payment/return?transactionId=${data.transaction_id}`;
+      
+      // Open checkout in new tab or same window
+      window.open(data.checkout_url, "_blank");
+      
+      // Also navigate to return page in current window after a short delay
+      setTimeout(() => {
+        window.location.href = returnUrl;
+      }, 1000);
+      
+    } catch (err) {
+      console.error("Payment error:", err);
+      toast.error("To'lovda xatolik yuz berdi");
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
 
   const plans = [
     {
@@ -18,6 +65,7 @@ export default function PricingPlansSection() {
       buttonText: "Hozirgi reja",
       buttonVariant: "outline" as const,
       disabled: true,
+      plan: null,
     },
     {
       name: "Premium",
@@ -31,8 +79,9 @@ export default function PricingPlansSection() {
         "Tezroq javoblar",
         "Kelajakdagi yangi funksiyalarga ustuvor kirish",
       ],
-      buttonText: "Premium rejani tanlash",
+      buttonText: "ATMOS orqali to'lash",
       buttonVariant: "default" as const,
+      plan: "monthly" as const,
     },
     {
       name: "Yillik Premium",
@@ -45,8 +94,9 @@ export default function PricingPlansSection() {
         "Oylik rejaga nisbatan tejash",
         "Ustuvor qo'llab-quvvatlash",
       ],
-      buttonText: "Yillik reja haqida batafsil",
+      buttonText: "ATMOS orqali to'lash",
       buttonVariant: "outline" as const,
+      plan: "yearly" as const,
     },
   ];
 
@@ -112,15 +162,21 @@ export default function PricingPlansSection() {
             <Button
               variant={plan.buttonVariant}
               className={`w-full ${plan.popular ? 'bg-gradient-to-r from-primary to-primary/80' : ''}`}
-              disabled={plan.disabled}
+              disabled={plan.disabled || loadingPlan === plan.plan}
               onClick={() => {
-                // TODO: Backend integration - Connect to real payment flow
-                if (!plan.disabled) {
-                  navigate("/settings");
+                if (plan.plan) {
+                  handlePayWithAtmos(plan.plan);
                 }
               }}
             >
-              {plan.buttonText}
+              {loadingPlan === plan.plan ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Yuklanmoqda...
+                </>
+              ) : (
+                plan.buttonText
+              )}
             </Button>
           </div>
         ))}
@@ -128,7 +184,7 @@ export default function PricingPlansSection() {
 
       <div className="px-6 py-4 bg-muted/30 border-t border-border">
         <p className="text-xs text-muted-foreground text-center leading-relaxed">
-          💡 <strong>Beta davri:</strong> Hozircha barcha foydalanuvchilar uchun bepul. To'lov tizimi tez orada faollashtiriladi.
+          💳 To'lov ATMOS orqali amalga oshiriladi. Humo, UzCard va boshqa kartalar qabul qilinadi.
         </p>
       </div>
     </div>
