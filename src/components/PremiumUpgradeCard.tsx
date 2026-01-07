@@ -1,16 +1,14 @@
 import { Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/i18n/LanguageProvider";
 
 export default function PremiumUpgradeCard() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   
   const handleUpgrade = () => {
-    toast({
-      title: t('premium.comingSoon'),
-      description: t('premium.paymentDisabled'),
-    });
+    navigate("/pricing");
   };
 
   const benefits = [
@@ -51,11 +49,11 @@ export default function PremiumUpgradeCard() {
           onClick={handleUpgrade}
         >
           <Crown className="w-4 h-4 mr-2" />
-          {t('premium.comingSoon')}
+          {t('premium.upgrade')}
         </Button>
 
         <p className="text-xs text-center text-muted-foreground">
-          {t('premium.paymentComingSoon')}
+          💳 Uzcard/Humo orqali to'lash
         </p>
       </div>
     </div>
