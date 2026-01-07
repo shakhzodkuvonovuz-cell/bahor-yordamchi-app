@@ -11,57 +11,70 @@ let cachedToken: { access_token: string; expires_at: number } | null = null;
 
 async function getAtmosToken(): Promise<string> {
   const now = Date.now();
-  
+
   if (cachedToken && cachedToken.expires_at > now + 5 * 60 * 1000) {
     console.log("[atmos] Using cached token");
     return cachedToken.access_token;
   }
-  
-  console.log("[atmos] Fetching new token");
-  
-  const ATMOS_API_BASE = Deno.env.get("ATMOS_API_BASE") || "https://apigw.atmos.uz";
+
+  const rawBase = Deno.env.get("ATMOS_API_BASE") || "https://apigw.atmos.uz";
+  const ATMOS_API_BASE = rawBase.replace(/\/$/, "");
   const ATMOS_CONSUMER_ID = Deno.env.get("ATMOS_CONSUMER_ID");
   const ATMOS_CONSUMER_SECRET = Deno.env.get("ATMOS_CONSUMER_SECRET");
-  
+
   if (!ATMOS_CONSUMER_ID || !ATMOS_CONSUMER_SECRET) {
     throw new Error("Missing ATMOS credentials");
   }
-  
+
+  console.log("[atmos] Fetching new token", { base: ATMOS_API_BASE });
+
   const credentials = btoa(`${ATMOS_CONSUMER_ID}:${ATMOS_CONSUMER_SECRET}`);
-  
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
-  
-  try {
-    const response = await fetch(`${ATMOS_API_BASE}/token?grant_type=client_credentials`, {
-      method: "POST",
-      headers: {
-        "Authorization": `Basic ${credentials}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      signal: controller.signal,
-    });
-    
-    clearTimeout(timeoutId);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("[atmos] Token request failed:", response.status, errorText);
-      throw new Error(`ATMOS token request failed: ${response.status}`);
+
+  const fetchTokenOnce = async () => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
+
+    try {
+      const response = await fetch(`${ATMOS_API_BASE}/token?grant_type=client_credentials`, {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${credentials}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[atmos] Token request failed:", response.status, errorText);
+        throw new Error(`ATMOS token request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const expiresIn = data.expires_in ? (data.expires_in - 300) * 1000 : 55 * 60 * 1000;
+
+      cachedToken = {
+        access_token: data.access_token,
+        expires_at: now + expiresIn,
+      };
+
+      return data.access_token as string;
+    } finally {
+      clearTimeout(timeoutId);
     }
-    
-    const data = await response.json();
-    const expiresIn = data.expires_in ? (data.expires_in - 300) * 1000 : 55 * 60 * 1000;
-    
-    cachedToken = {
-      access_token: data.access_token,
-      expires_at: now + expiresIn,
-    };
-    
-    return data.access_token;
+  };
+
+  try {
+    // One retry to smooth out transient network issues
+    try {
+      return await fetchTokenOnce();
+    } catch (e) {
+      console.warn("[atmos] Token fetch failed, retrying once...");
+      await new Promise((r) => setTimeout(r, 600));
+      return await fetchTokenOnce();
+    }
   } catch (error) {
-    clearTimeout(timeoutId);
-    if (error instanceof Error && error.name === 'AbortError') {
+    if (error instanceof Error && error.name === "AbortError") {
       throw new Error("ATMOS token request timed out");
     }
     throw error;
