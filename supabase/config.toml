@@ -92,3 +92,6 @@ verify_jwt = false
 
 [functions.atmos-transaction-info]
 verify_jwt = false
+
+[functions.atmos-health]
+verify_jwt = false
