@@ -36,6 +36,11 @@ import {
   Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { 
+  UzbekSpeechModal, 
+  detectUzbekSpeechRequest, 
+  convertSpeechToEnglish 
+} from "@/components/video/UzbekSpeechModal";
 
 // ========== CONSTANTS ==========
 const STYLE_PRESETS = [
@@ -130,6 +135,13 @@ export default function VideoStudio() {
   const [dailyUsed, setDailyUsed] = useState(0);
   const [dailyLimit, setDailyLimit] = useState(5);
   const [queuePosition, setQueuePosition] = useState<number | null>(null);
+  
+  // Uzbek speech modal state
+  const [showUzbekSpeechModal, setShowUzbekSpeechModal] = useState(false);
+  const [pendingGeneration, setPendingGeneration] = useState<{
+    forceNoAudio?: boolean;
+    convertToEnglish?: boolean;
+  } | null>(null);
   
   // Polling with exponential backoff
   const pollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -345,7 +357,7 @@ export default function VideoStudio() {
     return Math.min(baseDelay * Math.pow(2, attempt), maxDelay);
   };
 
-  const startGeneration = async () => {
+  const handleGenerateClick = () => {
     if (!prompt.trim()) {
       toast({ title: t("videoStudio.enterPrompt"), variant: "destructive" });
       return;
@@ -356,16 +368,50 @@ export default function VideoStudio() {
       return;
     }
 
+    // Check for Uzbek speech request
+    if (detectUzbekSpeechRequest(prompt)) {
+      setShowUzbekSpeechModal(true);
+      return;
+    }
+
+    // No speech issue detected, proceed normally
+    startGeneration();
+  };
+
+  const handleUzbekSpeechSilent = () => {
+    setShowUzbekSpeechModal(false);
+    setPendingGeneration({ forceNoAudio: true });
+    startGeneration({ forceNoAudio: true });
+  };
+
+  const handleUzbekSpeechEnglish = () => {
+    setShowUzbekSpeechModal(false);
+    setPendingGeneration({ convertToEnglish: true });
+    startGeneration({ convertToEnglish: true });
+  };
+
+  const handleUzbekSpeechCancel = () => {
+    setShowUzbekSpeechModal(false);
+    setPendingGeneration(null);
+  };
+
+  const startGeneration = async (options?: { forceNoAudio?: boolean; convertToEnglish?: boolean }) => {
     setIsGenerating(true);
     setEstimatedTime(calculateETA());
     setQueuePosition(null);
     const resolution = getResolution();
 
+    // Modify prompt if needed
+    let finalPrompt = prompt.trim();
+    if (options?.convertToEnglish) {
+      finalPrompt = convertSpeechToEnglish(finalPrompt);
+    }
+
     try {
       // Call new video-create-job edge function
       const response = await supabase.functions.invoke("video-create-job", {
         body: {
-          prompt: prompt.trim(),
+          prompt: finalPrompt,
           mode,
           source_type: sourceType,
           duration_seconds: getDurationSeconds(),
@@ -379,6 +425,7 @@ export default function VideoStudio() {
             steps: Math.min(steps, MAX_STEPS),
             motion_strength: Math.max(0, Math.min(1, motionStrength)),
             preset: stylePreset,
+            audio: options?.forceNoAudio ? false : undefined,
           },
         },
       });
@@ -406,7 +453,7 @@ export default function VideoStudio() {
         id: generationId,
         created_at: new Date().toISOString(),
         status: data.status || "queued",
-        prompt: prompt.trim(),
+        prompt: finalPrompt,
         params: {},
         progress: 0,
       });
@@ -864,7 +911,7 @@ export default function VideoStudio() {
               <Button
                 className="w-full"
                 size="lg"
-                onClick={startGeneration}
+                onClick={handleGenerateClick}
                 disabled={isGenerating || !prompt.trim() || (dailyLimit >= 0 && dailyUsed >= dailyLimit)}
               >
                 {isGenerating ? (
@@ -989,6 +1036,14 @@ export default function VideoStudio() {
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
+
+      {/* Uzbek Speech Warning Modal */}
+      <UzbekSpeechModal
+        open={showUzbekSpeechModal}
+        onClose={handleUzbekSpeechCancel}
+        onSilent={handleUzbekSpeechSilent}
+        onEnglishSpeech={handleUzbekSpeechEnglish}
+      />
     </div>
   );
 }
