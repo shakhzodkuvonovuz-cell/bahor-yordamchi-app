@@ -47,6 +47,7 @@ const AgentWorkspace = lazy(() => import("./pages/AgentWorkspace"));
 const ImageStudioV2 = lazy(() => import("./pages/ImageStudioV2"));
 const VideoStudio = lazy(() => import("./pages/VideoStudio"));
 const PaymentReturn = lazy(() => import("./pages/PaymentReturn"));
+const Pricing = lazy(() => import("./pages/Pricing"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -340,6 +341,17 @@ const App = () => (
                       <ProtectedRoute>
                         <AppShellV2>
                           <LazyRoute><PaymentReturn /></LazyRoute>
+                        </AppShellV2>
+                      </ProtectedRoute>
+                    } 
+                  />
+                  {/* Pricing page */}
+                  <Route 
+                    path="/pricing" 
+                    element={
+                      <ProtectedRoute>
+                        <AppShellV2>
+                          <LazyRoute><Pricing /></LazyRoute>
                         </AppShellV2>
                       </ProtectedRoute>
                     } 
