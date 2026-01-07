@@ -1,12 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AppContainer } from "@/components/layout";
 
-type PaymentStatus = "loading" | "confirmed" | "pending" | "failed" | "canceled" | "error";
+type PaymentStatus = "loading" | "confirmed" | "pending" | "failed" | "canceled" | "timeout" | "error";
+
+const MAX_POLL_TIME_MS = 45000; // 45 seconds max polling
+const POLL_INTERVAL_MS = 2000; // Poll every 2 seconds
 
 export default function PaymentReturn() {
   const [searchParams] = useSearchParams();
@@ -15,71 +18,105 @@ export default function PaymentReturn() {
   
   const [status, setStatus] = useState<PaymentStatus>("loading");
   const [message, setMessage] = useState("");
-  const [pollCount, setPollCount] = useState(0);
-  
-  const maxPolls = 30; // Max 30 polls (1 minute at 2s intervals)
-  
+  const pollStartTime = useRef<number>(Date.now());
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const checkStatus = useCallback(async () => {
+    if (!transactionId) return;
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setStatus("error");
+        setMessage("Iltimos, qayta kiring");
+        return "stop";
+      }
+      
+      const { data, error } = await supabase.functions.invoke("atmos-transaction-info", {
+        body: { transaction_id: transactionId },
+      });
+      
+      if (error) {
+        console.error("Error checking payment status:", error);
+        setStatus("error");
+        setMessage("To'lov holatini tekshirishda xatolik");
+        return "stop";
+      }
+      
+      if (data.status === "confirmed") {
+        setStatus("confirmed");
+        setMessage(data.message || "To'lov muvaffaqiyatli amalga oshirildi!");
+        return "stop";
+      } else if (data.status === "failed") {
+        setStatus("failed");
+        setMessage("To'lov amalga oshmadi");
+        return "stop";
+      } else if (data.status === "canceled") {
+        setStatus("canceled");
+        setMessage("To'lov bekor qilindi");
+        return "stop";
+      } else {
+        // Still pending
+        setStatus("pending");
+        return "continue";
+      }
+    } catch (err) {
+      console.error("Payment check error:", err);
+      setStatus("error");
+      setMessage("Xatolik yuz berdi");
+      return "stop";
+    }
+  }, [transactionId]);
+
   useEffect(() => {
     if (!transactionId) {
       setStatus("error");
       setMessage("Transaction ID yo'q");
       return;
     }
-    
-    const checkStatus = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          setStatus("error");
-          setMessage("Iltimos, qayta kiring");
-          return;
-        }
-        
-        const { data, error } = await supabase.functions.invoke("atmos-transaction-info", {
-          body: { transaction_id: transactionId },
-        });
-        
-        if (error) {
-          console.error("Error checking payment status:", error);
-          setStatus("error");
-          setMessage("To'lov holatini tekshirishda xatolik");
-          return;
-        }
-        
-        if (data.status === "confirmed") {
-          setStatus("confirmed");
-          setMessage(data.message || "To'lov muvaffaqiyatli amalga oshirildi!");
-        } else if (data.status === "failed") {
-          setStatus("failed");
-          setMessage("To'lov amalga oshmadi");
-        } else if (data.status === "canceled") {
-          setStatus("canceled");
-          setMessage("To'lov bekor qilindi");
-        } else {
-          // Still pending
-          setStatus("pending");
-          setPollCount((prev) => prev + 1);
-        }
-      } catch (err) {
-        console.error("Payment check error:", err);
-        setStatus("error");
-        setMessage("Xatolik yuz berdi");
-      }
-    };
-    
+
+    pollStartTime.current = Date.now();
+
     // Initial check
     checkStatus();
-    
-    // Poll while pending
-    const interval = setInterval(() => {
-      if (status === "pending" && pollCount < maxPolls) {
-        checkStatus();
+
+    // Start polling
+    pollIntervalRef.current = setInterval(async () => {
+      const elapsed = Date.now() - pollStartTime.current;
+      
+      // Check timeout (45 seconds)
+      if (elapsed >= MAX_POLL_TIME_MS) {
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+        }
+        setStatus("timeout");
+        setMessage("To'lov holatini aniqlashda vaqt tugadi");
+        return;
       }
-    }, 2000);
-    
-    return () => clearInterval(interval);
-  }, [transactionId, status, pollCount]);
-  
+
+      const result = await checkStatus();
+      if (result === "stop" && pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+    }, POLL_INTERVAL_MS);
+
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+    };
+  }, [transactionId, checkStatus]);
+
+  // Navigate to settings and refresh profile on success
+  const handleSuccessNavigate = () => {
+    // Trigger a profile refresh by navigating with state
+    navigate("/settings", { state: { refreshProfile: true } });
+  };
+
+  const handleRetry = () => {
+    navigate("/settings");
+  };
+
   const getStatusIcon = () => {
     switch (status) {
       case "loading":
@@ -90,6 +127,7 @@ export default function PaymentReturn() {
       case "failed":
       case "canceled":
         return <XCircle className="w-16 h-16 text-destructive" />;
+      case "timeout":
       case "error":
         return <AlertCircle className="w-16 h-16 text-amber-500" />;
     }
@@ -98,15 +136,17 @@ export default function PaymentReturn() {
   const getStatusTitle = () => {
     switch (status) {
       case "loading":
-        return "To'lov tekshirilmoqda...";
+        return "To'lov tekshirilmoqda…";
       case "pending":
-        return "To'lov kutilmoqda...";
+        return "To'lov kutilmoqda…";
       case "confirmed":
         return "To'lov muvaffaqiyatli!";
       case "failed":
         return "To'lov amalga oshmadi";
       case "canceled":
         return "To'lov bekor qilindi";
+      case "timeout":
+        return "Vaqt tugadi";
       case "error":
         return "Xatolik yuz berdi";
     }
@@ -132,28 +172,17 @@ export default function PaymentReturn() {
             </p>
           )}
           
-          {pollCount >= maxPolls && status === "pending" && (
-            <p className="text-sm text-amber-500">
-              To'lov holatini aniqlashda ko'p vaqt ketdi. Iltimos, keyinroq tekshiring.
-            </p>
-          )}
-          
           <div className="flex flex-col gap-2 pt-4">
             {status === "confirmed" && (
-              <Button onClick={() => navigate("/chat")} className="w-full">
-                Chatga o'tish
+              <Button onClick={handleSuccessNavigate} className="w-full">
+                Sozlamalarga o'tish
               </Button>
             )}
             
-            {(status === "failed" || status === "canceled" || status === "error") && (
-              <Button onClick={() => navigate("/settings")} variant="outline" className="w-full">
-                Sozlamalarga qaytish
-              </Button>
-            )}
-            
-            {status === "pending" && pollCount >= maxPolls && (
-              <Button onClick={() => window.location.reload()} variant="outline" className="w-full">
-                Qayta tekshirish
+            {(status === "failed" || status === "canceled" || status === "error" || status === "timeout") && (
+              <Button onClick={handleRetry} className="w-full">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Qayta urinib ko'ring
               </Button>
             )}
           </div>
