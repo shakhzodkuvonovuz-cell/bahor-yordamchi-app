@@ -31,6 +31,7 @@ const AuthGoogle = lazy(() => import("./pages/AuthGoogle"));
 
 const AuthReset = lazy(() => import("./pages/AuthReset"));
 const AdminEntitlements = lazy(() => import("./pages/AdminEntitlements"));
+const AdminAtmosHealth = lazy(() => import("./pages/AdminAtmosHealth"));
 const Feedback = lazy(() => import("./pages/Feedback"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Privacy = lazy(() => import("./pages/Privacy"));
@@ -244,6 +245,16 @@ const App = () => (
                       <ProtectedRoute>
                         <AppShellV2>
                           <LazyRoute><AdminEntitlements /></LazyRoute>
+                        </AppShellV2>
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/admin/atmos-health" 
+                    element={
+                      <ProtectedRoute>
+                        <AppShellV2>
+                          <LazyRoute><AdminAtmosHealth /></LazyRoute>
                         </AppShellV2>
                       </ProtectedRoute>
                     } 

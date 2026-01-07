@@ -192,10 +192,17 @@ export default function AdminEntitlements() {
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-1">
             <Shield className="w-5 h-5 text-primary" />
             <h1 className="text-lg font-semibold">Admin: Entitlements</h1>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/admin/atmos-health')}
+          >
+            ATMOS Health
+          </Button>
         </div>
       </header>
 
