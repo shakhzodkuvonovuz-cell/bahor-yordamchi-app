@@ -8,6 +8,12 @@ const corsHeaders = {
 // In-memory token cache
 let cachedToken: { access_token: string; expires_at: number } | null = null;
 
+function getProxyClient() {
+  const FIXIE_URL = Deno.env.get("FIXIE_URL") || "";
+  if (!FIXIE_URL) return null;
+  return Deno.createHttpClient({ proxy: { url: FIXIE_URL } });
+}
+
 export async function getAtmosToken(): Promise<string> {
   const now = Date.now();
 
@@ -28,6 +34,9 @@ export async function getAtmosToken(): Promise<string> {
 
   console.log("[atmos-token] Fetching new token from ATMOS", { base: ATMOS_API_BASE });
 
+  const proxyClient = getProxyClient();
+  if (proxyClient) console.log("[atmos-token] Using Fixie proxy");
+
   const credentials = btoa(`${ATMOS_CONSUMER_ID}:${ATMOS_CONSUMER_SECRET}`);
 
   const fetchTokenOnce = async () => {
@@ -42,6 +51,7 @@ export async function getAtmosToken(): Promise<string> {
           "Content-Type": "application/x-www-form-urlencoded",
         },
         signal: controller.signal,
+        ...(proxyClient ? { client: proxyClient } : {}),
       });
 
       if (!response.ok) {
