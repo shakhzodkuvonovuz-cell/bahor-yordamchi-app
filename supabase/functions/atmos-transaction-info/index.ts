@@ -15,6 +15,15 @@ function getProxyClient() {
   return Deno.createHttpClient({ proxy: { url: FIXIE_URL } });
 }
 
+function getAtmosApiBase(): string {
+  const testMode = (Deno.env.get("ATMOS_TEST_MODE") || "false") === "true";
+  const base =
+    (testMode ? Deno.env.get("ATMOS_API_BASE_TEST") : undefined) ||
+    Deno.env.get("ATMOS_API_BASE") ||
+    "https://apigw.atmos.uz";
+  return base.replace(/\/$/, "");
+}
+
 async function getAtmosToken(): Promise<string> {
   const now = Date.now();
 
@@ -24,8 +33,7 @@ async function getAtmosToken(): Promise<string> {
     return cachedToken.access_token;
   }
   
-  const rawBase = Deno.env.get("ATMOS_API_BASE") || "https://apigw.atmos.uz";
-  const ATMOS_API_BASE = rawBase.replace(/\/$/, "");
+  const ATMOS_API_BASE = getAtmosApiBase();
   const ATMOS_CONSUMER_ID = Deno.env.get("ATMOS_CONSUMER_ID");
   const ATMOS_CONSUMER_SECRET = Deno.env.get("ATMOS_CONSUMER_SECRET");
   
@@ -134,8 +142,7 @@ serve(async (req) => {
     
     // Use service role for DB writes
     const adminSupabase = createClient(supabaseUrl, serviceRoleKey);
-    const rawBase = Deno.env.get("ATMOS_API_BASE") || "https://apigw.atmos.uz";
-    const ATMOS_API_BASE = rawBase.replace(/\/$/, "");
+    const ATMOS_API_BASE = getAtmosApiBase();
     const ATMOS_STORE_ID = Deno.env.get("ATMOS_STORE_ID");
     
     // Log status poll event (no secrets)

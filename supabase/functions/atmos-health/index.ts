@@ -15,6 +15,8 @@ serve(async (req) => {
   let errorMessage: string | null = null;
   let tokenPreview: string | null = null;
   let latencyMs = 0;
+  let apiBase = Deno.env.get("ATMOS_API_BASE") || "https://apigw.atmos.uz";
+  let testMode = (Deno.env.get("ATMOS_TEST_MODE") || "false") === "true";
 
   try {
     const FIXIE_URL = Deno.env.get("FIXIE_URL") || "";
@@ -22,8 +24,12 @@ serve(async (req) => {
       ? Deno.createHttpClient({ proxy: { url: FIXIE_URL } })
       : null;
 
-    const rawBase = Deno.env.get("ATMOS_API_BASE") || "https://apigw.atmos.uz";
-    const ATMOS_API_BASE = rawBase.replace(/\/$/, "");
+    testMode = (Deno.env.get("ATMOS_TEST_MODE") || "false") === "true";
+    const baseFromEnv =
+      (testMode ? Deno.env.get("ATMOS_API_BASE_TEST") : undefined) ||
+      Deno.env.get("ATMOS_API_BASE") ||
+      "https://apigw.atmos.uz";
+    apiBase = baseFromEnv.replace(/\/$/, "");
     const ATMOS_CONSUMER_ID = Deno.env.get("ATMOS_CONSUMER_ID");
     const ATMOS_CONSUMER_SECRET = Deno.env.get("ATMOS_CONSUMER_SECRET");
 
@@ -34,7 +40,7 @@ serve(async (req) => {
     const credentials = btoa(`${ATMOS_CONSUMER_ID}:${ATMOS_CONSUMER_SECRET}`);
 
     console.log("[atmos-health] Pinging ATMOS token endpoint:", {
-      base: ATMOS_API_BASE,
+      base: apiBase,
       via_fixie: Boolean(proxyClient),
     });
 
@@ -42,7 +48,7 @@ serve(async (req) => {
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
     try {
-      const response = await fetch(`${ATMOS_API_BASE}/token?grant_type=client_credentials`, {
+      const response = await fetch(`${apiBase}/token?grant_type=client_credentials`, {
         method: "POST",
         headers: {
           Authorization: `Basic ${credentials}`,
@@ -92,7 +98,8 @@ serve(async (req) => {
       token_preview: tokenPreview,
       error: errorMessage,
       checked_at: new Date().toISOString(),
-      api_base: Deno.env.get("ATMOS_API_BASE") || "https://apigw.atmos.uz",
+      api_base: apiBase,
+      test_mode: testMode,
     }),
     {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
