@@ -9,8 +9,16 @@ const corsHeaders = {
 // In-memory token cache
 let cachedToken: { access_token: string; expires_at: number } | null = null;
 
+function getProxyClient() {
+  const FIXIE_URL = Deno.env.get("FIXIE_URL") || "";
+  if (!FIXIE_URL) return null;
+  return Deno.createHttpClient({ proxy: { url: FIXIE_URL } });
+}
+
 async function getAtmosToken(): Promise<string> {
   const now = Date.now();
+
+  const proxyClient = getProxyClient();
 
   if (cachedToken && cachedToken.expires_at > now + 5 * 60 * 1000) {
     console.log("[atmos] Using cached token");
@@ -42,6 +50,7 @@ async function getAtmosToken(): Promise<string> {
           "Content-Type": "application/x-www-form-urlencoded",
         },
         signal: controller.signal,
+        ...(proxyClient ? { client: proxyClient } : {}),
       });
 
       if (!response.ok) {
@@ -93,6 +102,8 @@ serve(async (req) => {
   }
   
   try {
+    const proxyClient = getProxyClient();
+
     // Strict auth: user must be logged in
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
@@ -135,7 +146,8 @@ serve(async (req) => {
     
     const ATMOS_STORE_ID = Deno.env.get("ATMOS_STORE_ID");
     const ATMOS_TEST_MODE = Deno.env.get("ATMOS_TEST_MODE") === "true";
-    const ATMOS_API_BASE = Deno.env.get("ATMOS_API_BASE") || "https://apigw.atmos.uz";
+    const rawBase = Deno.env.get("ATMOS_API_BASE") || "https://apigw.atmos.uz";
+    const ATMOS_API_BASE = rawBase.replace(/\/$/, "");
     
     if (!ATMOS_STORE_ID) {
       throw new Error("ATMOS_STORE_ID not configured");
@@ -151,6 +163,7 @@ serve(async (req) => {
       amount_tiyin,
       account,
       test_mode: ATMOS_TEST_MODE,
+      via_fixie: Boolean(proxyClient),
     });
     
     // Get ATMOS token
@@ -175,6 +188,7 @@ serve(async (req) => {
           lang: "uz",
         }),
         signal: controller.signal,
+        ...(proxyClient ? { client: proxyClient } : {}),
       });
       clearTimeout(timeoutId);
     } catch (error) {

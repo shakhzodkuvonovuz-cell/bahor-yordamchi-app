@@ -9,14 +9,23 @@ const corsHeaders = {
 // In-memory token cache
 let cachedToken: { access_token: string; expires_at: number } | null = null;
 
+function getProxyClient() {
+  const FIXIE_URL = Deno.env.get("FIXIE_URL") || "";
+  if (!FIXIE_URL) return null;
+  return Deno.createHttpClient({ proxy: { url: FIXIE_URL } });
+}
+
 async function getAtmosToken(): Promise<string> {
   const now = Date.now();
+
+  const proxyClient = getProxyClient();
   
   if (cachedToken && cachedToken.expires_at > now + 5 * 60 * 1000) {
     return cachedToken.access_token;
   }
   
-  const ATMOS_API_BASE = Deno.env.get("ATMOS_API_BASE") || "https://apigw.atmos.uz";
+  const rawBase = Deno.env.get("ATMOS_API_BASE") || "https://apigw.atmos.uz";
+  const ATMOS_API_BASE = rawBase.replace(/\/$/, "");
   const ATMOS_CONSUMER_ID = Deno.env.get("ATMOS_CONSUMER_ID");
   const ATMOS_CONSUMER_SECRET = Deno.env.get("ATMOS_CONSUMER_SECRET");
   
@@ -37,6 +46,7 @@ async function getAtmosToken(): Promise<string> {
         "Content-Type": "application/x-www-form-urlencoded",
       },
       signal: controller.signal,
+      ...(proxyClient ? { client: proxyClient } : {}),
     });
     
     clearTimeout(timeoutId);
@@ -86,6 +96,7 @@ serve(async (req) => {
   }
   
   try {
+    const proxyClient = getProxyClient();
     // Strict auth: user must be logged in
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
@@ -123,7 +134,8 @@ serve(async (req) => {
     
     // Use service role for DB writes
     const adminSupabase = createClient(supabaseUrl, serviceRoleKey);
-    const ATMOS_API_BASE = Deno.env.get("ATMOS_API_BASE") || "https://apigw.atmos.uz";
+    const rawBase = Deno.env.get("ATMOS_API_BASE") || "https://apigw.atmos.uz";
+    const ATMOS_API_BASE = rawBase.replace(/\/$/, "");
     const ATMOS_STORE_ID = Deno.env.get("ATMOS_STORE_ID");
     
     // Log status poll event (no secrets)
@@ -183,6 +195,7 @@ serve(async (req) => {
           transaction_id: parseInt(transaction_id),
         }),
         signal: controller.signal,
+        ...(proxyClient ? { client: proxyClient } : {}),
       });
       clearTimeout(timeoutId);
     } catch (error) {

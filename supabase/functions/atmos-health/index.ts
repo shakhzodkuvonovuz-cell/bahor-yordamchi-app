@@ -17,6 +17,11 @@ serve(async (req) => {
   let latencyMs = 0;
 
   try {
+    const FIXIE_URL = Deno.env.get("FIXIE_URL") || "";
+    const proxyClient = FIXIE_URL
+      ? Deno.createHttpClient({ proxy: { url: FIXIE_URL } })
+      : null;
+
     const rawBase = Deno.env.get("ATMOS_API_BASE") || "https://apigw.atmos.uz";
     const ATMOS_API_BASE = rawBase.replace(/\/$/, "");
     const ATMOS_CONSUMER_ID = Deno.env.get("ATMOS_CONSUMER_ID");
@@ -28,7 +33,10 @@ serve(async (req) => {
 
     const credentials = btoa(`${ATMOS_CONSUMER_ID}:${ATMOS_CONSUMER_SECRET}`);
 
-    console.log("[atmos-health] Pinging ATMOS token endpoint:", ATMOS_API_BASE);
+    console.log("[atmos-health] Pinging ATMOS token endpoint:", {
+      base: ATMOS_API_BASE,
+      via_fixie: Boolean(proxyClient),
+    });
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
@@ -41,6 +49,7 @@ serve(async (req) => {
           "Content-Type": "application/x-www-form-urlencoded",
         },
         signal: controller.signal,
+        ...(proxyClient ? { client: proxyClient } : {}),
       });
 
       latencyMs = Date.now() - startTime;
