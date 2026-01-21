@@ -207,10 +207,34 @@ serve(async (req) => {
     
     const atmosData = await atmosResponse.json();
     console.log("[atmos-create-transaction] ATMOS response:", JSON.stringify(atmosData));
-    
+
+    // ATMOS can return HTTP 200 with an error payload (result.code/description)
+    const providerCode = atmosData?.result?.code ?? null;
+    const providerDescription = atmosData?.result?.description ?? null;
+
     const transaction_id = atmosData.transaction_id || atmosData.result?.transaction_id;
     if (!transaction_id) {
-      throw new Error("No transaction_id in ATMOS response");
+      const extra = {
+        provider_code: providerCode,
+        provider_description: providerDescription,
+        store_id: ATMOS_STORE_ID,
+        test_mode: ATMOS_TEST_MODE,
+      };
+      console.error("[atmos-create-transaction] Missing transaction_id", extra);
+
+      // Return a clear, actionable error (do not leak secrets)
+      return new Response(
+        JSON.stringify({
+          error: providerDescription
+            ? `ATMOS: ${providerDescription}${providerCode ? ` (${providerCode})` : ""}`
+            : "ATMOS: transaction_id qaytmadi",
+          details: extra,
+        }),
+        {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
     
     // Use service role for DB writes
