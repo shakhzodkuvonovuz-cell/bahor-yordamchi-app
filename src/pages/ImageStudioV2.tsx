@@ -646,6 +646,17 @@ export default function ImageStudioV2() {
             </CardContent>
           </Card>
 
+          {/* Structure mode notice (selectable, but generation is gated for now) */}
+          {draft.toolMode === "controlnet" && (
+            <Alert>
+              <Info className="h-4 w-4" />
+              <div>
+                <AlertTitle>{t("imageStudioV2.controlnetComingSoon")}</AlertTitle>
+                <AlertDescription>{t("imageStudioV2.controlnetComingSoonDesc")}</AlertDescription>
+              </div>
+            </Alert>
+          )}
+
           {/* Quality tier selector (capability-based) - hidden for Remix/Structure */}
           {draft.toolMode === "t2i" && (
             <Card>
@@ -676,7 +687,7 @@ export default function ImageStudioV2() {
                     <Crown className="w-4 h-4 text-purple-500" />
                     <span className="font-medium">{t("imageStudioV2.model.sdxl")}</span>
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
-                      Premium
+                      {t("videoStudio.premiumOnly")}
                     </Badge>
                   </button>
                 </div>
