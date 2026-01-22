@@ -418,22 +418,13 @@ export default function ImageStudioV2() {
       let requestPayload: Record<string, unknown>;
 
       if (draft.toolMode === "remix") {
-        // Remix mode: always SDXL with inputImage and remixStrength
+        // Remix mode: always Quality tier (internally SDXL) with inputImage and remixStrength
         requestPayload = {
           ...basePayload,
           modelChoice: "sdxl",
           qualityBoost: false,
           inputImage: inputImage,
           remixStrength: draft.remixStrength,
-        };
-      } else if (draft.toolMode === "controlnet") {
-        // Structure mode: keep strength locked low (structure preservation)
-        requestPayload = {
-          ...basePayload,
-          modelChoice: "sdxl",
-          qualityBoost: false,
-          inputImage: inputImage,
-          remixStrength: 0.15,
         };
       } else {
         // T2I mode
