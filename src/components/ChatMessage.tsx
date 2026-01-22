@@ -49,7 +49,7 @@ function ChatMessageComponent({
   isMobile = false,
 }: ChatMessageProps) {
   const isUser = message.role === "user";
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const [isPressed, setIsPressed] = useState(false);
   const [showMobileSheet, setShowMobileSheet] = useState(false);
@@ -72,9 +72,7 @@ function ChatMessageComponent({
         ? `${parts[0][0]}${parts[1][0]}`.toUpperCase()
         : parts[0][0].toUpperCase();
     }
-    if (profile?.email) {
-      return profile.email[0].toUpperCase();
-    }
+    if (user?.email) return user.email[0].toUpperCase();
     return "U";
   };
 

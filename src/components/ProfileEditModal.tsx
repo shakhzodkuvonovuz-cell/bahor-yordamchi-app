@@ -50,13 +50,26 @@ export default function ProfileEditModal({ open, onOpenChange, profile, onProfil
         .update({
           first_name: firstName.trim() || null,
           last_name: lastName.trim() || null,
-          phone: phone.trim() || null,
         })
         .eq('user_id', user.id);
 
       if (updateError) {
         console.error('Profile update error:', updateError);
         throw new Error(updateError.message);
+      }
+
+      // Update phone in the private table (owner-only)
+      const trimmedPhone = phone.trim() || null;
+      const { error: phoneError } = await supabase
+        .from('profiles_private')
+        .upsert(
+          { user_id: user.id, phone: trimmedPhone },
+          { onConflict: 'user_id' }
+        );
+
+      if (phoneError) {
+        console.error('Profile phone update error:', phoneError);
+        throw new Error(phoneError.message);
       }
 
       toast({
