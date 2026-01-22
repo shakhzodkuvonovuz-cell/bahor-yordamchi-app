@@ -103,12 +103,13 @@ interface InlineErrorState {
 type UploadStatus = "idle" | "resizing" | "uploading" | "done" | "error";
 
 // ========== CONSTANTS ==========
-const STYLE_PRESETS: { id: StylePreset; labelKey: string; icon: React.ElementType; color: string }[] = [
-  { id: "realistic", labelKey: "imageStudioV2.style.realistic", icon: Camera, color: "text-blue-500" },
-  { id: "digital_art", labelKey: "imageStudioV2.style.digitalArt", icon: Palette, color: "text-purple-500" },
-  { id: "illustration", labelKey: "imageStudioV2.style.illustration", icon: Paintbrush, color: "text-orange-500" },
-  { id: "anime", labelKey: "imageStudioV2.style.anime", icon: Film, color: "text-pink-500" },
-  { id: "minimal", labelKey: "imageStudioV2.style.minimal", icon: Layers, color: "text-slate-500" },
+// NOTE: Keep colors theme-driven (no raw Tailwind colors in components)
+const STYLE_PRESETS: { id: StylePreset; labelKey: string; icon: React.ElementType }[] = [
+  { id: "realistic", labelKey: "imageStudioV2.style.realistic", icon: Camera },
+  { id: "digital_art", labelKey: "imageStudioV2.style.digitalArt", icon: Palette },
+  { id: "illustration", labelKey: "imageStudioV2.style.illustration", icon: Paintbrush },
+  { id: "anime", labelKey: "imageStudioV2.style.anime", icon: Film },
+  { id: "minimal", labelKey: "imageStudioV2.style.minimal", icon: Layers },
 ];
 
 const ASPECT_RATIOS: { id: AspectRatio; label: string }[] = [
@@ -672,7 +673,7 @@ export default function ImageStudioV2() {
                         : "border-border hover:border-primary/50"
                     )}
                   >
-                    <Zap className="w-4 h-4 text-amber-500" />
+                    <Zap className={cn("w-4 h-4", draft.modelChoice === "flux" ? "text-primary" : "text-muted-foreground")} />
                     <span className="font-medium">{t("imageStudioV2.model.flux")}</span>
                   </button>
                   <button
@@ -684,7 +685,7 @@ export default function ImageStudioV2() {
                         : "border-border hover:border-primary/50"
                     )}
                   >
-                    <Crown className="w-4 h-4 text-purple-500" />
+                    <Crown className={cn("w-4 h-4", draft.modelChoice === "sdxl" ? "text-primary" : "text-muted-foreground")} />
                     <span className="font-medium">{t("imageStudioV2.model.sdxl")}</span>
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
                       {t("videoStudio.premiumOnly")}
@@ -749,8 +750,8 @@ export default function ImageStudioV2() {
                           </div>
                         )}
                         {uploadStatus === "done" && (
-                          <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-0.5">
-                            <CheckCircle2 className="w-4 h-4 text-white" />
+                          <div className="absolute -bottom-1 -right-1 bg-primary rounded-full p-0.5">
+                            <CheckCircle2 className="w-4 h-4 text-primary-foreground" />
                           </div>
                         )}
                         {uploadStatus === "error" && (
@@ -776,7 +777,7 @@ export default function ImageStudioV2() {
                           </p>
                         )}
                         {uploadStatus === "done" && (
-                          <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                          <p className="text-xs text-primary mt-1">
                             {t("imageStudioV2.uploadComplete")}
                           </p>
                         )}
@@ -873,7 +874,7 @@ export default function ImageStudioV2() {
                           : "border-border hover:border-primary/50 hover:bg-accent/50"
                       )}
                     >
-                      <Icon className={cn("w-5 h-5", isSelected ? "text-primary" : style.color)} />
+                      <Icon className={cn("w-5 h-5", isSelected ? "text-primary" : "text-muted-foreground")} />
                       <span className="text-xs font-medium truncate w-full text-center">
                         {t(style.labelKey)}
                       </span>
