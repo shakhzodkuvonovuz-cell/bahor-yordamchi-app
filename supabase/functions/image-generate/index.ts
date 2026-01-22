@@ -310,10 +310,12 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           ok: false,
+          type: "CONTENT_BLOCKED",
           error: "Bu turdagi rasm yaratib bo'lmaydi. Iltimos, boshqa mavzu tanlang.",
           requestId,
         }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        // Use 200 so client code can handle it uniformly (and to avoid SDK surfacing it as a transport error).
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -348,10 +350,12 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           ok: false,
+          type: "CONTENT_BLOCKED",
           error: "Bu turdagi rasm yaratib bo'lmaydi. Iltimos, boshqa mavzu tanlang.",
           requestId,
         }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        // Use 200 so client code can handle it uniformly (and to avoid SDK surfacing it as a transport error).
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
