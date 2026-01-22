@@ -80,7 +80,7 @@ export default function ImageGeneratorModal({
       }
 
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fireworks-generate-image`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-generate`,
         {
           method: "POST",
           headers: {
