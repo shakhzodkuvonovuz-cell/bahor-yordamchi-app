@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,6 +12,9 @@ const REPLICATE_MODEL = "black-forest-labs/flux-2-klein-4b";
 
 const MAX_PROMPT_LENGTH = 500;
 const ALLOWED_ASPECT_RATIOS = ["1:1", "16:9", "9:16", "4:5"];
+
+// Anti-spam / cost control
+const MIN_SECONDS_BETWEEN_REQUESTS = 8;
 
 // Content guardrails (keep parity with existing image endpoints)
 const BLOCKED_PATTERNS = [
@@ -89,6 +93,98 @@ function addQualityBoosters(prompt: string, stylePreset: string): string {
   return `${prompt}. ${styleSuffix}`;
 }
 
+// Simple bitmap watermark (copied pattern from existing image endpoints)
+function createWatermarkBitmap(): { width: number; height: number; data: Uint8Array } {
+  const chars: Record<string, number[][]> = {
+    B: [[1, 1, 1, 0], [1, 0, 1, 0], [1, 1, 0, 0], [1, 0, 1, 0], [1, 1, 1, 0]],
+    a: [[0, 1, 1, 0], [1, 0, 1, 0], [1, 1, 1, 0], [1, 0, 1, 0], [1, 0, 1, 0]],
+    h: [[1, 0, 0, 0], [1, 0, 0, 0], [1, 1, 1, 0], [1, 0, 1, 0], [1, 0, 1, 0]],
+    o: [[0, 1, 1, 0], [1, 0, 0, 1], [1, 0, 0, 1], [1, 0, 0, 1], [0, 1, 1, 0]],
+    r: [[1, 1, 1, 0], [1, 0, 1, 0], [1, 1, 0, 0], [1, 0, 1, 0], [1, 0, 1, 0]],
+    " ": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0]],
+    A: [[0, 1, 1, 0], [1, 0, 0, 1], [1, 1, 1, 1], [1, 0, 0, 1], [1, 0, 0, 1]],
+    I: [[1, 1, 1], [0, 1, 0], [0, 1, 0], [0, 1, 0], [1, 1, 1]],
+  };
+
+  const text = "Bahor AI";
+  let totalWidth = 0;
+  const charWidths: number[] = [];
+
+  for (const c of text) {
+    const charData = chars[c] || chars[" "];
+    const w = charData[0].length;
+    charWidths.push(w);
+    totalWidth += w + 1;
+  }
+  totalWidth -= 1;
+
+  const height = 5;
+  const data = new Uint8Array(totalWidth * height);
+  let xOffset = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    const charData = chars[c] || chars[" "];
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < charData[y].length; x++) {
+        if (charData[y][x]) data[y * totalWidth + xOffset + x] = 255;
+      }
+    }
+    xOffset += charWidths[i] + 1;
+  }
+
+  return { width: totalWidth, height, data };
+}
+
+async function applyLocalWatermark(imageBytes: Uint8Array<ArrayBufferLike>, requestId: string): Promise<Uint8Array> {
+  const img = await Image.decode(imageBytes);
+  const imgWidth = img.width;
+  const imgHeight = img.height;
+
+  const scale = Math.max(2, Math.floor(Math.min(imgWidth, imgHeight) / 200));
+  const padding = 24;
+
+  const wm = createWatermarkBitmap();
+  const scaledWidth = wm.width * scale;
+  const scaledHeight = wm.height * scale;
+
+  const xStart = imgWidth - scaledWidth - padding;
+  const yStart = imgHeight - scaledHeight - padding;
+
+  for (let sy = 0; sy < wm.height; sy++) {
+    for (let sx = 0; sx < wm.width; sx++) {
+      const pixelVal = wm.data[sy * wm.width + sx];
+      if (!pixelVal) continue;
+
+      for (let dy = 0; dy < scale; dy++) {
+        for (let dx = 0; dx < scale; dx++) {
+          const imgX = xStart + sx * scale + dx;
+          const imgY = yStart + sy * scale + dy;
+          if (imgX < 0 || imgX >= imgWidth || imgY < 0 || imgY >= imgHeight) continue;
+
+          const existing = img.getPixelAt(imgX + 1, imgY + 1);
+          const r = (existing >> 24) & 0xff;
+          const g = (existing >> 16) & 0xff;
+          const b = (existing >> 8) & 0xff;
+          const a = existing & 0xff;
+
+          const alpha = 0.4;
+          const newR = Math.round(r * (1 - alpha) + 255 * alpha);
+          const newG = Math.round(g * (1 - alpha) + 255 * alpha);
+          const newB = Math.round(b * (1 - alpha) + 255 * alpha);
+          const newPixel = (newR << 24) | (newG << 16) | (newB << 8) | a;
+          img.setPixelAt(imgX + 1, imgY + 1, newPixel);
+        }
+      }
+    }
+  }
+
+  const encoded = await img.encode();
+  const out = new Uint8Array(encoded.length);
+  out.set(encoded);
+  console.log(`[${requestId}] Watermark applied (${out.length} bytes)`);
+  return out;
+}
+
 async function logImageGenEvent(
   supabase: any,
   userId: string,
@@ -128,6 +224,7 @@ interface RequestBody {
   qualityBoost?: boolean;
   toolMode?: ToolMode;
   inputImage?: InputImageRef;
+  remixStrength?: number;
   // Optional direct URLs for advanced integrations
   image?: string;
   mask?: string;
@@ -182,6 +279,7 @@ serve(async (req) => {
       qualityBoost = false,
       toolMode = "t2i",
       inputImage,
+      remixStrength,
       image,
       mask,
       seed = null,
@@ -263,6 +361,95 @@ serve(async (req) => {
     if (sourceImageUrl) input.image = sourceImageUrl;
     if (mask) input.mask = mask;
 
+    // Map remixStrength (0-1) to Replicate's expected strength parameter when using img2img.
+    // Replicate FLUX models commonly use image_strength.
+    if (sourceImageUrl && typeof remixStrength === "number") {
+      const clamped = Math.min(0.9, Math.max(0.1, remixStrength));
+      input.image_strength = clamped;
+    }
+
+    // --------------------------------------------------
+    // Plan enforcement (server-side) + basic cost controls
+    // --------------------------------------------------
+    const userEmail = user.email?.toLowerCase() || "";
+    const devUnlimitedRaw = Deno.env.get("DEV_UNLIMITED_EMAILS") || "";
+    const adminEmailsRaw = Deno.env.get("ADMIN_EMAILS") || "";
+    const devUnlimitedEmails = devUnlimitedRaw
+      .split(",")
+      .map((e: string) => e.trim().toLowerCase())
+      .filter(Boolean);
+    const adminEmails = adminEmailsRaw
+      .split(",")
+      .map((e: string) => e.trim().toLowerCase())
+      .filter(Boolean);
+    const isDevBypass = devUnlimitedEmails.includes(userEmail) || adminEmails.includes(userEmail);
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("plan")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const userPlan = profile?.plan || "free";
+    const isPremium = isDevBypass || ["premium", "beta_premium", "dev_unlimited"].includes(userPlan);
+    const isFreeUser = !isPremium && !isDevBypass;
+
+    const dailyLimit = isDevBypass ? -1 : isPremium ? 20 : 1;
+
+    // Basic anti-spam: prevent rapid repeats
+    if (!isDevBypass) {
+      const since = new Date(Date.now() - MIN_SECONDS_BETWEEN_REQUESTS * 1000).toISOString();
+      const { count: recentCount } = await supabase
+        .from("usage_events")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("event_type", "image_gen")
+        .gte("created_at", since);
+      if ((recentCount ?? 0) > 0) {
+        return new Response(
+          JSON.stringify({
+            ok: false,
+            error: "TOO_MANY_REQUESTS",
+            type: "RATE_LIMIT",
+            messageUz: "Juda tez-tez so'rov yuboryapsiz. Iltimos, bir oz kuting.",
+            requestId,
+          }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
+    // Daily limit check (UTC day)
+    if (dailyLimit !== -1) {
+      const nowUtc = new Date();
+      const startOfDayUtc = new Date(Date.UTC(nowUtc.getUTCFullYear(), nowUtc.getUTCMonth(), nowUtc.getUTCDate(), 0, 0, 0));
+      const endOfDayUtc = new Date(Date.UTC(nowUtc.getUTCFullYear(), nowUtc.getUTCMonth(), nowUtc.getUTCDate() + 1, 0, 0, 0));
+      const { count } = await supabase
+        .from("image_generations")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("created_at", startOfDayUtc.toISOString())
+        .lt("created_at", endOfDayUtc.toISOString());
+
+      const usedCount = count ?? 0;
+      if (usedCount >= dailyLimit) {
+        return new Response(
+          JSON.stringify({
+            ok: false,
+            error: "IMAGE_DAILY_LIMIT",
+            type: "LIMIT_REACHED",
+            used: usedCount,
+            limit: dailyLimit,
+            messageUz: isFreeUser
+              ? `Bugungi bepul rasm limiti tugadi (${usedCount}/${dailyLimit}). Premium obunada ko'proq rasm yarating!`
+              : `Bugungi rasm yaratish limiti tugadi (${usedCount}/${dailyLimit})`,
+            requestId,
+          }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
     // Kick off prediction
     const startResp = await fetch(REPLICATE_API, {
       method: "POST",
@@ -318,7 +505,17 @@ serve(async (req) => {
     // Fetch image bytes
     const imgResp = await fetch(replicateImageUrl);
     if (!imgResp.ok) throw new Error("Failed to download generated image");
-    const imgBytes = new Uint8Array(await imgResp.arrayBuffer());
+    let imgBytes: Uint8Array = new Uint8Array((await imgResp.arrayBuffer()) as ArrayBuffer);
+
+    // Watermark for free tier
+    const isWatermarked = isFreeUser;
+    if (isWatermarked) {
+      try {
+        imgBytes = await applyLocalWatermark(imgBytes, requestId);
+      } catch (e) {
+        console.error(`[${requestId}] Watermark failed, continuing without:`, e);
+      }
+    }
 
     // Save to storage
     const now = new Date();
@@ -371,8 +568,11 @@ serve(async (req) => {
         width,
         height,
         tool_mode: toolMode,
+        remix_strength: typeof remixStrength === "number" ? remixStrength : undefined,
         had_source_image: !!sourceImageUrl,
         had_mask: !!mask,
+        is_watermarked: isWatermarked,
+        is_free_user: isFreeUser,
         prediction_id: prediction?.id,
       },
     });
