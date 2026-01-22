@@ -10,7 +10,6 @@ interface Profile {
   first_name: string | null;
   last_name: string | null;
   avatar_url: string | null;
-  phone: string | null;
   plan: string;
   messages_today: number;
   daily_limit: number;
@@ -50,7 +49,7 @@ Deno.serve(async (req) => {
       // Check if we need to reset daily counter
       const { data: profile, error: fetchError } = await supabase
         .from('profiles')
-        .select('*')
+        .select('user_id, first_name, last_name, avatar_url, plan, messages_today, daily_limit, last_reset_date, created_at')
         .eq('user_id', user.id)
         .single();
 
@@ -76,6 +75,12 @@ Deno.serve(async (req) => {
         profile.last_reset_date = today;
       }
 
+      const { data: priv } = await supabase
+        .from('profiles_private')
+        .select('phone')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
       // Return profile with email from auth
       return new Response(
         JSON.stringify({
@@ -84,7 +89,7 @@ Deno.serve(async (req) => {
           firstName: profile.first_name,
           lastName: profile.last_name,
           avatarUrl: profile.avatar_url,
-          phone: profile.phone,
+          phone: priv?.phone ?? null,
           plan: profile.plan,
           messagesToday: profile.messages_today,
           dailyLimit: profile.daily_limit,
@@ -157,15 +162,27 @@ Deno.serve(async (req) => {
         .update({
           first_name: firstName?.trim() || null,
           last_name: lastName?.trim() || null,
-          phone: phone?.trim() || null,
         })
         .eq('user_id', user.id)
-        .select()
+        .select('user_id, first_name, last_name, avatar_url, plan, messages_today, daily_limit, last_reset_date, created_at')
         .single();
 
       if (updateError) {
         return new Response(
           JSON.stringify({ error: updateError.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Store phone in private table
+      const trimmedPhone = phone?.trim() || null;
+      const { error: phoneError } = await supabase
+        .from('profiles_private')
+        .upsert({ user_id: user.id, phone: trimmedPhone }, { onConflict: 'user_id' });
+
+      if (phoneError) {
+        return new Response(
+          JSON.stringify({ error: phoneError.message }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -177,7 +194,7 @@ Deno.serve(async (req) => {
           firstName: updatedProfile.first_name,
           lastName: updatedProfile.last_name,
           avatarUrl: updatedProfile.avatar_url,
-          phone: updatedProfile.phone,
+          phone: trimmedPhone,
           plan: updatedProfile.plan,
           messagesToday: updatedProfile.messages_today,
           dailyLimit: updatedProfile.daily_limit,

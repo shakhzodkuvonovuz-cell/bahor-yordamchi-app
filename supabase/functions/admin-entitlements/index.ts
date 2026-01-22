@@ -144,65 +144,46 @@ serve(async (req) => {
         );
       }
 
-      // Find user by email
-      const { data: users, error: lookupError } = await supabaseAdmin
-        .from('profiles')
-        .select('user_id, email, full_name, first_name, last_name')
-        .ilike('email', email)
-        .limit(1);
+      // Find user by email via admin auth API (email is not stored in profiles)
+      const { data: authUser } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+      const foundUser = authUser?.users?.find(u => u.email?.toLowerCase() === email);
 
-      if (lookupError || !users?.length) {
-        // Try auth.users directly via admin API
-        const { data: authUser } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
-        const foundUser = authUser?.users?.find(u => u.email?.toLowerCase() === email);
-        
-        if (!foundUser) {
-          return new Response(
-            JSON.stringify({ error: 'USER_NOT_FOUND', message: 'User not found with this email' }),
-            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-
-        // Get entitlement for this user
-        const { data: entitlement } = await supabaseAdmin
-          .from('user_entitlements')
-          .select('*')
-          .eq('user_id', foundUser.id)
-          .single();
-
-        const devEmails = getEmailList('DEV_UNLIMITED_EMAILS');
-        const isDevBypass = devEmails.includes(email);
-
+      if (!foundUser) {
         return new Response(
-          JSON.stringify({
-            user: {
-              id: foundUser.id,
-              email: foundUser.email,
-              name: foundUser.user_metadata?.full_name || foundUser.user_metadata?.first_name || 'Unknown',
-            },
-            entitlement: entitlement || { plan: 'free', expires_at: null, flags: {}, note: null },
-            isDevBypass,
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ error: 'USER_NOT_FOUND', message: 'User not found with this email' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      const targetUser = users[0];
+      // Optionally enrich with non-sensitive display data from profiles
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('full_name, first_name, last_name')
+        .eq('user_id', foundUser.id)
+        .maybeSingle();
+
       const { data: entitlement } = await supabaseAdmin
         .from('user_entitlements')
         .select('*')
-        .eq('user_id', targetUser.user_id)
+        .eq('user_id', foundUser.id)
         .single();
 
       const devEmails = getEmailList('DEV_UNLIMITED_EMAILS');
       const isDevBypass = devEmails.includes(email);
 
+      const displayName =
+        profile?.full_name ||
+        `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() ||
+        foundUser.user_metadata?.full_name ||
+        foundUser.user_metadata?.first_name ||
+        'Unknown';
+
       return new Response(
         JSON.stringify({
           user: {
-            id: targetUser.user_id,
-            email: targetUser.email,
-            name: targetUser.full_name || `${targetUser.first_name || ''} ${targetUser.last_name || ''}`.trim() || 'Unknown',
+            id: foundUser.id,
+            email: foundUser.email,
+            name: displayName,
           },
           entitlement: entitlement || { plan: 'free', expires_at: null, flags: {}, note: null },
           isDevBypass,
