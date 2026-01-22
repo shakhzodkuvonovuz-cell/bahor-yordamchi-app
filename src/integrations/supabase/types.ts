@@ -797,7 +797,6 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           daily_limit: number | null
-          email: string | null
           first_name: string | null
           full_name: string | null
           id: string
@@ -805,7 +804,6 @@ export type Database = {
           last_name: string | null
           last_reset_date: string | null
           messages_today: number | null
-          phone: string | null
           plan: string | null
           theme: string | null
           trial_expires_at: string | null
@@ -817,7 +815,6 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           daily_limit?: number | null
-          email?: string | null
           first_name?: string | null
           full_name?: string | null
           id?: string
@@ -825,7 +822,6 @@ export type Database = {
           last_name?: string | null
           last_reset_date?: string | null
           messages_today?: number | null
-          phone?: string | null
           plan?: string | null
           theme?: string | null
           trial_expires_at?: string | null
@@ -837,7 +833,6 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           daily_limit?: number | null
-          email?: string | null
           first_name?: string | null
           full_name?: string | null
           id?: string
@@ -845,11 +840,31 @@ export type Database = {
           last_name?: string | null
           last_reset_date?: string | null
           messages_today?: number | null
-          phone?: string | null
           plan?: string | null
           theme?: string | null
           trial_expires_at?: string | null
           trial_started_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles_private: {
+        Row: {
+          created_at: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          phone?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1643,6 +1658,28 @@ export type Database = {
       }
     }
     Views: {
+      my_profile: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          daily_limit: number | null
+          first_name: string | null
+          full_name: string | null
+          id: string | null
+          language: string | null
+          last_name: string | null
+          last_reset_date: string | null
+          messages_today: number | null
+          phone: string | null
+          plan: string | null
+          theme: string | null
+          trial_expires_at: string | null
+          trial_started_at: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       profile_display: {
         Row: {
           avatar_url: string | null
