@@ -419,7 +419,7 @@ export default function ImageStudioV2() {
       console.log('[ImageStudioV2] Sending request:', requestPayload);
 
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fireworks-image-router`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-generate`,
         {
           method: "POST",
           headers: {

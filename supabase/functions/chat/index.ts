@@ -962,8 +962,8 @@ serve(async (req) => {
       console.log('[Image Gen] Routed to image generation:', routerDecision.imagePrompt);
       
       try {
-        // Call the fireworks-generate-image edge function internally
-        const imageResponse = await fetch(`${supabaseUrl}/functions/v1/fireworks-generate-image`, {
+        // Call the image generation function internally
+        const imageResponse = await fetch(`${supabaseUrl}/functions/v1/image-generate`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
