@@ -31,6 +31,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/i18n/LanguageProvider";
@@ -86,6 +87,17 @@ interface GeneratedImageResult {
     modelChoice?: ModelChoice;
   };
   createdAt: Date;
+}
+
+type InlineErrorType = "CONTENT_BLOCKED" | "RATE_LIMIT" | "LIMIT_REACHED" | "PROVIDER_ERROR" | "UNKNOWN";
+
+interface InlineErrorState {
+  type: InlineErrorType;
+  title: string;
+  description: string;
+  requestId?: string;
+  used?: number;
+  limit?: number;
 }
 
 type UploadStatus = "idle" | "resizing" | "uploading" | "done" | "error";
@@ -153,12 +165,16 @@ export default function ImageStudioV2() {
   const [loading, setLoading] = useState(false);
   const [generatedResult, setGeneratedResult] = useState<GeneratedImageResult | null>(null);
   const [requestInFlight, setRequestInFlight] = useState(false);
+  const [inlineError, setInlineError] = useState<InlineErrorState | null>(null);
 
   // Helper to update draft with premium gating for SDXL
   const updateDraft = useCallback(<K extends keyof ImageStudioRequestDraft>(
     key: K,
     value: ImageStudioRequestDraft[K]
   ) => {
+    // Any change to generation params should clear stale inline errors
+    setInlineError(null);
+
     // Gate SDXL model selection for non-premium users
     if (key === "modelChoice" && value === "sdxl" && !isPremiumUser) {
       toast({
@@ -374,6 +390,7 @@ export default function ImageStudioV2() {
     setLoading(true);
     setRequestInFlight(true);
     setGeneratedResult(null);
+    setInlineError(null);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -430,10 +447,44 @@ export default function ImageStudioV2() {
         }
       );
 
-      const result = await response.json();
+      const result = await response.json().catch(() => null);
 
-      if (!result.ok) {
-        throw new Error(result.error || t("imageStudioV2.error"));
+      // Dedicated inline error UX (avoid relying only on toasts)
+      if (!response.ok || !result?.ok) {
+        const serverType = (result?.type as InlineErrorType | undefined) || "UNKNOWN";
+        const requestId = result?.requestId as string | undefined;
+
+        // Prefer Uzbek message if provided by backend.
+        const backendMessage =
+          (result?.messageUz as string | undefined) || (result?.error as string | undefined) || t("imageStudioV2.error");
+
+        const make = (type: InlineErrorType, title: string, description: string): InlineErrorState => ({
+          type,
+          title,
+          description,
+          requestId,
+          used: typeof result?.used === "number" ? (result.used as number) : undefined,
+          limit: typeof result?.limit === "number" ? (result.limit as number) : undefined,
+        });
+
+        if (serverType === "CONTENT_BLOCKED") {
+          setInlineError(make("CONTENT_BLOCKED", t("common.error"), backendMessage));
+          return;
+        }
+
+        if (serverType === "RATE_LIMIT") {
+          setInlineError(make("RATE_LIMIT", t("common.error"), backendMessage));
+          return;
+        }
+
+        if (serverType === "LIMIT_REACHED") {
+          setInlineError(make("LIMIT_REACHED", t("common.error"), backendMessage));
+          return;
+        }
+
+        // Fallback (provider/network/unknown)
+        setInlineError(make(serverType, t("common.error"), backendMessage));
+        return;
       }
 
       setGeneratedResult({
@@ -460,6 +511,14 @@ export default function ImageStudioV2() {
       });
     } catch (error) {
       console.error("[ImageStudioV2] Generation error:", error);
+
+      // Network / parse / unexpected runtime errors
+      setInlineError({
+        type: "UNKNOWN",
+        title: t("imageStudioV2.error"),
+        description: error instanceof Error ? error.message : t("imageStudioV2.error"),
+      });
+
       toast({
         title: t("imageStudioV2.error"),
         description: error instanceof Error ? error.message : t("imageStudioV2.error"),
@@ -899,6 +958,30 @@ export default function ImageStudioV2() {
               </>
             )}
           </Button>
+
+          {/* Inline error banner (better UX than only toasts) */}
+          {inlineError && (
+            <Alert variant={inlineError.type === "RATE_LIMIT" ? "default" : "destructive"}>
+              <AlertCircle className="h-4 w-4" />
+              <div>
+                <AlertTitle>{inlineError.title}</AlertTitle>
+                <AlertDescription>
+                  <p>{inlineError.description}</p>
+                  {(typeof inlineError.used === "number" || typeof inlineError.limit === "number") && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {typeof inlineError.used === "number" ? `${inlineError.used}` : "?"}/
+                      {typeof inlineError.limit === "number" ? `${inlineError.limit}` : "?"}
+                    </p>
+                  )}
+                  {inlineError.requestId && (
+                    <p className="mt-1 text-xs text-muted-foreground font-mono">
+                      requestId: {inlineError.requestId}
+                    </p>
+                  )}
+                </AlertDescription>
+              </div>
+            </Alert>
+          )}
 
           {/* Result section */}
           <Card>
