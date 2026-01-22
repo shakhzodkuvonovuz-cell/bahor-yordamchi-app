@@ -121,7 +121,8 @@ const ASPECT_RATIOS: { id: AspectRatio; label: string }[] = [
 const TOOL_MODES: { id: ToolMode; labelKey: string; disabled?: boolean; badge?: string }[] = [
   { id: "t2i", labelKey: "imageStudioV2.mode.t2i" },
   { id: "remix", labelKey: "imageStudioV2.mode.remix" },
-  { id: "controlnet", labelKey: "imageStudioV2.mode.controlnet", disabled: true, badge: "imageStudioV2.comingSoon" },
+  // Structure mode: keep visible/selectable; generation is gated until backend flag is enabled.
+  { id: "controlnet", labelKey: "imageStudioV2.mode.controlnet", badge: "imageStudioV2.comingSoon" },
 ];
 
 const MAX_PROMPT_LENGTH = 500;
@@ -344,9 +345,10 @@ export default function ImageStudioV2() {
   // For Remix: require uploaded image with successful upload
   // For ControlNet: upload works but mode is disabled anyway
   const hasValidInputImage = inputImage !== null && uploadStatus === "done";
-  const canGenerate = draft.prompt.trim().length > 0 && 
+  // Structure mode UI is selectable, but generation is intentionally disabled for now.
+  const canGenerate = draft.prompt.trim().length > 0 &&
     (!isImageRequired || hasValidInputImage) &&
-    draft.toolMode !== "controlnet"; // ControlNet is still disabled
+    draft.toolMode !== "controlnet";
 
   // Handle generate
   const handleGenerate = async () => {
@@ -423,6 +425,15 @@ export default function ImageStudioV2() {
           qualityBoost: false,
           inputImage: inputImage,
           remixStrength: draft.remixStrength,
+        };
+      } else if (draft.toolMode === "controlnet") {
+        // Structure mode: keep strength locked low (structure preservation)
+        requestPayload = {
+          ...basePayload,
+          modelChoice: "sdxl",
+          qualityBoost: false,
+          inputImage: inputImage,
+          remixStrength: 0.15,
         };
       } else {
         // T2I mode
@@ -644,8 +655,8 @@ export default function ImageStudioV2() {
             </CardContent>
           </Card>
 
-          {/* Model selector - hidden for remix mode since it always uses SDXL */}
-          {draft.toolMode !== "remix" && (
+          {/* Quality tier selector (capability-based) - hidden for Remix/Structure */}
+          {draft.toolMode === "t2i" && (
             <Card>
               <CardContent className="p-4">
                 <Label className="text-sm font-medium mb-3 block">{t("imageStudioV2.modelLabel")}</Label>
@@ -793,21 +804,24 @@ export default function ImageStudioV2() {
             </Card>
           )}
 
-          {/* Remix strength slider (only for Remix mode) */}
-          {draft.toolMode === "remix" && (
+          {/* Remix/Structure strength */}
+          {(draft.toolMode === "remix" || draft.toolMode === "controlnet") && (
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-3">
                   <Label className="text-sm font-medium">{t("imageStudioV2.remixStrengthLabel")}</Label>
-                  <span className="text-sm text-muted-foreground">{draft.remixStrength.toFixed(2)}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {(draft.toolMode === "controlnet" ? 0.15 : draft.remixStrength).toFixed(2)}
+                  </span>
                 </div>
                 <Slider
-                  value={[draft.remixStrength]}
+                  value={[draft.toolMode === "controlnet" ? 0.15 : draft.remixStrength]}
                   onValueChange={([v]) => updateDraft("remixStrength", v)}
                   min={0.05}
                   max={0.9}
                   step={0.05}
                   className="w-full"
+                  disabled={draft.toolMode === "controlnet"}
                 />
                 <p className="text-xs text-muted-foreground mt-2">
                   {t("imageStudioV2.remixStrengthHelper")}
@@ -1012,15 +1026,15 @@ export default function ImageStudioV2() {
                       {t("imageStudioV2.open")}
                     </Button>
                   </div>
-                  {/* Metadata line */}
+                  {/* Metadata line (capability-based; do not expose provider model names) */}
                   <div className="text-xs text-muted-foreground text-center space-y-1">
                     <p>
                       {generatedResult.meta.toolMode && generatedResult.meta.modelChoice && (
                         <span className="font-medium">
-                          {t(`imageStudioV2.mode.${generatedResult.meta.toolMode}`)} · {t(`imageStudioV2.model.${generatedResult.meta.modelChoice}`)} · 
+                          {t(`imageStudioV2.mode.${generatedResult.meta.toolMode}`)} · {t(`imageStudioV2.model.${generatedResult.meta.modelChoice}`)} ·
                         </span>
                       )}
-                      {generatedResult.meta.model} · {generatedResult.meta.width}×{generatedResult.meta.height} · {formatTime(generatedResult.createdAt)}
+                      {generatedResult.meta.width}×{generatedResult.meta.height} · {formatTime(generatedResult.createdAt)}
                     </p>
                     {generatedResult.meta.seed && (
                       <p className="font-mono">seed: {generatedResult.meta.seed}</p>

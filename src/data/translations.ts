@@ -152,8 +152,8 @@ export const translations = {
       rules: "Zo'ravonlik, jiniy yoki siyosiy mazmunli rasmlar yaratish taqiqlangan.",
       modelLabel: "Model",
       model: {
-        flux: "FLUX (Tez)",
-        sdxl: "SDXL (Sifatli)",
+        flux: "Tez",
+        sdxl: "Sifatli",
       },
       mode: {
         t2i: "Matndan rasm",
@@ -364,8 +364,8 @@ export const translations = {
       rules: "Creating violent, sexual, or political content is prohibited.",
       modelLabel: "Model",
       model: {
-        flux: "FLUX (Fast)",
-        sdxl: "SDXL (Quality)",
+        flux: "Fast",
+        sdxl: "Quality",
       },
       mode: {
         t2i: "Text to Image",
