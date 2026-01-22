@@ -369,6 +369,16 @@ export function sanitizeFilename(title: string): string {
     .trim() || 'natija';
 }
 
+function escapeHtml(text: string): string {
+  // Avoid DOM usage to keep this safe and deterministic.
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
+
 export async function downloadPDF(options: GeneratePDFOptions): Promise<void> {
   console.log('[AI_PDF_EXPORT] Starting PDF generation...');
   
@@ -414,7 +424,8 @@ export function openHTMLPrintFallback(options: GeneratePDFOptions): void {
   
   // Convert parsed lines to HTML
   const htmlContent = parsedLines.map(line => {
-    const content = cleanInlineFormatting(line.content);
+    // CRITICAL: Escape HTML entities to prevent XSS via document.write().
+    const content = escapeHtml(cleanInlineFormatting(line.content));
     switch (line.type) {
       case 'heading1':
         return `<h1 style="font-size: 24px; font-weight: bold; margin: 16px 0 8px 0;">${content}</h1>`;
@@ -430,13 +441,18 @@ export function openHTMLPrintFallback(options: GeneratePDFOptions): void {
         return `<p style="margin: 8px 0; text-align: justify;">${content}</p>`;
     }
   }).join('\n');
+
+  const safeTitle = escapeHtml(sanitizeEmojis(options.title));
+  const safeDate = escapeHtml(options.date);
+  const safeMessageCount = options.messageCount ? escapeHtml(String(options.messageCount)) : '';
   
   const html = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>${sanitizeEmojis(options.title)}</title>
+   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; object-src 'none'; base-uri 'none'; style-src 'unsafe-inline'; img-src data: https:;">
+   <title>${safeTitle}</title>
   <style>
     @page { margin: 2cm; }
     body {
@@ -470,8 +486,8 @@ export function openHTMLPrintFallback(options: GeneratePDFOptions): void {
 </head>
 <body>
   <div class="header">
-    <div class="title">${sanitizeEmojis(options.title)}</div>
-    <div class="meta">${options.date}${options.messageCount ? ` • ${options.messageCount} xabar` : ''}</div>
+     <div class="title">${safeTitle}</div>
+     <div class="meta">${safeDate}${safeMessageCount ? ` • ${safeMessageCount} xabar` : ''}</div>
   </div>
   <div class="content">
     ${htmlContent}
