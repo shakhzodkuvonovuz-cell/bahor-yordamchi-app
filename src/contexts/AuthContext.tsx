@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 export interface UserProfile {
   id: string;
   user_id: string;
+  /** Email is sourced from the auth user (not stored in DB) */
   email: string | null;
   full_name: string | null;
   first_name: string | null;
@@ -49,9 +50,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchOrCreateProfile = useCallback(async (authUser: User) => {
     setProfileLoading(true);
     try {
-      // First try to get existing profile
+      // First try to get existing profile (via invoker-secured view)
       const { data: existingProfile, error: fetchError } = await supabase
-        .from('profiles')
+        .from('my_profile')
         .select('*')
         .eq('user_id', authUser.id)
         .maybeSingle();
@@ -63,14 +64,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (existingProfile) {
-        // Update email if changed
-        if (existingProfile.email !== authUser.email) {
-          await supabase
-            .from('profiles')
-            .update({ email: authUser.email })
-            .eq('user_id', authUser.id);
-        }
-        setProfile(existingProfile as UserProfile);
+        setProfile({
+          ...(existingProfile as unknown as Omit<UserProfile, 'email'>),
+          email: authUser.email ?? null,
+        } as UserProfile);
         setProfileLoading(false);
         return;
       }
@@ -78,7 +75,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Create new profile if doesn't exist
       const newProfile = {
         user_id: authUser.id,
-        email: authUser.email,
         full_name: authUser.user_metadata?.full_name || null,
         first_name: authUser.user_metadata?.first_name || null,
         last_name: authUser.user_metadata?.last_name || null,
@@ -99,16 +95,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (insertError) {
         // Profile might have been created by trigger, try fetching again
         const { data: retryProfile } = await supabase
-          .from('profiles')
+          .from('my_profile')
           .select('*')
           .eq('user_id', authUser.id)
           .maybeSingle();
         
         if (retryProfile) {
-          setProfile(retryProfile as UserProfile);
+          setProfile({
+            ...(retryProfile as unknown as Omit<UserProfile, 'email'>),
+            email: authUser.email ?? null,
+          } as UserProfile);
         }
       } else {
-        setProfile(createdProfile as UserProfile);
+        // createdProfile is from base table (no phone). Normalize through my_profile for consistency.
+        const { data: normalized } = await supabase
+          .from('my_profile')
+          .select('*')
+          .eq('user_id', authUser.id)
+          .maybeSingle();
+
+        const base = (normalized ?? createdProfile) as any;
+        setProfile({
+          ...base,
+          phone: base.phone ?? null,
+          email: authUser.email ?? null,
+        } as UserProfile);
       }
     } catch (err) {
       console.error('Profile fetch/create failed:', err);
@@ -123,13 +134,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfileLoading(true);
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('my_profile')
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle();
 
       if (!error && data) {
-        setProfile(data as UserProfile);
+        const base = data as any;
+        setProfile({
+          ...base,
+          phone: base.phone ?? null,
+          email: user.email ?? null,
+        } as UserProfile);
       }
     } catch (err) {
       console.error('Profile refresh failed:', err);

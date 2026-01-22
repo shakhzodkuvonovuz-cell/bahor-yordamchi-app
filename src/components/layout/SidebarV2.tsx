@@ -62,7 +62,7 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const { toast } = useToast();
   const { onNewChat, onModeSwitch, onSidebarToggle } = useNativeHaptics();
 
@@ -140,9 +140,7 @@ export function SidebarV2({ collapsed = false, onCollapse, onNavigate }: Sidebar
       }
       return profile.full_name[0].toUpperCase();
     }
-    if (profile?.email) {
-      return profile.email[0].toUpperCase();
-    }
+    if (user?.email) return user.email[0].toUpperCase();
     return "U";
   };
 

@@ -85,9 +85,7 @@ export default function Settings() {
         ? `${parts[0][0]}${parts[1][0]}`.toUpperCase()
         : parts[0][0].toUpperCase();
     }
-    if (profile?.email || user?.email) {
-      return (profile?.email || user?.email)[0].toUpperCase();
-    }
+    if (user?.email) return user.email[0].toUpperCase();
     return "BA";
   };
 
@@ -192,7 +190,7 @@ export default function Settings() {
                             {getDisplayName()}
                           </h3>
                           <p className="text-sm text-muted-foreground truncate mt-0.5 max-w-[180px] sm:max-w-none">
-                            {profile?.email || user?.email}
+                            {user?.email}
                           </p>
                           {profile && (
                             <div className="mt-2">
