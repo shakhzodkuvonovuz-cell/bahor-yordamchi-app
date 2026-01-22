@@ -7,7 +7,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const REPLICATE_API = "https://api.replicate.com/v1/predictions";
+// Replicate has two prediction endpoints:
+// - POST /v1/predictions requires a `version`
+// - POST /v1/models/{owner}/{name}/predictions does NOT require `version`
+// We use the model-scoped endpoint to avoid hardcoding version IDs.
+const REPLICATE_API = "https://api.replicate.com/v1/models/black-forest-labs/flux-2-klein-4b/predictions";
 const REPLICATE_MODEL = "black-forest-labs/flux-2-klein-4b";
 
 const MAX_PROMPT_LENGTH = 500;
@@ -457,13 +461,23 @@ serve(async (req) => {
         Authorization: `Bearer ${replicateToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ model: REPLICATE_MODEL, input }),
+      body: JSON.stringify({ input }),
     });
 
     if (!startResp.ok) {
       const t = await startResp.text();
       console.error(`[${requestId}] Replicate start error:`, startResp.status, t);
-      throw new Error("Image generation failed");
+      // Return the provider error (sanitized) so the client gets something actionable.
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          error: "PROVIDER_ERROR",
+          provider_status: startResp.status,
+          provider_body: t.slice(0, 1000),
+          requestId,
+        }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     let prediction = await startResp.json();
