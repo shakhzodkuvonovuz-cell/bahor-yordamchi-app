@@ -1428,7 +1428,7 @@ ${fileContentBlocks}`;
                     { 
                       role: "tool", 
                       tool_call_id: tc.id, 
-                      content: `Web Search Results:\n\n${searchResult.results}\n\nUse these results to answer the user's question. Include citation markers [1], [2], etc.`
+                      content: `Web Search Results:\n\n${searchResult.results}\n\n---\nINSTRUCTIONS: You MUST synthesize the information from these search results and provide a direct, helpful answer. DO NOT just list sources - extract the actual data (temperatures, prices, facts, dates, etc.) and present it clearly. Use citation markers [1], [2], etc. after facts to reference sources. The user wants the ANSWER, not just links.`
                     }
                   ];
                   
