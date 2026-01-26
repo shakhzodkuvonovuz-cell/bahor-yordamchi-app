@@ -1843,6 +1843,107 @@ export default function Chat() {
             });
           }
         },
+        // Handle tool_result events from DeepSeek tool calling (image generation, web search)
+        onToolResult: async (result) => {
+          console.log('[Chat] Tool result received:', result);
+          
+          if (result.tool === 'generate_image' && result.success && result.data) {
+            const { fileUrl, fileName, filePath, prompt_en } = result.data;
+            
+            const imageAttachment: ChatAttachment = {
+              id: crypto.randomUUID?.() ?? `img-${Date.now()}`,
+              name: fileName || 'generated-image.png',
+              size: 0,
+              type: 'image/png',
+              url: fileUrl,
+              previewUrl: fileUrl,
+            };
+            
+            // If assistant message already exists, add attachment to it
+            if (assistantMessageCreated) {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantId 
+                    ? { 
+                        ...m, 
+                        attachments: [...(m.attachments || []), imageAttachment],
+                      } 
+                    : m
+                )
+              );
+            } else {
+              // Create new assistant message with the image
+              const imageMessage: Message = {
+                id: assistantId,
+                role: "assistant",
+                content: language === "uz" 
+                  ? `✨ Mana rasm tayyor!`
+                  : language === "ru"
+                  ? `✨ Изображение готово!`
+                  : language === "tr"
+                  ? `✨ Görsel hazır!`
+                  : `✨ Image ready!`,
+                timestamp: new Date(),
+                attachments: [imageAttachment],
+              };
+              
+              setMessages((prev) => addMessageSafe(prev, imageMessage));
+              setLastAssistantMessageId(assistantId);
+              assistantMessageCreated = true;
+            }
+            
+            setIsWaitingForFirstToken(false);
+            setIsGeneratingImage(false);
+            setProcessingStatus(null);
+            
+            // Save image attachment reference to DB
+            if (user && filePath) {
+              try {
+                // We'll save attachment after the message is saved in onDone
+                // Store filePath for later use
+                (window as any).__pendingImageAttachment = { filePath, fileName };
+              } catch (e) {
+                console.error('[Chat] Error preparing image attachment:', e);
+              }
+            }
+            
+            toast({
+              description: language === "uz" ? "Rasm tayyor!" : "Image generated!",
+            });
+          } else if (result.tool === 'generate_image' && !result.success) {
+            // Handle image generation error
+            console.error('[Chat] Image generation failed:', result.error);
+            
+            const errorContent = language === "uz" 
+              ? "Rasm yaratishda xatolik yuz berdi. Qayta urinib ko'ring."
+              : language === "ru"
+              ? "Не удалось создать изображение. Попробуйте снова."
+              : language === "tr"
+              ? "Görsel oluşturma başarısız oldu. Tekrar deneyin."
+              : "Failed to generate image. Please try again.";
+            
+            if (assistantMessageCreated) {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantId ? { ...m, content: m.content + '\n\n' + errorContent } : m
+                )
+              );
+            } else {
+              const errorMessage: Message = {
+                id: assistantId,
+                role: "assistant",
+                content: errorContent,
+                timestamp: new Date(),
+              };
+              setMessages((prev) => addMessageSafe(prev, errorMessage));
+              assistantMessageCreated = true;
+            }
+            
+            setIsWaitingForFirstToken(false);
+            setIsGeneratingImage(false);
+            setProcessingStatus(null);
+          }
+        },
         onChunk: (chunk) => {
           assistantContent += chunk;
           
@@ -1926,6 +2027,25 @@ export default function Chat() {
               );
               setLastAssistantMessageId(savedAssistant.id);
               
+              // Save pending image attachment if exists
+              const pendingAttachment = (window as any).__pendingImageAttachment;
+              if (pendingAttachment?.filePath) {
+                try {
+                  const imgAttachment = await chatStore.attachFile(user.id, {
+                    threadId: effectiveThreadId,
+                    messageId: savedAssistant.id,
+                    bucket: "user-files",
+                    path: pendingAttachment.filePath,
+                    mimeType: "image/png",
+                    originalName: pendingAttachment.fileName || 'generated-image.png',
+                  });
+                  markAttachmentSeen(imgAttachment.id);
+                } catch (e) {
+                  console.error('[Chat] Error saving image attachment:', e);
+                }
+                delete (window as any).__pendingImageAttachment;
+              }
+              
               if (session?.access_token) {
                 chatStore.maybeGenerateSummary(effectiveThreadId, session.access_token)
                   .then(result => {
@@ -1941,6 +2061,44 @@ export default function Chat() {
               }
             } catch (err) {
               console.error("Error saving assistant message:", err);
+            }
+          } else if (user && !assistantContent) {
+            // No text content but might have image - check for pending attachment
+            const pendingAttachment = (window as any).__pendingImageAttachment;
+            if (pendingAttachment?.filePath) {
+              try {
+                // Need to save the message first
+                const currentMessage = messages.find(m => m.id === assistantId);
+                if (currentMessage) {
+                  const savedAssistant = await chatStore.addMessage(user.id, {
+                    threadId: effectiveThreadId,
+                    role: "assistant",
+                    content: currentMessage.content || '',
+                  });
+                  
+                  markMessageSeen(savedAssistant.id);
+                  
+                  const imgAttachment = await chatStore.attachFile(user.id, {
+                    threadId: effectiveThreadId,
+                    messageId: savedAssistant.id,
+                    bucket: "user-files",
+                    path: pendingAttachment.filePath,
+                    mimeType: "image/png",
+                    originalName: pendingAttachment.fileName || 'generated-image.png',
+                  });
+                  markAttachmentSeen(imgAttachment.id);
+                  
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === assistantId ? { ...m, id: savedAssistant.id } : m
+                    )
+                  );
+                  setLastAssistantMessageId(savedAssistant.id);
+                }
+              } catch (e) {
+                console.error('[Chat] Error saving image-only message:', e);
+              }
+              delete (window as any).__pendingImageAttachment;
             }
           }
           
