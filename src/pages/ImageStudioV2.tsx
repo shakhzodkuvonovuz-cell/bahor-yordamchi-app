@@ -177,8 +177,8 @@ export default function ImageStudioV2() {
     // Any change to generation params should clear stale inline errors
     setInlineError(null);
 
-    // Gate SDXL model selection for non-premium users
-    if (key === "modelChoice" && value === "sdxl" && !isPremiumUser) {
+    // Gate SDXL model selection for non-premium users (skip if still loading)
+    if (key === "modelChoice" && value === "sdxl" && !isPremiumUser && !entitlementLoading) {
       toast({
         title: t("imageStudioV2.premiumRequired"),
         description: t("imageStudioV2.sdxlPremiumOnly"),
@@ -187,7 +187,7 @@ export default function ImageStudioV2() {
       return;
     }
     setDraft(prev => ({ ...prev, [key]: value }));
-  }, [isPremiumUser, toast, t]);
+  }, [isPremiumUser, entitlementLoading, toast, t]);
 
   // File handling with resize and upload
   const handleFileSelect = useCallback(async (file: File) => {
@@ -378,8 +378,9 @@ export default function ImageStudioV2() {
     }
 
     // Premium check for SDXL and Remix (Remix always uses SDXL)
+    // Skip gating check if entitlements are still loading (prevents false blocks)
     const requiresPremium = draft.modelChoice === "sdxl" || draft.toolMode === "remix";
-    if (requiresPremium && !isPremiumUser) {
+    if (requiresPremium && !isPremiumUser && !entitlementLoading) {
       toast({
         title: t("imageStudioV2.premiumRequired"),
         description: draft.toolMode === "remix" 
