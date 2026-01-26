@@ -11,8 +11,14 @@ const corsHeaders = {
 // - POST /v1/predictions requires a `version`
 // - POST /v1/models/{owner}/{name}/predictions does NOT require `version`
 // We use the model-scoped endpoint to avoid hardcoding version IDs.
-const REPLICATE_API = "https://api.replicate.com/v1/models/black-forest-labs/flux-2-klein-4b/predictions";
-const REPLICATE_MODEL = "black-forest-labs/flux-2-klein-4b";
+
+// FLUX-2-Klein: Fast text-to-image (does NOT support img2img with strength control)
+const REPLICATE_API_T2I = "https://api.replicate.com/v1/models/black-forest-labs/flux-2-klein-4b/predictions";
+const REPLICATE_MODEL_T2I = "black-forest-labs/flux-2-klein-4b";
+
+// FLUX-dev: Supports proper img2img with prompt_strength parameter
+const REPLICATE_API_IMG2IMG = "https://api.replicate.com/v1/models/black-forest-labs/flux-dev/predictions";
+const REPLICATE_MODEL_IMG2IMG = "black-forest-labs/flux-dev";
 
 const MAX_PROMPT_LENGTH = 500;
 const ALLOWED_ASPECT_RATIOS = ["1:1", "16:9", "9:16", "4:5"];
@@ -359,21 +365,44 @@ serve(async (req) => {
       );
     }
 
+    // Determine if this is an img2img request (remix mode)
+    const isImg2Img = !!sourceImageUrl && typeof remixStrength === "number";
+    
+    // Select appropriate model and API endpoint
+    // - flux-dev: Supports img2img with prompt_strength parameter
+    // - flux-2-klein: Fast text-to-image only (ignores image_strength)
+    const replicateApiUrl = isImg2Img ? REPLICATE_API_IMG2IMG : REPLICATE_API_T2I;
+    const replicateModel = isImg2Img ? REPLICATE_MODEL_IMG2IMG : REPLICATE_MODEL_T2I;
+    
+    console.log(`[${requestId}] Using model: ${replicateModel}, isImg2Img: ${isImg2Img}`);
+
     // Replicate input
     const input: Record<string, any> = {
       prompt: finalPrompt,
-      width,
-      height,
     };
+    
+    // Only set dimensions for text-to-image (flux-dev uses aspect_ratio instead)
+    if (isImg2Img) {
+      // flux-dev uses aspect_ratio string format
+      input.aspect_ratio = aspectRatio;
+    } else {
+      input.width = width;
+      input.height = height;
+    }
+    
     if (seed !== null) input.seed = seed;
     if (sourceImageUrl) input.image = sourceImageUrl;
     if (mask) input.mask = mask;
 
-    // Map remixStrength (0-1) to Replicate's expected strength parameter when using img2img.
-    // Replicate FLUX models commonly use image_strength.
-    if (sourceImageUrl && typeof remixStrength === "number") {
-      const clamped = Math.min(0.9, Math.max(0.1, remixStrength));
-      input.image_strength = clamped;
+    // Map remixStrength (0-1) to Replicate's prompt_strength parameter for img2img.
+    // prompt_strength = 1.0 means full destruction of source image (100% prompt)
+    // prompt_strength = 0.1 means keep 90% of source image structure
+    // User's remixStrength slider: lower = preserve more of source image
+    if (isImg2Img) {
+      // Clamp between 0.1 and 0.95 to always have some effect
+      const clamped = Math.min(0.95, Math.max(0.1, remixStrength));
+      input.prompt_strength = clamped;
+      console.log(`[${requestId}] img2img prompt_strength: ${clamped}`);
     }
 
     // --------------------------------------------------
@@ -459,7 +488,7 @@ serve(async (req) => {
     }
 
     // Kick off prediction
-    const startResp = await fetch(REPLICATE_API, {
+    const startResp = await fetch(replicateApiUrl, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${replicateToken}`,
@@ -579,7 +608,7 @@ serve(async (req) => {
       status: "success",
       meta: {
         provider: "replicate",
-        replicate_model: REPLICATE_MODEL,
+        replicate_model: replicateModel,
         prompt_original: promptOriginal,
         prompt_final: finalPrompt,
         aspect_ratio: aspectRatio,
