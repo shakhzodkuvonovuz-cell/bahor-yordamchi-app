@@ -121,7 +121,8 @@ const ASPECT_RATIOS: { id: AspectRatio; label: string }[] = [
 
 const TOOL_MODES: { id: ToolMode; labelKey: string; disabled?: boolean; badge?: string }[] = [
   { id: "t2i", labelKey: "imageStudioV2.mode.t2i" },
-  { id: "remix", labelKey: "imageStudioV2.mode.remix" },
+  // Remix mode: parked until we have a better image-to-image model alternative
+  { id: "remix", labelKey: "imageStudioV2.mode.remix", badge: "imageStudioV2.comingSoon" },
   // Structure mode: keep visible/selectable; generation is gated until backend flag is enabled.
   { id: "controlnet", labelKey: "imageStudioV2.mode.controlnet", badge: "imageStudioV2.comingSoon" },
 ];
@@ -346,10 +347,11 @@ export default function ImageStudioV2() {
   // For Remix: require uploaded image with successful upload
   // For ControlNet: upload works but mode is disabled anyway
   const hasValidInputImage = inputImage !== null && uploadStatus === "done";
-  // Structure mode UI is selectable, but generation is intentionally disabled for now.
+  // Structure and Remix modes are parked - UI selectable but generation disabled
   const canGenerate = draft.prompt.trim().length > 0 &&
     (!isImageRequired || hasValidInputImage) &&
-    draft.toolMode !== "controlnet";
+    draft.toolMode !== "controlnet" &&
+    draft.toolMode !== "remix";
 
   // Handle generate
   const handleGenerate = async () => {
@@ -358,8 +360,8 @@ export default function ImageStudioV2() {
       return;
     }
 
-    // Currently supporting: t2i (flux/sdxl) and remix (sdxl only)
-    if (draft.toolMode === "controlnet") {
+    // Currently supporting: t2i only (remix and controlnet are parked)
+    if (draft.toolMode === "controlnet" || draft.toolMode === "remix") {
       toast({
         title: t("imageStudioV2.backendPending"),
         description: t("imageStudioV2.backendPendingDesc"),
@@ -367,25 +369,13 @@ export default function ImageStudioV2() {
       return;
     }
 
-    // Remix mode requires inputImage
-    if (draft.toolMode === "remix" && !inputImage) {
-      toast({
-        title: t("imageStudioV2.error"),
-        description: t("imageStudioV2.remixRequiresImage"),
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Premium check for SDXL and Remix (Remix always uses SDXL)
+    // Premium check for SDXL model selection
     // Skip gating check if entitlements are still loading (prevents false blocks)
-    const requiresPremium = draft.modelChoice === "sdxl" || draft.toolMode === "remix";
+    const requiresPremium = draft.modelChoice === "sdxl";
     if (requiresPremium && !isPremiumUser && !entitlementLoading) {
       toast({
         title: t("imageStudioV2.premiumRequired"),
-        description: draft.toolMode === "remix" 
-          ? t("imageStudioV2.remixPremiumOnly") 
-          : t("imageStudioV2.sdxlPremiumOnly"),
+        description: t("imageStudioV2.sdxlPremiumOnly"),
         variant: "destructive",
       });
       return;
@@ -417,25 +407,12 @@ export default function ImageStudioV2() {
         toolMode: draft.toolMode,
       };
 
-      let requestPayload: Record<string, unknown>;
-
-      if (draft.toolMode === "remix") {
-        // Remix mode: always Quality tier (internally SDXL) with inputImage and remixStrength
-        requestPayload = {
-          ...basePayload,
-          modelChoice: "sdxl",
-          qualityBoost: false,
-          inputImage: inputImage,
-          remixStrength: draft.remixStrength,
-        };
-      } else {
-        // T2I mode
-        requestPayload = {
-          ...basePayload,
-          modelChoice: draft.modelChoice,
-          qualityBoost: draft.modelChoice === "sdxl" ? false : draft.qualityBoost,
-        };
-      }
+      // T2I mode only (remix and controlnet are parked)
+      const requestPayload: Record<string, unknown> = {
+        ...basePayload,
+        modelChoice: draft.modelChoice,
+        qualityBoost: draft.modelChoice === "sdxl" ? false : draft.qualityBoost,
+      };
 
       console.log('[ImageStudioV2] Sending request:', requestPayload);
 
@@ -504,7 +481,7 @@ export default function ImageStudioV2() {
           seed: result.seed,
           steps: result.steps,
           toolMode: draft.toolMode,
-          modelChoice: draft.toolMode === "remix" ? "sdxl" : draft.modelChoice,
+          modelChoice: draft.modelChoice,
         },
         createdAt: new Date(),
       });
