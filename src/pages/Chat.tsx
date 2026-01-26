@@ -1758,6 +1758,7 @@ export default function Chat() {
       if (isGeneratingImage) {
         console.log('[Chat] Backend routed to text instead of image, clearing image state');
         setIsGeneratingImage(false);
+        setProcessingStatus(null); // Clear "Rasm yaratilmoqda..." status bar
       }
       
       // Mark 'preparing' step as done and start 'thinking' step
