@@ -1,5 +1,5 @@
-// BahorAI Edge Function with Brand Voice Layer
-// Premium, human, Uzbek-first AI assistant
+// BahorAI Edge Function with Native Tool Calling
+// Premium, human, Uzbek-first AI assistant with intelligent intent detection
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -18,6 +18,7 @@ async function logChatEvent(
     mode?: string;
     search_used?: boolean;
     files_count?: number;
+    tool_used?: string;
   }
 ): Promise<void> {
   try {
@@ -41,6 +42,73 @@ const corsHeaders = {
 // ============================================
 const DEEPSEEK_CHAT_MODEL = Deno.env.get("DEEPSEEK_CHAT_MODEL") || "deepseek-chat";
 const DEEPSEEK_REASONER_MODEL = Deno.env.get("DEEPSEEK_REASONER_MODEL") || "deepseek-reasoner";
+
+// ============================================
+// TOOL DEFINITIONS - DeepSeek Function Calling
+// ============================================
+const CHAT_TOOLS = [
+  {
+    type: "function",
+    function: {
+      name: "generate_image",
+      description: `Generate an image based on user's visual request. Use this when user asks for:
+- Creating, drawing, generating, or making an image/picture/photo
+- Visual content like "show me", "draw", "create a picture of"
+- Requests ending with "rasmi", "rasmini", "surati", "tasviri" (Uzbek image suffixes)
+- Explicit commands like "/rasm" or "/image"
+- Any request for visual illustration, artwork, or rendering
+
+Do NOT use for:
+- Questions about weather, news, prices
+- Requests to analyze or explain existing images
+- General information queries`,
+      parameters: {
+        type: "object",
+        properties: {
+          prompt: {
+            type: "string",
+            description: "English prompt describing what image to generate. Translate if user wrote in Uzbek/Russian."
+          },
+          style: {
+            type: "string",
+            enum: ["realistic", "artistic", "cartoon", "photography", "digital_art"],
+            description: "Visual style for the image"
+          }
+        },
+        required: ["prompt"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "web_search",
+      description: `Search the web for current, real-time information. Use this when user asks about:
+- Current news, recent events, latest updates
+- Weather, prices, exchange rates, stock data
+- Facts that might have changed recently
+- Current status of events, sports scores
+- "What is happening with...", "Latest news about..."
+- Questions with words like: bugun, hozir, yangilik, qidiruv, narxi, kursi, ob-havo
+
+Do NOT use for:
+- General knowledge questions that don't need real-time data
+- Math calculations, explanations of concepts
+- Creative writing, code generation
+- Historical facts that won't change`,
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "Search query in the language most likely to return good results (usually English for international topics, Uzbek for local)"
+          }
+        },
+        required: ["query"]
+      }
+    }
+  }
+];
 
 // ============================================
 // BRAND PROTECTION - OUTPUT SANITIZATION
@@ -74,7 +142,6 @@ const IDENTITY_LEAK_PATTERNS = [
   /на\s+основе\s+.{0,15}модел/gi,
 ];
 
-// Truncation phrases that should be stripped from responses (exact match for SSE chunks)
 const TRUNCATION_PHRASES = [
   "(Davomi uchun: 'batafsil' deb yozing.)",
   "(Davomi uchun: \"batafsil\" deb yozing.)",
@@ -106,11 +173,9 @@ function sanitizeOutput(text: string): string {
     const regex = new RegExp(`\\b${term}\\b`, "gi");
     result = result.replace(regex, "Bahor AI");
   }
-  // Remove truncation phrases - exact string matches first
   for (const phrase of TRUNCATION_PHRASES) {
     result = result.split(phrase).join("");
   }
-  // Then regex patterns for variations
   for (const pattern of TRUNCATION_PATTERNS) {
     result = result.replace(pattern, "");
   }
@@ -128,60 +193,10 @@ function isIdentityQuestion(msg: string): boolean {
   return identityPatterns.some(p => q.includes(p));
 }
 
-function shouldUseSearch(userMsg: string): boolean {
-  // Only check the first 500 chars to avoid triggering on long document content
-  const q = userMsg.toLowerCase().slice(0, 500);
-  
-  // Skip search if message looks like document analysis
-  if (q.includes('hujjat tahlili:') || q.includes('document analysis:') || 
-      q.includes('rasm tahlili:') || q.includes('image analysis:')) {
-    return false;
-  }
-  
-  const searchTriggers = [
-    "yangilik", "yangiliklar", "qidir", "qidirish", "oxirgi", "so'nggi",
-    "bugungi", "hozirgi", "joriy", "nima haqida", "qachon",
-    "search", "news", "latest", "recent", "current", "find", "look up", "lookup",
-    "check online", "online for", "on the internet", "on internet",
-    "what is", "who is", "when did", "where is", "where can",
-    "updates on", "update on", "information about", "info about",
-    "новости", "поиск", "найти", "последние", "текущие", "в интернете",
-    "narxi", "price", "цена", "kurs", "rate", "ob-havo", "weather", "погода"
-  ];
-  return searchTriggers.some(t => q.includes(t));
-}
-
 // ============================================
-// UNIFIED TOOL ROUTER - Priority-based decision
+// LEGACY ROUTER - Only for explicit commands
 // ============================================
 
-// Words that BLOCK image generation - if these appear, it's NOT an image request
-const IMAGE_BLOCKERS = [
-  // Weather terms
-  "ob-havo", "ob havo", "obhavo", "weather", "погода", "hava durumu",
-  "harorat", "temperature", "температура", "sıcaklık",
-  // News/info terms
-  "yangilik", "news", "новости", "haber",
-  "qachon", "when", "когда", "ne zaman",
-  "nima", "what is", "что такое", "nedir",
-  "kim", "who", "кто", "kim",
-  "narx", "price", "цена", "fiyat",
-  "kurs", "rate", "курс",
-  // Question patterns
-  "qanday", "how", "как", "nasıl",
-  "necha", "how much", "сколько", "kaç",
-  "qayerda", "where", "где", "nerede",
-  // File/document
-  "fayl", "file", "файл", "dosya",
-  "hujjat", "document", "документ", "belge",
-  // Help/explain
-  "tushuntir", "explain", "объясни", "açıkla",
-  "yordam", "help", "помощь", "yardım",
-  // Analysis patterns
-  "tahlil", "analysis", "analyze", "анализ",
-];
-
-// Router decision type
 interface RouterDecision {
   selectedTool: 'text' | 'image' | 'search';
   imageIntent: boolean;
@@ -191,30 +206,21 @@ interface RouterDecision {
   explicitCommand: boolean;
   detectedLanguage: string;
   imagePrompt?: string;
+  useToolCalling: boolean; // NEW: Flag to use native tool calling
 }
 
-// Detect language from message content
 function detectMessageLanguage(msg: string): string {
   const text = msg.toLowerCase();
-  
-  // Cyrillic = Russian
   if (/[а-яё]/i.test(text)) return 'ru';
-  
-  // Turkish special chars
   if (/[ğüşöçıİ]/i.test(text)) return 'tr';
-  
-  // Uzbek Latin special chars (o', g', ʻ, ʼ)
   if (/[oʻʼ]'|g'|oʻ|gʻ/i.test(text)) return 'uz';
-  
-  // Check for Uzbek-specific words
   const uzWords = ['salom', 'rahmat', 'qanday', 'nima', 'qayerda', 'uchun', 'bilan', 'kerak'];
   if (uzWords.some(w => text.includes(w))) return 'uz';
-  
-  // Default to English for Latin script
   return 'en';
 }
 
-// Unified router function - single path decision
+// Simplified router - only handles EXPLICIT commands
+// Everything else goes to DeepSeek tool calling
 function routeRequest(
   userMsg: string, 
   hasImageAttachment: boolean,
@@ -233,23 +239,26 @@ function routeRequest(
     confidence: 1.0,
     explicitCommand: false,
     detectedLanguage,
+    useToolCalling: true, // Default: use native tool calling
   };
   
-  // PRIORITY 1: Forced tool from UI
+  // PRIORITY 1: Forced tool from UI - skip tool calling
   if (forcedTool) {
     decision.selectedTool = forcedTool;
     decision.explicitCommand = true;
     decision.confidence = 1.0;
+    decision.useToolCalling = false;
     console.log('[Router] Forced tool from UI:', forcedTool);
     return decision;
   }
   
-  // PRIORITY 2: Explicit commands (/rasm, /image, /search)
+  // PRIORITY 2: Explicit slash commands - skip tool calling
   if (qLower.startsWith('/image ') || qLower.startsWith('/rasm ')) {
     decision.selectedTool = 'image';
     decision.imageIntent = true;
     decision.explicitCommand = true;
     decision.imagePrompt = q.slice(7).trim();
+    decision.useToolCalling = false;
     console.log('[Router] Explicit image command');
     return decision;
   }
@@ -258,132 +267,22 @@ function routeRequest(
     decision.selectedTool = 'search';
     decision.searchIntent = true;
     decision.explicitCommand = true;
+    decision.useToolCalling = false;
     console.log('[Router] Explicit search command');
     return decision;
   }
   
-  // PRIORITY 3: File/image attachments → always text analysis
+  // PRIORITY 3: File/image attachments → always text analysis, no tool calling
   if (hasImageAttachment || hasFileAttachment) {
     decision.selectedTool = 'text';
-    console.log('[Router] Has attachment → text analysis');
+    decision.useToolCalling = false;
+    console.log('[Router] Has attachment → text analysis (no tools)');
     return decision;
   }
   
-  // PRIORITY 4: Check for image generation keywords FIRST
-  const imageResult = detectImageKeywords(q, qLower);
-  
-  // PRIORITY 5: If strong image intent, allow it regardless of blockers
-  if (imageResult.isImageGen) {
-    // Check if it has STRONG image keywords that should override blockers
-    const strongImageKeywords = [
-      'rasm yarat', 'rasm chiz', 'surat yarat', 'tasvir yarat',
-      'generate image', 'create image', 'draw image', 'make image',
-      'generate an image', 'create an image', 'draw an image',
-      'generate a photo', 'create a photo', 'make a photo',
-      '/image', '/rasm'
-    ];
-    const hasStrongIntent = strongImageKeywords.some(kw => qLower.includes(kw));
-    
-    if (hasStrongIntent) {
-      // Strong image keywords override blockers
-      decision.selectedTool = 'image';
-      decision.imageIntent = true;
-      decision.imagePrompt = imageResult.prompt;
-      decision.confidence = 0.95;
-      console.log('[Router] Strong image intent - overriding blockers');
-      return decision;
-    }
-    
-    // For weak image intent, check blockers
-    for (const blocker of IMAGE_BLOCKERS) {
-      if (qLower.includes(blocker)) {
-        decision.blockersHit.push(blocker);
-      }
-    }
-    
-    // Question mark = never image (unless strong intent)
-    if (q.endsWith('?')) {
-      decision.blockersHit.push('?');
-    }
-    
-    if (decision.blockersHit.length === 0) {
-      decision.selectedTool = 'image';
-      decision.imageIntent = true;
-      decision.imagePrompt = imageResult.prompt;
-      decision.confidence = 0.85;
-      console.log('[Router] Image intent detected');
-      return decision;
-    } else {
-      console.log('[Router] Image blocked by:', decision.blockersHit);
-    }
-  }
-  
-  // PRIORITY 6: Check for search intent
-  if (shouldUseSearch(userMsg)) {
-    decision.selectedTool = 'search';
-    decision.searchIntent = true;
-    decision.confidence = 0.8;
-    console.log('[Router] Search intent detected');
-    return decision;
-  }
-  
-  // PRIORITY 7: Default to text
-  console.log('[Router] Default to text');
+  // PRIORITY 4: Use DeepSeek native tool calling for everything else
+  console.log('[Router] Using native tool calling');
   return decision;
-}
-
-// Helper: detect image keywords only (no blockers check here)
-function detectImageKeywords(q: string, qLower: string): { isImageGen: boolean; prompt: string } {
-  // Uzbek keywords for image generation (explicit only)
-  const uzKeywords = [
-    "rasm yarat", "rasm chiz", "surat yarat", "surat chiz", "tasvir yarat", "tasvir chiz",
-    "rasm qil", "chizib ber", "rasmini yarat", "rasmini chiz",
-    "suratini yarat", "tasvirini yarat", "rasm yasab ber",
-    "rasmini chizib ber"
-  ];
-  
-  // English keywords for image generation
-  const enKeywords = [
-    "generate an image", "generate image", "create an image", "create image",
-    "make an image", "draw an image", "draw image",
-    "generate a picture", "create a picture", "draw a picture",
-    "generate a photo", "create a photo", "make a photo",
-    "photo of", "picture of", "image of"
-  ];
-  
-  for (const kw of uzKeywords) {
-    if (qLower.includes(kw)) {
-      const prompt = q.replace(new RegExp(kw, 'gi'), '').trim();
-      return { isImageGen: true, prompt: prompt || q };
-    }
-  }
-  
-  for (const kw of enKeywords) {
-    if (qLower.includes(kw)) {
-      const prompt = q.replace(new RegExp(kw, 'gi'), '').trim();
-      return { isImageGen: true, prompt: prompt || q };
-    }
-  }
-  
-  // Check for trailing image words: "X rasmi", "X rasmini"
-  const qClean = q.replace(/[.!?,;:]+$/, '').trim();
-  const trailingPatterns = [
-    { pattern: / rasmi$/i, len: 6 },
-    { pattern: / rasmini$/i, len: 8 },
-    { pattern: / surati$/i, len: 7 },
-    { pattern: / tasviri$/i, len: 8 },
-  ];
-  
-  for (const { pattern, len } of trailingPatterns) {
-    if (pattern.test(qClean)) {
-      const prompt = qClean.slice(0, -len).trim();
-      if (prompt.length > 2) {
-        return { isImageGen: true, prompt };
-      }
-    }
-  }
-  
-  return { isImageGen: false, prompt: "" };
 }
 
 // Log router decision to database
@@ -392,7 +291,8 @@ async function logRouterDecision(
   userId: string,
   userMsg: string,
   decision: RouterDecision,
-  uiLanguage?: string
+  uiLanguage?: string,
+  toolUsed?: string
 ): Promise<void> {
   try {
     await supabase.from("tool_decisions").insert({
@@ -403,7 +303,7 @@ async function logRouterDecision(
       image_intent: decision.imageIntent,
       search_intent: decision.searchIntent,
       blockers_hit: decision.blockersHit,
-      selected_tool: decision.selectedTool,
+      selected_tool: toolUsed || decision.selectedTool,
       confidence: decision.confidence,
       explicit_command: decision.explicitCommand,
     });
@@ -412,15 +312,12 @@ async function logRouterDecision(
   }
 }
 
-// REMOVED: Old detectImageGenerationIntent function - now using unified routeRequest()
-
 // ============================================
-// TRACE EVENT HELPER - Enhanced with safe metadata
+// TRACE EVENT HELPER
 // ============================================
 
 type TraceStep = 'preparing' | 'new_chat' | 'uploading' | 'parsing_files' | 'web_search' | 
                  'selecting_model' | 'thinking' | 'writing' | 'saving' | 'generating_image' | 'delivering' |
-                 // Legacy steps for backwards compatibility
                  'analyzing_request' | 'image_analysis' | 'reading_files' | 'drafting_answer' | 'safety_check' | 'formatting';
 
 interface TraceSource {
@@ -429,7 +326,6 @@ interface TraceSource {
 }
 
 interface TraceDetail {
-  // Safe metadata only - no content
   filesCount?: number;
   extractedChars?: number;
   sourcesCount?: number;
@@ -442,6 +338,7 @@ interface TraceDetail {
   localSaved?: boolean;
   cloudSaved?: boolean;
   sources?: TraceSource[];
+  toolName?: string;
   [key: string]: any;
 }
 
@@ -450,14 +347,14 @@ function createTraceEvent(
   status: 'start' | 'end', 
   startTime: number, 
   detail?: TraceDetail,
-  explicitT?: number  // Optional explicit timestamp (ms since request start)
+  explicitT?: number
 ): string {
   const event = {
     type: 'trace',
     step,
     status,
     t: explicitT !== undefined ? explicitT : (Date.now() - startTime),
-    ...(detail && { detail, data: detail }), // Include as both for backwards compat
+    ...(detail && { detail, data: detail }),
   };
   return `data: ${JSON.stringify(event)}\n\n`;
 }
@@ -477,7 +374,7 @@ function createTraceComplete(
 }
 
 // ============================================
-// BAHOR AI IDENTITY CARD - CANONICAL TRUTH
+// BAHOR AI IDENTITY CARDS
 // ============================================
 
 const IDENTITY_CARD_UZ = `
@@ -567,7 +464,7 @@ function getIdentityCard(lang: string): string {
 }
 
 // ============================================
-// BRAND VOICE SYSTEM PROMPT
+// BRAND VOICE SYSTEM PROMPT (with tool calling instructions)
 // ============================================
 
 const BRAND_SYSTEM_PROMPT = `
@@ -627,6 +524,29 @@ FORBIDDEN IN RESPONSES:
 - Excessive bullet points (keep to 4-6 max)
 
 ═══════════════════════════════════════════════════════════════════
+TOOL USAGE INSTRUCTIONS (IMPORTANT!)
+═══════════════════════════════════════════════════════════════════
+
+You have access to tools. Use them wisely:
+
+1. **generate_image** - Use when user wants to CREATE/MAKE/DRAW a visual
+   - "Show me what X looks like" → USE generate_image
+   - "Draw/create/generate X" → USE generate_image
+   - "X rasmi", "X ning surati" → USE generate_image
+   - DO NOT use for analyzing existing images
+
+2. **web_search** - Use for CURRENT/REAL-TIME information only
+   - News, weather, prices, recent events → USE web_search
+   - General knowledge, explanations, math → DON'T use search
+   - Be smart about when info needs to be fresh
+
+3. **No tool** - Most questions need NO tool
+   - Explanations, advice, creative writing → just answer directly
+   - Don't use tools unless truly needed
+
+When you use a tool, the system will handle the result and continue your response.
+
+═══════════════════════════════════════════════════════════════════
 LANGUAGE MATCHING (CRITICAL - FOLLOW THIS EXACTLY)
 ═══════════════════════════════════════════════════════════════════
 
@@ -666,23 +586,6 @@ REFUSE briefly + offer alternative:
 - Legal advice → "Yurist bilan gaplashing"
 - Religious rulings → "Imom yoki olimdan so'rang"
 - Harmful content → Politely decline
-
-═══════════════════════════════════════════════════════════════════
-IMAGE GENERATION - CRITICAL RULES
-═══════════════════════════════════════════════════════════════════
-
-YOU CANNOT GENERATE IMAGES. You are a text-only assistant.
-
-NEVER:
-- Claim you created/generated/prepared a photo or image
-- Describe what an image would look like as if you made it
-- Say "mana rasm", "rasm tayyor", "photo is ready", "here's the image"
-- Pretend you're generating visuals
-
-If user asks for image generation:
-- Tell them to add "rasmi" at the end of their prompt (e.g., "Samarqand rasmi")
-- Or use "/rasm" command (e.g., "/rasm qadimiy madrasa")
-- Example response: "Rasm yaratish uchun so'rovingiz oxiriga 'rasmi' so'zini qo'shing. Masalan: 'Qadimiy madrasa hovlisi rasmi'"
 `;
 
 const MODE_PROMPTS: Record<string, string> = {
@@ -712,13 +615,105 @@ const STYLE_CLAMP = {
 5. If writing long content (essays, research), write it ALL - do not break into parts`,
 };
 
-// Step timing tracker for ThinkBar accuracy
+// Step timing tracker
 interface StepTiming {
   step: TraceStep;
   startMs: number;
   endMs: number;
   detail?: TraceDetail;
 }
+
+// ============================================
+// TOOL EXECUTION HANDLERS
+// ============================================
+
+async function executeImageGeneration(
+  supabaseUrl: string,
+  token: string,
+  prompt: string,
+  style?: string
+): Promise<{ success: boolean; data?: any; error?: string }> {
+  console.log('[Tool:generate_image] Executing with prompt:', prompt);
+  
+  try {
+    const imageResponse = await fetch(`${supabaseUrl}/functions/v1/image-generate`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        prompt: prompt,
+        aspectRatio: '1:1',
+        attachToChat: false,
+        style: style || 'realistic',
+      }),
+    });
+    
+    if (!imageResponse.ok) {
+      const errorData = await imageResponse.json().catch(() => ({}));
+      console.error('[Tool:generate_image] Error:', errorData);
+      return { success: false, error: errorData.error || 'IMAGE_ERROR' };
+    }
+    
+    const imageData = await imageResponse.json();
+    console.log('[Tool:generate_image] Success:', { file_path: imageData.file_path });
+    return { success: true, data: imageData };
+  } catch (err) {
+    console.error('[Tool:generate_image] Exception:', err);
+    return { success: false, error: 'IMAGE_EXCEPTION' };
+  }
+}
+
+async function executeWebSearch(
+  query: string,
+  uiLanguage: string
+): Promise<{ success: boolean; results?: string; sources?: TraceSource[]; error?: string }> {
+  console.log('[Tool:web_search] Executing with query:', query);
+  
+  try {
+    setSearchLang(uiLanguage || "uz");
+    const searchResult: SearchResult = await googleSearch(query);
+    
+    if (searchResult.isBusy) {
+      console.log('[Tool:web_search] Search is busy');
+      return { success: false, error: 'SEARCH_BUSY', results: searchResult.busyMessage };
+    }
+    
+    const sources: TraceSource[] = [];
+    if (searchResult.content) {
+      const titleMatches = searchResult.content.matchAll(/\*\*([^*]+)\*\*\s*\n[^h]*?(https?:\/\/[^\s\n]+)/g);
+      for (const match of titleMatches) {
+        sources.push({
+          title: match[1].trim(),
+          url: match[2].trim(),
+        });
+      }
+      
+      if (sources.length === 0) {
+        const urlMatches = searchResult.content.match(/https?:\/\/[^\s\n]+/g);
+        if (urlMatches) {
+          for (const url of urlMatches.slice(0, 5)) {
+            try {
+              const domain = new URL(url).hostname.replace(/^www\./, '');
+              sources.push({ title: domain, url });
+            } catch { /* ignore */ }
+          }
+        }
+      }
+    }
+    
+    console.log('[Tool:web_search] Success, sources:', sources.length);
+    return { success: true, results: searchResult.content, sources };
+  } catch (err) {
+    console.error('[Tool:web_search] Exception:', err);
+    return { success: false, error: 'SEARCH_EXCEPTION' };
+  }
+}
+
+// ============================================
+// MAIN HANDLER
+// ============================================
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -728,7 +723,6 @@ serve(async (req) => {
   const requestStartTime = Date.now();
   const stepTimings: StepTiming[] = [];
   
-  // Helper to record step timing
   const recordStep = (step: TraceStep, startMs: number, detail?: TraceDetail) => {
     stepTimings.push({ step, startMs, endMs: Date.now() - requestStartTime, detail });
   };
@@ -739,7 +733,7 @@ serve(async (req) => {
     
     const body = await req.json();
     
-    // Handle warmup requests (pre-flight to wake up the function)
+    // Handle warmup requests
     if (body.warmup === true) {
       return new Response(
         JSON.stringify({ ok: true, status: "warm" }),
@@ -783,18 +777,15 @@ serve(async (req) => {
       );
     }
     
-    // Auth completed - record timing (not exposed to client, just for internal tracking)
     const authEndMs = Date.now() - requestStartTime;
     console.log(`[Timing] Auth: ${authEndMs - authStart}ms`);
 
     // ===========================================
-    // PARALLEL INITIALIZATION - Device, Trial, Feature Detection
+    // PARALLEL INITIALIZATION
     // ===========================================
     
-    // Set user ID for search logging
     setSearchUserId(user.id);
     
-    // Check bypass status first (doesn't need DB)
     const userEmail = user.email?.toLowerCase() || '';
     const devUnlimitedRaw = Deno.env.get('DEV_UNLIMITED_EMAILS') || '';
     const adminEmailsRaw = Deno.env.get('ADMIN_EMAILS') || '';
@@ -802,7 +793,6 @@ serve(async (req) => {
     const adminEmails = adminEmailsRaw.split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
     const isDevBypass = devUnlimitedEmails.includes(userEmail) || adminEmails.includes(userEmail);
     
-    // Determine feature usage flags from request (no DB needed)
     const hasAttachments = messages.some((m: any) => m.attachments && m.attachments.length > 0);
     const hasImageAttachment = messages.some((m: any) => 
       m.attachments?.some((a: any) => a.mime_type?.startsWith('image/'))
@@ -810,17 +800,17 @@ serve(async (req) => {
     const hasFileAttachment = messages.some((m: any) => 
       m.attachments?.some((a: any) => !a.mime_type?.startsWith('image/'))
     );
-    const userMsgForSearch = messages.filter((m: any) => m.role === "user").pop()?.content || "";
-    const wantsSearch = shouldUseSearch(userMsgForSearch);
+    const userMsgForRouter = messages.filter((m: any) => m.role === "user").pop()?.content || "";
+    
+    // For tool calling, we need to check all possible tools usage
+    const wantsSearch = false; // Will be determined by tool call
     const wantsVision = hasImageAttachment || hasAnalysis;
     const wantsFile = hasFileAttachment;
 
-    console.log('[Quota Check]', { userEmail, isDevBypass, wantsSearch, wantsVision, wantsFile });
+    console.log('[Quota Check]', { userEmail, isDevBypass, wantsVision, wantsFile });
 
-    // PARALLEL: Device verification + Combined trial/usage check
     const TRIAL_DAYS = 7;
     
-    // Build parallel promises - device check runs alongside combined init+usage
     const devicePromise = device_id 
       ? supabaseAdmin
           .from('user_devices')
@@ -830,34 +820,27 @@ serve(async (req) => {
           .single()
       : Promise.resolve({ data: null, error: null });
     
-    // COMBINED RPC: Trial initialization + usage check in ONE database call
     const usagePromise = supabaseAdmin.rpc('init_and_check_usage', { 
       p_user_id: user.id,
       p_trial_days: TRIAL_DAYS,
       p_is_bypass: isDevBypass,
-      p_wants_search: wantsSearch,
+      p_wants_search: false, // Will increment after tool call if needed
       p_wants_vision: wantsVision,
       p_wants_file: wantsFile,
     });
     
-    // Wait for parallel operations
     const [deviceResult, usageResponse] = await Promise.all([devicePromise, usagePromise]);
     
-    // Check device result
     if (device_id && deviceResult.data?.revoked_at) {
       return new Response(
         JSON.stringify({ 
           error: "DEVICE_REVOKED", 
           message: "Bu qurilma boshqa joydan chiqarilgan. Qaytadan kiring.",
-          message_en: "This device was signed out from another location. Please sign in again.",
-          message_ru: "Это устройство было отключено с другого места. Войдите снова.",
-          message_tr: "Bu cihaz başka bir yerden çıkarıldı. Lütfen tekrar giriş yapın.",
         }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Extract usage result
     const { data: usageResult, error: usageError } = usageResponse;
 
     if (usageError) {
@@ -868,7 +851,6 @@ serve(async (req) => {
       );
     }
 
-    // Build localized error messages
     const limitMessages: Record<string, Record<string, string>> = {
       daily_limit_reached: {
         uz: "Bugungi limit tugadi. Ertaga davom eting yoki Premiumga o'ting.",
@@ -877,34 +859,22 @@ serve(async (req) => {
         tr: "Günlük limit doldu. Yarın devam edin veya Premium'a geçin.",
       },
       search_limit_reached: {
-        uz: "Bugungi web qidiruv limiti tugadi. Oddiy savollar bilan davom etishingiz mumkin.",
-        en: "Daily web search limit reached. You can continue with regular questions.",
-        ru: "Дневной лимит поиска исчерпан. Вы можете продолжить с обычными вопросами.",
-        tr: "Günlük web arama limiti doldu. Normal sorularla devam edebilirsiniz.",
+        uz: "Bugungi web qidiruv limiti tugadi.",
+        en: "Daily web search limit reached.",
+        ru: "Дневной лимит поиска исчерпан.",
+        tr: "Günlük web arama limiti doldu.",
       },
       vision_limit_reached: {
-        uz: "Bugungi rasm tahlil limiti tugadi. Oddiy savollar bilan davom etishingiz mumkin.",
-        en: "Daily image analysis limit reached. You can continue with regular questions.",
-        ru: "Дневной лимит анализа изображений исчерпан. Вы можете продолжить с обычными вопросами.",
-        tr: "Günlük görsel analiz limiti doldu. Normal sorularla devam edebilirsiniz.",
+        uz: "Bugungi rasm tahlil limiti tugadi.",
+        en: "Daily image analysis limit reached.",
+        ru: "Дневной лимит анализа изображений исчерпан.",
+        tr: "Günlük görsel analiz limiti doldu.",
       },
       file_limit_reached: {
-        uz: "Bugungi fayl tahlil limiti tugadi. Oddiy savollar bilan davom etishingiz mumkin.",
-        en: "Daily file analysis limit reached. You can continue with regular questions.",
-        ru: "Дневной лимит анализа файлов исчерпан. Вы можете продолжить с обычными вопросами.",
-        tr: "Günlük dosya analiz limiti doldu. Normal sorularla devam edebilirsiniz.",
-      },
-      global_search_limit_reached: {
-        uz: "Tizimda vaqtincha web qidiruv band. Keyinroq urinib ko'ring.",
-        en: "Web search temporarily unavailable. Please try again later.",
-        ru: "Поиск временно недоступен. Попробуйте позже.",
-        tr: "Web arama geçici olarak kullanılamıyor. Daha sonra tekrar deneyin.",
-      },
-      global_vision_limit_reached: {
-        uz: "Tizimda vaqtincha rasm tahlili band. Keyinroq urinib ko'ring.",
-        en: "Image analysis temporarily unavailable. Please try again later.",
-        ru: "Анализ изображений временно недоступен. Попробуйте позже.",
-        tr: "Görsel analiz geçici olarak kullanılamıyor. Daha sonra tekrar deneyin.",
+        uz: "Bugungi fayl tahlil limiti tugadi.",
+        en: "Daily file analysis limit reached.",
+        ru: "Дневной лимит анализа файлов исчерпан.",
+        tr: "Günlük dosya analiz limiti doldu.",
       },
     };
 
@@ -918,10 +888,6 @@ serve(async (req) => {
           error: "LIMIT_REACHED", 
           reason,
           message: messages_i18n[lang] || messages_i18n.uz,
-          message_uz: messages_i18n.uz,
-          message_en: messages_i18n.en,
-          message_ru: messages_i18n.ru,
-          message_tr: messages_i18n.tr,
           limits: usageResult?.limits,
           used: usageResult?.used,
           remaining: usageResult?.remaining,
@@ -936,91 +902,29 @@ serve(async (req) => {
     const effectivePlan = isPremium ? 'premium' : (isTrialActive ? 'trial' : 'free');
 
     // ===========================================
-    // UNIFIED TOOL ROUTER - Priority-based decision
+    // ROUTER DECISION
     // ===========================================
     const routerStart = Date.now() - requestStartTime;
     const lastUserMsg = messages.filter((m: any) => m.role === "user").pop()?.content || "";
     const routerDecision = routeRequest(lastUserMsg, hasImageAttachment, hasFileAttachment);
     
-    // Log router decision for debugging
-    logRouterDecision(supabaseAdmin, user.id, lastUserMsg, routerDecision, ui_language);
-    
     console.log('[Router Decision]', {
+      useToolCalling: routerDecision.useToolCalling,
+      explicitCommand: routerDecision.explicitCommand,
       selectedTool: routerDecision.selectedTool,
-      imageIntent: routerDecision.imageIntent,
-      searchIntent: routerDecision.searchIntent,
-      blockersHit: routerDecision.blockersHit,
-      confidence: routerDecision.confidence,
-      detectedLanguage: routerDecision.detectedLanguage,
     });
     
-    recordStep('selecting_model', routerStart, { 
-      modelPreference: modelPreference || 'chat' 
-    });
-    
-    if (routerDecision.selectedTool === 'image' && routerDecision.imagePrompt) {
-      console.log('[Image Gen] Routed to image generation:', routerDecision.imagePrompt);
+    recordStep('selecting_model', routerStart, { modelPreference: modelPreference || 'chat' });
+
+    // ===========================================
+    // HANDLE EXPLICIT COMMANDS (bypass tool calling)
+    // ===========================================
+    if (!routerDecision.useToolCalling && routerDecision.selectedTool === 'image' && routerDecision.imagePrompt) {
+      console.log('[Explicit Command] Image generation:', routerDecision.imagePrompt);
       
-      try {
-        // Call the image generation function internally
-        const imageResponse = await fetch(`${supabaseUrl}/functions/v1/image-generate`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            prompt: routerDecision.imagePrompt,
-            aspectRatio: '1:1',
-            attachToChat: false,
-          }),
-        });
-        
-        if (!imageResponse.ok) {
-          const errorData = await imageResponse.json().catch(() => ({}));
-          console.error('[Image Gen] Fireworks error:', errorData);
-          
-          // Return error as regular JSON (not stream)
-          const lang = ui_language || 'uz';
-          const errorMessages: Record<string, string> = {
-            uz: "Rasm yaratishda xatolik yuz berdi. Qayta urinib ko'ring.",
-            en: "Failed to generate image. Please try again.",
-            ru: "Ошибка при создании изображения. Попробуйте снова.",
-            tr: "Görsel oluşturulamadı. Lütfen tekrar deneyin.",
-          };
-          
-          return new Response(
-            JSON.stringify({
-              type: "image_error",
-              error: errorData.error || "IMAGE_ERROR",
-              message: errorMessages[lang] || errorMessages.uz,
-            }),
-            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        
-        const imageData = await imageResponse.json();
-        console.log('[Image Gen] Success:', { image_url: imageData.image_url, file_name: imageData.file_name, file_path: imageData.file_path });
-        
-        // Return image generation result as JSON (not a stream)
-        return new Response(
-          JSON.stringify({
-            type: "image_generated",
-            fileUrl: imageData.image_url || imageData.fileUrl,
-            fileName: imageData.file_name || imageData.fileName,
-            filePath: imageData.file_path,
-            generationId: imageData.generationId,
-            prompt_uz: imageData.prompt_original || imageData.prompt_uz,
-            prompt_en: imageData.prompt_used || imageData.prompt_en,
-            model: imageData.model,
-            width: imageData.width,
-            height: imageData.height,
-          }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-        
-      } catch (err) {
-        console.error('[Image Gen] Exception:', err);
+      const result = await executeImageGeneration(supabaseUrl, token, routerDecision.imagePrompt);
+      
+      if (!result.success) {
         const lang = ui_language || 'uz';
         const errorMessages: Record<string, string> = {
           uz: "Rasm yaratishda xatolik yuz berdi. Qayta urinib ko'ring.",
@@ -1032,14 +936,35 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({
             type: "image_error",
-            error: "IMAGE_ERROR",
+            error: result.error,
             message: errorMessages[lang] || errorMessages.uz,
           }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+      
+      logRouterDecision(supabaseAdmin, user.id, lastUserMsg, routerDecision, ui_language, 'image');
+      
+      return new Response(
+        JSON.stringify({
+          type: "image_generated",
+          fileUrl: result.data.image_url || result.data.fileUrl,
+          fileName: result.data.file_name || result.data.fileName,
+          filePath: result.data.file_path,
+          generationId: result.data.generationId,
+          prompt_uz: result.data.prompt_original || result.data.prompt_uz,
+          prompt_en: result.data.prompt_used || result.data.prompt_en,
+          model: result.data.model,
+          width: result.data.width,
+          height: result.data.height,
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
+    // ===========================================
+    // DeepSeek API CALL (with or without tools)
+    // ===========================================
     const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
     if (!deepseekApiKey) {
       return new Response(
@@ -1048,98 +973,20 @@ serve(async (req) => {
       );
     }
 
-    // Build prompt
     const modeKey = mode || "general";
     const modePrompt = MODE_PROMPTS[modeKey] || MODE_PROMPTS.general;
-    // Use reasoner style for reasoner mode, otherwise plan-based style
     const styleClamp = modelPreference === 'reasoner' 
       ? STYLE_CLAMP.reasoner 
       : (effectivePlan === 'free' ? STYLE_CLAMP.free : STYLE_CLAMP.premium);
     const recentMessages = messages.slice(-12);
 
-    // Collect sources from web search
-    const collectedSources: TraceSource[] = [];
-
-    // Check for search - use router decision
-    const lastUserMessage = recentMessages.filter((m: any) => m.role === "user").pop()?.content || "";
-    let searchResults = "";
-    let searchUrls: string[] = [];
-    let didSearch = false;
-    let searchBusyMessage = "";
-    
-    // Only search if router decided on search tool (not image, not text-only)
-    let searchTimingStart = 0;
-    let searchTimingEnd = 0;
-    
-    if (routerDecision.selectedTool === 'search' || routerDecision.searchIntent) {
-      searchTimingStart = Date.now() - requestStartTime;
-      didSearch = true;
-      try {
-        // Set language for localized busy messages
-        setSearchLang(ui_language || "uz");
-        
-        const searchResult: SearchResult = await googleSearch(lastUserMessage);
-        
-        // Handle busy/rate-limited state
-        if (searchResult.isBusy && searchResult.busyMessage) {
-          searchBusyMessage = searchResult.busyMessage;
-          console.log("⚠️ Search is busy, will inform user");
-        }
-        
-        searchResults = searchResult.content;
-        if (searchResults) {
-          const urlMatches = searchResults.match(/https?:\/\/[^\s\n]+/g);
-          searchUrls = urlMatches ? urlMatches.slice(0, 5) : [];
-          
-          // Extract source titles from search results
-          const titleMatches = searchResults.matchAll(/\*\*([^*]+)\*\*\s*\n[^h]*?(https?:\/\/[^\s\n]+)/g);
-          for (const match of titleMatches) {
-            collectedSources.push({
-              title: match[1].trim(),
-              url: match[2].trim(),
-            });
-          }
-          
-          // Fallback: if no titles found, just use URLs
-          if (collectedSources.length === 0) {
-            for (const url of searchUrls) {
-              try {
-                const domain = new URL(url).hostname.replace(/^www\./, '');
-                collectedSources.push({ title: domain, url });
-              } catch { /* ignore */ }
-            }
-          }
-        }
-      } catch (err) {
-        console.log("Search failed:", err);
-      }
-      searchTimingEnd = Date.now() - requestStartTime;
-      recordStep('web_search', searchTimingStart, { 
-        sourcesCount: collectedSources.length,
-        sources: collectedSources,
-      });
-      console.log(`[Timing] Web search: ${searchTimingEnd - searchTimingStart}ms, sources: ${collectedSources.length}`);
-    }
-
-    // Build system prompt with thread summary if available
-    let summaryContext = "";
-    if (threadSummary) {
-      summaryContext = `
-THREAD MEMORY (previous conversation summary):
-${threadSummary}
-
-Use this context to maintain continuity. Don't repeat information unless asked.
-`;
-    }
-
-    // Build STRONG language directive - use router's detected language or reply_language
+    // Build language directive
     const languageNames: Record<string, string> = {
       uz: "Uzbek",
       ru: "Russian", 
       en: "English",
       tr: "Turkish",
     };
-    // Priority: reply_language from client > router detected language > default uz
     const replyLang = reply_language || routerDecision.detectedLanguage || "uz";
     const languageDirective = `
 ═══════════════════════════════════════════════════════════════════
@@ -1148,23 +995,15 @@ REPLY LANGUAGE (STRICT - DO NOT SWITCH)
 
 **YOU MUST REPLY IN: ${languageNames[replyLang] || "Uzbek"} (${replyLang.toUpperCase()})**
 
-CRITICAL LANGUAGE RULES:
-1. NEVER switch languages unless user EXPLICITLY requests it (e.g., "answer in English")
-2. Keep your ENTIRE response in ${languageNames[replyLang] || "Uzbek"} - including greetings, explanations, examples
-3. If you cite sources in another language, summarize/translate them to ${languageNames[replyLang] || "Uzbek"}
-4. Technical terms can stay in English, but explanations must be in ${languageNames[replyLang] || "Uzbek"}
-5. DO NOT use mixed languages in the same response
-
 User's detected message language: ${routerDecision.detectedLanguage}
 User's UI language setting: ${ui_language || "uz"}
 `;
 
-    // Build attached file content blocks - prefer server-extracted text from DB
+    // Build file content blocks
     let fileContentBlocks = "";
     const attachmentIds = attachments?.filter((att: any) => att.dbId)?.map((att: any) => att.dbId) || [];
-    
-    // Fetch extracted text from attachment_text table
     let dbExtractedTexts: Record<string, { text: string; summary: string; status: string }> = {};
+    
     if (attachmentIds.length > 0) {
       const { data: extractedData } = await supabaseAdmin
         .from('attachment_text')
@@ -1191,65 +1030,53 @@ User's UI language setting: ${ui_language || "uz"}
         const dbText = att.dbId ? dbExtractedTexts[att.dbId] : null;
         
         if (dbText && dbText.status === 'ready') {
-          // Use server-extracted text (prefer summary if available and text is long)
           const content = (dbText.summary && dbText.text.length > 20000) ? dbText.summary : dbText.text;
           if (content) {
             fileBlocks.push(`--- ATTACHED FILE: ${att.name} ---\n${content}\n--- END FILE ---`);
           }
         } else if (att.extractedText) {
-          // Fallback to client-extracted text
           fileBlocks.push(`--- ATTACHED FILE: ${att.name} ---\n${att.extractedText}\n--- END FILE ---`);
         } else if (att.readStatus === 'unsupported') {
           unsupportedNames.push(att.name);
-        } else if (att.readStatus === 'processing') {
-          fileBlocks.push(`--- ATTACHED FILE: ${att.name} ---\n[File is still being processed. Please wait a moment and try again.]\n--- END FILE ---`);
         }
       }
       
       if (fileBlocks.length > 0) {
         fileContentBlocks = `
 ═══════════════════════════════════════════════════════════════════
-ATTACHED FILES (User uploaded these files - prioritize answering based on their content)
+ATTACHED FILES
 ═══════════════════════════════════════════════════════════════════
 
 ${fileBlocks.join('\n\n')}
-
-If an attached file is provided above, prioritize answering based on its content. If the user asks to summarize, analyze, or explain the file, do so based on the content above.
 `;
       }
       
-      // Check for unsupported files that need acknowledgment
       if (unsupportedNames.length > 0) {
-        fileContentBlocks += `
-Note: The user attached file(s) that could not be read: ${unsupportedNames.join(', ')}. If they ask about these files, politely explain that this file type is not yet supported, and suggest they paste the text content directly or use a TXT/PDF file instead.
-`;
+        fileContentBlocks += `\nNote: Files that could not be read: ${unsupportedNames.join(', ')}`;
       }
     }
 
-    // Build user tone preference directive
     let toneDirective = "";
     if (userToneContext) {
       toneDirective = `
 ═══════════════════════════════════════════════════════════════════
-USER TONE PREFERENCE (APPLY THIS STYLE)
+USER TONE PREFERENCE
 ═══════════════════════════════════════════════════════════════════
 
 ${userToneContext}
 `;
     }
 
-    // For reasoner mode, add anti-truncation directive at the very top
     const reasonerTopDirective = modelPreference === 'reasoner' ? `
 ═══════════════════════════════════════════════════════════════════
 CRITICAL OUTPUT RULES - MUST FOLLOW
 ═══════════════════════════════════════════════════════════════════
 You MUST complete your ENTIRE response in ONE message. 
-FORBIDDEN phrases (NEVER use these): "Davomi uchun", "batafsil deb yozing", "would you like me to continue", "davom etaymi", "(Davomi", "...deb yozing"
-DO NOT truncate, split, or ask to continue. Write your FULL answer regardless of length.
+FORBIDDEN phrases: "Davomi uchun", "batafsil deb yozing", "would you like me to continue"
+DO NOT truncate. Write your FULL answer regardless of length.
 
 ` : '';
 
-    // Get identity card based on UI language
     const identityCard = getIdentityCard(ui_language || 'uz');
 
     const systemPrompt = `${reasonerTopDirective}${identityCard}
@@ -1260,65 +1087,42 @@ ${styleClamp}
 
 MODE: ${modeKey.toUpperCase()}
 ${modePrompt}
-${summaryContext}
-${fileContentBlocks}
-${searchResults ? `
-═══════════════════════════════════════════════════════════════════
-WEB SEARCH RESULTS (CRITICAL - USE THESE!)
-═══════════════════════════════════════════════════════════════════
-
-${searchResults}
-
-**CRITICAL CITATION INSTRUCTIONS - YOU MUST FOLLOW:**
-
-1. You performed a LIVE web search and the results above are REAL and CURRENT
-2. **SUMMARIZE THE ACTUAL CONTENT** from the search results - don't just list the source links
-3. **USE NUMBERED CITATION MARKERS** like [1], [2], [3] inline in your text to reference sources
-   - Example: "O'zbekistonda yangi qonun qabul qilindi [1]. Bu qonun..." 
-   - Match the citation number to the order sources appear in search results
-4. Place citations RIGHT AFTER the fact or sentence that came from that source
-5. You can cite the same source multiple times with the same number
-6. If search results contain news → TELL THE USER WHAT THE NEWS IS with citations
-7. If search results contain data → EXTRACT AND PRESENT THAT DATA with citations
-8. DO NOT say "I cannot search" - you already searched, now summarize what you found
-
-**WRONG RESPONSE (no citations):**
-"Bugungi yangiliklar quyidagilar: O'zbekistonda yangi qonun qabul qilindi."
-
-**CORRECT RESPONSE (with inline citations):**
-"Bugungi yangiliklar quyidagilar: O'zbekistonda yangi qonun qabul qilindi [1]. Xorazm viloyatida yangi loyiha boshlandi [2]."
-` : searchBusyMessage ? `
-═══════════════════════════════════════════════════════════════════
-WEB SEARCH STATUS
-═══════════════════════════════════════════════════════════════════
-
-${searchBusyMessage}
-
-**IMPORTANT**: Tell the user that web search is temporarily busy and they can try again later.
-Explain that they can continue chatting without web search in the meantime.
-Answer their question as best you can using your existing knowledge, but be clear you couldn't access live search results this time.
-` : ""}`;
+${threadSummary ? `\nTHREAD MEMORY:\n${threadSummary}\n` : ''}
+${fileContentBlocks}`;
 
     const finalMessages = [
       { role: "system", content: systemPrompt },
       ...recentMessages,
     ];
 
-    // Log request info including attachments and model preference
     const textFilesCount = attachments?.filter((att: any) => att.extractedText)?.length || 0;
-    const unsupportedCount = attachments?.filter((att: any) => att.readStatus === 'unsupported')?.length || 0;
-    console.log(`Chat: user=${user.id}, email=${userEmail}, mode=${modeKey}, model=${modelPreference || 'chat'}, plan=${effectivePlan}, devBypass=${isDevBypass}, usage=${usageResult.used}/${usageResult.limit}, textFiles=${textFilesCount}, unsupported=${unsupportedCount}`);
+    console.log(`Chat: user=${user.id}, mode=${modeKey}, model=${modelPreference || 'chat'}, plan=${effectivePlan}, toolCalling=${routerDecision.useToolCalling}`);
 
-    // Call DeepSeek with timeout
-    const deepseekController = new AbortController();
-    const deepseekTimeout = setTimeout(() => deepseekController.abort(), 60000); // 60 second timeout
-    
-    // Select model based on user preference
+    // Select model
     const selectedModel = modelPreference === "reasoner" ? DEEPSEEK_REASONER_MODEL : DEEPSEEK_CHAT_MODEL;
-    console.log(`[Model Selection] preference=${modelPreference}, model=${selectedModel}`);
     
-    // TIMING: Record when we start calling DeepSeek (thinking starts)
+    // Build request body - include tools if using tool calling
+    const requestBody: any = {
+      model: selectedModel,
+      messages: finalMessages,
+      temperature: modelPreference === "reasoner" ? 0 : 0.6,
+      stream: true,
+    };
+    
+    // Add tools for non-reasoner mode when using tool calling
+    if (routerDecision.useToolCalling && modelPreference !== "reasoner") {
+      requestBody.tools = CHAT_TOOLS;
+      requestBody.tool_choice = "auto";
+    }
+    
+    if (modelPreference !== "reasoner") {
+      requestBody.max_tokens = 2000;
+    }
+
     const thinkingApiStart = Date.now() - requestStartTime;
+    
+    const deepseekController = new AbortController();
+    const deepseekTimeout = setTimeout(() => deepseekController.abort(), 60000);
     
     let response: Response;
     try {
@@ -1328,13 +1132,7 @@ Answer their question as best you can using your existing knowledge, but be clea
           "Content-Type": "application/json",
           "Authorization": `Bearer ${deepseekApiKey}`,
         },
-        body: JSON.stringify({
-          model: selectedModel,
-          messages: finalMessages,
-          temperature: modelPreference === "reasoner" ? 0 : 0.6,
-          ...(modelPreference !== "reasoner" && { max_tokens: 2000 }),
-          stream: true,
-        }),
+        body: JSON.stringify(requestBody),
         signal: deepseekController.signal,
       });
     } catch (fetchError) {
@@ -1347,7 +1145,6 @@ Answer their question as best you can using your existing knowledge, but be clea
     }
     clearTimeout(deepseekTimeout);
     
-    // TIMING: Record when DeepSeek connection established
     const connectionEstablished = Date.now() - requestStartTime;
     console.log(`[Timing] DeepSeek connection: ${connectionEstablished - thinkingApiStart}ms`);
 
@@ -1360,32 +1157,34 @@ Answer their question as best you can using your existing knowledge, but be clea
       );
     }
 
-    // Stream with enhanced trace events (ThinkBar)
+    // ===========================================
+    // STREAMING WITH TOOL CALL DETECTION
+    // ===========================================
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
     const reader = response.body!.getReader();
     
-    // Calculate safe metadata for trace events
     const textFilesWithContent = attachments?.filter((att: any) => att.extractedText) || [];
     const totalExtractedChars = textFilesWithContent.reduce((sum: number, att: any) => 
       sum + (att.extractedText?.length || 0), 0
     );
     
+    // Collect sources for trace
+    let collectedSources: TraceSource[] = [];
+    let toolUsed: string | null = null;
+    
     const stream = new ReadableStream({
       async start(controller) {
-        // Helper to emit recorded step timings accurately
+        // Emit trace events
         const emitRecordedStep = (step: TraceStep, timing: StepTiming | undefined) => {
           if (!timing) return;
           controller.enqueue(encoder.encode(createTraceEvent(step, 'start', requestStartTime, timing.detail, timing.startMs)));
           controller.enqueue(encoder.encode(createTraceEvent(step, 'end', requestStartTime, timing.detail, timing.endMs)));
         };
         
-        // Find recorded steps
         const preparingStep = stepTimings.find(s => s.step === 'preparing');
         const modelStep = stepTimings.find(s => s.step === 'selecting_model');
-        const searchStep = stepTimings.find(s => s.step === 'web_search');
         
-        // Emit preparing step with actual timing
         if (preparingStep) {
           emitRecordedStep('preparing', preparingStep);
         } else {
@@ -1393,7 +1192,6 @@ Answer their question as best you can using your existing knowledge, but be clea
           controller.enqueue(encoder.encode(createTraceEvent('preparing', 'end', requestStartTime, undefined, 5)));
         }
         
-        // Emit model selection with actual timing
         if (modelStep) {
           controller.enqueue(encoder.encode(createTraceEvent('selecting_model', 'start', requestStartTime, {
             modelPreference: modelPreference || 'chat',
@@ -1405,144 +1203,331 @@ Answer their question as best you can using your existing knowledge, but be clea
           }, modelStep.endMs)));
         }
         
-        // Emit thinking start with timestamp after model selection
         const thinkingStartMs = modelStep?.endMs || preparingStep?.endMs || 10;
         controller.enqueue(encoder.encode(createTraceEvent('thinking', 'start', requestStartTime, undefined, thinkingStartMs)));
         
-        // If we did image/document analysis, emit that trace
+        // File analysis traces
         if (hasAnalysis) {
           const analysisStartMs = thinkingStartMs + 5;
           controller.enqueue(encoder.encode(createTraceEvent('thinking', 'end', requestStartTime, undefined, analysisStartMs)));
           const analysisStep = analysisType === 'vision' ? 'image_analysis' : 'parsing_files';
-          controller.enqueue(encoder.encode(
-            createTraceEvent(analysisStep, 'start', requestStartTime, { filesCount: 1 }, analysisStartMs)
-          ));
-          controller.enqueue(encoder.encode(
-            createTraceEvent(analysisStep, 'end', requestStartTime, { filesCount: 1 }, analysisStartMs + 50)
-          ));
+          controller.enqueue(encoder.encode(createTraceEvent(analysisStep, 'start', requestStartTime, { filesCount: 1 }, analysisStartMs)));
+          controller.enqueue(encoder.encode(createTraceEvent(analysisStep, 'end', requestStartTime, { filesCount: 1 }, analysisStartMs + 50)));
           controller.enqueue(encoder.encode(createTraceEvent('thinking', 'start', requestStartTime, undefined, analysisStartMs + 55)));
         }
         
-        // If text files were attached and read, emit reading trace with safe counts
         if (textFilesWithContent.length > 0 && !hasAnalysis) {
           const parseStartMs = thinkingStartMs + 5;
           controller.enqueue(encoder.encode(createTraceEvent('thinking', 'end', requestStartTime, undefined, parseStartMs)));
-          controller.enqueue(encoder.encode(createTraceEvent('parsing_files', 'start', requestStartTime, {
-            filesCount: textFilesWithContent.length,
-          }, parseStartMs)));
-          controller.enqueue(encoder.encode(createTraceEvent('parsing_files', 'end', requestStartTime, {
-            filesCount: textFilesWithContent.length,
-            extractedChars: totalExtractedChars,
-          }, parseStartMs + 30)));
+          controller.enqueue(encoder.encode(createTraceEvent('parsing_files', 'start', requestStartTime, { filesCount: textFilesWithContent.length }, parseStartMs)));
+          controller.enqueue(encoder.encode(createTraceEvent('parsing_files', 'end', requestStartTime, { filesCount: textFilesWithContent.length, extractedChars: totalExtractedChars }, parseStartMs + 30)));
           controller.enqueue(encoder.encode(createTraceEvent('thinking', 'start', requestStartTime, undefined, parseStartMs + 35)));
         }
         
-        // If web search was used, emit search trace with ACTUAL recorded timing
-        if (didSearch && searchStep) {
-          controller.enqueue(encoder.encode(createTraceEvent('thinking', 'end', requestStartTime, undefined, searchStep.startMs)));
-          controller.enqueue(encoder.encode(createTraceEvent('web_search', 'start', requestStartTime, undefined, searchStep.startMs)));
-          controller.enqueue(encoder.encode(
-            createTraceEvent('web_search', 'end', requestStartTime, { 
-              sources: collectedSources,
-              sourcesCount: collectedSources.length,
-            }, searchStep.endMs)
-          ));
-          controller.enqueue(encoder.encode(createTraceEvent('thinking', 'start', requestStartTime, undefined, searchStep.endMs + 5)));
-        } else if (didSearch) {
-          // Fallback if timing wasn't recorded
-          controller.enqueue(encoder.encode(createTraceEvent('thinking', 'end', requestStartTime)));
-          controller.enqueue(encoder.encode(createTraceEvent('web_search', 'start', requestStartTime)));
-          controller.enqueue(encoder.encode(
-            createTraceEvent('web_search', 'end', requestStartTime, { 
-              sources: collectedSources,
-              sourcesCount: collectedSources.length,
-            })
-          ));
-          controller.enqueue(encoder.encode(createTraceEvent('thinking', 'start', requestStartTime)));
-        }
-        
-        // Send metadata (legacy support)
+        // Send metadata
         const metadata = {
           type: "metadata",
-          search_used: didSearch,
-          search_urls: searchUrls,
+          search_used: false,
+          search_urls: [] as string[],
           usage: { ...usageResult, plan: effectivePlan, isDevBypass, isPremium },
-          // Image generation blocked info
-          image_blocked: routerDecision.blockersHit.length > 0 && routerDecision.imageIntent === false && detectImageKeywords(lastUserMessage, lastUserMessage.toLowerCase()).isImageGen,
-          image_blockers: routerDecision.blockersHit,
+          tool_calling_enabled: routerDecision.useToolCalling,
         };
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(metadata)}\n\n`));
         
-        // End thinking, start writing with accurate timestamps
+        // Collect streaming data for tool call detection
+        let fullContent = "";
+        let toolCalls: any[] = [];
+        let currentToolCall: { id: string; function: { name: string; arguments: string } } | null = null;
+        let isCollectingToolCall = false;
+        let firstContentSent = false;
+        
         const writingStartMs = Date.now() - requestStartTime;
         controller.enqueue(encoder.encode(createTraceEvent('thinking', 'end', requestStartTime, undefined, writingStartMs)));
         controller.enqueue(encoder.encode(createTraceEvent('writing', 'start', requestStartTime, undefined, writingStartMs)));
         
-        let firstChunkSent = false;
-        let firstChunkMs = 0;
-        
         try {
+          let buffer = "";
+          
           while (true) {
             const { done, value } = await reader.read();
-            if (done) {
-              console.log('[Stream] DeepSeek stream completed');
-              break;
+            if (done) break;
+            
+            buffer += decoder.decode(value, { stream: true });
+            
+            // Process complete SSE messages
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || ""; // Keep incomplete line in buffer
+            
+            for (const line of lines) {
+              if (!line.startsWith('data: ')) continue;
+              const jsonStr = line.slice(6).trim();
+              if (jsonStr === '[DONE]') continue;
+              
+              try {
+                const parsed = JSON.parse(jsonStr);
+                const delta = parsed.choices?.[0]?.delta;
+                
+                if (delta) {
+                  // Check for tool calls
+                  if (delta.tool_calls) {
+                    isCollectingToolCall = true;
+                    for (const tc of delta.tool_calls) {
+                      if (tc.id) {
+                        // New tool call
+                        if (currentToolCall) {
+                          toolCalls.push(currentToolCall);
+                        }
+                        currentToolCall = {
+                          id: tc.id,
+                          function: {
+                            name: tc.function?.name || "",
+                            arguments: tc.function?.arguments || "",
+                          },
+                        };
+                      } else if (currentToolCall && tc.function?.arguments) {
+                        // Append to current tool call arguments
+                        currentToolCall.function.arguments += tc.function.arguments;
+                      }
+                      if (tc.function?.name && currentToolCall) {
+                        currentToolCall.function.name = tc.function.name;
+                      }
+                    }
+                  }
+                  
+                  // Regular content
+                  if (delta.content) {
+                    fullContent += delta.content;
+                    
+                    if (!isCollectingToolCall) {
+                      // Stream content to client
+                      const sanitizedContent = sanitizeOutput(delta.content);
+                      const contentEvent = {
+                        choices: [{ delta: { content: sanitizedContent } }]
+                      };
+                      controller.enqueue(encoder.encode(`data: ${JSON.stringify(contentEvent)}\n\n`));
+                      
+                      if (!firstContentSent) {
+                        firstContentSent = true;
+                        console.log(`[Stream] First content at ${Date.now() - requestStartTime}ms`);
+                      }
+                    }
+                  }
+                }
+              } catch (parseErr) {
+                // Ignore parse errors for incomplete JSON
+              }
             }
-            
-            const chunk = decoder.decode(value, { stream: true });
-            const sanitizedChunk = sanitizeOutput(chunk);
-            
-            // Mark first real content with timing
-            if (!firstChunkSent && sanitizedChunk.includes('"content"')) {
-              firstChunkSent = true;
-              firstChunkMs = Date.now() - requestStartTime;
-              console.log(`[Stream] First content chunk at ${firstChunkMs}ms (TTFB: ${firstChunkMs - writingStartMs}ms)`);
-            }
-            
-            controller.enqueue(encoder.encode(sanitizedChunk));
           }
           
-          // End writing with accurate timestamp
+          // Finalize last tool call
+          if (currentToolCall) {
+            toolCalls.push(currentToolCall);
+          }
+          
+          // ===========================================
+          // HANDLE TOOL CALLS
+          // ===========================================
+          if (toolCalls.length > 0) {
+            console.log('[Tool Calls Detected]', toolCalls.map(tc => tc.function.name));
+            
+            for (const tc of toolCalls) {
+              const toolName = tc.function.name;
+              let toolArgs: any = {};
+              
+              try {
+                toolArgs = JSON.parse(tc.function.arguments);
+              } catch (e) {
+                console.error('[Tool] Failed to parse arguments:', tc.function.arguments);
+                continue;
+              }
+              
+              if (toolName === 'generate_image') {
+                toolUsed = 'image';
+                
+                // Emit image generation trace
+                const imgStartMs = Date.now() - requestStartTime;
+                controller.enqueue(encoder.encode(createTraceEvent('writing', 'end', requestStartTime, undefined, imgStartMs)));
+                controller.enqueue(encoder.encode(createTraceEvent('generating_image', 'start', requestStartTime, { toolName: 'generate_image' }, imgStartMs)));
+                
+                const imageResult = await executeImageGeneration(
+                  supabaseUrl, 
+                  token, 
+                  toolArgs.prompt,
+                  toolArgs.style
+                );
+                
+                const imgEndMs = Date.now() - requestStartTime;
+                controller.enqueue(encoder.encode(createTraceEvent('generating_image', 'end', requestStartTime, { 
+                  imageDurationMs: imgEndMs - imgStartMs,
+                }, imgEndMs)));
+                
+                if (imageResult.success) {
+                  // Send image result as special event
+                  const imageEvent = {
+                    type: "tool_result",
+                    tool: "generate_image",
+                    success: true,
+                    data: {
+                      type: "image_generated",
+                      fileUrl: imageResult.data.image_url || imageResult.data.fileUrl,
+                      fileName: imageResult.data.file_name || imageResult.data.fileName,
+                      filePath: imageResult.data.file_path,
+                      generationId: imageResult.data.generationId,
+                      prompt_en: imageResult.data.prompt_used || toolArgs.prompt,
+                      model: imageResult.data.model,
+                      width: imageResult.data.width,
+                      height: imageResult.data.height,
+                    }
+                  };
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(imageEvent)}\n\n`));
+                } else {
+                  // Send error
+                  const lang = ui_language || 'uz';
+                  const errorMessages: Record<string, string> = {
+                    uz: "Rasm yaratishda xatolik yuz berdi.",
+                    en: "Failed to generate image.",
+                    ru: "Ошибка при создании изображения.",
+                    tr: "Görsel oluşturulamadı.",
+                  };
+                  
+                  const errorEvent = {
+                    type: "tool_result",
+                    tool: "generate_image",
+                    success: false,
+                    error: imageResult.error,
+                    message: errorMessages[lang] || errorMessages.uz,
+                  };
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorEvent)}\n\n`));
+                }
+              }
+              
+              if (toolName === 'web_search') {
+                toolUsed = 'search';
+                
+                // Emit search trace
+                const searchStartMs = Date.now() - requestStartTime;
+                controller.enqueue(encoder.encode(createTraceEvent('writing', 'end', requestStartTime, undefined, searchStartMs)));
+                controller.enqueue(encoder.encode(createTraceEvent('web_search', 'start', requestStartTime, undefined, searchStartMs)));
+                
+                const searchResult = await executeWebSearch(toolArgs.query, ui_language || 'uz');
+                
+                const searchEndMs = Date.now() - requestStartTime;
+                collectedSources = searchResult.sources || [];
+                controller.enqueue(encoder.encode(createTraceEvent('web_search', 'end', requestStartTime, { 
+                  sourcesCount: collectedSources.length,
+                  sources: collectedSources,
+                }, searchEndMs)));
+                
+                if (searchResult.success && searchResult.results) {
+                  // Make a follow-up call with search results
+                  controller.enqueue(encoder.encode(createTraceEvent('writing', 'start', requestStartTime, undefined, searchEndMs + 5)));
+                  
+                  const followUpMessages = [
+                    ...finalMessages,
+                    { role: "assistant", content: null, tool_calls: [tc] },
+                    { 
+                      role: "tool", 
+                      tool_call_id: tc.id, 
+                      content: `Web Search Results:\n\n${searchResult.results}\n\nUse these results to answer the user's question. Include citation markers [1], [2], etc.`
+                    }
+                  ];
+                  
+                  // Call DeepSeek again with search results
+                  const followUpResponse = await fetch("https://api.deepseek.com/chat/completions", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      "Authorization": `Bearer ${deepseekApiKey}`,
+                    },
+                    body: JSON.stringify({
+                      model: selectedModel,
+                      messages: followUpMessages,
+                      temperature: 0.6,
+                      max_tokens: 2000,
+                      stream: true,
+                    }),
+                  });
+                  
+                  if (followUpResponse.ok) {
+                    const followUpReader = followUpResponse.body!.getReader();
+                    let followUpBuffer = "";
+                    
+                    while (true) {
+                      const { done: fuDone, value: fuValue } = await followUpReader.read();
+                      if (fuDone) break;
+                      
+                      followUpBuffer += decoder.decode(fuValue, { stream: true });
+                      const fuLines = followUpBuffer.split('\n');
+                      followUpBuffer = fuLines.pop() || "";
+                      
+                      for (const fuLine of fuLines) {
+                        if (!fuLine.startsWith('data: ')) continue;
+                        const fuJsonStr = fuLine.slice(6).trim();
+                        if (fuJsonStr === '[DONE]') continue;
+                        
+                        try {
+                          const fuParsed = JSON.parse(fuJsonStr);
+                          const fuDelta = fuParsed.choices?.[0]?.delta;
+                          if (fuDelta?.content) {
+                            const sanitizedContent = sanitizeOutput(fuDelta.content);
+                            const contentEvent = { choices: [{ delta: { content: sanitizedContent } }] };
+                            controller.enqueue(encoder.encode(`data: ${JSON.stringify(contentEvent)}\n\n`));
+                          }
+                        } catch { /* ignore */ }
+                      }
+                    }
+                  }
+                } else {
+                  // Send search error/busy message as content
+                  const busyMsg = searchResult.results || "Web search is temporarily unavailable.";
+                  const contentEvent = { choices: [{ delta: { content: busyMsg } }] };
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(contentEvent)}\n\n`));
+                }
+              }
+            }
+          }
+          
+          // End writing
           const writingEndMs = Date.now() - requestStartTime;
           controller.enqueue(encoder.encode(createTraceEvent('writing', 'end', requestStartTime, undefined, writingEndMs)));
           console.log(`[Timing] Writing: ${writingEndMs - writingStartMs}ms`);
           
-          // Emit saving step with accurate timestamps
+          // Emit saving/delivering
           const savingStartMs = Date.now() - requestStartTime;
           controller.enqueue(encoder.encode(createTraceEvent('saving', 'start', requestStartTime, undefined, savingStartMs)));
-          controller.enqueue(encoder.encode(createTraceEvent('saving', 'end', requestStartTime, {
-            cloudSaved: true, // Server-side saving is implicit via DB triggers
-          }, savingStartMs + 10)));
+          controller.enqueue(encoder.encode(createTraceEvent('saving', 'end', requestStartTime, { cloudSaved: true }, savingStartMs + 10)));
           
-          // Emit delivering (finalization) with accurate timestamps
           const deliveringStartMs = Date.now() - requestStartTime;
           controller.enqueue(encoder.encode(createTraceEvent('delivering', 'start', requestStartTime, undefined, deliveringStartMs)));
           controller.enqueue(encoder.encode(createTraceEvent('delivering', 'end', requestStartTime, undefined, deliveringStartMs + 5)));
           
-          // Emit trace complete with total time, sources, and aggregated safe metadata
+          // Trace complete
           controller.enqueue(encoder.encode(createTraceComplete(requestStartTime, collectedSources, {
             modelPreference: modelPreference || 'chat',
             modelName: selectedModel,
             filesCount: textFilesWithContent.length || 0,
             extractedChars: totalExtractedChars || 0,
             sourcesCount: collectedSources.length,
+            toolUsed: toolUsed || undefined,
           })));
           
           controller.close();
           
-          // Log total timing summary
+          // Log timing
           const chatDurationMs = Date.now() - requestStartTime;
-          const searchTiming = stepTimings.find(s => s.step === 'web_search');
-          console.log(`[Timing] Total: ${chatDurationMs}ms | Search: ${didSearch && searchTiming ? searchTiming.endMs - searchTiming.startMs : 0}ms | Writing: ${writingEndMs - writingStartMs}ms`);
+          console.log(`[Timing] Total: ${chatDurationMs}ms | Tool: ${toolUsed || 'none'}`);
           
-          // Log chat event for observability
+          // Log decision and event
+          logRouterDecision(supabaseAdmin, user.id, lastUserMsg, routerDecision, ui_language, toolUsed || 'text');
           logChatEvent(supabaseAdmin, user.id, {
             model: selectedModel,
             duration_ms: chatDurationMs,
             mode: mode || 'general',
-            search_used: didSearch,
+            search_used: toolUsed === 'search',
             files_count: textFilesWithContent.length || 0,
-          }).catch(() => {}); // Fire and forget
+            tool_used: toolUsed || undefined,
+          }).catch(() => {});
+          
         } catch (err) {
           console.error('[Stream] Error during streaming:', err);
           controller.error(err);
