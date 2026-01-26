@@ -83,6 +83,7 @@ type StreamOptions = {
   onMetadata?: (metadata: { search_used: boolean; search_urls: string[]; image_blocked?: boolean; image_blockers?: string[] }) => void;
   onTrace?: (event: TraceEvent) => void;
   onTraceComplete?: (event: TraceComplete) => void;
+  onToolResult?: (result: { type: string; tool: string; success: boolean; data?: any; error?: string; message?: string }) => void;
 };
 
 async function processStreamingResponse(
@@ -138,6 +139,12 @@ async function processStreamingResponse(
               search_used: parsed.search_used || false,
               search_urls: parsed.search_urls || [],
             });
+            continue;
+          }
+          
+          // Handle tool_result events (from DeepSeek tool calling)
+          if (parsed.type === "tool_result") {
+            options.onToolResult?.(parsed);
             continue;
           }
           
