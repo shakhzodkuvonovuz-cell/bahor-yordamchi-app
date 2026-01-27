@@ -27,6 +27,12 @@ const ALLOWED_ASPECT_RATIOS = ["1:1", "16:9", "9:16", "4:5", "3:4", "4:3", "3:2"
 // Anti-spam / cost control
 const MIN_SECONDS_BETWEEN_REQUESTS = 8;
 
+// Queue settings for PiAPI concurrency management
+// Default to 4 to leave 1 slot buffer on Creator plan (5 concurrent max)
+const PIAPI_MAX_CONCURRENT = 4;
+const PIAPI_QUEUE_MAX_WAIT_MS = 15000; // Max time to wait for a slot
+const PIAPI_QUEUE_POLL_MS = 500; // Poll interval when waiting for slot
+
 // Content guardrails
 const BLOCKED_PATTERNS = [
   /\b(nude|naked|sex|porn|explicit|nsfw|erotic|xxx)\b/i,
@@ -433,20 +439,76 @@ async function generateWithPiAPI(
     strength?: number;
   },
   requestId: string,
+  supabase: any,
+  userId: string,
 ): Promise<{ imageUrl: string; provider: string } | { error: string; fallback?: boolean }> {
-  const createResult = await createPiAPITask(apiKey, params, requestId);
+  // ============================================================
+  // Acquire a queue slot before making PiAPI request
+  // ============================================================
+  let slotId: string | null = null;
+  const queueStart = Date.now();
   
-  if ("error" in createResult) {
-    return { error: createResult.error, fallback: true };
+  while (Date.now() - queueStart < PIAPI_QUEUE_MAX_WAIT_MS) {
+    const { data: slotResult, error: slotError } = await supabase.rpc("acquire_piapi_slot", {
+      p_user_id: userId,
+      p_max_concurrent: PIAPI_MAX_CONCURRENT,
+    });
+    
+    if (slotError) {
+      console.error(`[${requestId}] Queue slot error:`, slotError);
+      // Proceed without queue protection on error
+      break;
+    }
+    
+    if (slotResult?.acquired) {
+      slotId = slotResult.slot_id;
+      console.log(`[${requestId}] Acquired queue slot ${slotId}, active: ${slotResult.active_count}/${slotResult.max_concurrent}`);
+      break;
+    }
+    
+    // No slot available, wait and retry
+    console.log(`[${requestId}] Queue full (${slotResult?.active_count}/${slotResult?.max_concurrent}), waiting...`);
+    await sleep(PIAPI_QUEUE_POLL_MS);
   }
   
-  const pollResult = await pollPiAPITask(apiKey, createResult.taskId, requestId);
-  
-  if ("error" in pollResult) {
-    return { error: pollResult.error, fallback: true };
+  if (!slotId && Date.now() - queueStart >= PIAPI_QUEUE_MAX_WAIT_MS) {
+    console.log(`[${requestId}] Queue wait timeout, falling back to Replicate`);
+    return { error: "Queue timeout - too many concurrent requests", fallback: true };
   }
   
-  return { imageUrl: pollResult.imageUrl, provider: "piapi-z-image-turbo" };
+  // Helper to release slot on completion
+  const releaseSlot = async (status: "completed" | "failed") => {
+    if (slotId) {
+      try {
+        await supabase.rpc("release_piapi_slot", { p_slot_id: slotId, p_status: status });
+        console.log(`[${requestId}] Released queue slot ${slotId} with status: ${status}`);
+      } catch (e) {
+        console.error(`[${requestId}] Failed to release slot:`, e);
+      }
+    }
+  };
+  
+  try {
+    const createResult = await createPiAPITask(apiKey, params, requestId);
+    
+    if ("error" in createResult) {
+      await releaseSlot("failed");
+      return { error: createResult.error, fallback: true };
+    }
+    
+    const pollResult = await pollPiAPITask(apiKey, createResult.taskId, requestId);
+    
+    if ("error" in pollResult) {
+      await releaseSlot("failed");
+      return { error: pollResult.error, fallback: true };
+    }
+    
+    await releaseSlot("completed");
+    return { imageUrl: pollResult.imageUrl, provider: "piapi-z-image-turbo" };
+  } catch (e) {
+    await releaseSlot("failed");
+    throw e;
+  }
 }
 
 // ============================================================
@@ -796,7 +858,7 @@ serve(async (req) => {
     
     if (usePiAPIFirst) {
       console.log(`[${requestId}] Trying PiAPI Z-Image Turbo...`);
-      const piResult = await generateWithPiAPI(piApiKey!, genParams, requestId);
+      const piResult = await generateWithPiAPI(piApiKey!, genParams, requestId, supabase, user.id);
       
       if ("imageUrl" in piResult) {
         generationResult = piResult;
