@@ -53,9 +53,11 @@ These are stored in Supabase secrets and accessed via `Deno.env.get()`:
 | `DEEPSEEK_API_KEY` | DeepSeek API authentication | `chat/index.ts`, `space-chat/index.ts`, `circle-ai-actions/index.ts` |
 | `DEEPSEEK_CHAT_MODEL` | Override chat model name | `chat/index.ts` (default: `deepseek-chat`) |
 | `DEEPSEEK_REASONER_MODEL` | Override reasoner model name | `chat/index.ts` (default: `deepseek-reasoner`) |
-| `LOVABLE_API_KEY` | Lovable AI Gateway access | `summarize-thread/index.ts` |
+| `LOVABLE_API_KEY` | Lovable AI Gateway access | `summarize-thread/index.ts`, `image-generate/index.ts` |
 | `OPENAI_API_KEY` | OpenAI Whisper for STT | `speech-to-text/index.ts` |
 | `FIREWORKS_API_KEY` | Fireworks AI image gen | `fireworks-generate-image/index.ts` |
+| `PIAPI_API_KEY` | PiAPI Z-Image Turbo (fast image generation) | `image-generate/index.ts` |
+| `REPLICATE_API_TOKEN` | Replicate Flux models (fallback) | `image-generate/index.ts` |
 
 ### Search
 

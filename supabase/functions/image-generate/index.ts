@@ -7,26 +7,27 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Replicate has two prediction endpoints:
-// - POST /v1/predictions requires a `version`
-// - POST /v1/models/{owner}/{name}/predictions does NOT require `version`
-// We use the model-scoped endpoint to avoid hardcoding version IDs.
+// ============================================================
+// PiAPI Z-Image Turbo API Configuration
+// - Ultra-fast generation (~1s for T2I, ~1s for I2I)
+// - Supports text-to-image and image-to-image
+// - Significantly cheaper than Replicate Flux
+// ============================================================
 
-// FLUX-2-Klein: Fast text-to-image (does NOT support img2img with strength control)
+const PIAPI_T2I_ENDPOINT = "https://api.piapi.ai/api/v1/task";
+const PIAPI_I2I_ENDPOINT = "https://api.piapi.ai/api/v1/task";
+
+// Fallback to Replicate if PiAPI fails
 const REPLICATE_API_T2I = "https://api.replicate.com/v1/models/black-forest-labs/flux-2-klein-4b/predictions";
-const REPLICATE_MODEL_T2I = "black-forest-labs/flux-2-klein-4b";
-
-// FLUX-dev: Supports proper img2img with prompt_strength parameter
 const REPLICATE_API_IMG2IMG = "https://api.replicate.com/v1/models/black-forest-labs/flux-dev/predictions";
-const REPLICATE_MODEL_IMG2IMG = "black-forest-labs/flux-dev";
 
 const MAX_PROMPT_LENGTH = 500;
-const ALLOWED_ASPECT_RATIOS = ["1:1", "16:9", "9:16", "4:5"];
+const ALLOWED_ASPECT_RATIOS = ["1:1", "16:9", "9:16", "4:5", "3:4", "4:3", "3:2", "2:3"];
 
 // Anti-spam / cost control
 const MIN_SECONDS_BETWEEN_REQUESTS = 8;
 
-// Content guardrails (keep parity with existing image endpoints)
+// Content guardrails
 const BLOCKED_PATTERNS = [
   /\b(nude|naked|sex|porn|explicit|nsfw|erotic|xxx)\b/i,
   /\b(trump|biden|putin|xi jinping|obama|zelensky|merkel)\b/i,
@@ -40,12 +41,15 @@ function isBlockedPrompt(prompt: string): boolean {
 }
 
 function getDimensions(aspectRatio: string): { width: number; height: number } {
-  // Keep same dims used by SDXL for stable layouts
   const dims: Record<string, { width: number; height: number }> = {
     "1:1": { width: 1024, height: 1024 },
     "16:9": { width: 1344, height: 768 },
     "9:16": { width: 768, height: 1344 },
     "4:5": { width: 896, height: 1120 },
+    "3:4": { width: 768, height: 1024 },
+    "4:3": { width: 1024, height: 768 },
+    "3:2": { width: 1024, height: 683 },
+    "2:3": { width: 683, height: 1024 },
   };
   return dims[aspectRatio] || dims["1:1"];
 }
@@ -89,7 +93,7 @@ Text: ${prompt}`;
   }
 }
 
-// Style preset to prompt suffix mapping (matches existing image generator behavior)
+// Style preset to prompt suffix mapping
 const STYLE_PRESETS: Record<string, string> = {
   realistic: "ultra realistic photograph, natural lighting, high detail, sharp focus, realistic materials",
   digital_art: "digital art, vibrant colors, detailed, professional digital painting, artstation quality",
@@ -103,7 +107,7 @@ function addQualityBoosters(prompt: string, stylePreset: string): string {
   return `${prompt}. ${styleSuffix}`;
 }
 
-// Simple bitmap watermark (copied pattern from existing image endpoints)
+// Simple bitmap watermark
 function createWatermarkBitmap(): { width: number; height: number; data: Uint8Array } {
   const chars: Record<string, number[][]> = {
     B: [[1, 1, 1, 0], [1, 0, 1, 0], [1, 1, 0, 0], [1, 0, 1, 0], [1, 1, 1, 0]],
@@ -206,6 +210,7 @@ async function logImageGenEvent(
     aspect_ratio?: string;
     error?: string;
     tool_mode?: string;
+    provider?: string;
   },
 ) {
   try {
@@ -228,6 +233,7 @@ interface InputImageRef {
 
 interface RequestBody {
   prompt: string;
+  negativePrompt?: string;
   aspectRatio?: string;
   renderMode?: "photo" | "illustration" | string;
   stylePreset?: string;
@@ -239,12 +245,318 @@ interface RequestBody {
   image?: string;
   mask?: string;
   seed?: number | null;
+  // Resolution control
+  width?: number;
+  height?: number;
+  // Provider preference
+  preferProvider?: "piapi" | "replicate";
   // Keep compatibility with existing callers
   chatId?: string;
   attachToChat?: boolean;
   skipTranslation?: boolean;
   skipBoosters?: boolean;
   rawMode?: boolean;
+}
+
+// ============================================================
+// PiAPI Z-Image Turbo Implementation
+// ============================================================
+
+interface PiAPITaskResponse {
+  code: number;
+  data: {
+    task_id: string;
+    status: string;
+  };
+  message: string;
+}
+
+interface PiAPITaskResult {
+  code: number;
+  data: {
+    task_id: string;
+    status: string;
+    output?: {
+      images?: Array<{ url: string }>;
+      image_url?: string;
+    };
+    error?: string;
+  };
+  message: string;
+}
+
+async function createPiAPITask(
+  apiKey: string,
+  params: {
+    prompt: string;
+    negativePrompt?: string;
+    width: number;
+    height: number;
+    seed?: number | null;
+    sourceImageUrl?: string;
+    strength?: number;
+  },
+  requestId: string,
+): Promise<{ taskId: string } | { error: string }> {
+  const isImg2Img = !!params.sourceImageUrl && typeof params.strength === "number";
+  
+  const taskInput: Record<string, any> = {
+    prompt: params.prompt,
+    width: params.width,
+    height: params.height,
+  };
+  
+  if (params.negativePrompt) {
+    taskInput.negative_prompt = params.negativePrompt;
+  }
+  
+  if (params.seed !== null && params.seed !== undefined) {
+    taskInput.seed = params.seed;
+  }
+  
+  // Image-to-image specific parameters
+  if (isImg2Img) {
+    taskInput.image_url = params.sourceImageUrl;
+    // Strength: 0.0 = no change, 1.0 = completely new image
+    // User's remixStrength: lower = preserve more
+    taskInput.strength = Math.min(0.95, Math.max(0.1, params.strength!));
+  }
+  
+  const requestBody = {
+    model: isImg2Img ? "wavespeed-ai/z-image-turbo/image-to-image" : "wavespeed-ai/z-image-turbo",
+    task_type: isImg2Img ? "image-to-image" : "text-to-image",
+    input: taskInput,
+  };
+  
+  console.log(`[${requestId}] Creating PiAPI task:`, JSON.stringify({ ...requestBody, input: { ...taskInput, prompt: taskInput.prompt.slice(0, 50) + "..." } }));
+  
+  try {
+    const resp = await fetch(PIAPI_T2I_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "X-API-Key": apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    });
+    
+    if (!resp.ok) {
+      const text = await resp.text();
+      console.error(`[${requestId}] PiAPI create task error:`, resp.status, text);
+      return { error: `PiAPI error: ${resp.status} ${text.slice(0, 200)}` };
+    }
+    
+    const data: PiAPITaskResponse = await resp.json();
+    console.log(`[${requestId}] PiAPI task created:`, data);
+    
+    if (data.code !== 200 && data.code !== 0) {
+      return { error: data.message || "PiAPI task creation failed" };
+    }
+    
+    return { taskId: data.data.task_id };
+  } catch (e) {
+    console.error(`[${requestId}] PiAPI create task exception:`, e);
+    return { error: e instanceof Error ? e.message : "Unknown error" };
+  }
+}
+
+async function pollPiAPITask(
+  apiKey: string,
+  taskId: string,
+  requestId: string,
+  maxWaitMs: number = 60000,
+): Promise<{ imageUrl: string } | { error: string }> {
+  const pollUrl = `${PIAPI_T2I_ENDPOINT}/${taskId}`;
+  const startTime = Date.now();
+  let pollDelay = 500; // Start with 500ms for fast turbo model
+  
+  while (Date.now() - startTime < maxWaitMs) {
+    try {
+      const resp = await fetch(pollUrl, {
+        headers: {
+          "X-API-Key": apiKey,
+        },
+      });
+      
+      if (!resp.ok) {
+        const text = await resp.text();
+        console.error(`[${requestId}] PiAPI poll error:`, resp.status, text);
+        await sleep(pollDelay);
+        pollDelay = Math.min(2000, pollDelay * 1.5);
+        continue;
+      }
+      
+      const data: PiAPITaskResult = await resp.json();
+      const status = data.data?.status;
+      
+      if (status === "completed" || status === "success") {
+        // Extract image URL from various possible response formats
+        const imageUrl = 
+          data.data.output?.images?.[0]?.url || 
+          data.data.output?.image_url ||
+          (data.data.output as any)?.url;
+        
+        if (imageUrl) {
+          console.log(`[${requestId}] PiAPI task completed, image URL obtained`);
+          return { imageUrl };
+        } else {
+          console.error(`[${requestId}] PiAPI completed but no image URL:`, JSON.stringify(data.data.output));
+          return { error: "No image URL in response" };
+        }
+      } else if (status === "failed" || status === "error") {
+        console.error(`[${requestId}] PiAPI task failed:`, data.data.error);
+        return { error: data.data.error || "Task failed" };
+      }
+      
+      // Still processing
+      await sleep(pollDelay);
+      pollDelay = Math.min(2000, pollDelay * 1.3);
+    } catch (e) {
+      console.error(`[${requestId}] PiAPI poll exception:`, e);
+      await sleep(pollDelay);
+      pollDelay = Math.min(2000, pollDelay * 1.5);
+    }
+  }
+  
+  return { error: "Timeout waiting for image generation" };
+}
+
+async function generateWithPiAPI(
+  apiKey: string,
+  params: {
+    prompt: string;
+    negativePrompt?: string;
+    width: number;
+    height: number;
+    seed?: number | null;
+    sourceImageUrl?: string;
+    strength?: number;
+  },
+  requestId: string,
+): Promise<{ imageUrl: string; provider: string } | { error: string; fallback?: boolean }> {
+  const createResult = await createPiAPITask(apiKey, params, requestId);
+  
+  if ("error" in createResult) {
+    return { error: createResult.error, fallback: true };
+  }
+  
+  const pollResult = await pollPiAPITask(apiKey, createResult.taskId, requestId);
+  
+  if ("error" in pollResult) {
+    return { error: pollResult.error, fallback: true };
+  }
+  
+  return { imageUrl: pollResult.imageUrl, provider: "piapi-z-image-turbo" };
+}
+
+// ============================================================
+// Replicate Fallback Implementation
+// ============================================================
+
+async function generateWithReplicate(
+  token: string,
+  params: {
+    prompt: string;
+    width: number;
+    height: number;
+    aspectRatio: string;
+    seed?: number | null;
+    sourceImageUrl?: string;
+    strength?: number;
+    mask?: string;
+  },
+  requestId: string,
+): Promise<{ imageUrl: string; provider: string; predictionId?: string } | { error: string }> {
+  const isImg2Img = !!params.sourceImageUrl && typeof params.strength === "number";
+  const replicateApiUrl = isImg2Img ? REPLICATE_API_IMG2IMG : REPLICATE_API_T2I;
+  const replicateModel = isImg2Img ? "flux-dev" : "flux-2-klein";
+  
+  const input: Record<string, any> = {
+    prompt: params.prompt,
+  };
+  
+  if (isImg2Img) {
+    input.aspect_ratio = params.aspectRatio;
+    input.image = params.sourceImageUrl;
+    input.prompt_strength = Math.min(0.95, Math.max(0.1, params.strength!));
+  } else {
+    input.width = params.width;
+    input.height = params.height;
+  }
+  
+  if (params.seed !== null && params.seed !== undefined) {
+    input.seed = params.seed;
+  }
+  
+  if (params.mask) {
+    input.mask = params.mask;
+  }
+  
+  console.log(`[${requestId}] Creating Replicate prediction (${replicateModel})`);
+  
+  try {
+    const startResp = await fetch(replicateApiUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ input }),
+    });
+    
+    if (!startResp.ok) {
+      const text = await startResp.text();
+      console.error(`[${requestId}] Replicate start error:`, startResp.status, text);
+      return { error: `Replicate error: ${startResp.status}` };
+    }
+    
+    let prediction = await startResp.json();
+    let status = prediction?.status as string;
+    const getUrl = prediction?.urls?.get as string | undefined;
+    
+    if (!getUrl) {
+      return { error: "No poll URL from Replicate" };
+    }
+    
+    // Poll for completion
+    let pollDelay = 1000;
+    const maxWaitMs = 120000;
+    const pollStart = Date.now();
+    
+    while (status === "starting" || status === "processing") {
+      if (Date.now() - pollStart > maxWaitMs) {
+        return { error: "Timeout waiting for Replicate" };
+      }
+      await sleep(pollDelay);
+      pollDelay = Math.min(2500, pollDelay * 1.2);
+      
+      const pollResp = await fetch(getUrl, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      prediction = await pollResp.json();
+      status = prediction?.status;
+    }
+    
+    if (status !== "succeeded") {
+      return { error: prediction?.error || "Replicate generation failed" };
+    }
+    
+    const output = prediction?.output;
+    const imageUrl = Array.isArray(output) ? output[0] : output;
+    
+    if (!imageUrl || typeof imageUrl !== "string") {
+      return { error: "No image URL from Replicate" };
+    }
+    
+    return { 
+      imageUrl, 
+      provider: `replicate-${replicateModel}`,
+      predictionId: prediction?.id,
+    };
+  } catch (e) {
+    console.error(`[${requestId}] Replicate exception:`, e);
+    return { error: e instanceof Error ? e.message : "Unknown error" };
+  }
 }
 
 serve(async (req) => {
@@ -257,10 +569,16 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const piApiKey = Deno.env.get("PIAPI_API_KEY");
     const replicateToken = Deno.env.get("REPLICATE_API_TOKEN");
+    
     if (!supabaseUrl) throw new Error("Missing env: SUPABASE_URL");
     if (!supabaseServiceKey) throw new Error("Missing env: SUPABASE_SERVICE_ROLE_KEY");
-    if (!replicateToken) throw new Error("Missing env: REPLICATE_API_TOKEN");
+    
+    // At least one provider must be available
+    if (!piApiKey && !replicateToken) {
+      throw new Error("No image generation provider configured");
+    }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -284,6 +602,7 @@ serve(async (req) => {
     const body = (await req.json()) as RequestBody;
     const {
       prompt,
+      negativePrompt,
       aspectRatio: aspectRatioRaw = "1:1",
       stylePreset = "realistic",
       qualityBoost = false,
@@ -293,6 +612,9 @@ serve(async (req) => {
       image,
       mask,
       seed = null,
+      width: customWidth,
+      height: customHeight,
+      preferProvider,
       chatId,
       attachToChat = false,
       skipTranslation = false,
@@ -320,13 +642,14 @@ serve(async (req) => {
           error: "Bu turdagi rasm yaratib bo'lmaydi. Iltimos, boshqa mavzu tanlang.",
           requestId,
         }),
-        // Use 200 so client code can handle it uniformly (and to avoid SDK surfacing it as a transport error).
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
     const aspectRatio = ALLOWED_ASPECT_RATIOS.includes(aspectRatioRaw) ? aspectRatioRaw : "1:1";
-    const { width, height } = getDimensions(aspectRatio);
+    const defaultDims = getDimensions(aspectRatio);
+    const width = customWidth || defaultDims.width;
+    const height = customHeight || defaultDims.height;
 
     // Resolve optional source image URL
     let sourceImageUrl: string | undefined = image;
@@ -360,50 +683,13 @@ serve(async (req) => {
           error: "Bu turdagi rasm yaratib bo'lmaydi. Iltimos, boshqa mavzu tanlang.",
           requestId,
         }),
-        // Use 200 so client code can handle it uniformly (and to avoid SDK surfacing it as a transport error).
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
     // Determine if this is an img2img request (remix mode)
     const isImg2Img = !!sourceImageUrl && typeof remixStrength === "number";
-    
-    // Select appropriate model and API endpoint
-    // - flux-dev: Supports img2img with prompt_strength parameter
-    // - flux-2-klein: Fast text-to-image only (ignores image_strength)
-    const replicateApiUrl = isImg2Img ? REPLICATE_API_IMG2IMG : REPLICATE_API_T2I;
-    const replicateModel = isImg2Img ? REPLICATE_MODEL_IMG2IMG : REPLICATE_MODEL_T2I;
-    
-    console.log(`[${requestId}] Using model: ${replicateModel}, isImg2Img: ${isImg2Img}`);
-
-    // Replicate input
-    const input: Record<string, any> = {
-      prompt: finalPrompt,
-    };
-    
-    // Only set dimensions for text-to-image (flux-dev uses aspect_ratio instead)
-    if (isImg2Img) {
-      // flux-dev uses aspect_ratio string format
-      input.aspect_ratio = aspectRatio;
-    } else {
-      input.width = width;
-      input.height = height;
-    }
-    
-    if (seed !== null) input.seed = seed;
-    if (sourceImageUrl) input.image = sourceImageUrl;
-    if (mask) input.mask = mask;
-
-    // Map remixStrength (0-1) to Replicate's prompt_strength parameter for img2img.
-    // prompt_strength = 1.0 means full destruction of source image (100% prompt)
-    // prompt_strength = 0.1 means keep 90% of source image structure
-    // User's remixStrength slider: lower = preserve more of source image
-    if (isImg2Img) {
-      // Clamp between 0.1 and 0.95 to always have some effect
-      const clamped = Math.min(0.95, Math.max(0.1, remixStrength));
-      input.prompt_strength = clamped;
-      console.log(`[${requestId}] img2img prompt_strength: ${clamped}`);
-    }
+    console.log(`[${requestId}] Mode: ${isImg2Img ? "img2img" : "t2i"}, aspectRatio: ${aspectRatio}, dims: ${width}x${height}`);
 
     // --------------------------------------------------
     // Plan enforcement (server-side) + basic cost controls
@@ -482,75 +768,76 @@ serve(async (req) => {
               : `Bugungi rasm yaratish limiti tugadi (${usedCount}/${dailyLimit})`,
             requestId,
           }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
     }
 
-    // Kick off prediction
-    const startResp = await fetch(replicateApiUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${replicateToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ input }),
-    });
-
-    if (!startResp.ok) {
-      const t = await startResp.text();
-      console.error(`[${requestId}] Replicate start error:`, startResp.status, t);
-      // Return the provider error (sanitized) so the client gets something actionable.
+    // ============================================================
+    // Generate Image - Try PiAPI first, fallback to Replicate
+    // ============================================================
+    let generationResult: { imageUrl: string; provider: string; predictionId?: string } | null = null;
+    let lastError: string | null = null;
+    
+    const genParams = {
+      prompt: finalPrompt,
+      negativePrompt,
+      width,
+      height,
+      aspectRatio,
+      seed,
+      sourceImageUrl,
+      strength: remixStrength,
+      mask,
+    };
+    
+    // Determine provider order
+    const usePiAPIFirst = piApiKey && preferProvider !== "replicate";
+    
+    if (usePiAPIFirst) {
+      console.log(`[${requestId}] Trying PiAPI Z-Image Turbo...`);
+      const piResult = await generateWithPiAPI(piApiKey!, genParams, requestId);
+      
+      if ("imageUrl" in piResult) {
+        generationResult = piResult;
+      } else {
+        lastError = piResult.error;
+        console.log(`[${requestId}] PiAPI failed, falling back to Replicate...`);
+        
+        if (replicateToken && piResult.fallback) {
+          const repResult = await generateWithReplicate(replicateToken, genParams, requestId);
+          if ("imageUrl" in repResult) {
+            generationResult = repResult;
+          } else {
+            lastError = repResult.error;
+          }
+        }
+      }
+    } else if (replicateToken) {
+      console.log(`[${requestId}] Using Replicate...`);
+      const repResult = await generateWithReplicate(replicateToken, genParams, requestId);
+      if ("imageUrl" in repResult) {
+        generationResult = repResult;
+      } else {
+        lastError = repResult.error;
+      }
+    }
+    
+    if (!generationResult) {
+      console.error(`[${requestId}] All providers failed:`, lastError);
       return new Response(
         JSON.stringify({
           ok: false,
           error: "PROVIDER_ERROR",
-          provider_status: startResp.status,
-          provider_body: t.slice(0, 1000),
+          message: lastError || "Image generation failed",
           requestId,
         }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    let prediction = await startResp.json();
-
-    // Poll
-    let status = prediction?.status as string;
-    const getUrl = prediction?.urls?.get as string | undefined;
-    if (!getUrl) throw new Error("Image generation failed");
-
-    let pollDelayMs = 1000;
-    const maxWaitMs = 120_000;
-    const pollStart = Date.now();
-
-    while (status === "starting" || status === "processing") {
-      if (Date.now() - pollStart > maxWaitMs) {
-        throw new Error("Image generation timed out");
-      }
-      await sleep(pollDelayMs);
-      pollDelayMs = Math.min(2500, Math.round(pollDelayMs * 1.2));
-
-      const pollResp = await fetch(getUrl, {
-        headers: { Authorization: `Bearer ${replicateToken}` },
-      });
-      prediction = await pollResp.json();
-      status = prediction?.status;
-    }
-
-    if (status !== "succeeded") {
-      console.error(`[${requestId}] Replicate failed:`, prediction?.error);
-      throw new Error(prediction?.error || "Image generation failed");
-    }
-
-    const output = prediction?.output;
-    const replicateImageUrl = Array.isArray(output) ? output[0] : output;
-    if (!replicateImageUrl || typeof replicateImageUrl !== "string") {
-      throw new Error("Image generation failed");
-    }
-
     // Fetch image bytes
-    const imgResp = await fetch(replicateImageUrl);
+    const imgResp = await fetch(generationResult.imageUrl);
     if (!imgResp.ok) throw new Error("Failed to download generated image");
     let imgBytes: Uint8Array = new Uint8Array((await imgResp.arrayBuffer()) as ArrayBuffer);
 
@@ -580,17 +867,15 @@ serve(async (req) => {
     }
 
     // Persist metadata
-    const steps = 0;
-    const guidanceScale = null;
     await supabase.from("image_generations").insert({
       user_id: user.id,
       prompt_uz: promptOriginal,
       prompt_en: finalPrompt,
-      negative_prompt_en: null,
+      negative_prompt_en: negativePrompt || null,
       aspect_ratio: aspectRatio,
-      guidance_scale: guidanceScale,
-      num_inference_steps: steps,
-      seed: typeof prediction?.metrics?.seed === "number" ? prediction.metrics.seed : null,
+      guidance_scale: null,
+      num_inference_steps: 0,
+      seed: seed,
       status: "done",
       file_path: filePath,
       mime_type: "image/png",
@@ -607,10 +892,10 @@ serve(async (req) => {
       path: filePath,
       status: "success",
       meta: {
-        provider: "replicate",
-        replicate_model: replicateModel,
+        provider: generationResult.provider,
         prompt_original: promptOriginal,
         prompt_final: finalPrompt,
+        negative_prompt: negativePrompt,
         aspect_ratio: aspectRatio,
         width,
         height,
@@ -620,7 +905,8 @@ serve(async (req) => {
         had_mask: !!mask,
         is_watermarked: isWatermarked,
         is_free_user: isFreeUser,
-        prediction_id: prediction?.id,
+        prediction_id: generationResult.predictionId,
+        seed,
       },
     });
 
@@ -648,23 +934,27 @@ serve(async (req) => {
     await logImageGenEvent(supabase, user.id, {
       success: true,
       duration_ms: Date.now() - requestStart,
-      steps,
-      model: "flux-2-klein",
+      steps: 0,
+      model: generationResult.provider,
       aspect_ratio: aspectRatio,
       tool_mode: toolMode,
+      provider: generationResult.provider,
     });
 
     return new Response(
       JSON.stringify({
         ok: true,
-        image_url: signedUrlData?.signedUrl || replicateImageUrl,
+        image_url: signedUrlData?.signedUrl || generationResult.imageUrl,
         file_path: filePath,
         file_name: fileName,
         prompt_original: promptOriginal,
         prompt_used: finalPrompt,
-        model: "flux-2-klein",
+        negative_prompt: negativePrompt,
+        model: generationResult.provider,
+        provider: generationResult.provider,
         width,
         height,
+        seed,
         requestId,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
