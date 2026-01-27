@@ -121,8 +121,8 @@ const ASPECT_RATIOS: { id: AspectRatio; label: string }[] = [
 
 const TOOL_MODES: { id: ToolMode; labelKey: string; disabled?: boolean; badge?: string }[] = [
   { id: "t2i", labelKey: "imageStudioV2.mode.t2i" },
-  // Remix mode: parked until we have a better image-to-image model alternative
-  { id: "remix", labelKey: "imageStudioV2.mode.remix", badge: "imageStudioV2.comingSoon" },
+  // Remix mode: enabled with Z-Image Turbo img2img
+  { id: "remix", labelKey: "imageStudioV2.mode.remix" },
   // Structure mode: keep visible/selectable; generation is gated until backend flag is enabled.
   { id: "controlnet", labelKey: "imageStudioV2.mode.controlnet", badge: "imageStudioV2.comingSoon" },
 ];
@@ -347,11 +347,10 @@ export default function ImageStudioV2() {
   // For Remix: require uploaded image with successful upload
   // For ControlNet: upload works but mode is disabled anyway
   const hasValidInputImage = inputImage !== null && uploadStatus === "done";
-  // Structure and Remix modes are parked - UI selectable but generation disabled
+  // Structure mode is parked - Remix is now enabled with Z-Image Turbo
   const canGenerate = draft.prompt.trim().length > 0 &&
     (!isImageRequired || hasValidInputImage) &&
-    draft.toolMode !== "controlnet" &&
-    draft.toolMode !== "remix";
+    draft.toolMode !== "controlnet";
 
   // Handle generate
   const handleGenerate = async () => {
@@ -360,8 +359,8 @@ export default function ImageStudioV2() {
       return;
     }
 
-    // Currently supporting: t2i only (remix and controlnet are parked)
-    if (draft.toolMode === "controlnet" || draft.toolMode === "remix") {
+    // ControlNet mode is still parked
+    if (draft.toolMode === "controlnet") {
       toast({
         title: t("imageStudioV2.backendPending"),
         description: t("imageStudioV2.backendPendingDesc"),
@@ -369,9 +368,19 @@ export default function ImageStudioV2() {
       return;
     }
 
-    // Premium check for SDXL model selection
+    // Remix mode requires an uploaded image
+    if (draft.toolMode === "remix" && !inputImage) {
+      toast({
+        title: t("imageStudioV2.error"),
+        description: t("imageStudioV2.remixRequiresImage"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Premium check for SDXL model selection (only for T2I)
     // Skip gating check if entitlements are still loading (prevents false blocks)
-    const requiresPremium = draft.modelChoice === "sdxl";
+    const requiresPremium = draft.toolMode === "t2i" && draft.modelChoice === "sdxl";
     if (requiresPremium && !isPremiumUser && !entitlementLoading) {
       toast({
         title: t("imageStudioV2.premiumRequired"),
@@ -407,12 +416,24 @@ export default function ImageStudioV2() {
         toolMode: draft.toolMode,
       };
 
-      // T2I mode only (remix and controlnet are parked)
-      const requestPayload: Record<string, unknown> = {
-        ...basePayload,
-        modelChoice: draft.modelChoice,
-        qualityBoost: draft.modelChoice === "sdxl" ? false : draft.qualityBoost,
-      };
+      let requestPayload: Record<string, unknown>;
+
+      if (draft.toolMode === "remix" && inputImage) {
+        // Remix mode: send input image and remix strength
+        requestPayload = {
+          ...basePayload,
+          inputImageBucket: inputImage.bucket,
+          inputImagePath: inputImage.path,
+          remixStrength: draft.remixStrength,
+        };
+      } else {
+        // T2I mode
+        requestPayload = {
+          ...basePayload,
+          modelChoice: draft.modelChoice,
+          qualityBoost: draft.modelChoice === "sdxl" ? false : draft.qualityBoost,
+        };
+      }
 
       console.log('[ImageStudioV2] Sending request:', requestPayload);
 
