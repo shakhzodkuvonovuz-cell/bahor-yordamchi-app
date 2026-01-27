@@ -768,6 +768,39 @@ export type Database = {
         }
         Relationships: []
       }
+      piapi_queue: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          provider: string
+          started_at: string | null
+          status: string
+          task_id: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          provider?: string
+          started_at?: string | null
+          status?: string
+          task_id?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          provider?: string
+          started_at?: string | null
+          status?: string
+          task_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       premium_waitlist: {
         Row: {
           contact: string
@@ -1706,6 +1739,10 @@ export type Database = {
       }
     }
     Functions: {
+      acquire_piapi_slot: {
+        Args: { p_max_concurrent?: number; p_user_id: string }
+        Returns: Json
+      }
       check_and_increment_usage:
         | {
             Args: { p_date: string; p_limit: number; p_user_id: string }
@@ -1721,6 +1758,7 @@ export type Database = {
             }
             Returns: Json
           }
+      cleanup_piapi_queue: { Args: never; Returns: number }
       cleanup_search_cache: { Args: never; Returns: number }
       get_effective_entitlement: { Args: { p_user_id: string }; Returns: Json }
       get_or_create_trial: {
@@ -1750,6 +1788,10 @@ export type Database = {
       normalize_preview: {
         Args: { content: string; max_length?: number }
         Returns: string
+      }
+      release_piapi_slot: {
+        Args: { p_slot_id: string; p_status?: string }
+        Returns: undefined
       }
     }
     Enums: {
