@@ -524,10 +524,11 @@ export const translations: Record<Lang, Record<string, string>> = {
     
     // Image Studio V2
     'imageStudioV2.title': 'Rasm studiyasi v2',
-    'imageStudioV2.subtitle': "Yarating, remix qiling yoki strukturasini saqlang",
+    'imageStudioV2.subtitle': "Yarating, uslubni o'zgartiring yoki strukturani saqlang",
     'imageStudioV2.rules': "NSFW, zo'ravonlik va noqonuniy kontent taqiqlangan",
     'imageStudioV2.mode.t2i': 'Yaratish',
-    'imageStudioV2.mode.remix': 'Remix',
+    'imageStudioV2.mode.remix': "Uslub o'zgartirish",
+    'imageStudioV2.mode.remixDesc': "Fon, rang, kayfiyat va uslubni o'zgartiradi. Yuzni saqlamaydi.",
     'imageStudioV2.mode.controlnet': 'Struktura',
     'imageStudioV2.comingSoon': 'Tez kunda',
     'imageStudioV2.modelLabel': 'Tezlik / Sifat',
@@ -576,8 +577,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     'imageStudioV2.imageSaved': 'Rasm fayllaringizga saqlandi.',
     'imageStudioV2.premiumRequired': 'Premium talab qilinadi',
     'imageStudioV2.sdxlPremiumOnly': 'Sifatli rejim faqat Premium foydalanuvchilar uchun mavjud.',
-    'imageStudioV2.remixPremiumOnly': 'Remix rejimi faqat Premium foydalanuvchilar uchun mavjud.',
-    'imageStudioV2.remixRequiresImage': 'Remix rejimi uchun manba rasm yuklang.',
+    'imageStudioV2.remixPremiumOnly': "Uslub o'zgartirish rejimi faqat Premium foydalanuvchilar uchun mavjud.",
+    'imageStudioV2.remixRequiresImage': "Uslub o'zgartirish uchun manba rasm yuklang.",
+    'imageStudioV2.styleTransferCapabilities': "Fon o'zgartirish • Rang va kayfiyat • Uslub o'tkazish • Sahna almashtirish",
+    'imageStudioV2.styleTransferNote': "Eslatma: Bu rejim yuzni saqlamaydi. Yuzni saqlash uchun 'Yuz almashtirish' xizmatidan foydalaning.",
     'imageStudioV2.controlnetComingSoon': 'Struktura rejimi tez kunda',
     'imageStudioV2.controlnetComingSoonDesc': 'Struktura rejimi ustida ishlamoqdamiz. Tez orada qo\'shiladi!',
     
@@ -2800,10 +2803,11 @@ export const translations: Record<Lang, Record<string, string>> = {
     
     // Image Studio V2
     'imageStudioV2.title': 'Image Studio v2',
-    'imageStudioV2.subtitle': 'Create, remix, or preserve structure',
+    'imageStudioV2.subtitle': 'Create, transfer style, or preserve structure',
     'imageStudioV2.rules': 'NSFW, violence, and illegal content prohibited',
     'imageStudioV2.mode.t2i': 'Create',
-    'imageStudioV2.mode.remix': 'Remix',
+    'imageStudioV2.mode.remix': 'Style Transfer',
+    'imageStudioV2.mode.remixDesc': 'Changes background, colors, mood, and style. Does not preserve faces.',
     'imageStudioV2.mode.controlnet': 'Structure',
     'imageStudioV2.comingSoon': 'Soon',
     'imageStudioV2.modelLabel': 'Speed / Quality',
@@ -2852,8 +2856,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     'imageStudioV2.imageSaved': 'Image saved to your files.',
     'imageStudioV2.premiumRequired': 'Premium required',
     'imageStudioV2.sdxlPremiumOnly': 'Quality mode is only available for Premium users.',
-    'imageStudioV2.remixPremiumOnly': 'Remix mode is only available for Premium users.',
-    'imageStudioV2.remixRequiresImage': 'Please upload an image for Remix mode.',
+    'imageStudioV2.remixPremiumOnly': 'Style Transfer mode is only available for Premium users.',
+    'imageStudioV2.remixRequiresImage': 'Please upload an image for Style Transfer.',
+    'imageStudioV2.styleTransferCapabilities': 'Background changes • Color & mood • Style transfer • Scene swap',
+    'imageStudioV2.styleTransferNote': 'Note: This mode does not preserve faces. For face preservation, use Face Swap service.',
     'imageStudioV2.controlnetComingSoon': 'Structure mode coming soon',
     'imageStudioV2.controlnetComingSoonDesc': 'We are working on Structure mode. Coming soon!',
     

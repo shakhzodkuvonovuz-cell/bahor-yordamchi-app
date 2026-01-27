@@ -121,7 +121,7 @@ const ASPECT_RATIOS: { id: AspectRatio; label: string }[] = [
 
 const TOOL_MODES: { id: ToolMode; labelKey: string; disabled?: boolean; badge?: string }[] = [
   { id: "t2i", labelKey: "imageStudioV2.mode.t2i" },
-  // Remix mode: enabled with Z-Image Turbo img2img
+  // Style Transfer mode: uses Z-Image Turbo for style/background/mood changes (does NOT preserve faces)
   { id: "remix", labelKey: "imageStudioV2.mode.remix" },
   // Structure mode: keep visible/selectable; generation is gated until backend flag is enabled.
   { id: "controlnet", labelKey: "imageStudioV2.mode.controlnet", badge: "imageStudioV2.comingSoon" },
@@ -653,6 +653,19 @@ export default function ImageStudioV2() {
               <div>
                 <AlertTitle>{t("imageStudioV2.controlnetComingSoon")}</AlertTitle>
                 <AlertDescription>{t("imageStudioV2.controlnetComingSoonDesc")}</AlertDescription>
+              </div>
+            </Alert>
+          )}
+
+          {/* Style Transfer mode info - shows capabilities */}
+          {draft.toolMode === "remix" && (
+            <Alert className="border-primary/30 bg-primary/5">
+              <Palette className="h-4 w-4 text-primary" />
+              <div>
+                <AlertTitle className="text-sm font-medium">{t("imageStudioV2.styleTransferCapabilities")}</AlertTitle>
+                <AlertDescription className="text-xs text-muted-foreground mt-1">
+                  {t("imageStudioV2.styleTransferNote")}
+                </AlertDescription>
               </div>
             </Alert>
           )}
