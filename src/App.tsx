@@ -50,6 +50,7 @@ const VideoStudio = lazy(() => import("./pages/VideoStudio"));
 const PaymentReturn = lazy(() => import("./pages/PaymentReturn"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const DownloadDiscoveryDoc = lazy(() => import("./pages/DownloadDiscoveryDoc"));
+const MigrationExport = lazy(() => import("./pages/MigrationExport"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -378,6 +379,8 @@ const App = () => (
                   <Route path="/spaces/invite/:code" element={<SpaceInviteRedirect />} />
                   {/* Discovery document download page */}
                   <Route path="/docs/discovery" element={<LazyRoute><DownloadDiscoveryDoc /></LazyRoute>} />
+                  {/* Migration export page */}
+                  <Route path="/docs/migration" element={<LazyRoute><MigrationExport /></LazyRoute>} />
                   <Route path="*" element={<LazyRoute><NotFound /></LazyRoute>} />
                 </Routes>
               </TooltipProvider>

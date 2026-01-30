@@ -1777,20 +1777,106 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 ---
 
-## Step 4: Storage Buckets
+## Step 4: Storage Buckets (Automated via SQL)
 
-Create these in Supabase Dashboard → Storage:
+Run this SQL to create all required storage buckets:
 
-| Bucket | Public | Purpose |
-|--------|--------|---------|
-| `avatars` | Yes | User profile photos |
-| `chat-attachments` | Yes | Chat file uploads |
-| `user-files` | No | Document conversions |
-| `feedback-screenshots` | No | Bug report screenshots |
-| `space-files` | No | Circle shared files |
-| `space-chat-files` | No | Circle message attachments |
-| `video-generations` | No | Generated videos |
-| `video-assets` | No | Video source files |
+```sql
+-- =============================================
+-- STORAGE BUCKETS (Run this after tables)
+-- =============================================
+
+-- Create buckets
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES 
+  ('avatars', 'avatars', true, 5242880, ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif']),
+  ('chat-attachments', 'chat-attachments', true, 52428800, NULL),
+  ('user-files', 'user-files', false, 104857600, NULL),
+  ('feedback-screenshots', 'feedback-screenshots', false, 10485760, ARRAY['image/jpeg', 'image/png']),
+  ('space-files', 'space-files', false, 104857600, NULL),
+  ('space-chat-files', 'space-chat-files', false, 52428800, NULL),
+  ('video-generations', 'video-generations', false, 524288000, ARRAY['video/mp4', 'video/webm']),
+  ('video-assets', 'video-assets', false, 104857600, NULL)
+ON CONFLICT (id) DO NOTHING;
+
+-- =============================================
+-- STORAGE POLICIES
+-- =============================================
+
+-- Avatars: Public read, authenticated upload own
+CREATE POLICY "Avatar images are publicly accessible"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'avatars');
+
+CREATE POLICY "Users can upload their own avatar"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can update their own avatar"
+  ON storage.objects FOR UPDATE
+  USING (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can delete their own avatar"
+  ON storage.objects FOR DELETE
+  USING (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- Chat attachments: Public read, authenticated upload own
+CREATE POLICY "Chat attachments are publicly accessible"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'chat-attachments');
+
+CREATE POLICY "Users can upload their own chat attachments"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'chat-attachments' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can delete their own chat attachments"
+  ON storage.objects FOR DELETE
+  USING (bucket_id = 'chat-attachments' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- User files: Private, own files only
+CREATE POLICY "Users can view their own user files"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'user-files' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can upload their own user files"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'user-files' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can delete their own user files"
+  ON storage.objects FOR DELETE
+  USING (bucket_id = 'user-files' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- Feedback screenshots
+CREATE POLICY "Users can upload feedback screenshots"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'feedback-screenshots' AND auth.uid() IS NOT NULL);
+
+-- Video generations: Private, own files only
+CREATE POLICY "Users can view their own video generations"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'video-generations' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can upload their own video generations"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'video-generations' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can delete their own video generations"
+  ON storage.objects FOR DELETE
+  USING (bucket_id = 'video-generations' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- Video assets: Private, own files only  
+CREATE POLICY "Users can view their own video assets"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'video-assets' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can upload their own video assets"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'video-assets' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can delete their own video assets"
+  ON storage.objects FOR DELETE
+  USING (bucket_id = 'video-assets' AND auth.uid()::text = (storage.foldername(name))[1]);
+```
 
 ---
 
@@ -1798,26 +1884,68 @@ Create these in Supabase Dashboard → Storage:
 
 In Supabase Dashboard → Authentication → Settings:
 - Enable Email auth
-- Disable "Confirm email" for faster testing
-- Add redirect URLs
+- Optionally disable "Confirm email" for faster testing (not recommended for production)
+- Add redirect URLs: `https://your-domain.com/*`
 
 ---
 
 ## Step 6: Deploy Edge Functions
 
 ```bash
-cd supabase/functions
-supabase functions deploy --project-ref YOUR_PROJECT_ID
+# Install Supabase CLI if not already
+npm install -g supabase
+
+# Login to Supabase
+supabase login
+
+# Link your project
+supabase link --project-ref YOUR_PROJECT_ID
+
+# Deploy all functions
+supabase functions deploy
+
+# Or deploy specific functions
+supabase functions deploy chat
+supabase functions deploy profile
+supabase functions deploy atmos-token
 ```
+
+---
+
+## Quick One-Click Migration
+
+For the fastest migration, copy ALL the SQL from Parts 1-12 above into a single file and run it in one go in the SQL Editor. The order is important:
+
+1. Tables (Parts 1-8)
+2. Views (Part 9)  
+3. Functions & Triggers (Parts 10-12)
+4. Storage Buckets (Step 4 above)
 
 ---
 
 ## Verification Checklist
 
 - [ ] Environment variables set in `.env`
-- [ ] All secrets configured in Edge Functions
-- [ ] Part 1-12 SQL executed without errors
-- [ ] Storage buckets created
-- [ ] Edge functions deployed
-- [ ] Auth configured
-- [ ] Test signup creates profile automatically
+- [ ] All secrets configured in Edge Functions Settings
+- [ ] All SQL executed without errors (Parts 1-12 + Storage)
+- [ ] Edge functions deployed (`supabase functions deploy`)
+- [ ] Auth configured and redirect URLs added
+- [ ] Test signup → verify profile auto-creates
+- [ ] Test chat → verify messages save
+- [ ] Test file upload → verify storage works
+
+---
+
+## Troubleshooting
+
+### "permission denied for table profiles"
+RLS is enabled but policies are missing. Re-run the policy creation SQL.
+
+### "function init_and_check_usage does not exist"
+Run Part 11 (Critical Functions) from the SQL above.
+
+### "bucket not found"
+Run the Storage Buckets SQL from Step 4.
+
+### Edge function errors
+Check that all secrets are set in Dashboard → Edge Functions → Secrets.
