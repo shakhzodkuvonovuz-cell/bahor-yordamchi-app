@@ -1,153 +1,133 @@
 # Bahor AI - Birinchi O'zbek Sun'iy Intellekti
 
-Bahor AI is the first Uzbek AI assistant, designed to help with general questions, IELTS preparation, and homework assistance. This is the MVP v0 with dummy AI responses.
+Bahor AI is the first Uzbek AI assistant, providing intelligent chat, image generation, video creation, document tools, and collaborative spaces.
 
 ## Features
 
-- **Mobile-first Progressive Web App (PWA)** - Can be installed on phones and tablets
-- **Three chat modes:**
-  - Umumiy suhbat (General Chat) - For any questions
-  - IELTS va Ingliz tili (IELTS & English) - English learning and IELTS prep
-  - Uy vazifasi va fanlar (Homework & Subjects) - Math, physics, and other subjects
-- **Clean, modern UI** - Uzbek language by default
-- **Offline support** - Basic caching with service worker
-- **Responsive design** - Works on all screen sizes
+- **AI Chat** - Powered by DeepSeek with web search, file attachments, and vision capabilities
+- **Multiple Modes** - General chat, IELTS prep, homework help, creative writing, and more
+- **Image Generation** - Create images from Uzbek/English prompts via Fireworks AI
+- **Video Generation** - Text-to-video and image-to-video via RunPod
+- **Document Tools** - PDF/Word conversion, OCR, and file management
+- **Circles** - Collaborative spaces with shared chat and file storage
+- **Agent Mode** - Multi-step research and task execution
+- **Translator** - Uzbek ↔ English translation with speech support
+- **Mobile-first PWA** - Installable on phones with offline support
+- **Native Apps** - Android/iOS via Capacitor
 
 ## Tech Stack
 
-- **React** - UI framework
-- **TypeScript** - Type safety
-- **Vite** - Build tool
-- **Tailwind CSS** - Styling
-- **React Router** - Navigation
-- **PWA** - Progressive Web App capabilities
+- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui
+- **Backend**: Supabase (PostgreSQL, Auth, Storage, Edge Functions)
+- **AI**: DeepSeek, Fireworks AI, Groq, Replicate, RunPod
+- **Payments**: ATMOS (Uzbek payment gateway)
+- **Mobile**: Capacitor for native builds
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js (v16 or higher)
-- npm or yarn
+- Node.js v18+
+- Bun or npm
+- Supabase project (or Lovable Cloud)
 
 ### Installation
 
-1. Clone the repository:
 ```bash
 git clone <your-repo-url>
 cd bahor-ai
+bun install
 ```
 
-2. Install dependencies:
-```bash
-npm install
+### Environment Variables
+
+Create a `.env` file with:
+
+```env
+VITE_APP_VERSION="1.0.0-beta"
+VITE_SUPABASE_PROJECT_ID="your-project-id"
+VITE_SUPABASE_URL="https://your-project-id.supabase.co"
+VITE_SUPABASE_PUBLISHABLE_KEY="your-anon-key"
 ```
 
-3. Start the development server:
+### Database Setup
+
+1. Run the complete migration SQL from `bahor-ai-complete-migration.sql` in your Supabase SQL Editor
+2. Configure Edge Function secrets (see `docs/ENV_CATALOG.md` for full list)
+
+### Development
+
 ```bash
-npm run dev
+bun run dev
 ```
 
-The app will open at `http://localhost:8080`
+The app runs at `http://localhost:8080`
 
-### Building for Production
-
-```bash
-npm run build
-```
-
-The production-ready files will be in the `dist` folder.
-
-### Preview Production Build
+### Production Build
 
 ```bash
-npm run preview
+bun run build
+bun run preview
 ```
 
 ## Project Structure
 
 ```
 src/
-├── components/        # Reusable UI components
-│   ├── ChatMessage.tsx
-│   ├── ModeCard.tsx
-│   └── QuickSuggestions.tsx
-├── pages/            # Main application pages
-│   ├── Welcome.tsx
-│   ├── ModeSelection.tsx
-│   ├── Chat.tsx
-│   └── Settings.tsx
-├── services/         # Business logic
-│   └── dummyAiService.ts
-├── types/            # TypeScript type definitions
-│   └── chat.ts
-├── data/             # Static data
-│   └── modes.ts
-└── App.tsx          # Main app component with routing
+├── components/       # UI components (chat, layout, circles, etc.)
+├── contexts/         # React contexts (Auth, Theme)
+├── hooks/            # Custom hooks (useAuth, useDailyUsage, etc.)
+├── integrations/     # Supabase client and types
+├── lib/              # Utilities (analytics, prompts, formatters)
+├── pages/            # Route pages
+├── services/         # API services (vision, OCR, documents)
+└── types/            # TypeScript types
+
+supabase/
+├── functions/        # Edge Functions (chat, image-generate, etc.)
+└── config.toml       # Supabase configuration
+
+docs/
+├── BAHOR_AI_DISCOVERY.md    # Full technical overview
+├── ENV_CATALOG.md           # All secrets documentation
+├── SUPABASE_MIGRATION.md    # Migration guide
+└── CAPACITOR_SETUP.md       # Mobile build instructions
 ```
 
-## PWA Installation
+## Edge Function Secrets
 
-### On Android:
-1. Open the app in Chrome
-2. Tap the menu (three dots)
-3. Select "Add to Home screen"
-4. The app will open in standalone mode like a native app
+Essential secrets for core functionality:
 
-### On iOS:
-1. Open the app in Safari
-2. Tap the Share button
-3. Select "Add to Home Screen"
-4. The app will appear on your home screen
+| Secret | Required For |
+|--------|-------------|
+| `DEEPSEEK_API_KEY` | AI chat |
+| `GOOGLE_SEARCH_API_KEY` + `GOOGLE_CX` | Web search |
+| `FIREWORKS_API_KEY` | Image generation |
+| `RUNPOD_API_KEY` | Video generation |
+| `RESEND_API_KEY` | Email sending |
 
-## Current Status (v0 - MVP)
+See `docs/ENV_CATALOG.md` for the complete list of 27 secrets.
 
-This is a **test version** with dummy AI responses. The actual AI integration will be added in future versions.
+## Mobile Builds
 
-### What's Working:
-- ✅ Full navigation between all screens
-- ✅ Three chat modes with different contexts
-- ✅ Dummy AI responses simulating network delays
-- ✅ Message history per session
-- ✅ Quick suggestions for each mode
-- ✅ Settings page (UI only, no persistence)
-- ✅ PWA capabilities (installable, offline shell)
+See `docs/CAPACITOR_SETUP.md` for Android/iOS build instructions.
 
-### What's Coming:
-- 🔄 Real AI integration (DeepSeek or similar)
-- 🔄 User authentication
-- 🔄 Message persistence (save chat history)
-- 🔄 Settings persistence
-- 🔄 Multi-language support
-- 🔄 Voice input
-- 🔄 Image upload for homework help
+## Migration
 
-## Replacing Dummy AI with Real API
+To migrate from Lovable Cloud to your own Supabase:
 
-The dummy AI logic is isolated in `src/services/dummyAiService.ts`. To integrate a real AI:
+1. Create a new Supabase project
+2. Run `bahor-ai-complete-migration.sql` (36 tables, 8 storage buckets, 20+ functions)
+3. Configure Edge Function secrets
+4. Update `.env` with new credentials
+5. Deploy Edge Functions: `supabase functions deploy --project-ref <your-ref>`
 
-1. Replace the `getDummyAiResponseAsync` function with actual API calls
-2. Update the function signature if needed (e.g., for streaming responses)
-3. The rest of the UI will work with minimal changes
-
-Example structure:
-```typescript
-// Real API version
-export async function getAiResponse(
-  mode: ChatMode, 
-  userMessage: string
-): Promise<string> {
-  const response = await fetch('your-api-endpoint', {
-    method: 'POST',
-    body: JSON.stringify({ mode, message: userMessage })
-  });
-  return response.json();
-}
-```
+See `docs/SUPABASE_MIGRATION.md` for detailed instructions.
 
 ## License
 
-This project is private and proprietary.
+Private and proprietary.
 
 ## Contact
 
-For questions or support, contact the Bahor AI team.
+For support, use the in-app feedback feature or contact the Bahor AI team.
