@@ -847,6 +847,7 @@ export type Database = {
           language: string | null
           last_name: string | null
           last_reset_date: string | null
+          lessons_mastered: number
           messages_today: number | null
           plan: string | null
           theme: string | null
@@ -865,6 +866,7 @@ export type Database = {
           language?: string | null
           last_name?: string | null
           last_reset_date?: string | null
+          lessons_mastered?: number
           messages_today?: number | null
           plan?: string | null
           theme?: string | null
@@ -883,6 +885,7 @@ export type Database = {
           language?: string | null
           last_name?: string | null
           last_reset_date?: string | null
+          lessons_mastered?: number
           messages_today?: number | null
           plan?: string | null
           theme?: string | null
@@ -1380,6 +1383,7 @@ export type Database = {
           lesson_plan: Json | null
           meta: Json | null
           phase: string
+          quiz_scores: Json | null
           resources: Json | null
           started_at: string
           thread_id: string
@@ -1396,6 +1400,7 @@ export type Database = {
           lesson_plan?: Json | null
           meta?: Json | null
           phase?: string
+          quiz_scores?: Json | null
           resources?: Json | null
           started_at?: string
           thread_id: string
@@ -1412,6 +1417,7 @@ export type Database = {
           lesson_plan?: Json | null
           meta?: Json | null
           phase?: string
+          quiz_scores?: Json | null
           resources?: Json | null
           started_at?: string
           thread_id?: string

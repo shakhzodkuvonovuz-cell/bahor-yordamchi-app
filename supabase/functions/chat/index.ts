@@ -107,6 +107,78 @@ Do NOT use for:
         required: ["query"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "youtube_search",
+      description: `Search YouTube for educational videos. Use this ONLY in Teacher Mode when:
+- The lesson step requires a video tutorial
+- User explicitly asks for a video resource
+- Concept is complex and visual demonstration helps
+
+Do NOT use for every message - only for "Complex" or "Visual" steps.`,
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "Search query for educational videos (prefer Uzbek or English depending on topic)"
+          },
+          maxResults: {
+            type: "number",
+            description: "Number of videos to return (1-5, default 3)"
+          }
+        },
+        required: ["query"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "generate_quiz",
+      description: `Generate a quiz with multiple-choice questions. Use this in Teacher Mode when:
+- User has completed 5 lesson steps (milestone check)
+- User explicitly asks for a quiz or test
+- Reviewing content before moving forward
+
+Output MUST be valid JSON that the frontend can parse.`,
+      parameters: {
+        type: "object",
+        properties: {
+          topic: {
+            type: "string",
+            description: "Topic of the quiz (last 5 steps content)"
+          },
+          questions: {
+            type: "array",
+            description: "Array of 3 MCQ questions",
+            items: {
+              type: "object",
+              properties: {
+                question: { type: "string", description: "Question text in Uzbek" },
+                options: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      label: { type: "string", description: "A, B, or C" },
+                      text: { type: "string", description: "Option text" }
+                    }
+                  }
+                },
+                correctAnswer: { type: "string", description: "Correct option label (A, B, or C)" },
+                explanation: { type: "string", description: "Why this is correct (Uzbek)" },
+                videoTimestamp: { type: "string", description: "Optional video reference" }
+              },
+              required: ["question", "options", "correctAnswer", "explanation"]
+            }
+          }
+        },
+        required: ["topic", "questions"]
+      }
+    }
   }
 ];
 
@@ -318,7 +390,8 @@ async function logRouterDecision(
 
 type TraceStep = 'preparing' | 'new_chat' | 'uploading' | 'parsing_files' | 'web_search' | 
                  'selecting_model' | 'thinking' | 'writing' | 'saving' | 'generating_image' | 'delivering' |
-                 'analyzing_request' | 'image_analysis' | 'reading_files' | 'drafting_answer' | 'safety_check' | 'formatting';
+                 'analyzing_request' | 'image_analysis' | 'reading_files' | 'drafting_answer' | 'safety_check' | 'formatting' |
+                 'youtube_search' | 'generate_quiz';
 
 interface TraceSource {
   title: string;
@@ -722,6 +795,40 @@ async function executeWebSearch(
   } catch (err) {
     console.error('[Tool:web_search] Exception:', err);
     return { success: false, error: 'SEARCH_EXCEPTION' };
+  }
+}
+
+// Execute YouTube search
+async function executeYouTubeSearch(
+  supabaseUrl: string,
+  token: string,
+  query: string,
+  maxResults: number = 3
+): Promise<{ success: boolean; videos?: any[]; error?: string }> {
+  console.log('[Tool:youtube_search] Executing with query:', query);
+  
+  try {
+    const response = await fetch(`${supabaseUrl}/functions/v1/youtube-search`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query, maxResults }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('[Tool:youtube_search] Error:', errorData);
+      return { success: false, error: errorData.error || 'YOUTUBE_ERROR' };
+    }
+    
+    const data = await response.json();
+    console.log('[Tool:youtube_search] Success, videos:', data.videos?.length || 0);
+    return { success: true, videos: data.videos || [] };
+  } catch (err) {
+    console.error('[Tool:youtube_search] Exception:', err);
+    return { success: false, error: 'YOUTUBE_EXCEPTION' };
   }
 }
 
@@ -1497,6 +1604,47 @@ ${fileContentBlocks}`;
                   const contentEvent = { choices: [{ delta: { content: busyMsg } }] };
                   controller.enqueue(encoder.encode(`data: ${JSON.stringify(contentEvent)}\n\n`));
                 }
+              }
+              
+              // YouTube Search Tool
+              if (toolName === 'youtube_search') {
+                toolUsed = 'youtube';
+                
+                const ytStartMs = Date.now() - requestStartTime;
+                controller.enqueue(encoder.encode(createTraceEvent('youtube_search', 'start', requestStartTime, undefined, ytStartMs)));
+                
+                const ytResult = await executeYouTubeSearch(supabaseUrl, token, toolArgs.query, toolArgs.maxResults || 3);
+                
+                const ytEndMs = Date.now() - requestStartTime;
+                controller.enqueue(encoder.encode(createTraceEvent('youtube_search', 'end', requestStartTime, { 
+                  videosCount: ytResult.videos?.length || 0,
+                }, ytEndMs)));
+                
+                if (ytResult.success && ytResult.videos && ytResult.videos.length > 0) {
+                  const ytEvent = {
+                    type: "tool_result",
+                    tool: "youtube_search",
+                    success: true,
+                    data: { videos: ytResult.videos }
+                  };
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(ytEvent)}\n\n`));
+                }
+              }
+              
+              // Quiz Generation Tool
+              if (toolName === 'generate_quiz') {
+                toolUsed = 'quiz';
+                
+                const quizEvent = {
+                  type: "tool_result",
+                  tool: "generate_quiz",
+                  success: true,
+                  data: {
+                    topic: toolArgs.topic,
+                    questions: toolArgs.questions || []
+                  }
+                };
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify(quizEvent)}\n\n`));
               }
             }
           }
