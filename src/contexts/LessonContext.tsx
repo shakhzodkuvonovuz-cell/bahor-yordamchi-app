@@ -69,9 +69,10 @@ interface LessonContextType {
   
   // Quiz actions
   startQuiz: () => Promise<void>;
-  submitQuizScore: (score: QuizScore) => Promise<void>;
+  submitQuizScore: (score: QuizScore) => Promise<boolean | undefined>;
   shouldTriggerQuiz: () => boolean;
   incrementLessonsMastered: () => Promise<void>;
+  getQuizStepRange: () => string;
 }
 
 const LessonContext = createContext<LessonContextType | undefined>(undefined);
@@ -309,42 +310,97 @@ export function LessonProvider({ children }: { children: ReactNode }) {
   // Check if we should trigger a quiz (every 5 steps completed)
   const shouldTriggerQuiz = useCallback(() => {
     if (!activeLesson) return false;
+    if (activeLesson.phase !== 'delivery') return false;
+    
     const completedSteps = activeLesson.lessonPlan.filter(s => s.completed).length;
-    // Trigger quiz every 5 steps, but not if already in quiz or completed
+    
+    // Trigger quiz every 5 steps, but not if already taken for this milestone
+    const milestoneNumber = Math.floor(completedSteps / 5);
+    if (milestoneNumber === 0) return false;
+    
+    // Check if we already have a score for this milestone
+    const alreadyTaken = activeLesson.quizScores.some(q => q.step === milestoneNumber * 5);
+    
     return completedSteps > 0 && 
            completedSteps % 5 === 0 && 
-           activeLesson.phase === 'delivery' &&
-           !activeLesson.quizScores.some(q => q.step === completedSteps);
+           !alreadyTaken;
   }, [activeLesson]);
 
-  // Start quiz mode
+  // Start quiz mode and mark thread as quiz active
   const startQuiz = useCallback(async () => {
     if (!activeLesson) return;
+    
+    // Update lesson phase
     await updatePhase('quiz');
+    
+    // Mark thread as quiz active
+    await supabase
+      .from('chat_threads')
+      .update({ is_quiz_active: true })
+      .eq('id', activeLesson.threadId);
   }, [activeLesson, updatePhase]);
 
-  // Submit quiz score
+  // Submit quiz score - handles pass/fail logic
   const submitQuizScore = useCallback(async (score: QuizScore) => {
-    if (!activeLesson) return;
+    if (!activeLesson || !user) return;
 
+    const passed = score.score >= 2; // 2/3 or 3/3 to pass
     const updatedScores = [...activeLesson.quizScores, score];
+
+    // Calculate step range for this quiz
+    const completedSteps = activeLesson.lessonPlan.filter(s => s.completed).length;
+    const milestoneNumber = Math.floor(completedSteps / 5);
+    const stepRange = `${(milestoneNumber - 1) * 5 + 1}-${milestoneNumber * 5}`;
+
+    // Save to quiz_scores table for analytics
+    await supabase
+      .from('quiz_scores')
+      .insert({
+        user_id: user.id,
+        thread_id: activeLesson.threadId,
+        lesson_id: activeLesson.id,
+        score: score.score,
+        total_questions: score.total,
+        topic: activeLesson.topic,
+        step_range: stepRange,
+        questions_json: score.answers,
+      });
+
+    // If failed, reset to step before quiz and stay in delivery
+    const newPhase = passed ? 'delivery' : 'delivery';
+    const newStep = passed ? activeLesson.currentStep : Math.max(0, activeLesson.currentStep - 1);
 
     const { error } = await supabase
       .from('teacher_lessons')
       .update({ 
         quiz_scores: updatedScores as unknown as any,
-        phase: 'delivery', // Return to delivery after quiz
+        phase: newPhase,
+        current_step: newStep,
       })
       .eq('id', activeLesson.id);
 
     if (error) throw error;
 
+    // Mark thread as quiz inactive
+    await supabase
+      .from('chat_threads')
+      .update({ is_quiz_active: false })
+      .eq('id', activeLesson.threadId);
+
     setActiveLesson(prev => prev ? { 
       ...prev, 
       quizScores: updatedScores,
-      phase: 'delivery',
+      phase: newPhase,
+      currentStep: newStep,
     } : null);
-  }, [activeLesson]);
+
+    // If passed, increment lessons mastered
+    if (passed && score.score === score.total) {
+      await incrementLessonsMastered();
+    }
+
+    return passed;
+  }, [activeLesson, user]);
 
   // Increment lessons mastered in profile
   const incrementLessonsMastered = useCallback(async () => {
@@ -369,6 +425,15 @@ export function LessonProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
+  // Get quiz step range for current milestone
+  const getQuizStepRange = useCallback(() => {
+    if (!activeLesson) return '1-5';
+    const completedSteps = activeLesson.lessonPlan.filter(s => s.completed).length;
+    const milestoneNumber = Math.floor(completedSteps / 5);
+    if (milestoneNumber === 0) return '1-5';
+    return `${(milestoneNumber - 1) * 5 + 1}-${milestoneNumber * 5}`;
+  }, [activeLesson]);
+
   return (
     <LessonContext.Provider value={{
       activeLesson,
@@ -389,6 +454,7 @@ export function LessonProvider({ children }: { children: ReactNode }) {
       submitQuizScore,
       shouldTriggerQuiz,
       incrementLessonsMastered,
+      getQuizStepRange,
     }}>
       {children}
     </LessonContext.Provider>

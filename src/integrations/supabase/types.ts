@@ -514,6 +514,7 @@ export type Database = {
           created_at: string
           id: string
           is_archived: boolean
+          is_quiz_active: boolean | null
           last_message_preview: string | null
           lesson_id: string | null
           message_count: number | null
@@ -528,6 +529,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_archived?: boolean
+          is_quiz_active?: boolean | null
           last_message_preview?: string | null
           lesson_id?: string | null
           message_count?: number | null
@@ -542,6 +544,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_archived?: boolean
+          is_quiz_active?: boolean | null
           last_message_preview?: string | null
           lesson_id?: string | null
           message_count?: number | null
@@ -916,6 +919,60 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      quiz_scores: {
+        Row: {
+          created_at: string
+          id: string
+          lesson_id: string | null
+          questions_json: Json | null
+          score: number
+          step_range: string | null
+          thread_id: string | null
+          topic: string
+          total_questions: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lesson_id?: string | null
+          questions_json?: Json | null
+          score: number
+          step_range?: string | null
+          thread_id?: string | null
+          topic: string
+          total_questions?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lesson_id?: string | null
+          questions_json?: Json | null
+          score?: number
+          step_range?: string | null
+          thread_id?: string | null
+          topic?: string
+          total_questions?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_scores_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_scores_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "chat_threads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       search_cache: {
         Row: {

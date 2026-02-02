@@ -11,6 +11,7 @@ import { ImageLightbox } from "@/components/ImageLightbox";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import MarkdownContent from "@/components/chat/MarkdownContent";
 import { SourcesList } from "@/components/chat/SourcesList";
+import { QuizMessageRenderer, parseQuizFromContent } from "@/components/chat/QuizMessageRenderer";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface ChatMessageProps {
@@ -374,6 +375,11 @@ function ChatMessageComponent({
               <div className="py-3">
                 {renderAttachments()}
                 {message.content && renderContent()}
+                
+                {/* Quiz questions from AI tool calling */}
+                <QuizMessageRenderer 
+                  meta={message.meta as any}
+                />
                 
                 {/* Sources/Citations section for web search results */}
                 {message.citations && message.citations.length > 0 && (

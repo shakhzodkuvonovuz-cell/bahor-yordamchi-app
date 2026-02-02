@@ -54,6 +54,8 @@ import { isVisionSupportedImage } from "@/services/visionService";
 import { detectReplyLanguage } from "@/lib/languageDetect";
 import { extractTextFromFile, isImageFile, isPdfFile, getFileReadStatusLabel } from "@/lib/fileTextExtractor";
 import { getPreferencesPromptContext } from "@/components/UserPreferencesSection";
+import { LessonProgressBar } from "@/components/teacher";
+import { useLesson } from "@/contexts/LessonContext";
 
 import { useRealtimeChat, useRealtimeThreads } from "@/hooks/useRealtimeChat";
 
@@ -207,6 +209,7 @@ export default function Chat() {
   const { user, session, profile, refreshProfile } = useAuth();
   const isMobile = useIsMobile();
   const { onSend, onCopy, onNewChat, onSuccess, onError, lightTap } = useNativeHaptics();
+  const { isTeacherMode, activeLesson, loadLesson } = useLesson();
   
   // Supabase-backed state
   const [threads, setThreads] = useState<chatStore.ChatThread[]>([]);
@@ -596,8 +599,12 @@ export default function Chat() {
     }
     if (currentThreadId) {
       loadMessages(currentThreadId);
+      // Also load lesson if in teacher mode
+      if (mode === 'teacher') {
+        loadLesson(currentThreadId);
+      }
     }
-  }, [currentThreadId, loadMessages]);
+  }, [currentThreadId, loadMessages, mode, loadLesson]);
 
   useEffect(() => {
     if (!modeInfo) {
@@ -2479,6 +2486,13 @@ export default function Chat() {
               </div>
             </div>
           </div>
+
+          {/* Teacher Mode Progress Bar - sticky below header */}
+          {isTeacherMode && activeLesson && (
+            <div className="sticky top-[60px] z-30 px-3 sm:px-6 py-2 bg-background/95 backdrop-blur-sm border-b border-border/10">
+              <LessonProgressBar />
+            </div>
+          )}
 
           {/* Messages Area */}
           <div className="flex-1 flex flex-col overflow-hidden">
