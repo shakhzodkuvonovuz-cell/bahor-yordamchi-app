@@ -7,6 +7,7 @@ interface YouTubeResourceProps {
   title: string;
   description?: string;
   thumbnail?: string;
+  timestamp?: string; // Optional video timestamp reference (e.g., "2:30")
   className?: string;
 }
 
@@ -15,22 +16,37 @@ export function YouTubeResource({
   title,
   description,
   thumbnail,
+  timestamp,
   className,
 }: YouTubeResourceProps) {
-  const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
-  const embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`;
-  const defaultThumbnail = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+  // Convert timestamp like "2:30" to seconds for embed
+  const getSecondsFromTimestamp = (ts?: string): number | null => {
+    if (!ts) return null;
+    const parts = ts.split(':').map(Number);
+    if (parts.length === 2) return parts[0] * 60 + parts[1];
+    if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    return null;
+  };
+
+  const seconds = getSecondsFromTimestamp(timestamp);
+  const youtubeUrl = seconds 
+    ? `https://www.youtube.com/watch?v=${videoId}&t=${seconds}`
+    : `https://www.youtube.com/watch?v=${videoId}`;
+  const embedUrl = seconds
+    ? `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&start=${seconds}`
+    : `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`;
 
   return (
     <div
       className={cn(
         "rounded-xl overflow-hidden border border-border bg-card shadow-md",
         "transition-shadow hover:shadow-lg",
+        "w-full max-w-full", // Full width on mobile
         className
       )}
     >
-      {/* Video Embed Container */}
-      <div className="relative aspect-video bg-muted">
+      {/* Video Embed Container - Responsive */}
+      <div className="relative aspect-video bg-muted w-full">
         <iframe
           src={embedUrl}
           title={title}
@@ -41,16 +57,23 @@ export function YouTubeResource({
         />
       </div>
 
-      {/* Content */}
-      <div className="p-4 space-y-3">
+      {/* Content - Mobile optimized */}
+      <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
         {/* Title */}
-        <h4 className="font-semibold text-foreground line-clamp-2 leading-tight">
+        <h4 className="font-semibold text-foreground line-clamp-2 leading-tight text-sm sm:text-base">
           {title}
         </h4>
 
+        {/* Timestamp reference */}
+        {timestamp && (
+          <p className="text-xs text-muted-foreground italic">
+            📺 Videoning {timestamp}-daqiqasidan boshlang
+          </p>
+        )}
+
         {/* Description */}
         {description && (
-          <p className="text-sm text-muted-foreground line-clamp-2">
+          <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">
             {description}
           </p>
         )}
@@ -59,10 +82,10 @@ export function YouTubeResource({
         <Button
           variant="outline"
           size="sm"
-          className="w-full gap-2"
+          className="w-full gap-2 text-xs sm:text-sm"
           onClick={() => window.open(youtubeUrl, '_blank', 'noopener,noreferrer')}
         >
-          <ExternalLink className="w-4 h-4" />
+          <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" />
           Darslikni ko'rish
         </Button>
       </div>
@@ -76,7 +99,7 @@ export function YouTubeResourceCompact({
   title,
   thumbnail,
   className,
-}: Omit<YouTubeResourceProps, 'description'>) {
+}: Omit<YouTubeResourceProps, 'description' | 'timestamp'>) {
   const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
   const defaultThumbnail = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
 
@@ -86,14 +109,15 @@ export function YouTubeResourceCompact({
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        "flex items-center gap-3 p-2 rounded-lg",
+        "flex items-center gap-2 sm:gap-3 p-2 rounded-lg",
         "border border-border bg-card/50",
         "hover:bg-accent/50 transition-colors group",
+        "w-full", // Full width on mobile
         className
       )}
     >
-      {/* Thumbnail */}
-      <div className="relative w-24 h-14 rounded-md overflow-hidden bg-muted flex-shrink-0">
+      {/* Thumbnail - Smaller on mobile */}
+      <div className="relative w-20 h-12 sm:w-24 sm:h-14 rounded-md overflow-hidden bg-muted flex-shrink-0">
         <img
           src={thumbnail || defaultThumbnail}
           alt={title}
@@ -101,16 +125,16 @@ export function YouTubeResourceCompact({
           loading="lazy"
         />
         <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/40 transition-colors">
-          <Play className="w-6 h-6 text-white fill-white" />
+          <Play className="w-5 h-5 sm:w-6 sm:h-6 text-white fill-white" />
         </div>
       </div>
 
       {/* Title */}
-      <span className="flex-1 text-sm font-medium text-foreground line-clamp-2">
+      <span className="flex-1 text-xs sm:text-sm font-medium text-foreground line-clamp-2">
         {title}
       </span>
 
-      <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+      <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground flex-shrink-0" />
     </a>
   );
 }

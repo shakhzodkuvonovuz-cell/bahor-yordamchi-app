@@ -1,8 +1,8 @@
-import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type LessonPhase = 'diagnosis' | 'planning' | 'delivery' | 'completed';
+export type LessonPhase = 'diagnosis' | 'planning' | 'delivery' | 'quiz' | 'completed';
 
 export interface LessonStep {
   title: string;
@@ -24,6 +24,14 @@ export interface DiagnosisQuestion {
   answer?: string;
 }
 
+export interface QuizScore {
+  step: number;
+  score: number;
+  total: number;
+  answers: { questionId: string; isCorrect: boolean }[];
+  timestamp: string;
+}
+
 export interface TeacherLesson {
   id: string;
   userId: string;
@@ -35,6 +43,7 @@ export interface TeacherLesson {
   diagnosisAnswers: DiagnosisQuestion[];
   lessonPlan: LessonStep[];
   resources: LessonResource[];
+  quizScores: QuizScore[];
   startedAt: Date;
   updatedAt: Date;
   completedAt: Date | null;
@@ -44,6 +53,7 @@ interface LessonContextType {
   activeLesson: TeacherLesson | null;
   isTeacherMode: boolean;
   isLoadingLesson: boolean;
+  isQuizMode: boolean;
   
   // Actions
   startLesson: (threadId: string, topic: string) => Promise<TeacherLesson>;
@@ -56,6 +66,12 @@ interface LessonContextType {
   addResource: (resource: LessonResource) => Promise<void>;
   completeLesson: () => Promise<void>;
   exitTeacherMode: () => void;
+  
+  // Quiz actions
+  startQuiz: () => Promise<void>;
+  submitQuizScore: (score: QuizScore) => Promise<void>;
+  shouldTriggerQuiz: () => boolean;
+  incrementLessonsMastered: () => Promise<void>;
 }
 
 const LessonContext = createContext<LessonContextType | undefined>(undefined);
@@ -73,6 +89,7 @@ function dbToLesson(row: any): TeacherLesson {
     diagnosisAnswers: row.diagnosis_answers || [],
     lessonPlan: row.lesson_plan || [],
     resources: row.resources || [],
+    quizScores: row.quiz_scores || [],
     startedAt: new Date(row.started_at),
     updatedAt: new Date(row.updated_at),
     completedAt: row.completed_at ? new Date(row.completed_at) : null,
@@ -85,6 +102,7 @@ export function LessonProvider({ children }: { children: ReactNode }) {
   const [isLoadingLesson, setIsLoadingLesson] = useState(false);
 
   const isTeacherMode = !!activeLesson && activeLesson.phase !== 'completed';
+  const isQuizMode = activeLesson?.phase === 'quiz';
 
   // Start a new lesson
   const startLesson = useCallback(async (threadId: string, topic: string): Promise<TeacherLesson> => {
@@ -288,11 +306,75 @@ export function LessonProvider({ children }: { children: ReactNode }) {
     setActiveLesson(null);
   }, []);
 
+  // Check if we should trigger a quiz (every 5 steps completed)
+  const shouldTriggerQuiz = useCallback(() => {
+    if (!activeLesson) return false;
+    const completedSteps = activeLesson.lessonPlan.filter(s => s.completed).length;
+    // Trigger quiz every 5 steps, but not if already in quiz or completed
+    return completedSteps > 0 && 
+           completedSteps % 5 === 0 && 
+           activeLesson.phase === 'delivery' &&
+           !activeLesson.quizScores.some(q => q.step === completedSteps);
+  }, [activeLesson]);
+
+  // Start quiz mode
+  const startQuiz = useCallback(async () => {
+    if (!activeLesson) return;
+    await updatePhase('quiz');
+  }, [activeLesson, updatePhase]);
+
+  // Submit quiz score
+  const submitQuizScore = useCallback(async (score: QuizScore) => {
+    if (!activeLesson) return;
+
+    const updatedScores = [...activeLesson.quizScores, score];
+
+    const { error } = await supabase
+      .from('teacher_lessons')
+      .update({ 
+        quiz_scores: updatedScores as unknown as any,
+        phase: 'delivery', // Return to delivery after quiz
+      })
+      .eq('id', activeLesson.id);
+
+    if (error) throw error;
+
+    setActiveLesson(prev => prev ? { 
+      ...prev, 
+      quizScores: updatedScores,
+      phase: 'delivery',
+    } : null);
+  }, [activeLesson]);
+
+  // Increment lessons mastered in profile
+  const incrementLessonsMastered = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      // Simple increment using raw SQL via update
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('lessons_mastered')
+        .eq('user_id', user.id)
+        .single();
+
+      const currentCount = profile?.lessons_mastered ?? 0;
+
+      await supabase
+        .from('profiles')
+        .update({ lessons_mastered: currentCount + 1 })
+        .eq('user_id', user.id);
+    } catch (err) {
+      console.error('Failed to increment lessons_mastered:', err);
+    }
+  }, [user]);
+
   return (
     <LessonContext.Provider value={{
       activeLesson,
       isTeacherMode,
       isLoadingLesson,
+      isQuizMode,
       startLesson,
       loadLesson,
       updatePhase,
@@ -303,6 +385,10 @@ export function LessonProvider({ children }: { children: ReactNode }) {
       addResource,
       completeLesson,
       exitTeacherMode,
+      startQuiz,
+      submitQuizScore,
+      shouldTriggerQuiz,
+      incrementLessonsMastered,
     }}>
       {children}
     </LessonContext.Provider>
