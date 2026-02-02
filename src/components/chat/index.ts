@@ -43,3 +43,8 @@ export { ContextDock } from "./ContextDock";
 // Virtualized components
 export { default as VirtualizedMessageList } from "./VirtualizedMessageList";
 export type { VirtualizedMessageListHandle } from "./VirtualizedMessageList";
+
+// Teacher Mode components
+export { YouTubeResource, YouTubeResourceCompact } from "./YouTubeResource";
+export { TeacherBubble } from "./TeacherBubble";
+export { FinishLessonButton } from "./FinishLessonButton";
