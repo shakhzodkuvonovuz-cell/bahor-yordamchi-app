@@ -23,13 +23,18 @@ export function LessonProgressBar({ className }: LessonProgressBarProps) {
     : phase === 'planning' ? 30 
     : 50;
 
-  // Get phase label
+  // Get phase label - Uzbek first
   const phaseLabels: Record<string, string> = {
-    diagnosis: t('teacher.phase.diagnosis') || "Darajani aniqlash",
-    planning: t('teacher.phase.planning') || "Reja tuzish",
-    delivery: t('teacher.phase.delivery') || "Dars berish",
-    completed: t('teacher.phase.completed') || "Yakunlandi",
+    diagnosis: "Darajani aniqlash",
+    planning: "Reja tuzish",
+    delivery: "Dars jarayoni",
+    completed: "Yakunlandi",
   };
+
+  // Step label in Uzbek
+  const stepLabel = totalSteps 
+    ? `Bosqich ${currentStep + 1}/${totalSteps}` 
+    : phaseLabels[phase];
 
   return (
     <div className={cn(
