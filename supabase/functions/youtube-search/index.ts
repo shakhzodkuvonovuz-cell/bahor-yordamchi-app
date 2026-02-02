@@ -63,11 +63,11 @@ serve(async (req) => {
       );
     }
 
-    // Get YouTube API key from Google Search API key (shared)
-    const youtubeApiKey = Deno.env.get('GOOGLE_SEARCH_API_KEY');
+    // Get YouTube API key (prefer dedicated key, fallback to Google Search key)
+    const youtubeApiKey = Deno.env.get('YOUTUBE_API_KEY') || Deno.env.get('GOOGLE_SEARCH_API_KEY');
     
     if (!youtubeApiKey) {
-      console.error('[YouTube] Missing GOOGLE_SEARCH_API_KEY');
+      console.error('[YouTube] Missing YOUTUBE_API_KEY or GOOGLE_SEARCH_API_KEY');
       return new Response(
         JSON.stringify({ success: false, error: 'API configuration error', videos: [] }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
