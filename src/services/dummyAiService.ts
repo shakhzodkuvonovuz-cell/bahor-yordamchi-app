@@ -31,6 +31,8 @@ export function getDummyAiResponse(mode: ChatMode, userMessage: string): string 
     financial: `Siz yozgan: "${userMessage}"\n\n🔄 Bu hali test versiyasi. Tez orada to'liq AI ulanadi va moliyaviy savodxonlik bo'yicha umumiy maslahatlar beradi.`,
     
     health: `Siz yozgan: "${userMessage}"\n\n🔄 Bu hali test versiyasi. Tez orada to'liq AI ulanadi va sog'lom turmush tarzi bo'yicha umumiy maslahatlar beradi.`,
+
+    teacher: `Siz yozgan: "${userMessage}"\n\n🎓 O'qituvchi rejimida men sizga mavzuni bosqichma-bosqich o'rgataman. Tez orada to'liq AI ulanadi.`,
   };
 
   return responses[mode];

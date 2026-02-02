@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate } from "
 import { ThemeProvider } from "@/hooks/useTheme";
 import { LanguageProvider } from "@/i18n/LanguageProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { LessonProvider } from "@/contexts/LessonContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PublicRoute } from "@/components/PublicRoute";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -148,6 +149,7 @@ const App = () => (
         <ThemeProvider>
           <BrowserRouter>
             <AuthProvider>
+              <LessonProvider>
               <TooltipProvider>
               {/* Visual Viewport Handler for mobile keyboard */}
                 <VisualViewportHandler />
@@ -384,6 +386,7 @@ const App = () => (
                   <Route path="*" element={<LazyRoute><NotFound /></LazyRoute>} />
                 </Routes>
               </TooltipProvider>
+              </LessonProvider>
             </AuthProvider>
           </BrowserRouter>
         </ThemeProvider>

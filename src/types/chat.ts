@@ -1,6 +1,6 @@
 import type { MessageTrace } from "./trace";
 
-export type ChatMode = "general" | "ielts" | "homework" | "job" | "daily" | "business" | "tech" | "financial" | "health";
+export type ChatMode = "general" | "ielts" | "homework" | "job" | "daily" | "business" | "tech" | "financial" | "health" | "teacher";
 
 export interface ChatAttachment {
   id: string;
