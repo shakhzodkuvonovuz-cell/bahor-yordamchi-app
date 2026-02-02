@@ -57,10 +57,21 @@ export const PRIMARY_MODES: ModeInfo[] = [
 // Learning and development modes - shown in "O'qish va rivojlanish" section
 export const LEARNING_MODES: ModeInfo[] = [
   {
+    id: "teacher",
+    title: "O'qituvchi rejimi",
+    subtitle: "Mavzuni bosqichma-bosqich o'rganish",
+    icon: "🎓",
+    quickSuggestions: [
+      "IELTS Writing ni o'rgat",
+      "Ingliz tili grammatikasi",
+      "Python dasturlash asoslari",
+    ],
+  },
+  {
     id: "ielts",
     title: "Ingliz tili va IELTS",
     subtitle: "Ingliz tili va IELTSga tayyorgarlik",
-    icon: "🎓",
+    icon: "📝",
     quickSuggestions: [
       "IELTS speaking savol ber",
       "Ingliz matnni tekshir",

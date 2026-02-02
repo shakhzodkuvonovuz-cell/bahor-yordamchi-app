@@ -95,3 +95,6 @@ verify_jwt = false
 
 [functions.atmos-health]
 verify_jwt = false
+
+[functions.youtube-search]
+verify_jwt = false

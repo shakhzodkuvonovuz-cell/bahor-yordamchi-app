@@ -515,6 +515,7 @@ export type Database = {
           id: string
           is_archived: boolean
           last_message_preview: string | null
+          lesson_id: string | null
           message_count: number | null
           mode: string
           summary: string | null
@@ -528,6 +529,7 @@ export type Database = {
           id?: string
           is_archived?: boolean
           last_message_preview?: string | null
+          lesson_id?: string | null
           message_count?: number | null
           mode?: string
           summary?: string | null
@@ -541,6 +543,7 @@ export type Database = {
           id?: string
           is_archived?: boolean
           last_message_preview?: string | null
+          lesson_id?: string | null
           message_count?: number | null
           mode?: string
           summary?: string | null
@@ -549,7 +552,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "chat_threads_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       circle_ai_cards: {
         Row: {
@@ -1356,6 +1367,65 @@ export type Database = {
             columns: ["last_transaction_id"]
             isOneToOne: false
             referencedRelation: "atmos_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teacher_lessons: {
+        Row: {
+          completed_at: string | null
+          current_step: number
+          diagnosis_answers: Json | null
+          id: string
+          lesson_plan: Json | null
+          meta: Json | null
+          phase: string
+          resources: Json | null
+          started_at: string
+          thread_id: string
+          topic: string
+          total_steps: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          current_step?: number
+          diagnosis_answers?: Json | null
+          id?: string
+          lesson_plan?: Json | null
+          meta?: Json | null
+          phase?: string
+          resources?: Json | null
+          started_at?: string
+          thread_id: string
+          topic: string
+          total_steps?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          current_step?: number
+          diagnosis_answers?: Json | null
+          id?: string
+          lesson_plan?: Json | null
+          meta?: Json | null
+          phase?: string
+          resources?: Json | null
+          started_at?: string
+          thread_id?: string
+          topic?: string
+          total_steps?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_thread"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "chat_threads"
             referencedColumns: ["id"]
           },
         ]
