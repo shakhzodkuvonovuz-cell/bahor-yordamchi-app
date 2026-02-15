@@ -28,7 +28,7 @@ Bahor AI is the first Uzbek-language AI assistant. It provides intelligent chat 
 
 | Layer | Technology |
 |-------|-----------|
-| **Frontend** | React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui, Framer Motion |
+| **Frontend** | React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui |
 | **State/Data** | TanStack React Query, Supabase Realtime |
 | **Backend** | Supabase (PostgreSQL, Auth, Storage, 36 Edge Functions) |
 | **AI** | DeepSeek (chat), Fireworks AI (images), Groq (fast inference), RunPod (video), PiAPI (image queue) |
@@ -96,7 +96,7 @@ docs/
 
 ## Database
 
-The Supabase database contains **38 tables** including:
+The Supabase database contains **44 tables** including:
 
 - `profiles`, `profiles_private`, `user_entitlements` — user data & plans
 - `chat_threads`, `chat_messages`, `chat_attachments` — conversation storage
