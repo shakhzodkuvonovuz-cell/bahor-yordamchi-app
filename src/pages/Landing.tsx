@@ -555,10 +555,11 @@ export default function Landing() {
     <>
       <SEO url="/" />
       <div className="min-h-screen bg-background relative overflow-x-hidden">
-      {/* Background - reduced fog/blur for crisper look */}
+      {/* Background - visible tinted gradient in both light and dark modes */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-primary/4 rounded-full blur-[80px]" />
-        <div className="absolute top-1/3 right-0 w-[500px] h-[500px] bg-primary/3 rounded-full blur-[70px]" />
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-primary/8 dark:bg-primary/4 rounded-full blur-[80px]" />
+        <div className="absolute top-1/3 right-0 w-[500px] h-[500px] bg-primary/6 dark:bg-primary/3 rounded-full blur-[70px]" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-primary/5 dark:bg-primary/2 rounded-full blur-[60px]" />
       </div>
       
       {/* Sticky Header with Nav */}
